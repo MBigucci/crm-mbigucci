@@ -42,6 +42,7 @@ O CRM de corretores da MBigucci (construtora em São Bernardo do Campo). O usuá
 - `docs/metas-ranking.md`: abra ao mexer na meta anual de VGV, nas metas próprias do corretor ou no ranking.
 - `docs/pesquisa-discovery.md`: abra ao mexer em `discovery/`, ao analisar as respostas da pesquisa ou ao escrever qualquer texto para corretores.
 - `docs/pesquisa-resultados.md`: abra ao desenhar leads, cadastro, lista do dia, painel ou qualquer tela do corretor. São as 34 respostas consolidadas e as decisões que saem delas.
+- `docs/gerentes-necessidades.md`: abra ao desenhar o painel ou o relatório do gerente, ou o cadastro de parceiros. São os pedidos dos gerentes de equipe e onde cada um entra.
 - `docs/design-system.md`: abra antes de criar ou alterar qualquer tela.
 - `docs/crm-arquitetura.md`: abra ao mexer na estrutura do `crm/` (schema, RLS, deploy).
 - `docs/leads.md`: abra ao mexer em leads, lista do dia, cadastro (e Cadastro Mágico), ficha, quadro, interações, follow-up e tentativas, histórico (`lead_eventos`), descarte ou atribuição de lead.
