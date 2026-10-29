@@ -12,6 +12,7 @@ import {
   type Lead,
   type Temperatura,
 } from "@/lib/leads";
+import { seloSemContato } from "@/lib/followup";
 
 /** Temperatura sempre com sinal + palavra + cor. */
 export function SeloTemperatura({ valor }: { valor: Temperatura | null }) {
@@ -89,8 +90,46 @@ export function ProximoContato({ iso, agora }: { iso: string | null; agora: Date
   );
 }
 
-/** Card do lead nas listas: nome, temperatura, próximo contato, última interação e WhatsApp. */
-export function CardLead({ lead, agora, dono, etapa }: { lead: Lead; agora: Date; dono?: string; etapa?: string }) {
+/** "! Sem contato há N dias": âmbar com 2 dias, vermelho com 3 ou mais. */
+export function SemContato({
+  lead,
+  agora,
+  className,
+  comTentativas = true,
+}: {
+  lead: Lead;
+  agora: Date;
+  className?: string;
+  comTentativas?: boolean;
+}) {
+  const s = seloSemContato(lead, agora, comTentativas);
+  if (!s) return null;
+  return (
+    <span className={clsx("num font-semibold", s.nivel === "alerta" ? "text-brand" : "text-wa", className)}>
+      <span aria-hidden>! </span>
+      {s.texto}
+    </span>
+  );
+}
+
+/**
+ * Card do lead nas listas: nome, temperatura, próximo contato, dias sem
+ * contato, última interação e WhatsApp. Com `onSemResposta`, mostra o
+ * "Sem resposta (+1)" de 1 toque.
+ */
+export function CardLead({
+  lead,
+  agora,
+  dono,
+  etapa,
+  onSemResposta,
+}: {
+  lead: Lead;
+  agora: Date;
+  dono?: string;
+  etapa?: string;
+  onSemResposta?: () => void;
+}) {
   return (
     <li className="card">
       <div className="flex items-start justify-between gap-3">
@@ -99,6 +138,7 @@ export function CardLead({ lead, agora, dono, etapa }: { lead: Lead; agora: Date
           <span className="mt-1 block text-[13px]">
             <ProximoContato iso={lead.proximo_contato} agora={agora} />
           </span>
+          <SemContato lead={lead} agora={agora} className="mt-1 block text-[13px]" />
           {dono && <span className="mt-1 block truncate text-[12px] text-ink-soft">{dono}</span>}
         </Link>
         <SeloTemperatura valor={lead.temperatura} />
@@ -114,16 +154,45 @@ export function CardLead({ lead, agora, dono, etapa }: { lead: Lead; agora: Date
         )}
       </p>
       {lead.status === "descartado" && <p className="mt-2 text-[13px] font-semibold text-ink-soft">✕ Descartado</p>}
-      <div className="mt-3 flex items-center justify-between gap-3">
-        <span className="min-w-0 truncate text-[12px] text-concrete">{etapa}</span>
-        <div className="flex shrink-0 gap-2">
-          <Link href={`/leads/ficha/?id=${lead.id}`} className="btn btn-ghost focus-ring">
-            Abrir
-          </Link>
-          <BotaoWhatsapp numero={lead.whatsapp} />
+      {onSemResposta ? (
+        <>
+          <span className="mt-2 block truncate text-[12px] text-concrete">{etapa}</span>
+          <div className="mt-2 flex flex-wrap gap-2 [&>*]:flex-1">
+            <button type="button" className="btn btn-ghost focus-ring whitespace-nowrap" onClick={onSemResposta}>
+              Sem resposta (+1)
+            </button>
+            <Link href={`/leads/ficha/?id=${lead.id}`} className="btn btn-ghost focus-ring">
+              Abrir
+            </Link>
+            <BotaoWhatsapp numero={lead.whatsapp} />
+          </div>
+        </>
+      ) : (
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <span className="min-w-0 truncate text-[12px] text-concrete">{etapa}</span>
+          <div className="flex shrink-0 gap-2">
+            <Link href={`/leads/ficha/?id=${lead.id}`} className="btn btn-ghost focus-ring">
+              Abrir
+            </Link>
+            <BotaoWhatsapp numero={lead.whatsapp} />
+          </div>
         </div>
-      </div>
+      )}
     </li>
+  );
+}
+
+/** Selo de cada campo da prévia do Cadastro Mágico: sinal + palavra + cor. */
+export function SeloCampo({ selo }: { selo: "detectado" | "conferir" | "faltando" }) {
+  const s = {
+    detectado: { sinal: "✓", texto: "Detectado", cor: "text-ok" },
+    conferir: { sinal: "!", texto: "Conferir", cor: "text-wa" },
+    faltando: { sinal: "✕", texto: "Não encontrado", cor: "text-ink-soft" },
+  }[selo];
+  return (
+    <span className={clsx("selo shrink-0 border-current", s.cor)}>
+      <span aria-hidden>{s.sinal}</span> {s.texto}
+    </span>
   );
 }
 

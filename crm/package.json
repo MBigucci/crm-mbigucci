@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "npx --yes serve out",
     "typecheck": "tsc --noEmit",
-    "test": "node --test src/lib/leads.test.ts",
+    "test": "node --test src/lib/leads.test.ts src/lib/followup.test.ts src/lib/cadastro-magico.test.ts",
     "test:banco": "node --test supabase/testes/leads.test.mjs"
   },
   "dependencies": {

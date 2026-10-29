@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { db } from "@/lib/supabase";
 import { usePerfil } from "@/lib/sessao";
 import { mensagemErro } from "@/lib/erros";
-import { COLUNAS_LEAD, grupoDoLead, montarListaDoDia, TITULOS_GRUPO, type Lead } from "@/lib/leads";
-import { useCatalogos } from "@/lib/leads-dados";
+import { COLUNAS_LEAD, formatarQuando, grupoDoLead, montarListaDoDia, TITULOS_GRUPO, type Lead } from "@/lib/leads";
+import { registrarSemResposta, useCatalogos } from "@/lib/leads-dados";
 import { CardLead, RodapeAcao } from "./partes";
 
 const diaDaSemana = new Intl.DateTimeFormat("pt-BR", { weekday: "long" });
@@ -17,22 +17,34 @@ export function ListaDoDia() {
   const { catalogos } = useCatalogos();
   const [leads, setLeads] = useState<Lead[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<{ id: string; texto: string } | null>(null);
   const [agora, setAgora] = useState(() => new Date());
 
+  const carregar = useCallback(async () => {
+    const { data, error } = await db().from("leads").select(COLUNAS_LEAD).eq("dono_id", eu.id).eq("status", "ativo");
+    if (error) return setErro(mensagemErro(error));
+    setLeads(data as unknown as Lead[]);
+    setAgora(new Date());
+  }, [eu.id]);
+
   useEffect(() => {
-    db()
-      .from("leads")
-      .select(COLUNAS_LEAD)
-      .eq("dono_id", eu.id)
-      .eq("status", "ativo")
-      .then(({ data, error }) => {
-        if (error) return setErro(mensagemErro(error));
-        setLeads(data as unknown as Lead[]);
-      });
+    carregar();
     // Atualiza o "agora" a cada minuto: o que era de hoje passa a atrasado.
     const t = setInterval(() => setAgora(new Date()), 60_000);
     return () => clearInterval(t);
-  }, [eu.id]);
+  }, [carregar]);
+
+  async function semResposta(l: Lead) {
+    setErro(null);
+    const { proximo, erro: e } = await registrarSemResposta(l.id);
+    if (e) return setErro(e);
+    const n = l.tentativas + 1;
+    setAviso({
+      id: l.id,
+      texto: `Sem resposta registrado para ${l.nome} (tentativa ${n}). Próximo contato: ${formatarQuando(proximo, new Date())}.`,
+    });
+    await carregar();
+  }
 
   const grupos = useMemo(() => montarListaDoDia(leads ?? [], agora), [leads, agora]);
   const depois = (leads ?? []).filter((l) => grupoDoLead(l, agora) === null).length;
@@ -51,15 +63,34 @@ export function ListaDoDia() {
       </div>
 
       {erro && <p className="aviso-erro">! {erro}</p>}
+      {aviso && (
+        <p className="aviso-ok" role="status">
+          ✓ {aviso.texto}{" "}
+          <Link href={`/leads/ficha/?id=${aviso.id}`} className="link-acao">
+            Mudar na ficha
+          </Link>
+        </p>
+      )}
       {!leads && !erro && <p className="text-concrete">Carregando…</p>}
 
-      {leads && !grupos.length && (
+      {leads && !leads.length && (
+        <div className="card bar-brand">
+          <h2 className="titulo-card">Cadastre seu primeiro lead</h2>
+          <p className="mt-2 text-ink-soft">
+            Em Novo lead, toque em Colar mensagem e cole a conversa do WhatsApp ou o e-mail do cliente. O CRM preenche
+            nome, WhatsApp e empreendimento, e você só confere e escolhe a origem.
+          </p>
+          <Link href="/leads/novo/" className="link-acao mt-3 inline-block">
+            Cadastrar lead
+          </Link>
+        </div>
+      )}
+
+      {leads && leads.length > 0 && !grupos.length && (
         <div className="card">
           <h2 className="titulo-card">✓ Nada para hoje</h2>
           <p className="mt-2 text-ink-soft">
-            {leads.length
-              ? "Seus próximos contatos estão marcados para os próximos dias. Veja todos em Leads."
-              : "Cadastre seu primeiro lead em Novo lead."}
+            Seus próximos contatos estão marcados para os próximos dias. Veja todos em Leads.
           </p>
         </div>
       )}
@@ -71,7 +102,13 @@ export function ListaDoDia() {
           </h2>
           <ul className="grid gap-3 md:grid-cols-2">
             {g.leads.map((l) => (
-              <CardLead key={l.id} lead={l} agora={agora} etapa={nomeEtapa(l.etapa)} />
+              <CardLead
+                key={l.id}
+                lead={l}
+                agora={agora}
+                etapa={nomeEtapa(l.etapa)}
+                onSemResposta={() => semResposta(l)}
+              />
             ))}
           </ul>
         </section>

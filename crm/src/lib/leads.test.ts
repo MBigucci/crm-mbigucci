@@ -126,6 +126,10 @@ test("WhatsApp: guarda só dígitos com 55 e recusa número curto", () => {
   assert.equal(normalizarWhatsapp("+55 11 98765 4321"), "5511987654321");
   assert.equal(normalizarWhatsapp("011 4123-4567"), "551141234567");
   assert.equal(normalizarWhatsapp("98765-4321"), null);
+  // Celular antigo de 8 dígitos ganha o 9º; fixo (2 a 5) fica como está.
+  assert.equal(normalizarWhatsapp("(11) 8765-4321"), "5511987654321");
+  assert.equal(normalizarWhatsapp("55 11 7654-3210"), "5511976543210");
+  assert.equal(normalizarWhatsapp("(11) 2345-6789"), "551123456789");
   assert.equal(formatarWhatsapp("5511987654321"), "(11) 98765-4321");
   assert.equal(formatarWhatsapp("551141234567"), "(11) 4123-4567");
 });

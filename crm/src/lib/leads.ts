@@ -3,13 +3,20 @@
 
 export type Temperatura = "quente" | "morno" | "frio";
 export type StatusLead = "ativo" | "descartado";
-export type MotivoDescarte = "sem_interesse" | "fora_do_perfil" | "fora_da_regiao" | "contato_invalido" | "duplicado";
+export type MotivoDescarte =
+  | "sem_interesse"
+  | "fora_do_perfil"
+  | "fora_da_regiao"
+  | "contato_invalido"
+  | "duplicado"
+  | "sem_retorno";
 
 export type Lead = {
   id: string;
   dono_id: string;
   nome: string;
   whatsapp: string;
+  email: string | null;
   origem: string;
   campanha: string | null;
   empreendimento: string | null;
@@ -24,22 +31,62 @@ export type Lead = {
   finalidade: "morar" | "investir" | null;
   ultima_interacao_em: string | null;
   ultima_interacao_texto: string | null;
+  /** "Sem resposta" seguidas; o gatilho soma e zera, o app só lê. */
+  tentativas: number;
   atribuido_por: string | null;
   created_at: string;
 };
 export const COLUNAS_LEAD =
-  "id, dono_id, nome, whatsapp, origem, campanha, empreendimento, temperatura, etapa, proximo_contato, status, " +
-  "motivo_descarte, valor, dormitorios, regiao, finalidade, ultima_interacao_em, ultima_interacao_texto, " +
-  "atribuido_por, created_at";
+  "id, dono_id, nome, whatsapp, email, origem, campanha, empreendimento, temperatura, etapa, proximo_contato, " +
+  "status, motivo_descarte, valor, dormitorios, regiao, finalidade, ultima_interacao_em, ultima_interacao_texto, " +
+  "tentativas, atribuido_por, created_at";
+
+export type TipoInteracao = "whatsapp" | "ligacao" | "email" | "visita" | "nota" | "tentativa" | "mensagem";
+
+/** Os tipos que o corretor escolhe ao registrar; "tentativa" e "mensagem" têm botão e fluxo próprios. */
+export const TIPOS_INTERACAO: { slug: TipoInteracao; nome: string }[] = [
+  { slug: "whatsapp", nome: "WhatsApp" },
+  { slug: "ligacao", nome: "Ligação" },
+  { slug: "email", nome: "E-mail" },
+  { slug: "visita", nome: "Visita" },
+  { slug: "nota", nome: "Anotação" },
+];
+const NOME_TIPO: Record<TipoInteracao, string> = {
+  whatsapp: "WhatsApp",
+  ligacao: "Ligação",
+  email: "E-mail",
+  visita: "Visita",
+  nota: "Anotação",
+  tentativa: "Sem resposta",
+  mensagem: "Mensagem original",
+};
+export const nomeTipoInteracao = (t: TipoInteracao) => NOME_TIPO[t] ?? t;
 
 export type Interacao = {
   id: string;
   lead_id: string;
   autor_id: string | null;
   criado_em: string;
+  tipo: TipoInteracao;
   texto: string;
-  proximo_contato: string;
+  /** Vazio só na mensagem original do Cadastro Mágico. */
+  proximo_contato: string | null;
 };
+export const COLUNAS_INTERACAO = "id, lead_id, autor_id, criado_em, tipo, texto, proximo_contato";
+
+/** Linha do histórico automático (tabela lead_eventos, gravada só pelo gatilho). */
+export type Evento = {
+  id: string;
+  lead_id: string;
+  tipo: "criado" | "etapa" | "temperatura" | "status" | "dono";
+  de: string | null;
+  para: string | null;
+  detalhe: string | null;
+  automatico: boolean;
+  autor_id: string | null;
+  criado_em: string;
+};
+export const COLUNAS_EVENTO = "id, lead_id, tipo, de, para, detalhe, automatico, autor_id, criado_em";
 
 export type Origem = {
   slug: string;
@@ -65,6 +112,7 @@ export const MOTIVOS_DESCARTE: { slug: MotivoDescarte; nome: string }[] = [
   { slug: "fora_da_regiao", nome: "Fora da região" },
   { slug: "contato_invalido", nome: "Contato inválido" },
   { slug: "duplicado", nome: "Duplicado" },
+  { slug: "sem_retorno", nome: "Sem retorno" },
 ];
 
 // ---------- Lista do dia ----------
@@ -134,13 +182,16 @@ export const ordenarListaDoDia = <T extends LeadDoDia>(leads: T[], agora: Date):
 
 /**
  * Guarda só dígitos, com o 55 do Brasil: "(11) 98765-4321" → "5511987654321".
+ * Celular antigo de 8 dígitos (começa com 6 a 9) ganha o 9º dígito, para não
+ * duplicar o mesmo cliente com e sem o 9. Fixo (começa com 2 a 5) fica como está.
  * Devolve null se não parecer um celular ou fixo brasileiro com DDD.
  */
 export function normalizarWhatsapp(entrada: string): string | null {
   let d = entrada.replace(/\D/g, "");
   if (d.startsWith("0")) d = d.replace(/^0+/, "");
   if (d.length === 10 || d.length === 11) d = "55" + d;
-  return /^55\d{10,11}$/.test(d) ? d : null;
+  if (/^55[1-9]{2}[6-9]\d{7}$/.test(d)) d = d.slice(0, 4) + "9" + d.slice(4);
+  return /^55[1-9]{2}\d{8,9}$/.test(d) ? d : null;
 }
 
 /** "5511987654321" → "(11) 98765-4321". */

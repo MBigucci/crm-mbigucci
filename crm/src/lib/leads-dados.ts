@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { db } from "./supabase";
 import { mensagemErro } from "./erros";
 import type { Etapa, Origem } from "./leads";
+import { sugerirProximaTentativa, TEXTO_SEM_RESPOSTA } from "./followup";
 
 export type Catalogos = { origens: Origem[]; etapas: Etapa[] };
 
@@ -60,4 +61,16 @@ export function gravarUltimaOrigem(usuario: string, origem: string) {
   try {
     localStorage.setItem(chaveOrigem(usuario), origem);
   } catch {}
+}
+
+/**
+ * "Sem resposta (+1)": grava a tentativa com o próximo contato já sugerido
+ * (daqui a 2 dias, na hora cheia). O gatilho do banco soma a tentativa no lead.
+ */
+export async function registrarSemResposta(leadId: string): Promise<{ proximo: string; erro: string | null }> {
+  const proximo = sugerirProximaTentativa(new Date()).toISOString();
+  const { error } = await db()
+    .from("lead_interacoes")
+    .insert({ lead_id: leadId, tipo: "tentativa", texto: TEXTO_SEM_RESPOSTA, proximo_contato: proximo });
+  return { proximo, erro: error ? mensagemErro(error) : null };
 }
