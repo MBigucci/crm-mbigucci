@@ -25,3 +25,6 @@ Thumbs.db
 
 # Arquivo local do Felipe (não versionar)
 passkey.txt
+
+# Insumos pessoais (áudios, transcrições, planilhas com nomes)
+insumos/
