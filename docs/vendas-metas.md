@@ -13,11 +13,12 @@
 8. Telas
 9. Decisões para o Felipe revisar
 10. Testes
+11. Da Bruna: o que veio, o que foi adaptado e o que ficou de fora
 
 ## 1. Venda
 
 - **O que guarda:** lead, corretor, empreendimento, unidade (opcional), VGV, data da assinatura, pagamento (pendente ou pago, com a data), observação, quem registrou e quando. Tabela `vendas`.
-- **Quem registra:** o corretor dono do lead, pela ficha, em "Venda" → "+ Registrar venda". O gerente não vende (`docs/acessos-perfis.md`). Escolher a etapa "Venda" na ficha abre o mesmo registro: a etapa Venda só vem da venda registrada, e o banco recusa a troca à mão (`leads_venda_guard`).
+- **Quem registra:** o corretor dono do lead, pela ficha, em "Venda" → "+ Registrar venda", ou em `/vendas/` → "+ Registrar venda", escolhendo o cliente entre os próprios leads ativos (como na Bruna). O registro abre com "Parabéns pela venda para {nome}." e vem preenchido com o empreendimento e o valor do lead. O gerente não vende (`docs/acessos-perfis.md`). Escolher a etapa "Venda" na ficha abre o mesmo registro: a etapa Venda só vem da venda registrada, e o banco recusa a troca à mão (`leads_venda_guard`).
 - **Efeito no lead:** registrar leva o lead à etapa Venda, como evento automático. O registro vai para o histórico (`lead_eventos`, tipo `venda`).
 - **Mês da venda:** é o mês da **assinatura**. Uma venda assinada em 31/10 e paga em 05/11 conta em outubro.
 - **Duas visões do VGV:**
@@ -61,15 +62,18 @@
   - **Primeiros contatos:** leads que saíram de Novo com ele no período (evento de etapa de "novo").
   - **Visitas realizadas:** com baixa de realizada, pela data da visita.
   - **Vendas** e **VGV:** assinadas e pagas, no mês da assinatura. O assinado com pendentes aparece como nota.
-- **Períodos:** mês, trimestre e ano atuais, ou personalizado (mês de início e de 1 a 24 meses).
-- **Sem duplicar:** uma meta por métrica e período (no personalizado, pelo mesmo início e duração). O banco garante (`metas_sem_duplicar`) e a tela avisa antes.
+- **Períodos:** os da Bruna: mês, trimestre, semestre e ano atuais, ou personalizado (mês de início e duração de 1 a 24 meses, com "Conta de novembro de 2026 a janeiro de 2027.").
+- **Sem duplicar:** uma meta por métrica e período (no personalizado, pelo mesmo início e duração). O banco garante (`metas_sem_duplicar`) e a tela avisa antes, com o texto da Bruna: "Já existe uma meta mensal de Vendas. Edite a que está na lista."
+- **Card:** "Vendas · Outubro de 2026", atual / alvo (o atual nunca arredonda para cima), barra, a frase de ritmo, "Meta batida", e no rodapé "Mostrar no painel" (vale na hora), Editar e Excluir (com "Meta excluída: Vendas (mensal)" e Desfazer).
+- **Sem metas:** "Nenhuma meta por enquanto." com "+ Meta de VGV" (na Bruna, "Meta de comissão") e "+ Outra meta".
 - **Progresso:** calculado pelos dados, nunca digitado. As frases de ritmo seguem a Bruna: "Faltam 2 vendas.", "No ritmo atual você fecha o mês com 5.", "Cerca de R$ 160.000 por semana até o fim.". A projeção só aparece depois de 1/4 do período e quando diz algo novo.
-- **No painel:** as metas marcadas aparecem no "Meu painel" e no relatório do corretor que o gerente abre. O gerente só vê, não altera.
+- **No painel:** as metas marcadas aparecem na **lista do dia** (a tela inicial do corretor, como o Painel do Dia da Bruna), no "Meu painel" e no relatório do corretor que o gerente abre. A lista do dia também mostra a meta anual. O gerente só vê, não altera.
 
 ## 5. Conversão por origem e campanha
 
 - **Onde:** no painel da equipe (soma da equipe) e no relatório de cada corretor, para o período escolhido.
-- **Conta:** dos leads que **entraram na carteira no período** (o mesmo grupo do funil), por origem: leads, primeiro contato, visita realizada e venda, até hoje, com a taxa sobre os leads, e os descartados por motivo. Cada número abre a lista dos leads. Função `conversaoPorOrigem` em `crm/src/lib/painel.ts`.
+- **Números do topo** (como os da Conversão da Bruna): leads que entraram, lead → venda, **ticket médio** (VGV ÷ vendas assinadas no período) e **ciclo médio** (dias do cadastro do lead à assinatura), por `ticketECiclo` em `crm/src/lib/vendas.ts`.
+- **Conta:** dos leads que **entraram na carteira no período** (o mesmo grupo do funil), por origem: leads, primeiro contato, visita realizada, proposta e venda, até hoje, com a taxa sobre os leads, e os descartados por motivo. Cada número abre a lista dos leads. Função `conversaoPorOrigem` em `crm/src/lib/painel.ts`.
 - **Campanha:** dentro de cada origem, uma linha por campanha ("Sem campanha" por último). Aparece só para quem tem a permissão **`painel.campanha`**:
   - no padrão, o **corretor** (vê as campanhas dos próprios leads, que ele mesmo digitou);
   - o **gerente não** tem no padrão, porque `docs/gerentes-necessidades.md` registra que o campo campanha fica fora do painel do gerente enquanto a chave "Programa de verba ativo" estiver desligada. O gerente geral liga em Configurações → Permissões quando quiser.
@@ -118,3 +122,45 @@ Tomadas nesta etapa por falta de regra escrita; todas mudam por permissão ou po
 - `npm run test:banco` (`crm/supabase/testes/vendas.test.mjs`): o schema roda de novo com vendas gravadas; padrões das permissões só na criação e nada sigiloso no catálogo; registrar (só o dono, lead ativo, sem data futura, gerente não); etapa Venda só pelo registro; leitura por perfil; pagar sem motivo e o resto só com motivo; correção auditável com antes e depois; cancelar e reativar sem apagar; meta anual e metas próprias por perfil; faixas e os textos delas só para o gerente geral.
 - **Build:** `grep -riE "verba|ranking|pontua|premia|prêmio|roleta"` no `out/` encontra só "menu de três pontos" (instrução do Chrome em `/conta`).
 - **Telas em 375px:** ficha (registrar venda pela etapa), `/vendas/` (corretor e gerente, correção com motivo), `/metas/` (corretor e gerente geral), painel (corretor e equipe) e `/faixas/`, sem rolagem lateral da página, com o Supabase falso `fake-supabase-vendas-v6.mjs` da pasta de notas.
+
+## 11. Da Bruna: o que veio, o que foi adaptado e o que ficou de fora
+
+Lido por inteiro em 29/10/2026: `ref/CRM Bruna/src/app/vendas/page.tsx`, `src/app/desempenho/page.tsx`, `src/components/performance/*`, `src/components/stage-dialogs.tsx` (registro da venda), `src/lib/performance.ts`, `src/lib/store.tsx` (vendas), `src/lib/app-settings.ts` e `supabase/schema.sql`.
+
+| Recurso da Bruna | Como ficou | Por quê |
+| --- | --- | --- |
+| **Trazido como está** | | |
+| Frases de ritmo (`paceText`): "Faltam 2 vendas.", "No ritmo atual você fecha o mês com 5.", "Cerca de … por semana até o fim.", "Começa em …", "Período encerrado: ficou em …", "Meta batida, com … a mais." | `textoRitmo` em `metas.ts` | Premissa do Felipe |
+| Projeção só depois de 1/4 do período; o valor atual nunca arredonda para cima | Igual | Não mostrar meta batida antes da hora |
+| Períodos da meta: mensal, trimestral, semestral, anual e personalizado (mês de início, 1 a 24 meses, 12 meses para trás e 12 para a frente) | Igual | |
+| Uma meta por métrica e período, com "Já existe uma meta mensal de Vendas. Edite a que está na lista." | Igual, garantido também no banco | |
+| Card da meta: "Métrica · período", atual / alvo, barra (role progressbar), "Meta batida", "Mostrar no painel" que vale na hora, Editar, Excluir com Desfazer ("Meta excluída: …") | Igual, no visual do MBigucci DS | |
+| Formulário da meta: Métrica com dica, Período em botões, Começa em e Duração, "Alvo (R$)" ou "Alvo" com o substantivo, "Quanto você quer alcançar por mês.", "Mostrar no painel" com explicação, "Criar meta"/"Salvar meta"; trocar de dinheiro para contagem limpa o alvo | Igual, num card em vez de diálogo | |
+| Metas marcadas na tela inicial | Na lista do dia (tela inicial do corretor) e no painel | |
+| Registrar a venda pela ficha e pela página de vendas, com o lead pré-preenchido e "Parabéns pela venda para {nome}." | Igual | |
+| Mover o lead para Venda abre o registro da venda (`requestStageChange`) e registrar leva o lead a Venda | Igual, e o banco garante | |
+| Conversão: leads, lead → venda, ticket médio, ciclo médio; funil primeiro contato, visita, proposta, venda; por origem; motivos de perda | No painel, por período | |
+| **Adaptado** | | |
+| Metas da equipe toda em `app_settings` | Tabela `metas`, de cada corretor, com RLS por `pode_ver_dados_de`; o gerente vê as da equipe | A MBigucci tem perfis e equipes |
+| Métricas: vendas, VGV, comissão bruta, comissão líquida, visitas realizadas, contatos e follow-ups, atendimento em 15 min, prospecção ativa | Leads cadastrados, primeiros contatos, visitas realizadas, vendas e VGV | Lista pedida em `docs/metas-ranking.md`; sem comissão (abaixo) |
+| Vendas e VGV pela data do fechamento | Pela **data da assinatura**, e só as **assinadas e pagas** contam para a meta; o assinado aparece ao lado | Regra de `docs/pontuacao-verba.md` |
+| Meta anual: não existe na Bruna | Meta anual de VGV (geral e por corretor) com o mesmo jeito de projetar; ritmo **por mês** até dezembro em vez de por semana | Pedido do Felipe (`docs/metas-ranking.md`) |
+| Status do recebimento da comissão (a receber, parcial, recebido) | Pagamento da venda: pendente ou pago, com a data | O que pesa na MBigucci é a venda paga |
+| Tile "A receber" com o filete do que já entrou | "Pagamento pendente" com o filete do que já foi pago | |
+| Página de vendas: Este mês, 90 dias, Este ano, Tudo | Mês ou ano, com anterior e seguinte, no endereço | A venda conta no mês da assinatura; o mês fechado precisa ser navegável |
+| Excluir venda (`deleteSale`) e editar o status direto na lista | Cancelar e reativar com motivo; correção com motivo, só pelo gerente; tudo no histórico | Sem exclusão física; auditoria |
+| Venda avulsa, sem lead | Sempre de um lead | O histórico e o funil dependem do lead |
+| Imóvel do catálogo (código, preço) | Empreendimento (lista de sugestões) e unidade | A MBigucci vende os próprios empreendimentos; o catálogo é o item 13 |
+| Funil: "Visita" é a visita agendada | Visita **realizada** | A baixa auditável é a que vale (`docs/visitas.md`) |
+| Conversão por origem com leads, vendas e taxa | Por origem e **campanha**, com cada etapa e os descartes por motivo; a campanha só com `painel.campanha` | Pedido dos gerentes e corretores; sigilo |
+| Coorte: leads criados no período | Leads que **entraram na carteira** do corretor no período (cadastro ou atribuição) | Leads da empresa trocam de dono |
+| Escopos da conversão: mês, trimestre, ano, tudo | Os períodos do painel (dia, semana, mês) | Um seletor só por tela |
+| Dinheiro curto ("R$ 1,2 mi") | Número completo ("R$ 1.200.000") | MBigucci DS |
+| **Ficou de fora** | | |
+| Comissão bruta e líquida, descontos em % ou R$, comissão de 4% ou 6% | — | A comissão na construtora segue regra própria (`docs/referencia-crm-bruna.md`, seção 13) |
+| Metas de comissão, atendimento em 15 min e prospecção ativa | — | Fora da lista pedida; o prazo de 15 min já tem o "Prazo estourado" e o Lead perdido |
+| Atendimento em 15 min e tempo médio de resposta na conversão | — | Na MBigucci o prazo vale só para o lead da empresa; fica para uma próxima etapa |
+| Sequência de dias "em dia" (`computeStreak`, `StreakCard`) | — | Gamificação que se confunde com o programa sigiloso |
+| Horário de atendimento editável (`ServiceHoursSection`) | Já existe em Configurações (item 9) | |
+| Tabela larga da página de vendas no computador | Cards em todas as larguras | Celular primeiro; os cards já servem no computador |
+

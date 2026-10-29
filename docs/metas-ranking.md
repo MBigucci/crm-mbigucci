@@ -16,7 +16,7 @@
 - **Acumulado:** VGV das vendas **assinadas e pagas**, no mês da assinatura (`docs/pontuacao-verba.md`). O assinado com pendentes aparece ao lado.
 - **Ritmo:** o que falta por mês até dezembro, contando o mês atual. **Projeção:** no ritmo atual, a partir de abril.
 - **Onde:** no "Meu painel" do corretor, no relatório do corretor e na tabela da equipe do painel do gerente, e em `/metas/`.
-- **Metas próprias:** leads cadastrados, primeiros contatos, visitas realizadas, vendas e VGV; mês, trimestre, ano ou personalizado; sem duplicar métrica e período; progresso calculado pelos dados.
+- **Metas próprias:** leads cadastrados, primeiros contatos, visitas realizadas, vendas e VGV; mês, trimestre, semestre, ano ou personalizado, como na Bruna; aparecem na lista do dia; sem duplicar métrica e período; progresso calculado pelos dados.
 
 ## Ranking
 

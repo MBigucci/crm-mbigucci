@@ -53,7 +53,7 @@ A tabela "Visitas no período, por corretor" (agendadas, realizadas, não compar
 
 ## 6. Sigilo
 
-O painel não mostra verba, pontos nem ranking (`docs/pontuacao-verba.md`). **Atualizado em 29/10/2026:** a conversão por origem entrou no painel e no relatório, e a linha por campanha aparece só com a permissão `painel.campanha`, que no padrão é do corretor e não do gerente (`docs/vendas-metas.md`, seção 5). O tempo médio de resposta e o ticket médio ficaram de fora.
+O painel não mostra verba, pontos nem ranking (`docs/pontuacao-verba.md`). **Atualizado em 29/10/2026:** a conversão por origem entrou no painel e no relatório, e a linha por campanha aparece só com a permissão `painel.campanha`, que no padrão é do corretor e não do gerente (`docs/vendas-metas.md`, seção 5). A conversão tem também leads, lead → venda, ticket médio e ciclo médio; o tempo médio de resposta ficou de fora.
 
 ## 7. Vendas, metas e conversão (29/10/2026)
 
