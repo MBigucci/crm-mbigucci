@@ -24,7 +24,7 @@
   - **Anúncio próprio** mostra o campo campanha. A campanha é só um dado de origem.
   - **Empresa** é restrita: só quem tem `leads.atribuir` cadastra um lead com essa origem, ou muda a origem de/para ela.
 - **Etapas:** novo, em contato, visita agendada, visita realizada, proposta, venda e aguardando lançamento.
-- **Temperatura:** quente, morno ou frio, sempre com sinal + palavra + cor: `! Quente` (vermelho), `– Morno` (âmbar), `↓ Frio` (cinza). Pode ficar vazia.
+- **Temperatura:** quente, morno ou frio, sempre com sinal + palavra + cor: `! Quente` (vermelho), `○ Morno` (âmbar), `– Frio` (cinza). Os sinais foram escolhidos pelo Felipe em 29/10/2026. Pode ficar vazia.
 - **Interação:** sempre termina com o próximo contato (dia e hora). Ela atualiza no lead a última interação e o próximo contato. O histórico não é editado nem apagado.
 - **Descarte:** 1 toque no motivo (sem interesse, fora do perfil, fora da região, contato inválido, duplicado). O lead continua no banco e pode ser reativado. Não há exclusão física.
 - **Carteira:** não expira, e não há justificativa obrigatória.

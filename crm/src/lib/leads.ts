@@ -54,8 +54,8 @@ export type Etapa = { slug: string; nome: string; ordem: number; ativo: boolean 
 /** Sinal + palavra + cor: o estado nunca depende só da cor. */
 export const TEMPERATURAS: { slug: Temperatura; nome: string; sinal: string; cor: string }[] = [
   { slug: "quente", nome: "Quente", sinal: "!", cor: "text-brand" },
-  { slug: "morno", nome: "Morno", sinal: "–", cor: "text-wa" },
-  { slug: "frio", nome: "Frio", sinal: "↓", cor: "text-neutral-mark" },
+  { slug: "morno", nome: "Morno", sinal: "○", cor: "text-wa" },
+  { slug: "frio", nome: "Frio", sinal: "–", cor: "text-neutral-mark" },
 ];
 export const temperatura = (t: Temperatura | null) => TEMPERATURAS.find((x) => x.slug === t) ?? null;
 
