@@ -123,7 +123,8 @@ function NovoLead() {
         campanha: origemAtual.pede_campanha ? campanha.trim() || null : null,
         empreendimento: empreendimento.trim() || null,
         temperatura,
-        proximo_contato: proximo,
+        // Lead novo sem dia marcado entra para agora: aparece no topo da lista do dia de quem recebe.
+        proximo_contato: proximo ?? new Date().toISOString(),
         ...(perfil ?? {}),
       })
       .select("id")

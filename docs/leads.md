@@ -21,7 +21,7 @@
 
 ## 2. Regras do lead
 
-- **Obrigatórios no cadastro:** só nome, WhatsApp e origem. Temperatura, empreendimento e próximo contato são opcionais na hora, e o perfil (valor, dormitórios, região, finalidade) fica para a ficha.
+- **Obrigatórios no cadastro:** só nome, WhatsApp e origem. Temperatura, empreendimento e próximo contato são opcionais na hora. Sem dia marcado, o próximo contato fica **para agora**, então o lead novo, inclusive o da empresa atribuído pelo gerente, aparece no topo da lista do dia de quem recebe. O perfil (valor, dormitórios, região, finalidade) fica para a ficha.
 - **WhatsApp:** é guardado só com dígitos e com o 55 na frente (`5511987654321`). Celular antigo de 8 dígitos (começa com 6 a 9) ganha o 9º dígito; fixo (começa com 2 a 5) fica como está. O botão abre `https://wa.me/<número>`. O cadastro avisa quando já existe um lead ativo com o mesmo número, mas deixa cadastrar.
 - **Origem:** plantão, indicação, carteira, empresa (gerente), redes sociais próprias, anúncio próprio e outros. A origem é 1 toque e já vem com a última usada naquele aparelho.
   - **Anúncio próprio** mostra o campo campanha. A campanha é só um dado de origem.
@@ -41,7 +41,7 @@
 
 1. **Atrasados:** o próximo contato já passou, inclusive hoje mais cedo.
 2. **Hoje:** o próximo contato é até o fim do dia, pela hora do aparelho.
-3. **Sem próximo contato:** leads novos ou sem data marcada.
+3. **Sem próximo contato:** leads sem data marcada. Os cadastrados antes de 29/10/2026 sem dia caem aqui, mas os novos já entram com o contato para agora.
 
 - Dentro de cada grupo, a ordem é quentes, mornos, frios e sem temperatura.
 - Na mesma temperatura, nos atrasados e de hoje vem antes o contato mais antigo; nos sem data, o cadastro mais novo.
