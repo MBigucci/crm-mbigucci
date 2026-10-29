@@ -196,6 +196,8 @@ Tamanho: **P** = até meia sessão, **M** = uma sessão, **G** = duas ou mais se
 | 14 | **Radar de Match** e leads compatíveis no lançamento (aguardando lançamento) | imóveis | M | T8 |
 | 15 | **Notificações push**: Edge Function, `pg_cron`, lembrete do próximo contato, lead atribuído, resumo do dia, visita. Precisa do Felipe para as chaves | notificações | G | T1, T6 |
 | 16 | Depois: perfil ampliado (prazo de compra, financiamento, FGTS), documentos no bucket, dados pessoais e aniversário, importação de tabela de preços por IA externa | outra | M cada | T3 |
+| 17 | **Revisão visual**, com tudo pronto e antes de entregar: hierarquia e destaque em cada tela. O Felipe sentiu que "as coisas ficam todas iguais". Para cada tela, ver o que é a ação principal, o que precisa saltar (atrasado, prazo estourado, visita de hoje), o que está apagado demais (`concrete`, texto pequeno) e o contraste em 375px. Pode ser feita no Codex, como revisão independente | visual | M | — |
+| 18 | **Modo escuro.** O MBigucci DS hoje só tem o tema claro ("Site"). Antes, definir os tokens escuros no DS, com o contraste de cada par conferido. Depois, aplicar no CRM (`prefers-color-scheme` e escolha em Minha conta) | visual | M | — |
 
 Os itens 1, 2 e 3 mexem no mesmo gatilho e nas mesmas telas (cadastro, ficha, `lead_interacoes`). Por isso convém fazê-los na mesma sessão ou em sequência, nunca em paralelo.
 
