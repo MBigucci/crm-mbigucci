@@ -109,11 +109,10 @@ Os perfis são: gerente geral, operacional, gerente, corretor, recepção e espe
 
 ## Sigilo do programa de verba
 
-A chave `programa_verba_ativo`, que começa desligada, está em **Configurações > Chaves**. Quando ela for ligada, depois da reunião de novembro/2026, as próximas etapas vão mostrar a verba, os pontos e o ranking a corretores e gerentes. Até lá, o sigilo é protegido em três camadas:
+A chave `programa_verba_ativo`, que começa desligada, está em **Configurações > Chaves**. Com ela desligada, só o gerente geral vê as telas Pontos, Aprovar lançamentos, Plantão e Ranking. Quando ela for ligada, depois da reunião de novembro/2026, corretores, gerentes e recepção passam a ver o que é deles (`docs/pontuacao-verba.md`).
 
-- **Banco:** a tabela `app_settings` só é lida pelo gerente geral. Nenhum outro perfil sabe sequer que a chave existe.
-- **Código do site:** o código não cita a chave. Qualquer pessoa pode baixar os arquivos de `out/`, então o nome e a descrição da chave vêm do banco. A palavra "verba" não aparece no build.
-- **Regras futuras:** as policies das próximas etapas vão usar a função `private.programa_verba_ativo()`. Ela fica no schema `private`, que a API do Supabase não expõe.
+- **Banco:** `app_settings` só é lida pelo gerente geral. As tabelas do programa (`criterios_pontos`, `lancamentos_pontos`, `fechamentos_verba`) e as funções `plantao_corretores` e `ranking_pontos` não entregam nada a quem não é gerente geral enquanto `private.programa_verba_ativo()` for falsa.
+- **Código do site:** ! **as telas do programa estão no código.** Qualquer pessoa baixa os arquivos de `out/`, e eles citam pontos, verba e ranking. **Não publique o CRM com estas telas antes da reunião de novembro.** Rodar o SQL antes é seguro para os dados, mas o catálogo da API do Supabase mostra o nome das tabelas a quem tem a chave anon.
 
 ## Segurança (RLS)
 
@@ -157,6 +156,10 @@ Um **usuário desativado** perde todas as permissões na hora. Ele continua vend
 | `metas_vgv` | O valor geral: todo usuário ativo. O de um corretor: `pode_ver_dados_de(corretor)` | Quem tem `metas.definir_vgv` (no padrão, só o gerente geral) |
 | `metas` | `pode_ver_dados_de(dono)` | Só o próprio corretor (com `leads.cadastrar`) cria, altera e exclui as dele |
 | `faixas_vgv` | Só o gerente geral | Só o gerente geral (regra fixa, sem permissão no catálogo) |
+| `criterios_pontos` | O gerente geral; os demais ativos só com a chave do programa ligada | Só o gerente geral: nome, pontos e limite no mês |
+| `lancamentos_pontos` | O gerente geral, todos. Com a chave ligada: quem lançou (para outro), quem passa em `pode_ver_dados_de` (fora o próprio corretor), quem tem `plantao.registrar` (os períodos) e o corretor (os próprios aprovados) | Lançar: o gerente geral; com a chave ligada, `lancamentos.registrar` para quem a pessoa vê ou `plantao.registrar` para períodos. Aprovar, recusar e voltar para pendente: só o gerente geral. Quem lançou cancela o próprio pendente. Sem exclusão. |
+| `lancamentos_pontos_historico` | Só o gerente geral | Ninguém pelo app. Só o gatilho grava. |
+| `fechamentos_verba` | O gerente geral; o corretor, o dele, com a chave ligada | Só o gerente geral |
 
 ### Gatilhos que completam as policies
 
@@ -168,6 +171,9 @@ Um **usuário desativado** perde todas as permissões na hora. Ele continua vend
 - **Interação:** grava no lead a última interação e o próximo contato, conta as tentativas sem resposta e tira o lead de "novo" na primeira conversa.
 - **Histórico:** cada mudança de etapa, temperatura, status e dono do lead vira uma linha em `lead_eventos`.
 - **Venda:** confere o lead ativo e as datas, carimba quem registrou e quem cancelou, exige motivo para tudo além de marcar como paga, leva o lead a Venda (cancelar a última devolve a Proposta) e grava cada mudança em `lead_eventos`. A etapa Venda não pode ser posta à mão.
+
+- **Lançamento de pontos:** nasce sempre pendente, só para corretor ativo e até hoje; a visita só entra pela baixa. Carimba quem lançou e quem decidiu, e cada mudança vai para `lancamentos_pontos_historico`.
+- **Visita realizada:** vira um lançamento pendente, uma vez por visita. A correção que tira a visita de realizada cancela o lançamento.
 
 A função `whatsapp_em_outra_carteira(numero)` diz ao cadastro só se o número está num lead ativo que a pessoa não enxerga, sem dizer de quem é.
 

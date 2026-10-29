@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSessao } from "@/lib/sessao";
+import { useEstadoPrograma } from "@/lib/programa-dados";
 import { Cabecalho, type ItemMenu } from "./cabecalho";
 
 /** Página interna: exige login, monta o menu pelo perfil e checa a permissão da tela. */
@@ -10,15 +11,19 @@ export function Casca({
   titulo,
   exige,
   soGerenteGeral,
+  programa,
   children,
 }: {
   titulo: string;
   exige?: string;
   soGerenteGeral?: boolean;
+  /** Tela do programa sigiloso: para quem não é gerente geral, só com a chave ligada. */
+  programa?: boolean;
   children: React.ReactNode;
 }) {
   const { estado, pode, sair } = useSessao();
   const router = useRouter();
+  const prog = useEstadoPrograma(estado.fase === "pronto" ? estado.perfil.id : null);
 
   useEffect(() => {
     if (estado.fase === "deslogado") router.replace("/entrar/");
@@ -67,12 +72,29 @@ export function Casca({
   }
   // Tela só do gerente geral, por regra fixa no banco (não é permissão do catálogo).
   if (ehGG) itens.push({ href: "/faixas/", rotulo: "Faixas de VGV" });
+  // Programa sigiloso: o gerente geral sempre; os demais só com a chave ligada
+  // (o banco também não entrega nada a eles com ela desligada).
+  const veProg = ehGG || prog.ativo;
+  if (ehGG) itens.push({ href: "/programa/", rotulo: "Pontos" });
+  if (veProg && (pode("plantao.registrar") || pode("lancamentos.registrar"))) itens.push({ href: "/plantao/", rotulo: "Plantão" });
+  if (prog.ativo && !ehGG && pode("leads.cadastrar")) itens.push({ href: "/meus-pontos/", rotulo: "Meus pontos" });
+  if (veProg) itens.push({ href: "/ranking/", rotulo: "Ranking" });
   if (pode("usuarios.gerenciar")) itens.push({ href: "/usuarios/", rotulo: "Usuários" });
   if (pode("equipes.gerenciar")) itens.push({ href: "/equipes/", rotulo: "Equipes" });
   if (ehGG) itens.push({ href: "/configuracoes/", rotulo: "Configurações" });
   itens.push({ href: "/conta/", rotulo: "Minha conta" });
 
-  const liberado = (!exige || pode(exige)) && (!soGerenteGeral || ehGG);
+  if (programa && !ehGG && !prog.carregado) {
+    return (
+      <>
+        <Cabecalho itens={itens} onSair={sair} nome={estado.perfil.nome} />
+        <main className="mx-auto max-w-content px-5 py-8">
+          <p className="text-concrete">Carregando…</p>
+        </main>
+      </>
+    );
+  }
+  const liberado = (!exige || pode(exige)) && (!soGerenteGeral || ehGG) && (!programa || veProg);
 
   return (
     <>

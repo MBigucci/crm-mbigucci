@@ -2049,3 +2049,467 @@ select f.minimo, f.valor
 from (values (1000000, 2000), (1500000, 3000), (2000000, 5000), (3000000, 10000)) as f (minimo, valor)
 join nova on nova.nova
 on conflict (vgv_minimo) do nothing;
+
+-- =====================================================================
+-- Programa de pontuação e verba (sigiloso até a reunião de novembro/2026).
+-- Regras em docs/pontuacao-verba.md. Tudo atrás da chave programa_verba_ativo:
+-- com ela desligada, só o gerente geral recebe alguma linha destas tabelas.
+-- O cálculo da verba é a função pura crm/src/lib/programa.ts; aqui ficam os
+-- lançamentos, a aprovação (só o gerente geral), a auditoria e o fechamento.
+-- =====================================================================
+
+-- ---------- Permissões do módulo ----------
+-- Descrições neutras, porque o catálogo é lido por todo usuário ativo.
+-- plantao.registrar: períodos do plantão e saída para visita, de qualquer corretor.
+-- lancamentos.registrar: períodos e vídeos dos corretores que a pessoa vê.
+with novas as (
+  insert into public.permissions (slug, descricao, ordem) values
+    ('plantao.registrar',     'Registrar os períodos do plantão e a saída para visita', 11),
+    ('lancamentos.registrar', 'Registrar períodos e vídeos dos corretores que vê, para conferência do gerente geral', 12)
+  on conflict (slug) do update set descricao = excluded.descricao, ordem = excluded.ordem
+  returning slug, (xmax = 0) as nova
+)
+insert into public.role_permissions (perfil, permissao)
+select v.perfil, v.permissao
+from (values ('recepcao', 'plantao.registrar'), ('operacional', 'plantao.registrar'),
+             ('gerente', 'lancamentos.registrar'), ('operacional', 'lancamentos.registrar')) as v (perfil, permissao)
+join novas n on n.slug = v.permissao and n.nova
+on conflict do nothing;
+
+-- ---------- Primeiro mês do programa ----------
+-- No primeiro mês, R$ 1.000 fixos para todos, sem pontuação. valor = {"mes": "2026-12"}.
+-- Não é booleana: não aparece nas chaves de Configurações; o gerente geral
+-- ajusta na tela do programa.
+insert into public.app_settings (chave, valor, rotulo, descricao) values
+  ('programa_verba_inicio', '{"mes": null}'::jsonb, 'Primeiro mês do programa de verba',
+   'No primeiro mês, cada corretor recebe R$ 1.000 fixos, sem pontuação. A verba de um mês é liberada no mês seguinte.')
+on conflict (chave) do update set rotulo = excluded.rotulo, descricao = excluded.descricao;
+
+-- Estado do programa para o usuário logado (o app monta o menu com isso). Quem
+-- não é gerente geral só fica sabendo que está desligado.
+create or replace function public.programa_estado()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select case
+    when public.current_perfil() is null then null
+    when public.is_gerente_geral() or private.programa_verba_ativo() then jsonb_build_object(
+      'ativo', private.programa_verba_ativo(),
+      'inicio', (select s.valor ->> 'mes' from public.app_settings s where s.chave = 'programa_verba_inicio'))
+    else jsonb_build_object('ativo', false)
+  end;
+$$;
+
+-- Vê o programa: o gerente geral sempre; os demais ativos só com a chave ligada.
+create or replace function private.ve_programa()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select public.is_gerente_geral() or (private.programa_verba_ativo() and public.current_perfil() is not null);
+$$;
+
+-- ---------- Critérios ----------
+-- Os três da regra, com pontos e limite no mês editáveis pelo gerente geral.
+-- O máximo é pontos × limite. Rodar de novo não sobrescreve o que foi ajustado.
+create table if not exists public.criterios_pontos (
+  slug            text primary key check (slug in ('periodo', 'video', 'visita')),
+  nome            text not null check (length(btrim(nome)) > 0),
+  pontos          integer not null check (pontos between 0 and 1000),
+  limite_mes      integer not null check (limite_mes between 0 and 1000),
+  maximo          integer generated always as (pontos * limite_mes) stored,
+  ordem           smallint not null default 0,
+  atualizado_por  uuid references public.profiles (id) on delete set null,
+  updated_at      timestamptz not null default now()
+);
+
+insert into public.criterios_pontos (slug, nome, pontos, limite_mes, ordem) values
+  ('periodo', 'Período integral cumprido', 5, 24, 1),
+  ('video',   'Vídeo com a marca MBigucci', 5, 8, 2),
+  ('visita',  'Visita realizada', 10, 12, 3)
+on conflict (slug) do nothing;
+
+drop trigger if exists criterios_pontos_carimbo on public.criterios_pontos;
+create trigger criterios_pontos_carimbo before update on public.criterios_pontos
+  for each row execute function public.faixas_vgv_carimbo();
+
+-- ---------- Lançamentos ----------
+-- Um lançamento é um período, um ou mais vídeos ou uma visita realizada, de um
+-- corretor, num dia. Só conta depois que o gerente geral aprova. Sem exclusão:
+-- quem lançou cancela o próprio pendente (e desfaz o cancelamento).
+-- periodo: manhã (9h–14h) ou tarde (14h–19h). saida_visita: o corretor saiu
+-- para visita no período, com a foto (comprovante) para não perder o período.
+-- visita_id: a visita com baixa que gerou o lançamento (só pelo gatilho).
+create table if not exists public.lancamentos_pontos (
+  id             uuid primary key default gen_random_uuid(),
+  corretor_id    uuid not null references public.profiles (id) on delete restrict,
+  criterio       text not null references public.criterios_pontos (slug) on delete restrict,
+  data           date not null,
+  periodo        text check (periodo in ('manha', 'tarde')),
+  quantidade     integer not null default 1 check (quantidade between 1 and 100),
+  comprovante    text check (comprovante is null or comprovante ~* '^https?://[^\s]+$'),
+  saida_visita   boolean not null default false,
+  observacao     text,
+  visita_id      uuid unique references public.visitas (id) on delete restrict,
+  status         text not null default 'pendente' check (status in ('pendente', 'aprovado', 'recusado', 'cancelado')),
+  motivo_recusa  text,
+  lancado_por    uuid default auth.uid() references public.profiles (id) on delete set null,
+  lancado_em     timestamptz not null default now(),
+  decidido_por   uuid references public.profiles (id) on delete set null,
+  decidido_em    timestamptz,
+  updated_at     timestamptz not null default now(),
+  constraint lancamentos_periodo_certo check ((criterio = 'periodo') = (periodo is not null)),
+  constraint lancamentos_quantidade_um check (criterio = 'video' or quantidade = 1),
+  constraint lancamentos_visita_certa check ((criterio = 'visita') = (visita_id is not null)),
+  constraint lancamentos_saida_com_foto check (not saida_visita or (criterio = 'periodo' and comprovante is not null)),
+  constraint lancamentos_recusa_tem_motivo check (status <> 'recusado' or motivo_recusa is not null),
+  constraint lancamentos_decisao_carimbada check ((status in ('aprovado', 'recusado')) = (decidido_em is not null))
+);
+
+create index if not exists lancamentos_corretor_data_idx on public.lancamentos_pontos (corretor_id, data);
+create index if not exists lancamentos_status_idx on public.lancamentos_pontos (status, data);
+-- Um período por corretor, dia e turno (os recusados e cancelados não contam).
+create unique index if not exists lancamentos_periodo_unico on public.lancamentos_pontos (corretor_id, data, periodo)
+  where criterio = 'periodo' and status in ('pendente', 'aprovado');
+
+-- Auditoria: cada lançamento e cada mudança, com quem fez e quando. Só o
+-- gatilho grava; só o gerente geral lê.
+create table if not exists public.lancamentos_pontos_historico (
+  id             bigint generated always as identity primary key,
+  lancamento_id  uuid not null references public.lancamentos_pontos (id) on delete restrict,
+  acao           text not null check (acao in ('criado', 'alterado')),
+  de             jsonb,
+  para           jsonb not null,
+  autor_id       uuid references public.profiles (id) on delete set null,
+  criado_em      timestamptz not null default now()
+);
+create index if not exists lancamentos_historico_idx on public.lancamentos_pontos_historico (lancamento_id, id);
+
+-- Regras que as policies sozinhas não expressam. Pelo SQL Editor (sem usuário
+-- logado) e pelo gatilho das visitas só valem os checks e os carimbos.
+-- - Lançar: sempre pendente, para corretor ativo, até hoje; visita só pela baixa.
+-- - Aprovar, recusar e voltar para pendente (o Desfazer): só o gerente geral.
+-- - Quem lançou só cancela o próprio pendente e desfaz o cancelamento.
+create or replace function public.lancamentos_pontos_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_eu uuid := auth.uid();
+  v_livre boolean := auth.uid() is null or pg_trigger_depth() > 1;
+  v_gg boolean := public.is_gerente_geral();
+  v_hoje date := (now() at time zone 'America/Sao_Paulo')::date;
+begin
+  new.comprovante := nullif(btrim(coalesce(new.comprovante, '')), '');
+  new.observacao := nullif(btrim(coalesce(new.observacao, '')), '');
+  new.motivo_recusa := nullif(btrim(coalesce(new.motivo_recusa, '')), '');
+  new.updated_at := now();
+
+  if tg_op = 'INSERT' then
+    new.lancado_em := now();
+    if not v_livre then
+      new.lancado_por := v_eu;
+      new.status := 'pendente';
+      if new.criterio = 'visita' then
+        raise exception 'As visitas entram sozinhas, pela baixa da visita realizada.' using errcode = 'P0001';
+      end if;
+      if new.data > v_hoje then
+        raise exception 'A data não pode ser depois de hoje.' using errcode = 'P0001';
+      end if;
+      if not exists (select 1 from public.profiles p where p.id = new.corretor_id and p.perfil = 'corretor' and p.ativo) then
+        raise exception 'Lançamentos são só para corretores ativos.' using errcode = 'P0001';
+      end if;
+    end if;
+  else
+    -- O que identifica o lançamento não muda depois.
+    new.corretor_id := old.corretor_id;
+    new.criterio := old.criterio;
+    new.data := old.data;
+    new.periodo := old.periodo;
+    new.quantidade := old.quantidade;
+    new.saida_visita := old.saida_visita;
+    new.visita_id := old.visita_id;
+    new.lancado_por := old.lancado_por;
+    new.lancado_em := old.lancado_em;
+    if not v_livre and not v_gg then
+      new.motivo_recusa := old.motivo_recusa;
+      if new.status is distinct from old.status
+         and not (old.lancado_por = v_eu and old.status in ('pendente', 'cancelado') and new.status in ('pendente', 'cancelado')) then
+        raise exception 'Só o gerente geral aprova ou recusa.' using errcode = 'P0001';
+      end if;
+    end if;
+  end if;
+
+  -- Carimbo da decisão (aprovar ou recusar); os outros status não têm decisão.
+  if new.status in ('aprovado', 'recusado') then
+    if tg_op = 'INSERT' or new.status is distinct from old.status then
+      new.decidido_por := coalesce(v_eu, new.decidido_por);
+      new.decidido_em := now();
+    end if;
+  else
+    new.decidido_por := null;
+    new.decidido_em := null;
+  end if;
+  if new.status <> 'recusado' then new.motivo_recusa := null; end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists lancamentos_pontos_guard on public.lancamentos_pontos;
+create trigger lancamentos_pontos_guard before insert or update on public.lancamentos_pontos
+  for each row execute function public.lancamentos_pontos_guard();
+
+create or replace function public.lancamentos_pontos_auditoria()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_campos constant text[] := array['status', 'motivo_recusa', 'comprovante', 'observacao', 'decidido_por'];
+  v_de jsonb := '{}';
+  v_para jsonb := '{}';
+  c text;
+begin
+  if tg_op = 'INSERT' then
+    insert into public.lancamentos_pontos_historico (lancamento_id, acao, para, autor_id)
+    values (new.id, 'criado', to_jsonb(new) - 'updated_at', coalesce(auth.uid(), new.lancado_por));
+    return new;
+  end if;
+  foreach c in array v_campos loop
+    if (to_jsonb(old) -> c) is distinct from (to_jsonb(new) -> c) then
+      v_de := v_de || jsonb_build_object(c, to_jsonb(old) -> c);
+      v_para := v_para || jsonb_build_object(c, to_jsonb(new) -> c);
+    end if;
+  end loop;
+  if v_para <> '{}' then
+    insert into public.lancamentos_pontos_historico (lancamento_id, acao, de, para, autor_id)
+    values (new.id, 'alterado', v_de, v_para, auth.uid());
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists lancamentos_pontos_auditoria on public.lancamentos_pontos;
+create trigger lancamentos_pontos_auditoria after insert or update on public.lancamentos_pontos
+  for each row execute function public.lancamentos_pontos_auditoria();
+
+-- A baixa "realizada" da visita vira um lançamento pendente, uma vez por visita
+-- (visita_id é único). Se a correção tira a visita de realizada, o lançamento
+-- é cancelado; se volta a realizada, o cancelado volta a pendente. A data é o
+-- dia da visita, na hora de São Paulo. Roda com a chave ligada ou desligada.
+create or replace function public.visita_lanca_pontos()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.status = 'realizada' and (tg_op = 'INSERT' or old.status <> 'realizada') then
+    insert into public.lancamentos_pontos (corretor_id, criterio, data, comprovante, visita_id, lancado_por)
+    values (new.corretor_id, 'visita', (new.inicio at time zone 'America/Sao_Paulo')::date, new.comprovante, new.id,
+            coalesce(new.baixa_por, auth.uid()))
+    on conflict (visita_id) do update set status = 'pendente'
+      where public.lancamentos_pontos.status = 'cancelado';
+  elsif tg_op = 'UPDATE' and old.status = 'realizada' and new.status <> 'realizada' then
+    update public.lancamentos_pontos set status = 'cancelado'
+     where visita_id = new.id and status in ('pendente', 'aprovado');
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists visita_lanca_pontos on public.visitas;
+create trigger visita_lanca_pontos after insert or update on public.visitas
+  for each row execute function public.visita_lanca_pontos();
+
+-- Visitas realizadas antes deste script: entram uma vez, como pendentes.
+insert into public.lancamentos_pontos (corretor_id, criterio, data, comprovante, visita_id, lancado_por)
+select v.corretor_id, 'visita', (v.inicio at time zone 'America/Sao_Paulo')::date, v.comprovante, v.id, v.baixa_por
+from public.visitas v
+where v.status = 'realizada'
+on conflict (visita_id) do nothing;
+
+-- ---------- Fechamento do mês ----------
+-- O gerente geral fecha o mês: a foto do cálculo por corretor (pontos, vendas,
+-- verba e prêmio), liberada no mês seguinte. Fechar de novo substitui a foto.
+create table if not exists public.fechamentos_verba (
+  mes             date not null check (extract(day from mes) = 1),
+  corretor_id     uuid not null references public.profiles (id) on delete restrict,
+  pontos          integer not null check (pontos >= 0),
+  pontos_validos  integer not null check (pontos_validos >= 0),
+  vendas          integer not null check (vendas >= 0),
+  vgv             numeric(14, 2) not null check (vgv >= 0),
+  verba           numeric(12, 2) not null check (verba >= 0),
+  premio          numeric(12, 2) not null check (premio >= 0),
+  primeiro_mes    boolean not null default false,
+  fechado_por     uuid default auth.uid() references public.profiles (id) on delete set null,
+  fechado_em      timestamptz not null default now(),
+  primary key (mes, corretor_id)
+);
+
+create or replace function public.fechamentos_verba_carimbo()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.fechado_por := coalesce(auth.uid(), new.fechado_por);
+  new.fechado_em := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists fechamentos_verba_carimbo on public.fechamentos_verba;
+create trigger fechamentos_verba_carimbo before insert or update on public.fechamentos_verba
+  for each row execute function public.fechamentos_verba_carimbo();
+
+-- ---------- Funções do programa ----------
+-- Corretores ativos para a tela do plantão: todos para quem registra o plantão,
+-- os que a pessoa vê para quem registra lançamentos. Nada com a chave desligada.
+create or replace function public.plantao_corretores()
+returns table (id uuid, nome text, equipe text)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select p.id, p.nome, t.nome
+  from public.profiles p
+  left join public.teams t on t.id = p.equipe_id
+  where p.perfil = 'corretor' and p.ativo
+    and private.ve_programa()
+    and (public.has_permission('plantao.registrar')
+         or (public.has_permission('lancamentos.registrar') and public.pode_ver_dados_de(p.id)))
+  order by p.nome;
+$$;
+
+-- Ranking de pontos aprovados no mês de p_mes, com os limites de cada critério.
+-- Todo usuário ativo vê, só com a chave ligada (o gerente geral, sempre).
+create or replace function public.ranking_pontos(p_mes date)
+returns table (corretor_id uuid, nome text, pontos integer)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  with q as (
+    select l.corretor_id, l.criterio, sum(l.quantidade) as qtd
+    from public.lancamentos_pontos l
+    where l.status = 'aprovado'
+      and l.data >= date_trunc('month', p_mes)::date
+      and l.data < (date_trunc('month', p_mes) + interval '1 month')::date
+    group by 1, 2
+  )
+  select p.id, p.nome, coalesce(sum(least(q.qtd, c.limite_mes) * c.pontos), 0)::integer
+  from public.profiles p
+  left join q on q.corretor_id = p.id
+  left join public.criterios_pontos c on c.slug = q.criterio
+  where p.perfil = 'corretor' and p.ativo and private.ve_programa()
+  group by p.id, p.nome
+  order by 3 desc, 2;
+$$;
+
+do $$
+declare
+  f text;
+begin
+  foreach f in array array[
+    'public.programa_estado()', 'private.ve_programa()', 'public.plantao_corretores()', 'public.ranking_pontos(date)'
+  ] loop
+    execute format('revoke all on function %s from public, anon', f);
+    execute format('grant execute on function %s to authenticated, service_role', f);
+  end loop;
+end;
+$$;
+
+-- ---------- RLS do programa ----------
+alter table public.criterios_pontos enable row level security;
+alter table public.lancamentos_pontos enable row level security;
+alter table public.lancamentos_pontos_historico enable row level security;
+alter table public.fechamentos_verba enable row level security;
+revoke all on public.criterios_pontos, public.lancamentos_pontos, public.lancamentos_pontos_historico,
+              public.fechamentos_verba from anon, authenticated;
+
+grant select on public.criterios_pontos to authenticated;
+grant update (nome, pontos, limite_mes) on public.criterios_pontos to authenticated;
+grant select on public.lancamentos_pontos to authenticated;
+grant insert (corretor_id, criterio, data, periodo, quantidade, comprovante, saida_visita, observacao)
+  on public.lancamentos_pontos to authenticated;
+grant update (status, motivo_recusa) on public.lancamentos_pontos to authenticated;
+grant select on public.lancamentos_pontos_historico to authenticated;
+grant select on public.fechamentos_verba to authenticated;
+grant insert (mes, corretor_id, pontos, pontos_validos, vendas, vgv, verba, premio, primeiro_mes),
+      update (mes, corretor_id, pontos, pontos_validos, vendas, vgv, verba, premio, primeiro_mes) on public.fechamentos_verba to authenticated;
+
+-- Critérios: o gerente geral sempre; os demais ativos só com a chave ligada.
+drop policy if exists "ver criterios" on public.criterios_pontos;
+create policy "ver criterios" on public.criterios_pontos
+  for select to authenticated using (private.ve_programa());
+
+drop policy if exists "gerente geral altera criterios" on public.criterios_pontos;
+create policy "gerente geral altera criterios" on public.criterios_pontos
+  for update to authenticated using (public.is_gerente_geral()) with check (public.is_gerente_geral());
+
+-- Lançamentos, com a chave ligada: quem lançou vê o que lançou (a baixa que o
+-- corretor dá na própria visita não conta como lançada por ele); quem vê os
+-- dados de um corretor (o gerente, a equipe) vê os dele; quem registra o
+-- plantão vê os períodos; o corretor vê os próprios aprovados. O gerente geral
+-- vê tudo, sempre.
+drop policy if exists "ver lancamentos" on public.lancamentos_pontos;
+create policy "ver lancamentos" on public.lancamentos_pontos
+  for select to authenticated using (
+    public.is_gerente_geral()
+    or (private.ve_programa() and (
+      (lancado_por = auth.uid() and corretor_id <> auth.uid())
+      or (corretor_id <> auth.uid() and public.pode_ver_dados_de(corretor_id))
+      or (corretor_id = auth.uid() and status = 'aprovado')
+      or (criterio = 'periodo' and public.has_permission('plantao.registrar'))
+    ))
+  );
+
+-- Lançar: para outro corretor; o gerente geral sempre; os demais só com a chave
+-- ligada, pela permissão (o gatilho deixa sempre pendente).
+drop policy if exists "lancar pontos" on public.lancamentos_pontos;
+create policy "lancar pontos" on public.lancamentos_pontos
+  for insert to authenticated with check (
+    lancado_por = auth.uid() and corretor_id <> auth.uid()
+    and (public.is_gerente_geral() or (private.ve_programa() and (
+      (public.has_permission('lancamentos.registrar') and public.pode_ver_dados_de(corretor_id))
+      or (criterio = 'periodo' and public.has_permission('plantao.registrar'))
+    )))
+  );
+
+-- Alterar: o gerente geral (aprova, recusa, desfaz) ou quem lançou para outro, com a chave
+-- ligada (o gatilho limita a cancelar e desfazer o cancelamento).
+drop policy if exists "alterar lancamentos" on public.lancamentos_pontos;
+create policy "alterar lancamentos" on public.lancamentos_pontos
+  for update to authenticated
+  using (public.is_gerente_geral() or (private.ve_programa() and lancado_por = auth.uid() and corretor_id <> auth.uid()))
+  with check (public.is_gerente_geral() or (private.ve_programa() and lancado_por = auth.uid() and corretor_id <> auth.uid()));
+
+drop policy if exists "gerente geral le auditoria" on public.lancamentos_pontos_historico;
+create policy "gerente geral le auditoria" on public.lancamentos_pontos_historico
+  for select to authenticated using (public.is_gerente_geral());
+
+-- Fechamento: o gerente geral faz e vê tudo; o corretor vê o dele com a chave ligada.
+drop policy if exists "ver fechamentos" on public.fechamentos_verba;
+create policy "ver fechamentos" on public.fechamentos_verba
+  for select to authenticated using (
+    public.is_gerente_geral() or (private.ve_programa() and corretor_id = auth.uid())
+  );
+
+drop policy if exists "gerente geral fecha o mes" on public.fechamentos_verba;
+create policy "gerente geral fecha o mes" on public.fechamentos_verba
+  for insert to authenticated with check (public.is_gerente_geral());
+
+drop policy if exists "gerente geral refaz o fechamento" on public.fechamentos_verba;
+create policy "gerente geral refaz o fechamento" on public.fechamentos_verba
+  for update to authenticated using (public.is_gerente_geral()) with check (public.is_gerente_geral());
