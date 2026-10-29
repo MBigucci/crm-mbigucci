@@ -22,7 +22,7 @@
 
 ## 2. Regras do lead
 
-- **Obrigatórios no cadastro:** só nome, WhatsApp e origem. Temperatura, empreendimento e próximo contato são opcionais na hora. Sem dia marcado, o lead fica sem próximo contato: quem o põe no topo da lista do dia de quem recebe é o prazo do primeiro contato (seção 4), inclusive no lead da empresa atribuído pelo gerente. O perfil (valor, dormitórios, região, finalidade) fica para a ficha.
+- **Obrigatórios no cadastro:** só nome, WhatsApp e origem. Temperatura, empreendimento e próximo contato são opcionais na hora. Sem dia marcado, o lead fica sem próximo contato. O lead da empresa, atribuído pelo gerente, vai para o topo da lista do dia de quem recebe pelo prazo do primeiro contato (seção 4). O lead que o corretor cadastra ele mesmo não tem prazo: sem dia marcado, cai em "Sem próximo contato". O perfil (valor, dormitórios, região, finalidade) fica para a ficha.
 - **WhatsApp:** é guardado só com dígitos e com o 55 na frente (`5511987654321`). Celular antigo de 8 dígitos (começa com 6 a 9) ganha o 9º dígito; fixo (começa com 2 a 5) fica como está. O botão abre `https://wa.me/<número>`. O cadastro avisa quando já existe um lead ativo com o mesmo número, mas deixa cadastrar.
 - **Origem:** plantão, indicação, carteira, empresa (gerente), redes sociais próprias, anúncio próprio e outros. A origem é 1 toque e já vem com a última usada naquele aparelho.
   - **Anúncio próprio** mostra o campo campanha. A campanha é só um dado de origem.
@@ -40,21 +40,22 @@
 
 É a tela inicial de quem tem `leads.cadastrar` e não tem `leads.atribuir` (o corretor, no padrão). A regra fica em `crm/src/lib/leads.ts`, com testes.
 
-1. **Aguardando primeiro contato:** todo lead ativo em "novo", com ou sem dia marcado, pelo fim do prazo (seção 4). Os estourados vêm primeiro.
+1. **Aguardando primeiro contato:** lead da empresa ativo em "novo", com ou sem dia marcado, pelo fim do prazo (seção 4). Os estourados vêm primeiro.
 2. **Atrasados:** o próximo contato já passou, inclusive hoje mais cedo.
 3. **Hoje:** o próximo contato é até o fim do dia, pela hora do aparelho.
-4. **Sem próximo contato:** leads fora de "novo" sem data marcada.
+4. **Sem próximo contato:** os outros leads sem data marcada, inclusive o lead novo que o próprio corretor cadastrou.
 
 - Nos grupos 2 a 4, a ordem é quentes, mornos, frios e sem temperatura.
 - Na mesma temperatura, nos atrasados e de hoje vem antes o contato mais antigo; nos sem data, o cadastro mais novo.
 - Leads com contato para depois de hoje e leads descartados ficam fora. Eles aparecem em Leads e no Quadro.
-- O card mostra o nome, a temperatura, o prazo do primeiro contato (lead em "novo") ou o próximo contato e os dias sem contato (seção 5), a última interação, a etapa e os botões Sem resposta (+1), Abrir e WhatsApp.
+- O card mostra o nome, a temperatura, o prazo do primeiro contato (lead da empresa em "novo") ou o próximo contato e os dias sem contato (seção 5), a última interação, a etapa e os botões Sem resposta (+1), Abrir e WhatsApp.
 - Sem nenhum lead, o início mostra um card de boas-vindas que explica o Colar mensagem.
 
 ## 4. Prazo do primeiro contato
 
-Adaptado do CRM da Bruna (`performance.ts` e `followup.ts`). Lá o prazo vale só até o primeiro registro; aqui vale para todo lead em "novo" e só termina na primeira conversa. As regras ficam em `crm/src/lib/prazo.ts`, com testes.
+Adaptado do CRM da Bruna (`performance.ts` e `followup.ts`). Lá o prazo vale para todo lead e só até o primeiro registro; aqui vale só para o lead da empresa em "novo" e termina na primeira conversa. As regras ficam em `crm/src/lib/prazo.ts`, com testes.
 
+- **Para quem:** só o lead que vem do gerente, com origem "empresa" (`ORIGEM_COM_PRAZO`), inclusive quando o gerente ou o gerente geral reatribui. O lead que o corretor cadastra (plantão, indicação, carteira, redes, anúncio, outros) não tem prazo: o corretor organiza o tempo dele pelo próximo contato.
 - **Prazo:** 15 min (`PRAZO_MINUTOS`) a partir do cadastro ou, se o gerente reatribuiu depois, da atribuição (`atribuido_em`). Conta só dentro do horário de atendimento.
 - **Fora do horário:** o prazo começa na abertura seguinte. Com o padrão, o lead que chega às 22h vence às 9h15 do dia seguinte, e o que chega às 18h50 vence às 9h05.
 - **Fim:** o prazo acaba quando o lead sai de "novo", ou seja, na primeira conversa (WhatsApp, ligação, e-mail ou visita) ou quando o corretor muda a etapa. Anotação, Sem resposta e Mensagem original não encerram o prazo. Lead descartado sai do prazo.
@@ -116,7 +117,7 @@ Adaptado da regra de ouro do CRM da Bruna (`followup.ts`). Lá, 2 dias sem inter
 | `/` | Lista do dia (corretor) ou painel com atalho para Leads (gerente e gerente geral) |
 | `/leads/` | Todos os leads visíveis, com busca, filtro por corretor e situação, e o resumo por corretor (ativos, prazo estourado, atrasados, sem contato) para o gerente |
 | `/leads/novo/` | Cadastro rápido, com o "+ Colar mensagem" do Cadastro Mágico. Para quem atribui, vira "Lead da empresa", com a escolha do corretor. |
-| `/leads/ficha/?id=` | Ficha: prazo do primeiro contato (em "novo"), Sem resposta, sugestão de descarte, interação por tipo, andamento, perfil do cliente (com e-mail), descarte, atribuição e histórico com os eventos |
+| `/leads/ficha/?id=` | Ficha: prazo do primeiro contato (lead da empresa em "novo"), Sem resposta, sugestão de descarte, interação por tipo, andamento, perfil do cliente (com e-mail), descarte, atribuição e histórico com os eventos |
 | `/leads/quadro/` | Quadro por etapas, com rolagem lateral no celular |
 
 A ficha usa `?id=` porque a exportação estática não tem rotas dinâmicas.
@@ -132,6 +133,6 @@ A ficha usa `?id=` porque a exportação estática não tem rotas dinâmicas.
 
 ## 11. Testes
 
-- `npm test` (em `crm/`): ordenação da lista do dia (com o grupo do primeiro contato), prazo do primeiro contato (virada de dia, chegada fora do horário, fim de semana, reatribuição e rótulos), WhatsApp (com o 9º dígito), datas, follow-up, histórico e o parser do Cadastro Mágico (portal, tabela de e-mail, WhatsApp do iPhone e do Android, Facebook, RD Station, nome por assinatura e por e-mail, orçamento e dormitórios).
+- `npm test` (em `crm/`): ordenação da lista do dia (com o grupo do primeiro contato), prazo do primeiro contato (só lead da empresa, virada de dia, chegada fora do horário, fim de semana, reatribuição e rótulos), WhatsApp (com o 9º dígito), datas, follow-up, histórico e o parser do Cadastro Mágico (portal, tabela de e-mail, WhatsApp do iPhone e do Android, Facebook, RD Station, nome por assinatura e por e-mail, orçamento e dormitórios).
 - `npm run test:banco`: roda o `schema.sql` três vezes no PGlite e confere o RLS de leads, interações e eventos por perfil, as tentativas, o avanço de etapa, a mensagem original e o horário de atendimento (quem lê, quem altera e os checks).
 - No Supabase real: `supabase/dados-teste.sql` cria 2 leads por corretor de teste, e `supabase/verificar-rls.sql` mostra o que cada perfil vê e a quem pode atribuir.

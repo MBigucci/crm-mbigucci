@@ -1,8 +1,9 @@
 // Prazo de 15 min para o primeiro contato (puro, testado com `node --test`).
 // Adaptado do CRM da Bruna (ref/CRM Bruna/src/lib/performance.ts, slaDeadline e
-// businessMinutes; lib/followup.ts, rótulos). Na MBigucci o prazo vale para
-// todo lead em "novo" e termina na primeira conversa, que tira o lead de
-// "novo". Conta só no horário de atendimento, na hora do aparelho (São Paulo).
+// businessMinutes; lib/followup.ts, rótulos). Na MBigucci o prazo vale só para
+// o lead da empresa (vem do gerente) em "novo" e termina na primeira conversa,
+// que tira o lead de "novo". Conta só no horário de atendimento, na hora do
+// aparelho (São Paulo).
 // Regras em docs/leads.md.
 
 import type { Lead } from "./leads";
@@ -82,7 +83,17 @@ export function minutosUteis(de: Date, ate: Date, h: HorarioAtendimento = HORARI
   return total;
 }
 
-type LeadPrazo = Pick<Lead, "status" | "etapa" | "created_at"> & Partial<Pick<Lead, "atribuido_em">>;
+/**
+ * Só o lead que vem do gerente (origem "empresa") tem prazo. O lead que o
+ * corretor cadastra ele mesmo segue o próximo contato que ele marcar.
+ */
+export const ORIGEM_COM_PRAZO = "empresa";
+
+type LeadPrazo = Pick<Lead, "status" | "etapa" | "created_at"> & Partial<Pick<Lead, "atribuido_em" | "origem">>;
+
+/** Lead da empresa, ativo e em "novo": espera o primeiro contato. */
+export const aguardaPrimeiroContato = (l: LeadPrazo) =>
+  l.status === "ativo" && l.etapa === "novo" && l.origem === ORIGEM_COM_PRAZO;
 
 /** O prazo conta do cadastro ou, se o gerente reatribuiu depois, da atribuição. */
 export function inicioDoPrazo(l: Pick<LeadPrazo, "created_at" | "atribuido_em">): Date {
@@ -101,9 +112,9 @@ export type Prazo = {
   correndo: boolean;
 };
 
-/** Prazo do lead que espera o primeiro contato (ativo e em "novo"), ou null. */
+/** Prazo do lead da empresa que espera o primeiro contato, ou null. */
 export function prazoDoLead(l: LeadPrazo, agora: Date, h: HorarioAtendimento = HORARIO_PADRAO): Prazo | null {
-  if (l.status !== "ativo" || l.etapa !== "novo") return null;
+  if (!aguardaPrimeiroContato(l)) return null;
   const inicio = inicioDoPrazo(l);
   const fim = fimDoPrazo(inicio, h);
   if (agora.getTime() > fim.getTime()) {

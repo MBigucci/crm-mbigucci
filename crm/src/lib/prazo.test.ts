@@ -69,9 +69,10 @@ test("minutos úteis: mesmo dia, virada de dia e fim de semana", () => {
   assert.equal(minutosUteis(sp("10-29T10:30"), sp("10-29T10:00")), 0);
 });
 
-const lead = (created_at: string, extra: Partial<{ etapa: string; status: "ativo" | "descartado"; atribuido_em: string | null }> = {}) => ({
+const lead = (created_at: string, extra: Partial<{ etapa: string; status: "ativo" | "descartado"; atribuido_em: string | null; origem: string }> = {}) => ({
   status: "ativo" as const,
   etapa: "novo",
+  origem: "empresa",
   created_at,
   atribuido_em: null,
   ...extra,
@@ -124,7 +125,9 @@ test("prazo do lead: conta da atribuição quando o gerente reatribuiu depois", 
   assert.equal(prazoDoLead(l, sp("10-29T10:05"))!.estado, "no_prazo");
 });
 
-test("prazo do lead: só vale para lead ativo em novo", () => {
+test("prazo do lead: só vale para lead da empresa, ativo e em novo", () => {
+  assert.equal(prazoDoLead(lead(iso(sp("10-29T10:00")), { origem: "plantao" }), sp("10-29T12:00")), null);
+  assert.equal(prazoDoLead(lead(iso(sp("10-29T10:00")), { origem: "indicacao" }), sp("10-29T12:00")), null);
   assert.equal(prazoDoLead(lead(iso(sp("10-29T10:00")), { etapa: "em_contato" }), sp("10-29T12:00")), null);
   assert.equal(prazoDoLead(lead(iso(sp("10-29T10:00")), { status: "descartado" }), sp("10-29T12:00")), null);
 });
@@ -151,6 +154,7 @@ test("lista do dia: os que aguardam o primeiro contato vêm no topo, pelo prazo"
     nome,
     status: "ativo" as const,
     etapa: "novo",
+    origem: "empresa",
     temperatura: null,
     proximo_contato: null as string | null,
     created_at,
@@ -164,6 +168,10 @@ test("lista do dia: os que aguardam o primeiro contato vêm no topo, pelo prazo"
     l("estourado agora", iso(sp("10-29T10:00")), { temperatura: "quente" }),
     l("novo com dia marcado", iso(sp("10-29T10:20")), { proximo_contato: iso(sp("10-31T09:00")) }),
     l("sem data", iso(sp("10-01T10:00")), { etapa: "em_contato" }),
+    // O corretor organiza o prazo dos leads que ele mesmo cadastra.
+    l("próprio sem dia", iso(sp("10-29T09:00")), { origem: "plantao" }),
+    l("próprio hoje", iso(sp("10-29T09:00")), { origem: "indicacao", proximo_contato: iso(sp("10-29T15:00")) }),
+    l("próprio amanhã", iso(sp("10-29T09:00")), { origem: "carteira", proximo_contato: iso(sp("10-30T09:00")) }),
   ];
   const g = montarListaDoDia(leads, agora);
   assert.deepEqual(
@@ -171,8 +179,10 @@ test("lista do dia: os que aguardam o primeiro contato vêm no topo, pelo prazo"
     [
       ["primeiro_contato", ["estourado ontem", "estourado agora", "novo com dia marcado", "no prazo"]],
       ["atrasados", ["atrasado"]],
-      ["sem_data", ["sem data"]],
+      ["hoje", ["próprio hoje"]],
+      ["sem_data", ["próprio sem dia", "sem data"]],
     ],
   );
   assert.equal(grupoDoLead(leads[1], agora), "primeiro_contato");
+  assert.equal(grupoDoLead(leads[6], agora), "sem_data");
 });

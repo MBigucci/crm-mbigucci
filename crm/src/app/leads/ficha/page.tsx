@@ -37,6 +37,7 @@ import {
 import { LIMITE_TENTATIVAS, seloSemContato, sugereDescarte } from "@/lib/followup";
 import { descreverEvento, montarHistorico } from "@/lib/historico";
 import { registrarSemResposta, useCatalogos, useCorretores, useHorarioAtendimento } from "@/lib/leads-dados";
+import { aguardaPrimeiroContato } from "@/lib/prazo";
 
 export default function FichaPage() {
   return (
@@ -150,7 +151,7 @@ function Ficha({ id }: { id: string }) {
           <SeloTemperatura valor={lead.temperatura} />
         </div>
         <dl className="mt-3 grid gap-1 text-[13px]">
-          {lead.status === "ativo" && lead.etapa === "novo" && (
+          {aguardaPrimeiroContato(lead) && (
             <Linha rotulo="Primeiro contato">
               <PrazoPrimeiroContato lead={lead} agora={agora} horario={horario} />
             </Linha>

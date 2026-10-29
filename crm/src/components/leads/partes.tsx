@@ -115,7 +115,7 @@ export function SemContato({
 
 /**
  * Prazo do primeiro contato: "! Responder em 12 min" (âmbar), "→ Responder até
- * amanhã, 9h15" ou "! Prazo estourado há 40 min" (vermelho). Só para lead em "novo".
+ * amanhã, 9h15" ou "! Prazo estourado há 40 min" (vermelho). Só para lead da empresa em "novo".
  */
 export function PrazoPrimeiroContato({
   lead,
@@ -147,7 +147,7 @@ export function PrazoPrimeiroContato({
 
 /**
  * Card do lead nas listas: nome, temperatura, prazo do primeiro contato (lead
- * em "novo") ou próximo contato e dias sem contato, última interação e
+ * da empresa em "novo") ou próximo contato e dias sem contato, última interação e
  * WhatsApp. Com `onSemResposta`, mostra o "Sem resposta (+1)" de 1 toque.
  */
 export function CardLead({

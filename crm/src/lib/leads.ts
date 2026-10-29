@@ -1,7 +1,7 @@
 // Tipos e regras puras do módulo de leads (sem acesso ao banco, para poder
 // ser testado com `node --test`). Regras de negócio em docs/leads.md.
 
-import { fimDoPrazo, HORARIO_PADRAO, inicioDoPrazo, type HorarioAtendimento } from "./prazo.ts";
+import { aguardaPrimeiroContato, fimDoPrazo, HORARIO_PADRAO, inicioDoPrazo, type HorarioAtendimento } from "./prazo.ts";
 
 export type Temperatura = "quente" | "morno" | "frio";
 export type StatusLead = "ativo" | "descartado";
@@ -129,7 +129,7 @@ export const TITULOS_GRUPO: Record<Grupo, string> = {
 };
 
 type LeadDoDia = Pick<Lead, "status" | "temperatura" | "proximo_contato" | "created_at"> &
-  Partial<Pick<Lead, "etapa" | "atribuido_em">>;
+  Partial<Pick<Lead, "etapa" | "atribuido_em" | "origem">>;
 
 const pesoTemperatura = (t: Temperatura | null) => (t === "quente" ? 0 : t === "morno" ? 1 : t === "frio" ? 2 : 3);
 
@@ -143,12 +143,12 @@ export function fimDoDia(agora: Date): Date {
 /**
  * Em que grupo da lista do dia o lead entra, ou null se ele não entra hoje
  * (descartado ou com contato marcado para depois de hoje).
- * O lead em "novo" espera o primeiro contato, com ou sem dia marcado.
- * Atrasado é o contato cuja hora já passou, inclusive hoje cedo.
+ * O lead da empresa em "novo" espera o primeiro contato, com ou sem dia
+ * marcado. Atrasado é o contato cuja hora já passou, inclusive hoje cedo.
  */
 export function grupoDoLead(l: LeadDoDia, agora: Date): Grupo | null {
   if (l.status !== "ativo") return null;
-  if (l.etapa === "novo") return "primeiro_contato";
+  if (l.etapa && aguardaPrimeiroContato({ ...l, etapa: l.etapa })) return "primeiro_contato";
   if (!l.proximo_contato) return "sem_data";
   const t = new Date(l.proximo_contato).getTime();
   if (t < agora.getTime()) return "atrasados";
@@ -157,7 +157,7 @@ export function grupoDoLead(l: LeadDoDia, agora: Date): Grupo | null {
 }
 
 /**
- * A lista do dia: aguardando primeiro contato, atrasados, os de hoje e os sem
+ * A lista do dia: aguardando primeiro contato (lead da empresa), atrasados, os de hoje e os sem
  * próximo contato. Os que aguardam vão pelo fim do prazo, então os estourados
  * vêm primeiro. Nos outros grupos: quentes, mornos, frios e sem temperatura.
  * Empatando, o contato mais antigo vem antes (atrasados e hoje) e o lead mais
