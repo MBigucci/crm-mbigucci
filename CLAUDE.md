@@ -29,6 +29,7 @@ O CRM de corretores da MBigucci (construtora em São Bernardo do Campo). O usuá
 - No Apps Script, `setFormula` usa sintaxe em inglês, com vírgula, seja qual for o idioma da planilha.
 - Fontes no CSS usam caminho relativo (`./fonts/...`), porque um caminho absoluto quebra com o `basePath`.
 - O `onError` de `<img>` pode disparar antes da hidratação. Confira `img.complete && naturalWidth === 0` num efeito.
+- Não rode `npm run build` com o `npm run dev` ligado no mesmo app, porque o `.next` corrompe ("Cannot find module './611.js'"). Para consertar, pare o servidor, apague o `.next` e suba de novo.
 - Alternar seleção múltipla usa `setState` funcional. A versão com closure perde cliques rápidos.
 
 ## Restrições fixas
