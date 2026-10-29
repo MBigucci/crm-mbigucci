@@ -157,7 +157,14 @@ Um **usuário desativado** perde todas as permissões na hora. Ele continua vend
 
 O `schema.sql` foi rodado três vezes seguidas num Postgres 18 (PGlite). Para isso, o teste simulou o `auth.users`, o `auth.uid()` e os papéis `anon` e `authenticated` do Supabase. Depois, 44 verificações conferiram o que cada perfil vê e consegue alterar (gerente geral, gerente, corretor, recepção, operacional com permissão extra, usuário desativado e visitante anônimo).
 
-Ainda falta rodar o schema num projeto Supabase de verdade e testar a Edge Function de ponta a ponta. Isso acontece nos passos 2 e 3.
+Em 29/10/2026 o schema rodou no projeto Supabase de produção (`crm-mbigucci`, São Paulo).
+
+- **RLS:** foi conferido com `supabase/dados-teste.sql` e `supabase/verificar-rls.sql`. Com 2 gerentes, 2 equipes e 2 corretores de teste, cada perfil viu exatamente o esperado:
+  - o gerente geral vê todos e as chaves;
+  - cada gerente vê só a própria equipe;
+  - cada corretor vê só a si mesmo.
+- **Para refazer o teste:** rode os dois scripts de novo. Depois apague os dados com `supabase/limpar-dados-teste.sql`.
+- **Ainda falta:** testar pela tela do CRM a criação de usuários pela Edge Function. Ela só foi testada sem login, quando recusou corretamente.
 
 ## Desenvolvimento
 

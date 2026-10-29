@@ -22,3 +22,6 @@ discovery/data/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Arquivo local do Felipe (não versionar)
+passkey.txt
