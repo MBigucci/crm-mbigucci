@@ -57,7 +57,7 @@
 
 As regras de negócio estão em `docs/leads.md`. Aqui ficam só as decisões técnicas.
 
-- **Tabelas:** `leads`, `lead_interacoes`, `lead_eventos` (histórico automático) e os catálogos `lead_origens` e `lead_etapas`. Origens e etapas são tabelas, e não enums, para serem ajustadas no Table Editor sem mexer no código.
+- **Tabelas:** `leads`, `lead_interacoes`, `lead_eventos` (histórico automático), os catálogos `lead_origens` e `lead_etapas` e `horario_atendimento` (uma linha, lida por todo usuário ativo e alterada só pelo gerente geral; é o horário do prazo do primeiro contato). Origens e etapas são tabelas, e não enums, para serem ajustadas no Table Editor sem mexer no código.
 - **Sem exclusão:** não há GRANT de `delete` em `leads` nem em `lead_interacoes`. Em `lead_eventos` não há GRANT de escrita nenhuma: só o gatilho grava. O descarte é `status = 'descartado'` com motivo obrigatório (check `leads_descarte_tem_motivo`).
 - **Escritas por coluna:** o app grava só as colunas de dados. `criado_por`, `atribuido_por`, `atribuido_em`, `ultima_interacao_*`, `tentativas` e as datas são preenchidas por gatilho.
 - **Gatilhos:**
@@ -87,7 +87,7 @@ As regras de negócio estão em `docs/leads.md`. Aqui ficam só as decisões té
 ## Testes
 
 - **Schema e RLS da base:** testados no PGlite (Postgres em WASM), com uma simulação do `auth.users`, do `auth.uid()` e dos papéis `anon` e `authenticated`. Foram 44 verificações por perfil, e o script rodou três vezes para provar que é idempotente. Esse script continua fora do repositório, na pasta de notas da sessão da base (`sqltest/test.mjs`). Ele conta 2 permissões fixas, então acusa 1 falha desde que as de leads entraram.
-- **RLS de leads:** `crm/supabase/testes/leads.test.mjs`, com o mesmo tipo de simulação, roda com `npm run test:banco`. São 20 testes por perfil, incluindo `lead_eventos`, tentativas, avanço de etapa e a mensagem original, (corretor, colega, gerente da equipe, gerente de outra equipe, gerente geral, recepção, desativado e anônimo).
+- **RLS de leads:** `crm/supabase/testes/leads.test.mjs`, com o mesmo tipo de simulação, roda com `npm run test:banco`. São 22 testes por perfil, incluindo `lead_eventos`, tentativas, avanço de etapa, a mensagem original e o horário de atendimento, (corretor, colega, gerente da equipe, gerente de outra equipe, gerente geral, recepção, desativado e anônimo).
 - **Regras puras:** `npm test` roda `leads.test.ts` (lista do dia, WhatsApp), `followup.test.ts` (follow-up e histórico) e `cadastro-magico.test.ts` (parser).
 - **Scripts do SQL Editor:** `schema.sql`, `dados-teste.sql`, `verificar-rls.sql` e `limpar-dados-teste.sql` rodaram em sequência no PGlite em 29/10/2026, com o resultado esperado por perfil.
 - **Telas:** conferidas em 375px com um Supabase falso (`sqltest/fake-supabase-leads.mjs`, na pasta de notas), que imita o RLS por perfil. A versão `fake-supabase-leads-v2.mjs` imita também eventos, tentativas e o avanço de etapa.

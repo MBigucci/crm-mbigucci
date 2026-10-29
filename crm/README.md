@@ -151,6 +151,7 @@ Um **usuário desativado** perde todas as permissões na hora. Ele continua vend
 | `leads` | `pode_ver_dados_de(dono)`: o corretor vê os dele, o gerente os da equipe, o gerente geral todos | Cadastrar: o corretor, para si, fora da origem Empresa; ou quem tem `leads.atribuir`, para um corretor ativo da equipe. Alterar: o dono; quem atribui só troca o dono. Sem exclusão. |
 | `lead_interacoes` | Quem vê o lead | Registrar: o dono do lead; quem cadastrou um lead da empresa só guarda a mensagem original. Sem edição nem exclusão. |
 | `lead_eventos` | Quem vê o lead | Ninguém pelo app. Só o gatilho grava o histórico automático. |
+| `horario_atendimento` | Todo usuário ativo | Só o gerente geral, e só dias, abertura e fechamento. Cada mudança registra quem fez e quando. |
 
 ### Gatilhos que completam as policies
 
