@@ -13,6 +13,7 @@ import {
   type Temperatura,
 } from "@/lib/leads";
 import { seloSemContato } from "@/lib/followup";
+import { prazoDoLead, seloPrazo, type HorarioAtendimento } from "@/lib/prazo";
 
 /** Temperatura sempre com sinal + palavra + cor. */
 export function SeloTemperatura({ valor }: { valor: Temperatura | null }) {
@@ -113,32 +114,80 @@ export function SemContato({
 }
 
 /**
- * Card do lead nas listas: nome, temperatura, próximo contato, dias sem
- * contato, última interação e WhatsApp. Com `onSemResposta`, mostra o
- * "Sem resposta (+1)" de 1 toque.
+ * Prazo do primeiro contato: "! Responder em 12 min" (âmbar), "→ Responder até
+ * amanhã, 9h15" ou "! Prazo estourado há 40 min" (vermelho). Só para lead em "novo".
+ */
+export function PrazoPrimeiroContato({
+  lead,
+  agora,
+  horario,
+  className,
+}: {
+  lead: Lead;
+  agora: Date;
+  horario: HorarioAtendimento;
+  className?: string;
+}) {
+  const p = prazoDoLead(lead, agora, horario);
+  if (!p) return null;
+  const s = seloPrazo(p, agora);
+  return (
+    <span
+      className={clsx(
+        "num font-semibold",
+        s.nivel === "estourado" ? "text-brand" : s.nivel === "correndo" ? "text-wa" : "text-ink",
+        className,
+      )}
+    >
+      <span aria-hidden>{s.sinal} </span>
+      {s.texto}
+    </span>
+  );
+}
+
+/**
+ * Card do lead nas listas: nome, temperatura, prazo do primeiro contato (lead
+ * em "novo") ou próximo contato e dias sem contato, última interação e
+ * WhatsApp. Com `onSemResposta`, mostra o "Sem resposta (+1)" de 1 toque.
  */
 export function CardLead({
   lead,
   agora,
+  horario,
   dono,
   etapa,
   onSemResposta,
 }: {
   lead: Lead;
   agora: Date;
+  horario: HorarioAtendimento;
   dono?: string;
   etapa?: string;
   onSemResposta?: () => void;
 }) {
+  const prazo = prazoDoLead(lead, agora, horario);
   return (
-    <li className="card">
+    <li className={clsx("card", prazo?.estado === "estourado" && "bar-brand")}>
       <div className="flex items-start justify-between gap-3">
         <Link href={`/leads/ficha/?id=${lead.id}`} className="focus-ring min-w-0 flex-1">
           <span className="titulo-card block truncate">{lead.nome}</span>
-          <span className="mt-1 block text-[13px]">
-            <ProximoContato iso={lead.proximo_contato} agora={agora} />
-          </span>
-          <SemContato lead={lead} agora={agora} className="mt-1 block text-[13px]" />
+          {prazo ? (
+            <>
+              <PrazoPrimeiroContato lead={lead} agora={agora} horario={horario} className="mt-1 block text-[13px]" />
+              {lead.proximo_contato && (
+                <span className="mt-1 block text-[13px]">
+                  <ProximoContato iso={lead.proximo_contato} agora={agora} />
+                </span>
+              )}
+            </>
+          ) : (
+            <>
+              <span className="mt-1 block text-[13px]">
+                <ProximoContato iso={lead.proximo_contato} agora={agora} />
+              </span>
+              <SemContato lead={lead} agora={agora} className="mt-1 block text-[13px]" />
+            </>
+          )}
           {dono && <span className="mt-1 block truncate text-[12px] text-ink-soft">{dono}</span>}
         </Link>
         <SeloTemperatura valor={lead.temperatura} />

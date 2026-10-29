@@ -8,6 +8,7 @@ import { Casca } from "@/components/casca";
 import {
   BotaoWhatsapp,
   CampoProximoContato,
+  PrazoPrimeiroContato,
   EscolhaTemperatura,
   ProximoContato,
   SeloTemperatura,
@@ -35,7 +36,7 @@ import {
 } from "@/lib/leads";
 import { LIMITE_TENTATIVAS, seloSemContato, sugereDescarte } from "@/lib/followup";
 import { descreverEvento, montarHistorico } from "@/lib/historico";
-import { registrarSemResposta, useCatalogos, useCorretores } from "@/lib/leads-dados";
+import { registrarSemResposta, useCatalogos, useCorretores, useHorarioAtendimento } from "@/lib/leads-dados";
 
 export default function FichaPage() {
   return (
@@ -57,6 +58,7 @@ function Ficha({ id }: { id: string }) {
   const eu = usePerfil();
   const { pode } = useSessao();
   const { catalogos } = useCatalogos();
+  const horario = useHorarioAtendimento();
   const [lead, setLead] = useState<Lead | null | undefined>(undefined);
   const [interacoes, setInteracoes] = useState<Interacao[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
@@ -148,6 +150,11 @@ function Ficha({ id }: { id: string }) {
           <SeloTemperatura valor={lead.temperatura} />
         </div>
         <dl className="mt-3 grid gap-1 text-[13px]">
+          {lead.status === "ativo" && lead.etapa === "novo" && (
+            <Linha rotulo="Primeiro contato">
+              <PrazoPrimeiroContato lead={lead} agora={agora} horario={horario} />
+            </Linha>
+          )}
           <Linha rotulo="Próximo contato">
             <ProximoContato iso={lead.proximo_contato} agora={agora} />
           </Linha>

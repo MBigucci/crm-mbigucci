@@ -301,3 +301,32 @@ test("e-mail do lead: guardado em minúsculas e validado", async () => {
   assert.equal((await linhas(`select email from public.leads where nome = 'Mágico 1'`))[0].email, "ana.paula@gmail.com");
   await falha(CA, `update public.leads set email = 'sem arroba' where nome = 'Mágico 1'`, "leads_email_check");
 });
+
+test("horário de atendimento: todo usuário ativo lê, só o gerente geral altera, e o ajuste sobrevive", async () => {
+  const horario = `select dias, inicio::text, fim::text from public.horario_atendimento`;
+  assert.deepEqual(await como(CA, () => linhas(horario)), [{ dias: [0, 1, 2, 3, 4, 5, 6], inicio: "09:00:00", fim: "19:00:00" }]);
+  assert.equal((await como(REC, () => linhas(horario))).length, 1);
+  assert.equal((await como(DES, () => linhas(horario))).length, 0);
+  await falha(0, horario, "permission denied");
+
+  for (const n of [CA, GA]) {
+    const r = await como(n, () => db.query(`update public.horario_atendimento set fim = '22:00'`));
+    assert.equal(r.affectedRows, 0);
+  }
+  await falha(GG, `insert into public.horario_atendimento (id) values (false)`, "permission denied");
+  await falha(GG, `delete from public.horario_atendimento`, "permission denied");
+  await falha(GG, `update public.horario_atendimento set fim = '08:00'`, "horario_atendimento_janela");
+  await falha(GG, `update public.horario_atendimento set dias = '{}'`, "horario_atendimento_dias");
+  await falha(GG, `update public.horario_atendimento set dias = '{1,7}'`, "horario_atendimento_dias");
+
+  await como(GG, () => db.exec(`update public.horario_atendimento set dias = '{1,2,3,4,5,6}', inicio = '08:30'`));
+  const [h] = await linhas(`select dias, inicio::text, updated_by from public.horario_atendimento`);
+  assert.deepEqual(h, { dias: [1, 2, 3, 4, 5, 6], inicio: "08:30:00", updated_by: id(GG) });
+  await db.exec(schema);
+  assert.deepEqual((await linhas(horario))[0], { dias: [1, 2, 3, 4, 5, 6], inicio: "08:30:00", fim: "19:00:00" });
+});
+
+test("lead lê atribuido_em: o prazo conta da atribuição", async () => {
+  const [l] = await como(GG, () => linhas(`select atribuido_em is not null as tem from public.leads where nome = 'Empresa 1'`));
+  assert.equal(l.tem, true);
+});

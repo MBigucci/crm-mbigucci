@@ -6,15 +6,16 @@ import { db } from "@/lib/supabase";
 import { usePerfil } from "@/lib/sessao";
 import { mensagemErro } from "@/lib/erros";
 import { COLUNAS_LEAD, formatarQuando, grupoDoLead, montarListaDoDia, TITULOS_GRUPO, type Lead } from "@/lib/leads";
-import { registrarSemResposta, useCatalogos } from "@/lib/leads-dados";
+import { registrarSemResposta, useCatalogos, useHorarioAtendimento } from "@/lib/leads-dados";
 import { CardLead, RodapeAcao } from "./partes";
 
 const diaDaSemana = new Intl.DateTimeFormat("pt-BR", { weekday: "long" });
 
-/** Início do corretor: atrasados, hoje (quentes, mornos, frios) e os sem próximo contato. */
+/** Início do corretor: aguardando primeiro contato, atrasados, hoje (quentes, mornos, frios) e os sem próximo contato. */
 export function ListaDoDia() {
   const eu = usePerfil();
   const { catalogos } = useCatalogos();
+  const horario = useHorarioAtendimento();
   const [leads, setLeads] = useState<Lead[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<{ id: string; texto: string } | null>(null);
@@ -29,7 +30,7 @@ export function ListaDoDia() {
 
   useEffect(() => {
     carregar();
-    // Atualiza o "agora" a cada minuto: o que era de hoje passa a atrasado.
+    // Atualiza o "agora" a cada minuto: o prazo anda e o que era de hoje passa a atrasado.
     const t = setInterval(() => setAgora(new Date()), 60_000);
     return () => clearInterval(t);
   }, [carregar]);
@@ -46,7 +47,7 @@ export function ListaDoDia() {
     await carregar();
   }
 
-  const grupos = useMemo(() => montarListaDoDia(leads ?? [], agora), [leads, agora]);
+  const grupos = useMemo(() => montarListaDoDia(leads ?? [], agora, horario), [leads, agora, horario]);
   const depois = (leads ?? []).filter((l) => grupoDoLead(l, agora) === null).length;
   const nomeEtapa = (slug: string) => catalogos?.etapas.find((e) => e.slug === slug)?.nome ?? slug;
   const hoje = `${diaDaSemana.format(agora)}, ${agora.toLocaleDateString("pt-BR")}`;
@@ -106,6 +107,7 @@ export function ListaDoDia() {
                 key={l.id}
                 lead={l}
                 agora={agora}
+                horario={horario}
                 etapa={nomeEtapa(l.etapa)}
                 onSemResposta={() => semResposta(l)}
               />

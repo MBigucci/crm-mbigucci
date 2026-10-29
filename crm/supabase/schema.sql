@@ -931,3 +931,42 @@ create policy "ver eventos" on public.lead_eventos
   for select to authenticated using (
     exists (select 1 from public.leads l where l.id = lead_id and public.pode_ver_dados_de(l.dono_id))
   );
+
+-- ---------- Horário de atendimento (prazo do primeiro contato) ----------
+-- Todo lead em "novo" tem 15 min para o primeiro contato, contados só neste
+-- horário (regra em docs/leads.md). Uma linha só. Fica fora de app_settings
+-- porque todo usuário ativo precisa ler; só o gerente geral altera, em
+-- Configurações. Rodar o script de novo não sobrescreve o que foi ajustado.
+-- dias: 0 = domingo … 6 = sábado. Padrão: o plantão, 9h às 19h, todos os dias.
+
+create table if not exists public.horario_atendimento (
+  id          boolean primary key default true check (id),
+  dias        smallint[] not null default '{0,1,2,3,4,5,6}',
+  inicio      time not null default '09:00',
+  fim         time not null default '19:00',
+  updated_at  timestamptz not null default now(),
+  updated_by  uuid references public.profiles (id) on delete set null,
+  constraint horario_atendimento_janela check (inicio < fim),
+  constraint horario_atendimento_dias check (cardinality(dias) > 0 and dias <@ '{0,1,2,3,4,5,6}'::smallint[])
+);
+
+insert into public.horario_atendimento (id) values (true) on conflict (id) do nothing;
+
+drop trigger if exists horario_atendimento_carimbo on public.horario_atendimento;
+create trigger horario_atendimento_carimbo before update on public.horario_atendimento
+  for each row execute function public.app_settings_carimbo();
+
+alter table public.horario_atendimento enable row level security;
+revoke all on public.horario_atendimento from anon, authenticated;
+grant select on public.horario_atendimento to authenticated;
+grant update (dias, inicio, fim) on public.horario_atendimento to authenticated;
+
+drop policy if exists "ativos leem horario" on public.horario_atendimento;
+create policy "ativos leem horario" on public.horario_atendimento
+  for select to authenticated using (public.current_perfil() is not null);
+
+drop policy if exists "gerente geral altera horario" on public.horario_atendimento;
+create policy "gerente geral altera horario" on public.horario_atendimento
+  for update to authenticated
+  using (public.is_gerente_geral())
+  with check (public.is_gerente_geral());

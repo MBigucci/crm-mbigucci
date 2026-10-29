@@ -5,6 +5,7 @@ import { db } from "./supabase";
 import { mensagemErro } from "./erros";
 import type { Etapa, Origem } from "./leads";
 import { sugerirProximaTentativa, TEXTO_SEM_RESPOSTA } from "./followup";
+import { HORARIO_PADRAO, type HorarioAtendimento } from "./prazo";
 
 export type Catalogos = { origens: Origem[]; etapas: Etapa[] };
 
@@ -74,3 +75,31 @@ export async function registrarSemResposta(leadId: string): Promise<{ proximo: s
     .insert({ lead_id: leadId, tipo: "tentativa", texto: TEXTO_SEM_RESPOSTA, proximo_contato: proximo });
   return { proximo, erro: error ? mensagemErro(error) : null };
 }
+
+let cacheHorario: HorarioAtendimento | null = null;
+
+/**
+ * Horário de atendimento (tabela horario_atendimento), carregado uma vez por
+ * sessão do navegador. Enquanto carrega ou se falhar, vale o padrão do plantão.
+ */
+export function useHorarioAtendimento(): HorarioAtendimento {
+  const [horario, setHorario] = useState<HorarioAtendimento>(cacheHorario ?? HORARIO_PADRAO);
+  useEffect(() => {
+    if (cacheHorario) return;
+    db()
+      .from("horario_atendimento")
+      .select("dias, inicio, fim")
+      .maybeSingle<HorarioAtendimento>()
+      .then(({ data }) => {
+        if (!data) return;
+        cacheHorario = data;
+        setHorario(data);
+      });
+  }, []);
+  return horario;
+}
+
+/** Depois que o gerente geral salva em Configurações, a próxima leitura busca de novo. */
+export const esquecerHorarioAtendimento = () => {
+  cacheHorario = null;
+};

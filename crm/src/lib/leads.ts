@@ -1,6 +1,8 @@
 // Tipos e regras puras do módulo de leads (sem acesso ao banco, para poder
 // ser testado com `node --test`). Regras de negócio em docs/leads.md.
 
+import { fimDoPrazo, HORARIO_PADRAO, inicioDoPrazo, type HorarioAtendimento } from "./prazo.ts";
+
 export type Temperatura = "quente" | "morno" | "frio";
 export type StatusLead = "ativo" | "descartado";
 export type MotivoDescarte =
@@ -34,12 +36,13 @@ export type Lead = {
   /** "Sem resposta" seguidas; o gatilho soma e zera, o app só lê. */
   tentativas: number;
   atribuido_por: string | null;
+  atribuido_em: string | null;
   created_at: string;
 };
 export const COLUNAS_LEAD =
   "id, dono_id, nome, whatsapp, email, origem, campanha, empreendimento, temperatura, etapa, proximo_contato, " +
   "status, motivo_descarte, valor, dormitorios, regiao, finalidade, ultima_interacao_em, ultima_interacao_texto, " +
-  "tentativas, atribuido_por, created_at";
+  "tentativas, atribuido_por, atribuido_em, created_at";
 
 export type TipoInteracao = "whatsapp" | "ligacao" | "email" | "visita" | "nota" | "tentativa" | "mensagem";
 
@@ -117,14 +120,16 @@ export const MOTIVOS_DESCARTE: { slug: MotivoDescarte; nome: string }[] = [
 
 // ---------- Lista do dia ----------
 
-export type Grupo = "atrasados" | "hoje" | "sem_data";
+export type Grupo = "primeiro_contato" | "atrasados" | "hoje" | "sem_data";
 export const TITULOS_GRUPO: Record<Grupo, string> = {
+  primeiro_contato: "Aguardando primeiro contato",
   atrasados: "Atrasados",
   hoje: "Hoje",
   sem_data: "Sem próximo contato",
 };
 
-type LeadDoDia = Pick<Lead, "status" | "temperatura" | "proximo_contato" | "created_at">;
+type LeadDoDia = Pick<Lead, "status" | "temperatura" | "proximo_contato" | "created_at"> &
+  Partial<Pick<Lead, "etapa" | "atribuido_em">>;
 
 const pesoTemperatura = (t: Temperatura | null) => (t === "quente" ? 0 : t === "morno" ? 1 : t === "frio" ? 2 : 3);
 
@@ -138,10 +143,12 @@ export function fimDoDia(agora: Date): Date {
 /**
  * Em que grupo da lista do dia o lead entra, ou null se ele não entra hoje
  * (descartado ou com contato marcado para depois de hoje).
+ * O lead em "novo" espera o primeiro contato, com ou sem dia marcado.
  * Atrasado é o contato cuja hora já passou, inclusive hoje cedo.
  */
 export function grupoDoLead(l: LeadDoDia, agora: Date): Grupo | null {
   if (l.status !== "ativo") return null;
+  if (l.etapa === "novo") return "primeiro_contato";
   if (!l.proximo_contato) return "sem_data";
   const t = new Date(l.proximo_contato).getTime();
   if (t < agora.getTime()) return "atrasados";
@@ -150,13 +157,18 @@ export function grupoDoLead(l: LeadDoDia, agora: Date): Grupo | null {
 }
 
 /**
- * A lista do dia: atrasados, depois os de hoje, depois os sem próximo contato.
- * Dentro de cada grupo: quentes, mornos, frios e sem temperatura. Empatando,
- * o contato mais antigo vem antes (atrasados e hoje) e o lead mais novo vem
- * antes (sem data).
+ * A lista do dia: aguardando primeiro contato, atrasados, os de hoje e os sem
+ * próximo contato. Os que aguardam vão pelo fim do prazo, então os estourados
+ * vêm primeiro. Nos outros grupos: quentes, mornos, frios e sem temperatura.
+ * Empatando, o contato mais antigo vem antes (atrasados e hoje) e o lead mais
+ * novo vem antes (sem data).
  */
-export function montarListaDoDia<T extends LeadDoDia>(leads: T[], agora: Date): { grupo: Grupo; leads: T[] }[] {
-  const grupos: Record<Grupo, T[]> = { atrasados: [], hoje: [], sem_data: [] };
+export function montarListaDoDia<T extends LeadDoDia>(
+  leads: T[],
+  agora: Date,
+  horario: HorarioAtendimento = HORARIO_PADRAO,
+): { grupo: Grupo; leads: T[] }[] {
+  const grupos: Record<Grupo, T[]> = { primeiro_contato: [], atrasados: [], hoje: [], sem_data: [] };
   for (const l of leads) {
     const g = grupoDoLead(l, agora);
     if (g) grupos[g].push(l);
@@ -167,16 +179,18 @@ export function montarListaDoDia<T extends LeadDoDia>(leads: T[], agora: Date): 
   const porCadastro = (a: T, b: T) =>
     pesoTemperatura(a.temperatura) - pesoTemperatura(b.temperatura) ||
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  const fimDoPrazoDe = new Map(grupos.primeiro_contato.map((l) => [l, fimDoPrazo(inicioDoPrazo(l), horario).getTime()]));
+  grupos.primeiro_contato.sort((a, b) => fimDoPrazoDe.get(a)! - fimDoPrazoDe.get(b)!);
   grupos.atrasados.sort(porContato);
   grupos.hoje.sort(porContato);
   grupos.sem_data.sort(porCadastro);
-  return (["atrasados", "hoje", "sem_data"] as const)
+  return (["primeiro_contato", "atrasados", "hoje", "sem_data"] as const)
     .map((grupo) => ({ grupo, leads: grupos[grupo] }))
     .filter((g) => g.leads.length > 0);
 }
 
-export const ordenarListaDoDia = <T extends LeadDoDia>(leads: T[], agora: Date): T[] =>
-  montarListaDoDia(leads, agora).flatMap((g) => g.leads);
+export const ordenarListaDoDia = <T extends LeadDoDia>(leads: T[], agora: Date, horario?: HorarioAtendimento): T[] =>
+  montarListaDoDia(leads, agora, horario).flatMap((g) => g.leads);
 
 // ---------- WhatsApp ----------
 

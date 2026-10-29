@@ -7,7 +7,8 @@ import { CardLead, RodapeAcao } from "@/components/leads/partes";
 import { Filtros, useLeadsVisiveis } from "@/components/leads/filtros";
 import { useSessao } from "@/lib/sessao";
 import { grupoDoLead, type Lead } from "@/lib/leads";
-import { useCatalogos } from "@/lib/leads-dados";
+import { useCatalogos, useHorarioAtendimento } from "@/lib/leads-dados";
+import { prazoDoLead, type HorarioAtendimento } from "@/lib/prazo";
 
 export default function LeadsPage() {
   const { pode } = useSessao();
@@ -29,6 +30,7 @@ function Leads() {
   const { pode } = useSessao();
   const atribui = pode("leads.atribuir");
   const { catalogos } = useCatalogos();
+  const horario = useHorarioAtendimento();
   const f = useLeadsVisiveis();
   const [busca, setBusca] = useState("");
   const [agora] = useState(() => new Date());
@@ -42,7 +44,7 @@ function Leads() {
     return ordenar(lista);
   }, [f.leads, busca]);
 
-  const resumo = useMemo(() => resumoPorCorretor(f.leads ?? [], agora), [f.leads, agora]);
+  const resumo = useMemo(() => resumoPorCorretor(f.leads ?? [], agora, horario), [f.leads, agora, horario]);
   const nomeEtapa = (slug: string) => catalogos?.etapas.find((e) => e.slug === slug)?.nome ?? slug;
 
   return (
@@ -63,7 +65,7 @@ function Leads() {
       </Filtros>
 
       {f.veOutros && f.status === "ativo" && !f.corretor && resumo.length > 0 && (
-        <section aria-labelledby="resumo">
+        <section aria-labelledby="resumo" className="min-w-0">
           <h2 id="resumo" className="eyebrow mb-2">
             Por corretor
           </h2>
@@ -73,6 +75,7 @@ function Leads() {
                 <tr className="border-b border-line text-concrete">
                   <th className="px-4 py-2 font-semibold">Corretor</th>
                   <th className="px-2 py-2 text-right font-semibold">Ativos</th>
+                  <th className="px-2 py-2 text-right font-semibold">Prazo estourado</th>
                   <th className="px-2 py-2 text-right font-semibold">Atrasados</th>
                   <th className="px-4 py-2 text-right font-semibold">Sem contato</th>
                 </tr>
@@ -90,6 +93,9 @@ function Leads() {
                       </button>
                     </td>
                     <td className="num px-2 py-2 text-right">{r.ativos}</td>
+                    <td className={`num px-2 py-2 text-right ${r.estourados ? "font-semibold text-brand" : ""}`}>
+                      {r.estourados ? `! ${r.estourados}` : "0"}
+                    </td>
                     <td className={`num px-2 py-2 text-right ${r.atrasados ? "font-semibold text-brand" : ""}`}>
                       {r.atrasados ? `! ${r.atrasados}` : "0"}
                     </td>
@@ -125,6 +131,7 @@ function Leads() {
                 key={l.id}
                 lead={l}
                 agora={agora}
+                horario={horario}
                 etapa={nomeEtapa(l.etapa)}
                 dono={f.veOutros ? f.nomeDono.get(l.dono_id) : undefined}
               />
@@ -144,15 +151,16 @@ function Leads() {
   );
 }
 
-function resumoPorCorretor(leads: Lead[], agora: Date) {
-  const m = new Map<string, { id: string; ativos: number; atrasados: number; semData: number }>();
+function resumoPorCorretor(leads: Lead[], agora: Date, horario: HorarioAtendimento) {
+  const m = new Map<string, { id: string; ativos: number; estourados: number; atrasados: number; semData: number }>();
   for (const l of leads) {
-    const r = m.get(l.dono_id) ?? { id: l.dono_id, ativos: 0, atrasados: 0, semData: 0 };
+    const r = m.get(l.dono_id) ?? { id: l.dono_id, ativos: 0, estourados: 0, atrasados: 0, semData: 0 };
     r.ativos++;
+    if (prazoDoLead(l, agora, horario)?.estado === "estourado") r.estourados++;
     const g = grupoDoLead(l, agora);
     if (g === "atrasados") r.atrasados++;
     if (g === "sem_data") r.semData++;
     m.set(l.dono_id, r);
   }
-  return [...m.values()].sort((a, b) => b.atrasados - a.atrasados || b.ativos - a.ativos);
+  return [...m.values()].sort((a, b) => b.estourados - a.estourados || b.atrasados - a.atrasados || b.ativos - a.ativos);
 }
