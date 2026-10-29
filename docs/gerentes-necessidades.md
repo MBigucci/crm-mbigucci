@@ -1,45 +1,46 @@
 # Necessidades dos gerentes
 
-> Fonte: áudios dos gerentes de equipe ao Felipe, transcritos e analisados em 29/10/2026. A análise com nomes e citações fica fora do git, em `insumos/audios-gerentes/analise.md`. O papel do gerente está em `docs/acessos-perfis.md`, e a ordem das etapas em `docs/referencia-crm-bruna.md` (seção 14).
+> Fonte: áudios dos gerentes de equipe ao Felipe, transcritos e analisados em 29/10/2026, com as dúvidas respondidas pelo próprio Felipe no mesmo dia. A análise com nomes e citações fica fora do git, em `insumos/audios-gerentes/analise.md`. O papel do gerente está em `docs/acessos-perfis.md`, e a ordem das etapas em `docs/referencia-crm-bruna.md` (seção 14).
+
+**Os gerentes não são consultados de novo.** Dúvidas sobre os pedidos deles vão ao Felipe. Eles também não sabem do fim dos leads do Google.
 
 ## O que pediram
 
 | Pedido | Gerente 1 | Gerente 2 | No CRM hoje |
 | --- | --- | --- | --- |
-| Relatório por corretor: recebidos, descartados com motivo, "perdidos", por período | ✓ | ✓ | ! Resumo em `/leads/` só com a foto do momento (ativos, prazo estourado, atrasados, sem contato) |
+| Relatório por corretor: recebidos, descartados com motivo, perdidos, por período | ✓ | ✓ | ! Resumo em `/leads/` só com a foto do momento (ativos, prazo estourado, atrasados, sem contato) |
 | Separar lead da empresa do lead captado pelo próprio corretor | ✓ | | ! A origem é gravada, mas não há filtro nem conta separada |
 | Origem e empreendimento de cada lead | | ✓ | ! Os campos existem, sem visão agrupada |
 | Relatório fácil de imprimir, para mostrar ao corretor | | ✓ | ✕ |
-| Ler como o corretor conversa com o cliente | | ✓ | ! Só as interações anotadas e a mensagem original |
-| Ver quem está "online" | | ✓ | ✕ |
-| Cadastro de parceiros por link, simples, sem CPF nem RG | ✓ | | ✕ |
-| Enviar material aos parceiros em massa ou por região | ✓ | | ✕ |
+| Ver como o corretor conversa com o cliente | | ✓ | ! As interações anotadas e a mensagem original |
+| Ver quem está "online" | | ✓ | ✕ Fica de fora |
+| Cadastro de parceiros por link e envio de material por região | ✓ | | ✕ Etapa futura |
 | Tudo simples, poucos campos | ✓ | ✓ | ✓ Decisão da pesquisa |
 
 **Consenso:** um painel da equipe por corretor e por período, com origem e motivos de descarte. É o mesmo pedido dos corretores nos números da pesquisa (`docs/pesquisa-resultados.md`).
 
-## Decisões e cuidados
+## Decisões do Felipe (29/10/2026)
+
+- **Lead perdido** é o lead da empresa que o corretor não atendeu. No sistema antigo, ele era roletado para outro. Aqui vira um **botão do gerente**, porque os leads da empresa serão poucos. Ele aparece no lead com "Prazo estourado" (`docs/leads.md`, seção 4), reatribui o lead e grava no histórico o motivo "perdido". O painel conta os perdidos por corretor.
+- **Continua havendo lead da empresa** para o gerente distribuir: os que chegam pelo site, direto no WhatsApp, por indicação etc.
+- **Relatório:** períodos **diário, semanal e mensal**, e **versão para imprimir**, porque o papel ainda ajuda os gerentes.
+- **Atendimento do corretor:** as interações anotadas na ficha e as mensagens prontas bastam. As conversas do WhatsApp não entram.
+- **"Online"** é a roleta atual e **fica de fora**.
+- **Parceiros** são outra etapa do projeto, **no mesmo app**, para o gerente trabalhar num ambiente só. Não entram agora. Antes de começar, falta decidir a segurança do cadastro público: um formulário que só grava (como a pesquisa) ou uma tabela com inserção anônima e nenhuma leitura.
+- Nada do sistema atual precisa ser mantido além disso.
+
+## Cuidados com o sigilo
 
 - **Empresa x captado** aparece para o gerente só como **origem do lead**. Nunca como verba, campanha paga ou conciliação, e o campo campanha fica fora do painel do gerente enquanto a chave "Programa de verba ativo" estiver desligada (`docs/pontuacao-verba.md`).
-- **"Online"** vem da roleta atual, cujo fim é sigiloso. Não construir agora. Depois de novembro, resolver com a escala da recepção ("no plantão hoje").
-- **Conversas do WhatsApp** não entram no CRM, porque não há integração nem servidor. A padronização da abordagem vem pelas mensagens prontas.
-- **Envio em massa automático** não existe com exportação estática. O primeiro passo é uma lista exportável ou a cópia oculta por e-mail.
-- **Cadastro público de parceiros** precisa de uma decisão de segurança do Felipe: um formulário que só grava (como a pesquisa) ou uma tabela com inserção anônima e nenhuma leitura.
-- O relatório do gerente não mostra pontos, verba nem ranking.
+- O painel do gerente não mostra pontos, verba nem ranking.
 
 ## Onde entra
 
 | # | O que | Etapa | Lista da Bruna |
 | --- | --- | --- | --- |
-| 1 | Painel da equipe com período: recebidos da empresa, captados pelo corretor, descartados por motivo, funil até a venda, com clique para os leads | metas | Item 11, sobe de prioridade |
-| 2 | Filtro por origem e por empreendimento em `/leads/` | leads | Item 7 |
-| 3 | Imprimir o relatório de um corretor | metas | Junto do item 11 |
-| 4 | Mensagens prontas para padronizar o atendimento | leads | Item 4 |
-| 5 | Disponibilidade do corretor ("no plantão hoje") | pontuação/recepção | Depois de novembro |
-| 6 | Parceiros: cadastro por link, lista por região, exportação | parceiros (nova) | Item novo, depois do 13 |
-
-## Pendências com os gerentes
-
-Antes do item 11, o Felipe confirma com eles:
-- Gerente 1: o que é "perdido" além do descarte, qual período olha, quem são os parceiros, que material manda e por onde, e se o parceiro também indica clientes.
-- Gerente 2: o que é "online" e para que usa, o que é "responder direitinho", três números do relatório e com que frequência imprime.
+| 1 | Lead perdido: botão do gerente no lead da empresa com prazo estourado, que reatribui e grava o motivo | leads | Complementa o item 9 (prazo, já feito). P |
+| 2 | Painel da equipe com dia, semana e mês: recebidos da empresa, perdidos, captados pelo corretor, descartados por motivo e funil até a venda, com clique para os leads | metas | Item 11, sobe de prioridade |
+| 3 | Imprimir o painel e o relatório de um corretor: letra grande, sem cor de fundo | metas | Junto do item 11. P |
+| 4 | Filtro por origem e por empreendimento em `/leads/` | leads | Item 7 |
+| 5 | Mensagens prontas para padronizar o atendimento | leads | Item 4 |
+| 6 | Parceiros: cadastro por link, lista por região e exportação para envio | parceiros (futura) | Fora da lista |
