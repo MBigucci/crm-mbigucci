@@ -10,6 +10,10 @@ export function mensagemErro(e: { message?: string } | null | undefined): string
   if (m.includes("lead_interacoes_texto_check") || m.includes("leads_nome_check")) return "Preencha o texto.";
   if (m.includes("visitas_empreendimento_check")) return "Escolha o empreendimento.";
   if (m.includes("visitas_comprovante_check")) return "O comprovante precisa ser um link que começa com https://.";
+  if (m.includes("vendas_vgv_check")) return "Confira o VGV: maior que zero.";
+  if (m.includes("vendas_empreendimento_check")) return "Escolha o empreendimento.";
+  if (m.includes("vendas_pagamento_tem_data")) return "Informe a data do pagamento.";
+  if (m.includes("metas_sem_duplicar")) return "Já existe uma meta com essa métrica e esse período. Edite a que está na lista.";
   if (m.includes("row-level security") || m.includes("permission denied")) return "Você não tem permissão para isso.";
   if (/failed to fetch|network|load failed/i.test(m)) return "Sem conexão com o servidor. Tente de novo.";
   return m;

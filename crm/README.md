@@ -153,6 +153,10 @@ Um **usuário desativado** perde todas as permissões na hora. Ele continua vend
 | `lead_eventos` | Quem vê o lead | Ninguém pelo app. Só o gatilho grava o histórico automático. |
 | `horario_atendimento` | Todo usuário ativo | Só o gerente geral, e só dias, abertura e fechamento. Cada mudança registra quem fez e quando. |
 | `mensagens_modelo` | Todo usuário ativo | Criar e alterar: só o gerente geral. Sem exclusão: a mensagem é desligada. Cada mudança registra quem fez e quando. |
+| `vendas` | `pode_ver_dados_de(corretor)` | Registrar: o dono do lead, para si. Alterar: o corretor só marca como paga; quem tem `vendas.corrigir_equipe` corrige, cancela e reativa pela função `corrigir_venda`, com motivo. Sem exclusão. |
+| `metas_vgv` | O valor geral: todo usuário ativo. O de um corretor: `pode_ver_dados_de(corretor)` | Quem tem `metas.definir_vgv` (no padrão, só o gerente geral) |
+| `metas` | `pode_ver_dados_de(dono)` | Só o próprio corretor (com `leads.cadastrar`) cria, altera e exclui as dele |
+| `faixas_vgv` | Só o gerente geral | Só o gerente geral (regra fixa, sem permissão no catálogo) |
 
 ### Gatilhos que completam as policies
 
@@ -163,6 +167,7 @@ Um **usuário desativado** perde todas as permissões na hora. Ele continua vend
 - **Lead:** carimba quem criou e quem atribuiu, deixa quem não é o dono só trocar o dono e protege a origem Empresa.
 - **Interação:** grava no lead a última interação e o próximo contato, conta as tentativas sem resposta e tira o lead de "novo" na primeira conversa.
 - **Histórico:** cada mudança de etapa, temperatura, status e dono do lead vira uma linha em `lead_eventos`.
+- **Venda:** confere o lead ativo e as datas, carimba quem registrou e quem cancelou, exige motivo para tudo além de marcar como paga, leva o lead a Venda (cancelar a última devolve a Proposta) e grava cada mudança em `lead_eventos`. A etapa Venda não pode ser posta à mão.
 
 A função `whatsapp_em_outra_carteira(numero)` diz ao cadastro só se o número está num lead ativo que a pessoa não enxerga, sem dizer de quem é.
 

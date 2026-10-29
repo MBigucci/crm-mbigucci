@@ -38,7 +38,8 @@ function Chaves() {
       .select("chave, valor, rotulo, descricao, updated_at")
       .order("chave");
     if (error) return setErro(mensagemErro(error));
-    setChaves(data as Configuracao[]);
+    // Só as chaves de ligar e desligar. As outras têm tela própria.
+    setChaves((data as Configuracao[]).filter((c) => typeof c.valor === "boolean"));
   }, []);
 
   useEffect(() => {

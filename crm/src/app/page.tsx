@@ -43,6 +43,20 @@ function Inicio() {
               texto="Recebidos, perdidos, descartes e funil por corretor, no dia, na semana ou no mês. Dá para imprimir."
             />
           )}
+          {verLeads && (
+            <Atalho
+              href="/vendas/"
+              titulo={ehGG ? "Vendas" : "Vendas da equipe"}
+              texto="VGV assinado e assinado e pago, por mês ou ano. Corrija ou cancele com o motivo."
+            />
+          )}
+          {verLeads && (
+            <Atalho
+              href="/metas/"
+              titulo={ehGG ? "Metas" : "Metas da equipe"}
+              texto="Meta anual de VGV de cada corretor: acumulado, quanto falta, ritmo por mês e projeção."
+            />
+          )}
           {pode("usuarios.gerenciar") && (
             <Atalho href="/usuarios/" titulo="Usuários" texto="Cadastre pessoas e defina perfil, equipe e situação." />
           )}

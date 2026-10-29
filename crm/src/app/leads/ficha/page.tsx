@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import clsx from "clsx";
 import { Casca } from "@/components/casca";
@@ -42,6 +42,8 @@ import { registrarSemResposta, useCatalogos, useCorretores, useHorarioAtendiment
 import { aguardaPrimeiroContato, prazoDoLead, type HorarioAtendimento } from "@/lib/prazo";
 import { COLUNAS_VISITA, estaAberta, type Visita } from "@/lib/visitas";
 import { AgendarVisita, ListaVisitas } from "@/components/visitas/visitas";
+import { CardVenda, RegistrarVenda } from "@/components/vendas/vendas";
+import { COLUNAS_VENDA, type Venda } from "@/lib/vendas";
 
 export default function FichaPage() {
   return (
@@ -69,6 +71,10 @@ function Ficha({ id }: { id: string }) {
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [visitas, setVisitas] = useState<Visita[] | null>(null);
   const [erroVisitas, setErroVisitas] = useState<string | null>(null);
+  const [vendas, setVendas] = useState<Venda[] | null>(null);
+  const [erroVendas, setErroVendas] = useState<string | null>(null);
+  const [registrando, setRegistrando] = useState(false);
+  const refVenda = useRef<HTMLElement>(null);
   const [nomes, setNomes] = useState<Map<string, string>>(new Map());
   const [erro, setErro] = useState<string | null>(null);
   const [tentativa, setTentativa] = useState<{ n: number; proximo: string } | null>(null);
@@ -77,11 +83,12 @@ function Ficha({ id }: { id: string }) {
   const fecharDesfazer = useCallback(() => setDesfazer(null), []);
 
   const carregar = useCallback(async () => {
-    const [l, h, e, v] = await Promise.all([
+    const [l, h, e, v, s] = await Promise.all([
       db().from("leads").select(COLUNAS_LEAD).eq("id", id).maybeSingle(),
       db().from("lead_interacoes").select(COLUNAS_INTERACAO).eq("lead_id", id).order("criado_em", { ascending: false }),
       db().from("lead_eventos").select(COLUNAS_EVENTO).eq("lead_id", id).order("criado_em", { ascending: false }),
       db().from("visitas").select(COLUNAS_VISITA).eq("lead_id", id).order("inicio", { ascending: false }),
+      db().from("vendas").select(COLUNAS_VENDA).eq("lead_id", id).order("assinada_em", { ascending: false }),
     ]);
     if (l.error || h.error || e.error) return setErro(mensagemErro(l.error ?? h.error ?? e.error));
     setLead((l.data as unknown as Lead) ?? null);
@@ -90,6 +97,9 @@ function Ficha({ id }: { id: string }) {
     // A ficha continua de pé se as visitas falharem.
     setErroVisitas(v.error ? mensagemErro(v.error) : null);
     setVisitas((v.data ?? []) as unknown as Visita[]);
+    // Idem para as vendas (o SQL das vendas pode ainda não ter rodado).
+    setErroVendas(s.error ? mensagemErro(s.error) : null);
+    setVendas((s.data ?? []) as unknown as Venda[]);
     setAgora(new Date());
   }, [id]);
 
@@ -173,6 +183,13 @@ function Ficha({ id }: { id: string }) {
     setTentativa({ n: lead.tentativas + 1, proximo });
     await carregar();
   }
+
+  /** A etapa Venda vem do registro da venda: escolher Venda abre o registro. */
+  function abrirRegistroDeVenda() {
+    setRegistrando(true);
+    setTimeout(() => refVenda.current?.scrollIntoView({ block: "start" }), 0);
+  }
+  const temVendaAtiva = !!vendas?.some((x) => x.status === "ativa");
 
   const historico = montarHistorico(interacoes, eventos);
   const nomeEtapa = (slug: string) => catalogos?.etapas.find((x) => x.slug === slug)?.nome ?? slug;
@@ -290,6 +307,41 @@ function Ficha({ id }: { id: string }) {
         </section>
       )}
 
+      {(ehDono || !!vendas?.length || erroVendas) && (
+        <section ref={refVenda} className="card grid scroll-mt-[72px] gap-3" aria-labelledby="vendas-titulo">
+          <h2 id="vendas-titulo" className="eyebrow">
+            Venda
+          </h2>
+          {erroVendas && <p className="aviso-erro">! {erroVendas}</p>}
+          {vendas && vendas.length > 0 && (
+            <ul className="grid gap-3">
+              {vendas.map((x) => (
+                <CardVenda key={x.id} venda={x} onMudou={carregar} />
+              ))}
+            </ul>
+          )}
+          {vendas && !vendas.length && !erroVendas && !registrando && (
+            <p className="text-ink-soft">Nenhuma venda registrada. Quando o cliente assinar, registre aqui.</p>
+          )}
+          {ehDono && lead.status === "ativo" && !erroVendas && vendas && (
+            registrando ? (
+              <RegistrarVenda
+                lead={lead}
+                onCancelar={() => setRegistrando(false)}
+                onRegistrada={() => {
+                  setRegistrando(false);
+                  carregar();
+                }}
+              />
+            ) : (
+              <button type="button" className="btn btn-ghost btn-lg focus-ring justify-self-start" onClick={() => setRegistrando(true)}>
+                + Registrar venda
+              </button>
+            )
+          )}
+        </section>
+      )}
+
       {ehDono && lead.status === "ativo" && (
         <>
           <RegistrarInteracao leadId={id} onSalvo={carregar} />
@@ -309,7 +361,11 @@ function Ficha({ id }: { id: string }) {
                   id="etapa"
                   className="input"
                   value={lead.etapa}
-                  onChange={(e) => alterarComDesfazer({ etapa: e.target.value }, `Etapa: ${nomeEtapa(e.target.value)}`)}
+                  onChange={(e) =>
+                    e.target.value === "venda" && !temVendaAtiva
+                      ? abrirRegistroDeVenda()
+                      : alterarComDesfazer({ etapa: e.target.value }, `Etapa: ${nomeEtapa(e.target.value)}`)
+                  }
                 >
                   {catalogos?.etapas
                     .filter((x) => x.ativo || x.slug === lead.etapa)
@@ -367,7 +423,13 @@ function Ficha({ id }: { id: string }) {
                       {e.automatico ? " · automático" : autor(e.autor_id)}
                     </p>
                     <p className="mt-1 text-ink-soft">
-                      {descreverEvento(e, nomeEtapa, (u) => nomes.get(u), (vid) => visitas?.find((x) => x.id === vid))}
+                      {descreverEvento(
+                        e,
+                        nomeEtapa,
+                        (u) => nomes.get(u),
+                        (vid) => visitas?.find((x) => x.id === vid),
+                        (vid) => vendas?.find((x) => x.id === vid),
+                      )}
                     </p>
                   </li>
                 );

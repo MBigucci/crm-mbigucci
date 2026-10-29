@@ -4,6 +4,7 @@
 
 import { MOTIVOS_DESCARTE, temperatura, type Evento, type Interacao } from "./leads.ts";
 import { descreverEventoVisita, type Visita } from "./visitas.ts";
+import { descreverEventoVenda, type Venda } from "./vendas.ts";
 
 export type ItemHistorico =
   | { tipo: "interacao"; quando: string; interacao: Interacao }
@@ -31,8 +32,13 @@ export function descreverEvento(
   etapa: (slug: string) => string,
   pessoa: (id: string) => string | undefined,
   visita: (id: string) => Pick<Visita, "empreendimento" | "inicio"> | undefined = () => undefined,
+  venda: (id: string) => Pick<Venda, "empreendimento" | "unidade" | "vgv"> | undefined = () => undefined,
 ): string {
   switch (e.tipo) {
+    case "venda":
+    case "venda_pagamento":
+    case "venda_correcao":
+      return descreverEventoVenda(e, e.venda_id ? venda(e.venda_id) : undefined);
     case "visita":
     case "visita_horario":
     case "visita_comprovante":

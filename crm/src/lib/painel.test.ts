@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   deDataIso,
   deslocar,
+  conversaoPorOrigem,
   montarPainel,
   periodo,
   rotuloPeriodo,
@@ -161,4 +162,43 @@ test("painel: fora do período não conta, e a soma da equipe une os leads", () 
   assert.deepEqual(t.perdidos, ["emp1"]);
   assert.equal(taxa(1, 4), "25%");
   assert.equal(taxa(0, 0), "–");
+});
+
+test("conversão: por origem, dos leads que entraram, até a venda, com descartes por motivo", () => {
+  const comCampanha = new Map(leads);
+  comCampanha.set("ind1", { ...leads.get("ind1")!, motivo_descarte: "fora_do_perfil" });
+  comCampanha.set("an1", { ...lead("an1", CARLA, "anuncio_proprio", "visita_realizada"), campanha: "Life outubro" });
+  comCampanha.set("an2", { ...lead("an2", CARLA, "anuncio_proprio", "em_contato"), campanha: "Life outubro" });
+  comCampanha.set("an3", lead("an3", CARLA, "anuncio_proprio"));
+  const ev2 = [
+    ...eventos,
+    ev("an1", "29T15:00:00", "criado", { para: CARLA, autor_id: CARLA }),
+    ev("an2", "29T15:10:00", "criado", { para: CARLA, autor_id: CARLA }),
+    ev("an3", "29T15:20:00", "criado", { para: CARLA, autor_id: CARLA }),
+  ];
+  const c = montarPainel(ev2, comCampanha, perdidos, periodo("dia", ref)).get(CARLA)!;
+  const linhas = conversaoPorOrigem(c, comCampanha, false);
+  const por = (o: string) => linhas.find((l) => l.origem === o)!;
+  assert.deepEqual(linhas.map((l) => [l.origem, l.leads.length]), [["anuncio_proprio", 3], ["empresa", 2], ["indicacao", 2], ["plantao", 1]]);
+  assert.deepEqual(por("plantao"), {
+    origem: "plantao", campanha: null, leads: ["pl1"], contato: ["pl1"], visita: ["pl1"], venda: ["pl1"],
+    descartados: [], descartadosPorMotivo: {},
+  });
+  assert.deepEqual(por("indicacao").descartadosPorMotivo, { fora_do_perfil: ["ind1"] });
+  assert.deepEqual(por("empresa").contato, ["emp2"]);
+  assert.deepEqual(por("anuncio_proprio").visita, ["an1"]);
+  assert.equal(por("anuncio_proprio").campanhas, undefined);
+
+  // Com campanha: as linhas por campanha dentro da origem, e "sem campanha" por último.
+  const camp = conversaoPorOrigem(c, comCampanha, true).find((l) => l.origem === "anuncio_proprio")!;
+  assert.deepEqual(camp.campanhas!.map((l) => [l.campanha, l.leads.length, l.contato.length, l.visita.length]), [
+    ["Life outubro", 2, 2, 1],
+    [null, 1, 0, 0],
+  ]);
+  assert.equal(conversaoPorOrigem(c, comCampanha, true).find((l) => l.origem === "plantao")!.campanhas, undefined);
+
+  // O lead perdido que o corretor não vê mais conta como da empresa.
+  const semEmp1 = new Map(comCampanha);
+  semEmp1.delete("emp1");
+  assert.deepEqual(conversaoPorOrigem(c, semEmp1, false).find((l) => l.origem === "empresa")!.leads, ["emp1", "emp2"]);
 });

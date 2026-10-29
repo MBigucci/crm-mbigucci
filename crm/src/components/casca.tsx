@@ -62,7 +62,11 @@ export function Casca({
     itens.push({ href: "/leads/quadro/", rotulo: "Quadro" });
     itens.push({ href: "/agenda/", rotulo: "Agenda" });
     itens.push({ href: "/painel/", rotulo: "Painel" });
+    itens.push({ href: "/vendas/", rotulo: "Vendas" });
+    itens.push({ href: "/metas/", rotulo: "Metas" });
   }
+  // Tela só do gerente geral, por regra fixa no banco (não é permissão do catálogo).
+  if (ehGG) itens.push({ href: "/faixas/", rotulo: "Faixas de VGV" });
   if (pode("usuarios.gerenciar")) itens.push({ href: "/usuarios/", rotulo: "Usuários" });
   if (pode("equipes.gerenciar")) itens.push({ href: "/equipes/", rotulo: "Equipes" });
   if (ehGG) itens.push({ href: "/configuracoes/", rotulo: "Configurações" });

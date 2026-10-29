@@ -1,7 +1,7 @@
 // Painel da equipe: números por corretor num dia, semana ou mês, calculados
 // do histórico automático (lead_eventos). Funções puras, testadas com
 // `node --test`. Adaptado do conversionReport da Bruna (ref/CRM Bruna/src/lib/
-// performance.ts), sem campanha, verba, pontos nem ranking (sigilo).
+// performance.ts), sem verba, pontos nem ranking (sigilo).
 // Regras em docs/painel.md.
 
 import type { Evento, MotivoDescarte } from "./leads.ts";
@@ -78,8 +78,9 @@ export type LeadPainel = {
   status: string;
   motivo_descarte: MotivoDescarte | null;
   empreendimento: string | null;
+  campanha?: string | null;
 };
-export const COLUNAS_LEAD_PAINEL = "id, nome, dono_id, origem, etapa, status, motivo_descarte, empreendimento";
+export const COLUNAS_LEAD_PAINEL = "id, nome, dono_id, origem, campanha, etapa, status, motivo_descarte, empreendimento";
 
 /** Linha de leads_perdidos (função do banco): o corretor que perdeu e quem recebeu. */
 export type Perdido = {
@@ -267,6 +268,75 @@ export function somar(linhas: NumerosCorretor[]): NumerosCorretor {
       ids.forEach((id) => junta((t.descartadosPorMotivo[m as MotivoDescarte] ??= []), id));
   }
   return t;
+}
+
+// ---------- Conversão por origem e campanha ----------
+
+export type LinhaConversao = {
+  origem: string;
+  /** Só nas linhas por campanha; null é "sem campanha". */
+  campanha: string | null;
+  /** Leads que entraram na carteira no período (o funil do painel). */
+  leads: string[];
+  contato: string[];
+  visita: string[];
+  venda: string[];
+  /** Dos que entraram, os descartados hoje, por motivo. */
+  descartados: string[];
+  descartadosPorMotivo: Partial<Record<MotivoDescarte, string[]>>;
+  /** Por campanha, quando pedido e quando algum lead da origem tem campanha. */
+  campanhas?: LinhaConversao[];
+};
+
+/**
+ * Para cada origem (e, se `comCampanha`, para cada campanha dentro dela): dos
+ * leads que entraram na carteira no período, quantos tiveram primeiro contato,
+ * visita realizada e venda, até hoje, e os descartados por motivo. O lead que o
+ * corretor perdeu ele não vê mais: é sempre da empresa.
+ */
+export function conversaoPorOrigem(x: NumerosCorretor, leads: Map<string, LeadPainel>, comCampanha: boolean): LinhaConversao[] {
+  const linha = (origem: string, campanha: string | null, ids: string[]): LinhaConversao => {
+    const tem = (xs: string[]) => ids.filter((id) => xs.includes(id));
+    const r: LinhaConversao = {
+      origem,
+      campanha,
+      leads: ids,
+      contato: tem(x.funil.em_contato),
+      visita: tem(x.funil.visita_realizada),
+      venda: tem(x.funil.venda),
+      descartados: [],
+      descartadosPorMotivo: {},
+    };
+    for (const id of ids) {
+      const l = leads.get(id);
+      if (l?.status !== "descartado") continue;
+      r.descartados.push(id);
+      const m = (l.motivo_descarte ?? "sem_retorno") as MotivoDescarte;
+      (r.descartadosPorMotivo[m] ??= []).push(id);
+    }
+    return r;
+  };
+  const porOrigem = new Map<string, string[]>();
+  for (const id of x.entraram) {
+    const o = leads.get(id)?.origem ?? "empresa";
+    porOrigem.set(o, [...(porOrigem.get(o) ?? []), id]);
+  }
+  return [...porOrigem]
+    .map(([origem, ids]) => {
+      const r = linha(origem, null, ids);
+      if (comCampanha && ids.some((id) => leads.get(id)?.campanha)) {
+        const porCampanha = new Map<string, string[]>();
+        for (const id of ids) {
+          const c = leads.get(id)?.campanha ?? "";
+          porCampanha.set(c, [...(porCampanha.get(c) ?? []), id]);
+        }
+        r.campanhas = [...porCampanha]
+          .map(([c, xs]) => linha(origem, c || null, xs))
+          .sort((a, b) => b.leads.length - a.leads.length || (a.campanha ?? "~").localeCompare(b.campanha ?? "~", "pt-BR"));
+      }
+      return r;
+    })
+    .sort((a, b) => b.leads.length - a.leads.length || a.origem.localeCompare(b.origem));
 }
 
 /** "60%" ou "–": quanto de `base` chegou a `parte`. */

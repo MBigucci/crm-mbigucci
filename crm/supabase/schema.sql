@@ -1290,8 +1290,11 @@ create index if not exists visitas_lead_idx on public.visitas (lead_id, inicio d
 -- em ISO) e "visita_comprovante" (link anexado, trocado ou removido).
 alter table public.lead_eventos add column if not exists visita_id uuid references public.visitas (id) on delete restrict;
 alter table public.lead_eventos drop constraint if exists lead_eventos_tipo_check;
+-- A lista é a completa (com os tipos da venda, mais abaixo): rodar o script de
+-- novo recria este check com eventos de venda já gravados.
 alter table public.lead_eventos add constraint lead_eventos_tipo_check check (tipo in
-  ('criado', 'etapa', 'temperatura', 'status', 'dono', 'visita', 'visita_horario', 'visita_comprovante'));
+  ('criado', 'etapa', 'temperatura', 'status', 'dono', 'visita', 'visita_horario', 'visita_comprovante',
+   'venda', 'venda_pagamento', 'venda_correcao'));
 
 -- Regras da visita que as policies sozinhas não expressam. Pelo SQL Editor
 -- (sem usuário logado) só valem os checks, para permitir correções.
@@ -1545,3 +1548,499 @@ update public.mensagens_modelo
    set texto = E'Oi, {primeiro_nome}, tudo bem?\n\nPassando para confirmar nossa visita a {empreendimento}, {visita}. Se surgir qualquer imprevisto, é só me avisar por aqui.\n\nAté lá. {corretor}, da MBigucci.'
  where slug = 'confirmar_visita'
    and texto = E'Oi, {primeiro_nome}, tudo bem?\n\nPassando para confirmar nossa visita a {empreendimento}. Se surgir qualquer imprevisto, é só me avisar por aqui.\n\nAté lá. {corretor}, da MBigucci.';
+
+-- =====================================================================
+-- Vendas e metas (itens 11 e 12 de docs/referencia-crm-bruna.md). Regras em
+-- docs/vendas-metas.md. A venda conta no mês da assinatura; o VGV válido é o
+-- das vendas assinadas e pagas. Sem exclusão: a venda é cancelada com motivo.
+-- =====================================================================
+
+-- ---------- Permissões do módulo ----------
+-- O corretor registra as próprias vendas e cria metas com leads.cadastrar.
+-- vendas.corrigir_equipe: o gerente corrige e cancela as vendas da equipe.
+-- metas.definir_vgv: só o gerente geral, por padrão (ele tem todas).
+-- painel.campanha: a conversão por campanha no painel (o corretor vê a dele).
+with novas as (
+  insert into public.permissions (slug, descricao, ordem) values
+    ('vendas.corrigir_equipe', 'Corrigir e cancelar as vendas da equipe, com o motivo', 8),
+    ('metas.definir_vgv',      'Definir a meta anual de VGV, geral e por corretor', 9),
+    ('painel.campanha',        'Ver a conversão por campanha no painel', 10)
+  on conflict (slug) do update set descricao = excluded.descricao, ordem = excluded.ordem
+  returning slug, (xmax = 0) as nova
+)
+insert into public.role_permissions (perfil, permissao)
+select v.perfil, v.permissao
+from (values ('gerente', 'vendas.corrigir_equipe'), ('corretor', 'painel.campanha')) as v (perfil, permissao)
+join novas n on n.slug = v.permissao and n.nova
+on conflict do nothing;
+
+-- ---------- Vendas ----------
+-- assinada_em e pago_em são datas (dia de São Paulo), não horários: a venda
+-- conta no mês da assinatura. O corretor é o dono do lead no registro e não
+-- muda depois. registrada_por e cancelada_* são carimbados pelo gatilho.
+create table if not exists public.vendas (
+  id                   uuid primary key default gen_random_uuid(),
+  lead_id              uuid not null references public.leads (id) on delete restrict,
+  corretor_id          uuid not null default auth.uid() references public.profiles (id) on delete restrict,
+  empreendimento       text not null check (length(btrim(empreendimento)) > 0),
+  unidade              text,
+  vgv                  numeric(14, 2) not null check (vgv > 0),
+  assinada_em          date not null,
+  pagamento            text not null default 'pendente' check (pagamento in ('pendente', 'pago')),
+  pago_em              date,
+  observacao           text,
+  status               text not null default 'ativa' check (status in ('ativa', 'cancelada')),
+  motivo_cancelamento  text,
+  cancelada_por        uuid references public.profiles (id) on delete set null,
+  cancelada_em         timestamptz,
+  registrada_por       uuid default auth.uid() references public.profiles (id) on delete set null,
+  created_at           timestamptz not null default now(),
+  updated_at           timestamptz not null default now(),
+  constraint vendas_pagamento_tem_data check ((pagamento = 'pago') = (pago_em is not null)),
+  constraint vendas_cancelamento_tem_motivo check ((status = 'cancelada') = (motivo_cancelamento is not null))
+);
+
+create index if not exists vendas_corretor_assinada_idx on public.vendas (corretor_id, assinada_em);
+create index if not exists vendas_lead_idx on public.vendas (lead_id);
+
+-- O histórico do lead ganha os eventos da venda: "venda" (registrada, cancelada
+-- ou reativada; detalhe = motivo), "venda_pagamento" (pendente ou pago) e
+-- "venda_correcao" (de/para = os campos corrigidos em JSON; detalhe = motivo).
+alter table public.lead_eventos add column if not exists venda_id uuid references public.vendas (id) on delete restrict;
+alter table public.lead_eventos drop constraint if exists lead_eventos_tipo_check;
+alter table public.lead_eventos add constraint lead_eventos_tipo_check check (tipo in
+  ('criado', 'etapa', 'temperatura', 'status', 'dono', 'visita', 'visita_horario', 'visita_comprovante',
+   'venda', 'venda_pagamento', 'venda_correcao'));
+
+-- Regras da venda que as policies sozinhas não expressam. Pelo SQL Editor (sem
+-- usuário logado) só valem os checks, para permitir correções.
+-- - Registrar: só em lead ativo, com assinatura e pagamento até hoje.
+-- - Marcar como paga (pendente → pago) não pede motivo: é o andamento normal.
+-- - Todo o resto (corrigir, voltar para pendente, cancelar, reativar) só pela
+--   função corrigir_venda, com o motivo, e por quem tem vendas.corrigir_equipe.
+create or replace function public.vendas_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_eu uuid := auth.uid();
+  v_motivo text := nullif(btrim(coalesce(current_setting('crm.motivo_venda', true), '')), '');
+  v_hoje date := (now() at time zone 'America/Sao_Paulo')::date;
+  v_dados boolean;
+  v_pagou boolean;
+begin
+  new.empreendimento := btrim(new.empreendimento);
+  new.unidade := nullif(btrim(coalesce(new.unidade, '')), '');
+  new.observacao := nullif(btrim(coalesce(new.observacao, '')), '');
+
+  if tg_op = 'INSERT' then
+    new.created_at := now();
+    new.registrada_por := coalesce(v_eu, new.registrada_por);
+    if v_eu is null then
+      return new;
+    end if;
+    new.status := 'ativa';
+    new.motivo_cancelamento := null;
+    new.cancelada_por := null;
+    new.cancelada_em := null;
+    if not exists (select 1 from public.leads l where l.id = new.lead_id and l.status = 'ativo') then
+      raise exception 'Só um lead ativo pode ter venda registrada.' using errcode = 'P0001';
+    end if;
+    if new.assinada_em > v_hoje then
+      raise exception 'A data da assinatura não pode ser depois de hoje.' using errcode = 'P0001';
+    end if;
+    if new.pago_em > v_hoje then
+      raise exception 'A data do pagamento não pode ser depois de hoje.' using errcode = 'P0001';
+    end if;
+    return new;
+  end if;
+
+  new.lead_id := old.lead_id;
+  new.corretor_id := old.corretor_id;
+  new.registrada_por := old.registrada_por;
+  new.created_at := old.created_at;
+
+  -- Quem cancelou, quando e por quê: só o banco carimba.
+  if new.status = 'cancelada' and old.status <> 'cancelada' then
+    new.motivo_cancelamento := v_motivo;
+    new.cancelada_por := v_eu;
+    new.cancelada_em := now();
+  elsif new.status = 'cancelada' then
+    new.motivo_cancelamento := old.motivo_cancelamento;
+    new.cancelada_por := old.cancelada_por;
+    new.cancelada_em := old.cancelada_em;
+  else
+    new.motivo_cancelamento := null;
+    new.cancelada_por := null;
+    new.cancelada_em := null;
+  end if;
+
+  if v_eu is null then
+    if new.status = 'cancelada' and new.motivo_cancelamento is null then
+      new.motivo_cancelamento := 'Cancelada pelo SQL Editor';
+    end if;
+    return new;
+  end if;
+
+  v_dados := (new.empreendimento, new.unidade, new.vgv, new.assinada_em, new.observacao, new.status)
+             is distinct from (old.empreendimento, old.unidade, old.vgv, old.assinada_em, old.observacao, old.status);
+  v_pagou := old.status = 'ativa' and old.pagamento = 'pendente' and new.pagamento = 'pago';
+
+  if v_dados or (not v_pagou and (new.pagamento, new.pago_em) is distinct from (old.pagamento, old.pago_em)) then
+    if v_motivo is null then
+      raise exception 'Para mudar a venda, use Corrigir e escreva o motivo.' using errcode = 'P0001';
+    end if;
+    if not public.has_permission('vendas.corrigir_equipe') then
+      raise exception 'Só o gerente corrige ou cancela a venda.' using errcode = '42501';
+    end if;
+    if old.status = 'cancelada' and new.status = 'cancelada' then
+      raise exception 'Reative a venda antes de corrigir.' using errcode = 'P0001';
+    end if;
+  end if;
+
+  if new.assinada_em > v_hoje then
+    raise exception 'A data da assinatura não pode ser depois de hoje.' using errcode = 'P0001';
+  end if;
+  if new.pago_em > v_hoje and new.pago_em is distinct from old.pago_em then
+    raise exception 'A data do pagamento não pode ser depois de hoje.' using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists vendas_guard on public.vendas;
+create trigger vendas_guard before insert or update on public.vendas
+  for each row execute function public.vendas_guard();
+
+drop trigger if exists vendas_set_updated_at on public.vendas;
+create trigger vendas_set_updated_at before update on public.vendas
+  for each row execute function public.set_updated_at();
+
+-- A venda move o lead: registrar (ou reativar) leva a "venda". Cancelar a
+-- última venda ativa do lead devolve a "proposta". Como na visita, a escrita no
+-- lead passa pelo leads_guard (pg_trigger_depth() > 1) e sai como automática.
+create or replace function public.venda_atualiza_lead()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.status = 'ativa' and (tg_op = 'INSERT' or old.status <> 'ativa') then
+    update public.leads set etapa = 'venda' where id = new.lead_id and etapa <> 'venda';
+  elsif tg_op = 'UPDATE' and new.status = 'cancelada' and old.status <> 'cancelada'
+        and not exists (select 1 from public.vendas v where v.lead_id = new.lead_id and v.status = 'ativa' and v.id <> new.id) then
+    update public.leads set etapa = 'proposta' where id = new.lead_id and etapa = 'venda';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists venda_atualiza_lead on public.vendas;
+create trigger venda_atualiza_lead after insert or update on public.vendas
+  for each row execute function public.venda_atualiza_lead();
+
+-- Histórico: o registro, o cancelamento, o pagamento e cada correção vão para
+-- lead_eventos, com o autor da sessão. O motivo da correção vai no detalhe.
+create or replace function public.venda_registra_eventos()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_eu uuid := auth.uid();
+  v_auto boolean := pg_trigger_depth() > 1;
+  v_motivo text := nullif(btrim(coalesce(current_setting('crm.motivo_venda', true), '')), '');
+  v_de jsonb := '{}';
+  v_para jsonb := '{}';
+  v_velho jsonb;
+  v_novo jsonb;
+  c text;
+begin
+  if tg_op = 'INSERT' then
+    insert into public.lead_eventos (lead_id, venda_id, tipo, para, automatico, autor_id, criado_em)
+    values (new.lead_id, new.id, 'venda', 'ativa', v_auto, coalesce(v_eu, new.registrada_por), new.created_at);
+    return new;
+  end if;
+
+  if new.status is distinct from old.status then
+    insert into public.lead_eventos (lead_id, venda_id, tipo, de, para, detalhe, automatico, autor_id)
+    values (new.lead_id, new.id, 'venda', old.status, new.status, coalesce(v_motivo, new.motivo_cancelamento), v_auto, v_eu);
+  end if;
+  if new.pagamento is distinct from old.pagamento then
+    insert into public.lead_eventos (lead_id, venda_id, tipo, de, para, detalhe, automatico, autor_id)
+    values (new.lead_id, new.id, 'venda_pagamento', old.pagamento, new.pagamento, v_motivo, v_auto, v_eu);
+  end if;
+  v_velho := to_jsonb(old);
+  v_novo := to_jsonb(new);
+  foreach c in array array['empreendimento', 'unidade', 'vgv', 'assinada_em', 'pago_em', 'observacao'] loop
+    -- A data do pagamento que muda junto com o pagamento já está no evento acima.
+    continue when c = 'pago_em' and new.pagamento is distinct from old.pagamento;
+    if (v_velho -> c) is distinct from (v_novo -> c) then
+      v_de := v_de || jsonb_build_object(c, v_velho -> c);
+      v_para := v_para || jsonb_build_object(c, v_novo -> c);
+    end if;
+  end loop;
+  if v_para <> '{}'::jsonb then
+    insert into public.lead_eventos (lead_id, venda_id, tipo, de, para, detalhe, automatico, autor_id)
+    values (new.lead_id, new.id, 'venda_correcao', v_de::text, v_para::text, v_motivo, v_auto, v_eu);
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists venda_registra_eventos on public.vendas;
+create trigger venda_registra_eventos after insert or update on public.vendas
+  for each row execute function public.venda_registra_eventos();
+
+-- Corrigir, cancelar ou reativar uma venda, com o motivo, que vai para o
+-- histórico. Passa pelo RLS e pelo vendas_guard. p_campos traz só o que muda:
+-- empreendimento, unidade, vgv, assinada_em, pagamento, pago_em, observacao, status.
+create or replace function public.corrigir_venda(p_venda uuid, p_campos jsonb, p_motivo text)
+returns void
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'Entre no CRM para corrigir a venda.' using errcode = '42501';
+  end if;
+  if length(btrim(coalesce(p_motivo, ''))) < 3 then
+    raise exception 'Escreva o motivo da correção.' using errcode = 'P0001';
+  end if;
+  perform set_config('crm.motivo_venda', left(btrim(p_motivo), 280), true);
+  update public.vendas
+     set empreendimento = case when p_campos ? 'empreendimento' then p_campos ->> 'empreendimento' else empreendimento end,
+         unidade        = case when p_campos ? 'unidade' then p_campos ->> 'unidade' else unidade end,
+         vgv            = case when p_campos ? 'vgv' then (p_campos ->> 'vgv')::numeric else vgv end,
+         assinada_em    = case when p_campos ? 'assinada_em' then (p_campos ->> 'assinada_em')::date else assinada_em end,
+         pagamento      = case when p_campos ? 'pagamento' then p_campos ->> 'pagamento' else pagamento end,
+         pago_em        = case when p_campos ? 'pago_em' then (p_campos ->> 'pago_em')::date else pago_em end,
+         observacao     = case when p_campos ? 'observacao' then p_campos ->> 'observacao' else observacao end,
+         status         = case when p_campos ? 'status' then p_campos ->> 'status' else status end
+   where id = p_venda;
+  if not found then
+    raise exception 'Venda não encontrada, ou você não pode alterá-la.' using errcode = '42501';
+  end if;
+  perform set_config('crm.motivo_venda', '', true);
+end;
+$$;
+
+revoke all on function public.corrigir_venda(uuid, jsonb, text) from public, anon;
+grant execute on function public.corrigir_venda(uuid, jsonb, text) to authenticated, service_role;
+
+-- A etapa "venda" vem do registro da venda: o corretor não leva o lead para lá
+-- à mão (a ficha abre o registro). O que vem de gatilho e do SQL Editor passa.
+create or replace function public.leads_venda_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if auth.uid() is not null and pg_trigger_depth() = 1
+     and new.etapa = 'venda' and old.etapa is distinct from 'venda'
+     and not exists (select 1 from public.vendas v where v.lead_id = new.id and v.status = 'ativa') then
+    raise exception 'Registre a venda na ficha do lead para levá-lo à etapa Venda.' using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists leads_venda_guard on public.leads;
+create trigger leads_venda_guard before update on public.leads
+  for each row execute function public.leads_venda_guard();
+
+-- ---------- RLS das vendas ----------
+alter table public.vendas enable row level security;
+revoke all on public.vendas from anon, authenticated;
+grant select on public.vendas to authenticated;
+grant insert (lead_id, empreendimento, unidade, vgv, assinada_em, pagamento, pago_em, observacao) on public.vendas to authenticated;
+grant update (empreendimento, unidade, vgv, assinada_em, pagamento, pago_em, observacao, status) on public.vendas to authenticated;
+
+-- O corretor vê as dele, o gerente as da equipe, quem vê tudo vê todas.
+drop policy if exists "ver vendas" on public.vendas;
+create policy "ver vendas" on public.vendas
+  for select to authenticated using (public.pode_ver_dados_de(corretor_id));
+
+-- Registrar: só o dono do lead, para ele mesmo. O gerente não vende.
+drop policy if exists "registrar venda" on public.vendas;
+create policy "registrar venda" on public.vendas
+  for insert to authenticated with check (
+    corretor_id = auth.uid()
+    and public.has_permission('leads.cadastrar')
+    and exists (select 1 from public.leads l where l.id = lead_id and l.dono_id = auth.uid())
+  );
+
+-- Alterar: o corretor da venda (o gatilho limita a marcar como paga) ou quem
+-- corrige as vendas da equipe e vê o corretor.
+drop policy if exists "alterar venda" on public.vendas;
+create policy "alterar venda" on public.vendas
+  for update to authenticated
+  using (
+    (corretor_id = auth.uid() and public.has_permission('leads.cadastrar'))
+    or (public.has_permission('vendas.corrigir_equipe') and public.pode_ver_dados_de(corretor_id))
+  )
+  with check (
+    (corretor_id = auth.uid() and public.has_permission('leads.cadastrar'))
+    or (public.has_permission('vendas.corrigir_equipe') and public.pode_ver_dados_de(corretor_id))
+  );
+
+-- ---------- Meta anual de VGV ----------
+-- Uma linha por ano sem corretor é o valor geral; com corretor, o valor dele.
+-- Sem linha, vale o padrão de R$ 10.000.000 (META_VGV_PADRAO em crm/src/lib/metas.ts).
+create table if not exists public.metas_vgv (
+  id              uuid primary key default gen_random_uuid(),
+  ano             smallint not null check (ano between 2020 and 2100),
+  corretor_id     uuid references public.profiles (id) on delete cascade,
+  valor           numeric(14, 2) not null check (valor > 0),
+  atualizado_por  uuid default auth.uid() references public.profiles (id) on delete set null,
+  updated_at      timestamptz not null default now()
+);
+
+create unique index if not exists metas_vgv_unica
+  on public.metas_vgv (ano, coalesce(corretor_id, '00000000-0000-0000-0000-000000000000'::uuid));
+
+create or replace function public.metas_vgv_carimbo()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if tg_op = 'UPDATE' then
+    new.ano := old.ano;
+    new.corretor_id := old.corretor_id;
+  end if;
+  if new.corretor_id is not null
+     and not exists (select 1 from public.profiles p where p.id = new.corretor_id and p.perfil = 'corretor') then
+    raise exception 'A meta por corretor vale só para corretores.' using errcode = 'P0001';
+  end if;
+  new.atualizado_por := coalesce(auth.uid(), new.atualizado_por);
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists metas_vgv_carimbo on public.metas_vgv;
+create trigger metas_vgv_carimbo before insert or update on public.metas_vgv
+  for each row execute function public.metas_vgv_carimbo();
+
+alter table public.metas_vgv enable row level security;
+revoke all on public.metas_vgv from anon, authenticated;
+grant select, delete on public.metas_vgv to authenticated;
+grant insert (ano, corretor_id, valor) on public.metas_vgv to authenticated;
+grant update (valor) on public.metas_vgv to authenticated;
+
+-- Todo ativo lê o valor geral; o valor de um corretor segue pode_ver_dados_de.
+drop policy if exists "ver metas de vgv" on public.metas_vgv;
+create policy "ver metas de vgv" on public.metas_vgv
+  for select to authenticated using (
+    public.current_perfil() is not null and (corretor_id is null or public.pode_ver_dados_de(corretor_id))
+  );
+
+drop policy if exists "definir metas de vgv" on public.metas_vgv;
+create policy "definir metas de vgv" on public.metas_vgv
+  for all to authenticated
+  using (public.has_permission('metas.definir_vgv'))
+  with check (public.has_permission('metas.definir_vgv'));
+
+-- ---------- Metas próprias do corretor ----------
+-- Como as da Bruna: métrica, período (mês, trimestre e ano são os atuais; o
+-- personalizado começa no mês "inicio" e dura "meses"), valor e "no painel".
+-- O progresso é calculado pelos dados (crm/src/lib/metas.ts).
+create table if not exists public.metas (
+  id          uuid primary key default gen_random_uuid(),
+  dono_id     uuid not null default auth.uid() references public.profiles (id) on delete cascade,
+  metrica     text not null check (metrica in ('leads', 'contatos', 'visitas', 'vendas', 'vgv')),
+  periodo     text not null check (periodo in ('mes', 'trimestre', 'ano', 'personalizado')),
+  inicio      date,
+  meses       smallint check (meses is null or meses between 1 and 24),
+  valor       numeric(14, 2) not null check (valor > 0),
+  no_painel   boolean not null default true,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  constraint metas_personalizado check ((periodo = 'personalizado') = (inicio is not null and meses is not null)),
+  constraint metas_inicio_no_dia_1 check (inicio is null or extract(day from inicio) = 1),
+  constraint metas_contagem_inteira check (metrica = 'vgv' or valor = trunc(valor))
+);
+
+-- Uma meta por métrica e período (no personalizado, pelo mesmo início e duração).
+create unique index if not exists metas_sem_duplicar
+  on public.metas (dono_id, metrica, periodo, coalesce(inicio, '2000-01-01'::date), coalesce(meses, 0));
+
+drop trigger if exists metas_set_updated_at on public.metas;
+create trigger metas_set_updated_at before update on public.metas
+  for each row execute function public.set_updated_at();
+
+alter table public.metas enable row level security;
+revoke all on public.metas from anon, authenticated;
+grant select, delete on public.metas to authenticated;
+grant insert (metrica, periodo, inicio, meses, valor, no_painel) on public.metas to authenticated;
+grant update (metrica, periodo, inicio, meses, valor, no_painel) on public.metas to authenticated;
+
+drop policy if exists "ver metas" on public.metas;
+create policy "ver metas" on public.metas
+  for select to authenticated using (public.pode_ver_dados_de(dono_id));
+
+-- Só o próprio corretor cria, muda e exclui as metas dele (não é registro de auditoria).
+drop policy if exists "minhas metas" on public.metas;
+create policy "minhas metas" on public.metas
+  for all to authenticated
+  using (dono_id = auth.uid() and public.has_permission('leads.cadastrar'))
+  with check (dono_id = auth.uid() and public.has_permission('leads.cadastrar'));
+
+-- ---------- Faixas de VGV do mês (só o gerente geral) ----------
+-- Regra fixa, sem permissão no catálogo: o assunto é sigiloso até a reunião de
+-- novembro/2026 (docs/pontuacao-verba.md). O título e os textos da tela ficam
+-- em app_settings, que só o gerente geral lê, porque o código do site é público.
+-- O padrão das faixas entra só na primeira vez.
+create table if not exists public.faixas_vgv (
+  id              uuid primary key default gen_random_uuid(),
+  vgv_minimo      numeric(14, 2) not null unique check (vgv_minimo > 0),
+  valor           numeric(12, 2) not null check (valor >= 0),
+  atualizado_por  uuid default auth.uid() references public.profiles (id) on delete set null,
+  updated_at      timestamptz not null default now()
+);
+
+create or replace function public.faixas_vgv_carimbo()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.atualizado_por := coalesce(auth.uid(), new.atualizado_por);
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists faixas_vgv_carimbo on public.faixas_vgv;
+create trigger faixas_vgv_carimbo before insert or update on public.faixas_vgv
+  for each row execute function public.faixas_vgv_carimbo();
+
+alter table public.faixas_vgv enable row level security;
+revoke all on public.faixas_vgv from anon, authenticated;
+grant select, delete on public.faixas_vgv to authenticated;
+grant insert (vgv_minimo, valor), update (vgv_minimo, valor) on public.faixas_vgv to authenticated;
+
+drop policy if exists "gerente geral define faixas" on public.faixas_vgv;
+create policy "gerente geral define faixas" on public.faixas_vgv
+  for all to authenticated using (public.is_gerente_geral()) with check (public.is_gerente_geral());
+
+with nova as (
+  insert into public.app_settings (chave, valor, rotulo, descricao) values
+    ('faixas_vgv', '{"coluna": "Prêmio"}'::jsonb, 'Premiação mensal por VGV',
+     'Vale só a faixa mais alta atingida no mês (não acumula), com as vendas assinadas e pagas, contadas no mês da assinatura. O prêmio é liberado no mês seguinte. Só o gerente geral vê esta tela até a reunião de novembro/2026.')
+  on conflict (chave) do update set rotulo = excluded.rotulo, descricao = excluded.descricao
+  returning (xmax = 0) as nova
+)
+insert into public.faixas_vgv (vgv_minimo, valor)
+select f.minimo, f.valor
+from (values (1000000, 2000), (1500000, 3000), (2000000, 5000), (3000000, 10000)) as f (minimo, valor)
+join nova on nova.nova
+on conflict (vgv_minimo) do nothing;
