@@ -1,0 +1,24 @@
+# Referência local (CRM da Bruna): outro projeto, com o próprio .git e chaves dele
+ref/
+
+# Segredos
+.env
+.env*.local
+
+# Dependências e builds
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# Dados de teste local da pesquisa
+discovery/data/
+
+# Configuração pessoal do Claude Code (a do projeto, settings.json, hooks e skills, vai no repositório)
+**/.claude/settings.local.json
+**/.claude/launch.json
+
+# Sistema
+.DS_Store
+Thumbs.db

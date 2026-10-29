@@ -1,0 +1,138 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fontes do MBigucci Design System (variáveis, subconjunto latino, SIL OFL) */
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("./fonts/BricolageGrotesque-latin.woff2") format("woff2");
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("./fonts/Inter-latin.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-paper font-sans text-ink antialiased;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer components {
+  /* Eyebrow: caixa alta pelo CSS, concrete */
+  .eyebrow {
+    @apply block text-[11px] font-semibold uppercase tracking-eyebrow text-concrete;
+  }
+  .titulo-pagina {
+    @apply font-display font-extrabold;
+    font-size: clamp(21px, 2.6vw + 12px, 27px);
+    line-height: 1.05;
+  }
+  .titulo-card {
+    @apply font-display text-[17px] font-bold leading-[1.15];
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Card: branco, borda fina, barra de 4px à esquerda (ink; brand em destaque) */
+  .card {
+    @apply relative min-w-0 rounded-md border border-line bg-surface;
+    padding: 16px 18px 16px 21px;
+  }
+  .card::before {
+    content: "";
+    @apply absolute bottom-0 left-0 top-0 w-[4px];
+    background: var(--mb-bar, #0d0e11);
+  }
+  .card.bar-brand {
+    --mb-bar: #e11119;
+  }
+
+  /* Botões */
+  .btn {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-sm border border-transparent text-[13px] font-semibold leading-[1.2] transition-colors;
+    padding: 9px 16px;
+  }
+  .btn-red {
+    @apply bg-brand text-surface hover:bg-brand-dark;
+  }
+  .btn-ghost {
+    @apply border-line bg-surface text-ink hover:border-ink;
+  }
+  .btn:disabled {
+    @apply cursor-default opacity-45 hover:bg-brand;
+  }
+  .btn-ghost:disabled {
+    @apply hover:border-line hover:bg-surface;
+  }
+  /* No celular, alvo de toque maior */
+  .btn-lg {
+    @apply text-[15px];
+    padding: 14px 20px;
+  }
+
+  /* Campos */
+  .field-label {
+    @apply mb-[5px] block text-[11px] font-semibold uppercase leading-[1.3] tracking-eyebrow text-concrete;
+  }
+  .input {
+    @apply w-full min-w-0 rounded-sm border border-line bg-paper text-ink outline-none transition-colors placeholder:text-concrete focus:border-brand;
+    padding: 12px 12px;
+    font-size: 16px; /* 16px evita o zoom do iOS ao focar */
+    line-height: 1.3;
+  }
+
+  /* Foco de teclado: 2px brand, afastado 2px */
+  .focus-ring {
+    @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+  }
+
+  /* Link de ação com → */
+  .link-acao {
+    @apply font-semibold text-brand hover:text-brand-dark;
+  }
+  .link-acao::after {
+    content: " →";
+  }
+}
+
+/* Transição entre etapas: o único movimento além do acordeão */
+@keyframes etapa-entra {
+  from {
+    opacity: 0;
+    transform: translateX(var(--etapa-dx, 16px));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.etapa-entra {
+  animation: etapa-entra 220ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .etapa-entra {
+    animation: none;
+  }
+  * {
+    transition: none !important;
+  }
+}

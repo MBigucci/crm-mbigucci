@@ -1,0 +1,94 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSessao } from "@/lib/sessao";
+import { Cabecalho, type ItemMenu } from "./cabecalho";
+
+/** Página interna: exige login, monta o menu pelo perfil e checa a permissão da tela. */
+export function Casca({
+  titulo,
+  exige,
+  soGerenteGeral,
+  children,
+}: {
+  titulo: string;
+  exige?: string;
+  soGerenteGeral?: boolean;
+  children: React.ReactNode;
+}) {
+  const { estado, pode, sair } = useSessao();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (estado.fase === "deslogado") router.replace("/entrar/");
+  }, [estado.fase, router]);
+
+  if (estado.fase !== "pronto") {
+    return (
+      <>
+        <Cabecalho />
+        <main className="mx-auto max-w-content px-5 py-8">
+          {estado.fase === "sem-config" && <SemConfiguracao />}
+          {estado.fase === "desativado" && (
+            <div className="card bar-brand max-w-[520px]">
+              <h1 className="titulo-card">! Conta desativada</h1>
+              <p className="mt-2 text-ink-soft">
+                A conta {estado.email} não está ativa no CRM. Fale com o gerente geral.
+              </p>
+              <button type="button" className="btn btn-ghost focus-ring mt-4" onClick={sair}>
+                Sair
+              </button>
+            </div>
+          )}
+          {estado.fase === "erro" && (
+            <div className="card bar-brand max-w-[520px]">
+              <h1 className="titulo-card">! Não foi possível carregar sua conta</h1>
+              <p className="mt-2 text-ink-soft">{estado.mensagem}</p>
+            </div>
+          )}
+          {(estado.fase === "carregando" || estado.fase === "deslogado") && (
+            <p className="text-concrete">Carregando…</p>
+          )}
+        </main>
+      </>
+    );
+  }
+
+  const ehGG = estado.perfil.perfil === "gerente_geral";
+  const itens: ItemMenu[] = [{ href: "/", rotulo: "Início" }];
+  if (pode("usuarios.gerenciar")) itens.push({ href: "/usuarios/", rotulo: "Usuários" });
+  if (pode("equipes.gerenciar")) itens.push({ href: "/equipes/", rotulo: "Equipes" });
+  if (ehGG) itens.push({ href: "/configuracoes/", rotulo: "Configurações" });
+  itens.push({ href: "/conta/", rotulo: "Minha conta" });
+
+  const liberado = (!exige || pode(exige)) && (!soGerenteGeral || ehGG);
+
+  return (
+    <>
+      <Cabecalho itens={itens} onSair={sair} nome={estado.perfil.nome} />
+      <main className="mx-auto max-w-content px-5 pb-16 pt-6">
+        <h1 className="titulo-pagina mb-5">{titulo}</h1>
+        {liberado ? (
+          children
+        ) : (
+          <div className="card max-w-[520px]">
+            <p>! Seu perfil não tem acesso a esta página.</p>
+          </div>
+        )}
+      </main>
+    </>
+  );
+}
+
+export function SemConfiguracao() {
+  return (
+    <div className="card bar-brand max-w-[560px]">
+      <h1 className="titulo-card">! Supabase não configurado</h1>
+      <p className="mt-2 text-ink-soft">
+        Este build foi gerado sem NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY. Preencha o
+        arquivo .env.local e rode npm run build de novo (veja o README).
+      </p>
+    </div>
+  );
+}
