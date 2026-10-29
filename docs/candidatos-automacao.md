@@ -44,3 +44,17 @@ Hooks:
 - Bloquear palavras sigilosas em `crm/src` enquanto o programa de verba não for lançado.
 - Bloquear rotas de API, `"use server"` e `getServerSideProps` em `crm/src`, porque quebram a exportação estática.
 - Bloquear inserts de permissões ligadas à verba em `permissions` antes do lançamento, porque essa tabela é legível por todos os usuários ativos.
+
+## Sugeridos pela sessão "Módulo de leads" (29/10/2026), ainda não criados
+Testes:
+- Rodar `npm test` e `npm run test:banco` antes de todo commit que mexe em `crm/` (hoje é manual).
+- Trazer o teste da base (`sqltest/test.mjs`) para `crm/supabase/testes/`, ao lado do de leads, e trocar a contagem fixa de permissões por uma conferência por nome.
+- O build (`out/`) não contém a palavra "campanha" junto de termos do programa sigiloso.
+- As origens e etapas do `schema.sql` batem com as listas de `docs/leads.md`.
+- Os motivos de descarte do check de `leads` batem com `MOTIVOS_DESCARTE` em `crm/src/lib/leads.ts`.
+- Toda tela nova do `crm/` funciona em 375px sem rolagem lateral da página (`scrollWidth` igual à largura).
+
+Hooks:
+- Bloquear `delete` em `leads` e `lead_interacoes` nos GRANTs do `schema.sql` (a regra é sem exclusão física).
+- Bloquear `grant update` de `criado_por`, `atribuido_por` ou `ultima_interacao_*` em `leads`, que são preenchidos só por gatilho.
+- Avisar quando `crm/src` usar `perfil === ` em vez de `pode(...)` para decidir acesso.

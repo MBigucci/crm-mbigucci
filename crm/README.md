@@ -2,7 +2,7 @@
 
 O CRM dos corretores, no visual do MBigucci Design System. É um site **estático**, como a pesquisa da Fase 1. Ele fica numa pasta do servidor do WordPress, sem Node e sem plugin. O login e os dados vêm do **Supabase**, direto do navegador. Quem garante que cada pessoa só vê o que pode são as regras de segurança do banco (RLS), descritas no fim deste arquivo.
 
-Esta primeira versão tem o login, os usuários, as equipes, as permissões por perfil e as chaves do sistema. Leads, pontuação, metas, ranking e recepção entram nas próximas etapas.
+Esta versão tem o login, os usuários, as equipes, as permissões por perfil, as chaves do sistema e o primeiro corte do módulo de leads (lista do dia, cadastro rápido, ficha, quadro por etapas e atribuição pelo gerente, descritos em `docs/leads.md`). As próximas telas entram nas próximas etapas.
 
 ## 1. Criar o projeto no Supabase (uma vez)
 
@@ -95,6 +95,8 @@ Os perfis são: gerente geral, operacional, gerente, corretor, recepção e espe
 | `equipes.gerenciar` | Criar, renomear e excluir equipes e trocar o gerente | Só o gerente geral |
 | `dados.ver_todos` | Ver os dados de todas as equipes | Só o gerente geral |
 | `dados.ver_equipe` | Ver os dados dos corretores da própria equipe | Gerente |
+| `leads.cadastrar` | Cadastrar e trabalhar os próprios leads | Corretor |
+| `leads.atribuir` | Cadastrar leads da empresa e atribuir a corretores da equipe | Gerente |
 
 - O **gerente geral** tem todas as permissões, sempre, sem depender da tabela. Assim ele não consegue se trancar fora por engano.
 - Algumas regras ficam fixas no banco, para não dependerem de configuração:
@@ -145,6 +147,9 @@ Um **usuário desativado** perde todas as permissões na hora. Ele continua vend
 | `roles`, `permissions` | Qualquer usuário ativo, porque o app monta o menu com elas | Ninguém pelo app, só pelo SQL Editor |
 | `role_permissions` | Qualquer usuário ativo | Conceder e retirar: só o gerente geral |
 | `app_settings` | Só o gerente geral | Só o gerente geral, e só a coluna valor. Cada mudança registra quem fez e quando. |
+| `lead_origens`, `lead_etapas` | Qualquer usuário ativo | Ninguém pelo app. Ajuste as opções no Table Editor. |
+| `leads` | `pode_ver_dados_de(dono)`: o corretor vê os dele, o gerente os da equipe, o gerente geral todos | Cadastrar: o corretor, para si, fora da origem Empresa; ou quem tem `leads.atribuir`, para um corretor ativo da equipe. Alterar: o dono; quem atribui só troca o dono. Sem exclusão. |
+| `lead_interacoes` | Quem vê o lead | Registrar: só o dono do lead. Sem edição nem exclusão. |
 
 ### Gatilhos que completam as policies
 
@@ -152,6 +157,8 @@ Um **usuário desativado** perde todas as permissões na hora. Ele continua vend
 - **E-mail trocado no Auth:** atualiza o e-mail no perfil.
 - **Edição de perfil:** aplica as regras fixas da seção "Perfis e permissões" (gerente geral, gerente com equipe, gerente fora de equipe).
 - **Equipe:** o gerente escolhido precisa ter o perfil Gerente.
+- **Lead:** carimba quem criou e quem atribuiu, deixa quem não é o dono só trocar o dono e protege a origem Empresa.
+- **Interação:** grava no lead a última interação e o próximo contato.
 
 ### Como o schema foi testado
 
@@ -176,4 +183,16 @@ Abra `http://localhost:3000/crm`. Sem o `.env.local`, as telas avisam que o Supa
 
 ```bash
 npm run typecheck
+```
+
+Testes da lista do dia:
+
+```bash
+npm test
+```
+
+Teste do schema e do RLS de leads num Postgres local (PGlite), sem tocar no Supabase:
+
+```bash
+npm run test:banco
 ```
