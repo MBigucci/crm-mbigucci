@@ -53,9 +53,13 @@ A tabela "Visitas no período, por corretor" (agendadas, realizadas, não compar
 
 ## 6. Sigilo
 
-O painel não mostra campanha, verba, pontos nem ranking, e o campo campanha fica fora da conta (`docs/pontuacao-verba.md`). A "conversão por origem e campanha" do item 11 da Bruna entrou só por origem. A conta por campanha volta a ser avaliada depois da reunião de novembro. O tempo médio de resposta e o ticket médio também ficaram de fora.
+O painel não mostra verba, pontos nem ranking (`docs/pontuacao-verba.md`). **Atualizado em 29/10/2026:** a conversão por origem entrou no painel e no relatório, e a linha por campanha aparece só com a permissão `painel.campanha`, que no padrão é do corretor e não do gerente (`docs/vendas-metas.md`, seção 5). O tempo médio de resposta e o ticket médio ficaram de fora.
 
-## 7. Testes
+## 7. Vendas, metas e conversão (29/10/2026)
+
+Regras em `docs/vendas-metas.md`. No relatório do corretor (e no "Meu painel"): o cartão da meta anual de VGV, as metas próprias marcadas para o painel, a conversão por origem e as vendas do período (assinado e pago, assinado com pendentes, pendente). No painel da equipe: a conversão por origem da equipe, "Vendas no período, por corretor" (pela data da assinatura) e a "Meta anual de VGV" por corretor, com o nome abrindo o relatório. As vendas do período usam o mesmo dia, semana ou mês dos outros números.
+
+## 8. Testes
 
 - `npm test`: períodos (semana de segunda a domingo, rótulos, anterior e seguinte) e os números do painel (recebidos, perdidos, cadastrados por origem, descartes com Desfazer, funil com saída da carteira, lead perdido que o corretor não vê mais, soma da equipe).
 - `npm run test:banco`: `fim_do_prazo` igual ao do app (fora do horário, sexta para segunda), `lead_perdido` (só gerente, só lead da empresa com prazo estourado, só dentro da equipe, motivo gravado pelo gatilho, prazo recomeça, troca comum sem motivo) e `leads_perdidos` por perfil.

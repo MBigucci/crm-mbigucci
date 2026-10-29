@@ -65,6 +65,8 @@ Exemplos do documento original, que precisam bater:
 
 Vale só a faixa mais alta atingida (não acumula), e só contam vendas **assinadas e pagas**. A premiação também é liberada no mês seguinte.
 
+**Construído em 29/10/2026** (`docs/vendas-metas.md`, seção 6): a tabela de faixas é configurável e o cálculo por corretor e mês fica na tela Faixas de VGV, só do gerente geral. Os textos da tela vêm de `app_settings`, e o código do site não cita a premiação.
+
 ## Roleta do fim de semana
 
 - Entra na roleta quem cumpriu **6 períodos completos na semana**. Os períodos são 9h–14h (manhã) e 14h–19h (tarde).

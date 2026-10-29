@@ -3,7 +3,7 @@
 > Decisões tomadas na fundação do CRM (`crm/`), em 28/10/2026. O passo a passo de instalação está em `crm/README.md`. As regras de negócio estão em `docs/acessos-perfis.md`, `docs/leads.md` e `docs/pontuacao-verba.md`, e as regras visuais em `docs/design-system.md`.
 
 ## Sumário
-Deploy estático · Modelo de permissões · RLS · Sigilo do programa de verba · Módulo de leads · Visitas · PWA · Testes
+Deploy estático · Modelo de permissões · RLS · Sigilo do programa de verba · Módulo de leads · Visitas · Vendas e metas · PWA · Testes
 
 ## Deploy estático
 
@@ -89,6 +89,19 @@ As regras de negócio estão em `docs/visitas.md`.
 - **Permissão nova:** `visitas.baixa_equipe` (gerente), com o padrão só na criação.
 - **Front:** `visitas.ts` (puro, com testes), `visitas-dados.ts` (leitura com o lead embutido, `lead:leads(...)`, e escrita) e `components/visitas/visitas.tsx` (card, ações, agendar). A lista do dia e o painel seguem sem as visitas se a leitura falhar.
 
+## Vendas e metas (29/10/2026)
+
+As regras de negócio estão em `docs/vendas-metas.md`.
+
+- **Tabela `vendas`:** sem exclusão, RLS por `pode_ver_dados_de(corretor_id)`. `assinada_em` e `pago_em` são `date`. O app grava `lead_id`, `empreendimento`, `unidade`, `vgv`, `assinada_em`, `pagamento`, `pago_em` e `observacao` no insert, e os mesmos (menos `lead_id`) e `status` no update. `corretor_id` vem do `auth.uid()`; `registrada_por` e `cancelada_*` são do gatilho.
+- **Gatilhos:** `vendas_guard` (antes: lead ativo, datas até hoje, carimbos; sem motivo só passa pendente → pago; o resto exige `crm.motivo_venda` e `vendas.corrigir_equipe`), `venda_atualiza_lead` (depois: leva o lead a Venda; cancelar a última devolve a Proposta) e `venda_registra_eventos` (depois: `lead_eventos` com `venda_id`, tipos `venda`, `venda_pagamento` e `venda_correcao`, com de/para em JSON). `leads_venda_guard` recusa a etapa Venda posta à mão (só quando `pg_trigger_depth() = 1` e com usuário logado).
+- **Correção:** `corrigir_venda(venda, campos jsonb, motivo)` é `security invoker` e marca `crm.motivo_venda` na transação, como `corrigir_visita`.
+- **`lead_eventos_tipo_check`:** a lista completa (com os tipos da venda) fica também na seção das visitas, porque rodar o `schema.sql` de novo recria o check com eventos de venda já gravados.
+- **Metas:** `metas_vgv` (ano, corretor ou null para o geral, valor; leitura do geral por todo ativo, escrita com `metas.definir_vgv`; único por ano e corretor por índice com `coalesce`) e `metas` (do corretor, `for all` só para o dono com `leads.cadastrar`; índice `metas_sem_duplicar`). Esta tem `delete`, porque meta não é registro de auditoria.
+- **Faixas:** `faixas_vgv` com RLS fixa `is_gerente_geral()`, sem permissão no catálogo. Os textos da tela ficam em `app_settings` (`faixas_vgv`, valor `{"coluna": ...}`); a tela de Configurações lista só as chaves booleanas.
+- **Permissões novas:** `vendas.corrigir_equipe` (gerente), `metas.definir_vgv` (ninguém além do gerente geral) e `painel.campanha` (corretor), com o padrão só na criação.
+- **Front:** `vendas.ts`, `metas.ts` e `faixas.ts` (puros, com testes), `vendas-dados.ts` (leitura em páginas, escrita e RPC), `components/vendas/vendas.tsx` e `components/metas/metas.tsx`, páginas `/vendas/`, `/metas/` e `/faixas/`. A ficha e as telas seguem sem as vendas se a leitura falhar (o SQL ainda não rodou). `formatarReais` usa espaço que não quebra a linha.
+
 ## PWA (29/10/2026)
 
 - **Manifest estático:** `crm/public/manifest.webmanifest`, e não um `app/manifest.ts`. Todos os caminhos dentro dele são **relativos** (`./`, `icons/...`), então resolvem para `/crm/` a partir da URL do manifest, com qualquer `BASE_PATH`. Nome "CRM MBigucci", nome curto "CRM", `display: standalone`, fundo e tema `paper` #f7f6f2.
@@ -104,7 +117,8 @@ As regras de negócio estão em `docs/visitas.md`.
 - **Schema e RLS da base:** testados no PGlite (Postgres em WASM), com uma simulação do `auth.users`, do `auth.uid()` e dos papéis `anon` e `authenticated`. Foram 44 verificações por perfil, e o script rodou três vezes para provar que é idempotente. Esse script continua fora do repositório, na pasta de notas da sessão da base (`sqltest/test.mjs`). Ele conta 2 permissões fixas, então acusa 1 falha desde que as de leads entraram.
 - **RLS de leads:** `crm/supabase/testes/leads.test.mjs`, com o mesmo tipo de simulação, roda com `npm run test:banco`. São 25 testes por perfil, incluindo `lead_eventos`, tentativas, avanço de etapa, a mensagem original e o horário de atendimento, (corretor, colega, gerente da equipe, gerente de outra equipe, gerente geral, recepção, desativado e anônimo).
 - **RLS e gatilhos das visitas:** `crm/supabase/testes/visitas.test.mjs`, também no `npm run test:banco`, com 13 testes (`docs/visitas.md`, seção 9).
-- **Regras puras:** `npm test` roda `leads.test.ts` (lista do dia, WhatsApp), `followup.test.ts` (follow-up e histórico), `cadastro-magico.test.ts` (parser), `prazo.test.ts`, `mensagens.test.ts` (modelos e repasse), `busca.test.ts` (busca, ordem e filtros), `painel.test.ts` e `visitas.test.ts`.
+- **RLS e gatilhos de vendas e metas:** `crm/supabase/testes/vendas.test.mjs`, também no `npm run test:banco`, com 12 testes (`docs/vendas-metas.md`, seção 10).
+- **Regras puras:** `npm test` roda `leads.test.ts` (lista do dia, WhatsApp), `followup.test.ts` (follow-up e histórico), `cadastro-magico.test.ts` (parser), `prazo.test.ts`, `mensagens.test.ts` (modelos e repasse), `busca.test.ts` (busca, ordem e filtros), `painel.test.ts` (com a conversão por origem e campanha), `visitas.test.ts` e `vendas.test.ts` (vendas, meta anual, metas próprias e faixas).
 - **Scripts do SQL Editor:** `schema.sql`, `dados-teste.sql`, `verificar-rls.sql` e `limpar-dados-teste.sql` rodaram em sequência no PGlite em 29/10/2026, com o resultado esperado por perfil.
 - **Telas:** conferidas em 375px com um Supabase falso (`sqltest/fake-supabase-leads.mjs`, na pasta de notas), que imita o RLS por perfil. A versão `fake-supabase-leads-v2.mjs` imita também eventos, tentativas e o avanço de etapa.
 - **Ainda não validado:** o módulo de leads num Supabase real e a Edge Function pela tela.

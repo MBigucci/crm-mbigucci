@@ -32,7 +32,7 @@
   - **Anúncio próprio** mostra o campo campanha. A campanha é só um dado de origem.
   - **Empresa** é restrita: só quem tem `leads.atribuir` cadastra um lead com essa origem, ou muda a origem de/para ela.
 - **E-mail:** opcional, guardado em minúsculas. Vem do Cadastro Mágico ou do perfil na ficha.
-- **Etapas:** novo, em contato, visita agendada, visita realizada, proposta, venda e aguardando lançamento. A primeira conversa (WhatsApp, ligação, e-mail ou visita) tira o lead de "novo" sozinha. A etapa nunca volta sozinha.
+- **Etapas:** novo, em contato, visita agendada, visita realizada, proposta, venda e aguardando lançamento. A primeira conversa (WhatsApp, ligação, e-mail ou visita) tira o lead de "novo" sozinha. A etapa nunca volta sozinha, com uma exceção: cancelar a única venda do lead o devolve a Proposta. A etapa **Venda** só vem do registro da venda (`docs/vendas-metas.md`): escolher Venda na ficha abre o registro.
 - **Temperatura:** quente, morno ou frio, sempre com sinal + palavra + cor: `! Quente` (vermelho), `○ Morno` (âmbar), `– Frio` (cinza). Os sinais foram escolhidos pelo Felipe em 29/10/2026. Pode ficar vazia.
 - **Interação:** tem um tipo (WhatsApp, ligação, e-mail, visita ou anotação, em 1 toque) e sempre termina com o próximo contato (dia e hora). Ela atualiza no lead a última interação e o próximo contato. O histórico não é editado nem apagado.
   - Dois tipos têm fluxo próprio: "Sem resposta" (seção 5) e "Mensagem original" (seção 7), a única sem próximo contato.

@@ -31,7 +31,7 @@
 
 ## Cuidados com o sigilo
 
-- **Empresa x captado** aparece para o gerente só como **origem do lead**. Nunca como verba, campanha paga ou conciliação, e o campo campanha fica fora do painel do gerente enquanto a chave "Programa de verba ativo" estiver desligada (`docs/pontuacao-verba.md`).
+- **Empresa x captado** aparece para o gerente só como **origem do lead**. Nunca como verba, campanha paga ou conciliação, e o campo campanha fica fora do painel do gerente enquanto a chave "Programa de verba ativo" estiver desligada (`docs/pontuacao-verba.md`). Desde 29/10/2026 a conversão por campanha existe atrás da permissão `painel.campanha`, que o gerente não tem no padrão (`docs/vendas-metas.md`, seção 5).
 - O painel do gerente não mostra pontos, verba nem ranking.
 
 ## Onde entra
