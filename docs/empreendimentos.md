@@ -6,7 +6,7 @@
 1. Resumo
 2. Decisões do Felipe (29/10/2026)
 3. Fontes e método
-4. Os 39 empreendimentos
+4. Os 46 itens
 5. Cruzamento com a lista atual e o tabelão
 6. Lacunas
 7. Pendências
@@ -17,11 +17,11 @@
 
 ## 1. Resumo
 
-- **39 empreendimentos** e **88 tipologias** no JSON. São 37 com página no site oficial e 2 que seguem à venda sem página (Royal Palace e Terra Nostra Parma).
-- **Por status:** 2 em breve lançamento (Elleva, Dom), 2 em lançamento (Marco Zero One, Mundi), 6 em obras e 29 prontos.
-- **Entram no catálogo:** apartamentos e salas comerciais. Casas, lotes, Classic, UP e Cortina D'Ampezzo ficam de fora.
+- **46 itens** no JSON, um por torre que tem unidade à venda (como na Bruna), com **114 tipologias**.
+- **Por status:** 2 em breve lançamento (Elleva, Dom), 3 em lançamento (Marco Zero One, Mundi Lucca e Vitor), 7 em obras e 34 prontos.
+- **Preço:** das tabelas do Linktree de novembro/2026, lidas em 29/10/2026. São a Tabela Promocional (Tabela 26.11.01, o tabelão em PDF) e a tabela do Marco Zero One. 44 itens têm preço; Elleva e Dom não estão em nenhuma tabela.
+- **Entram no catálogo:** apartamentos, salas comerciais e a loja do MBigucci Joy. Casas, lotes, Classic, UP e Cortina D'Ampezzo ficam de fora.
 - **Novos em relação à lista atual:** Marco Zero One, Elleva e Dom. O Marco Zero Mix Work vira item próprio.
-- **Preço:** sempre das tabelas do Linktree, nunca do site. O JSON ainda não tem preço (`preco_a_partir_de` vazio): as tabelas não foram lidas. O "a partir de" do site ficou em `preco_site`, só como referência.
 
 ## 2. Decisões do Felipe (29/10/2026)
 
@@ -31,7 +31,7 @@
 | Classic, UP e Cortina D'Ampezzo | Não entram. | Saíram do JSON. A próxima etapa tira o Cortina D'Ampezzo da lista do Cadastro Mágico. |
 | Casas, lotes e salas | Casas e lotes não; salas sim. | Saíram a Mansão Jardim Acapulco e o Village da Serra. Wynn Tower, Marco Zero Tower e Marco Zero Mix Work ficam, com `tipo: comercial`. A próxima etapa tira o Village da Serra da lista do Cadastro Mágico. |
 | Torres e fases | Igual à Bruna. | Cada item tem `condominio` e `torres_conhecidas`. Na tabela, um registro por torre quando a tabela mensal separar (seção 9). |
-| Preço | Sempre das tabelas do Linktree (PDF, atualizadas todo mês). Os empreendimentos sem preço no site também têm preço nas tabelas. | `preco_a_partir_de` fica vazio até ler as tabelas; o preço do site foi para `preco_site`, só como referência. Cada item aponta a sua tabela: 8 têm tabela própria (Marco Zero One, Mundi, Modena, Joy, Easy Jaçanã, Infinite, Palatium, Terrazzo); os outros apontam a tabela geral do mês ("Tabela mês de aniversário" em outubro, "Tabela promocional" em novembro), com `tabela_geral: true`. A importação mensal vira parte da etapa do catálogo (seção 11). |
+| Preço | Sempre das tabelas do Linktree (PDF, atualizadas todo mês). Os empreendimentos sem preço no site também têm preço nas tabelas. | Lidas as tabelas de novembro (seção 3). `preco_a_partir_de` é o menor preço vigente; o "a partir de" do site ficou em `preco_site`, só como referência. `links.tabela_precos_usada` diz de qual tabela veio. A importação mensal vira parte da etapa do catálogo (seção 11). |
 | Endereço | Vale o do Linktree. | Conferido nas fichas técnicas: Life nº 230, Easy Jaçanã nº 180/184, Marco Zero Mix nº 1.230, Domani "Princesa Maria Amélia", Infinite nº 968 (bairro Barcelona) e Olimpic na Saúde. |
 | Entrega do Terrazzo | Vale o site. | Mar/2028. |
 | Link para o cliente | A apresentação, mas o ideal é um link oficial da MBigucci, não o Drive. | Por ora, `links.apresentacao` (Drive). O pedido de hospedar as apresentações no site está na lista para o marketing (seção 8). |
@@ -44,7 +44,7 @@
 | Site oficial `mbigucci.com.br/empreendimentos/` | O bloco "Detalhes do imóvel" de cada empreendimento: área, dormitórios, suítes, vagas, fase da obra, previsão de entrega, "A partir de", plantas, lazer, endereço e mapa. | As 37 páginas, todas abertas. Cada uma diz "Informações atualizadas em …" (entre 8 e 29/10/2026). |
 | Fichas técnicas (PDF no Drive, pelo Linktree) | Endereço, unidades, tipologias, entrega. | Abertas só no visualizador, sem baixar, para conferir os endereços divergentes: Life, Terrazzo, Infinite, Easy Jaçanã, Marco Zero Mix, Domani, Olimpic e Maximus. |
 | Tabelão de set/2026 (`ref/`) | Unidades à venda com preço, por torre. | Usado só para Royal Palace e Terra Nostra Parma, que não têm página. |
-| Tabelas de preço (PDF no Drive) | Preço por unidade, de outubro e de novembro. | **Não abertas.** Os links estão no JSON (`tabela_outubro`, `tabela_novembro`). |
+| Tabelas de preço de novembro/2026 (PDF no Drive, em `linktr.ee/TABELAS_FUTURAS`) | **Tabela Promocional** (Tabela 26.11.01): todos os prontos por unidade, com preço de tabela, preço promocional, condomínio e IPTU, e os em obras com "a partir de" e entrega. **Tabela do Marco Zero One** (26.11): preço por unidade e entrega. | Lidas em 29/10/2026 pelo texto que o visualizador do Drive expõe, sem baixar os arquivos. As tabelas próprias dos outros 7 em obras não foram lidas: o "a partir de" deles veio da Tabela Promocional. |
 
 Regras seguidas:
 - Campo vazio (`null`) quer dizer "não publicado". Nada foi deduzido.
@@ -52,51 +52,60 @@ Regras seguidas:
 - O link do Google Maps é montado com o endereço que vale (o do Linktree, ou o do mapa do site quando não houve divergência).
 - Ficaram de fora: locação (galpões, terrenos e imóveis comerciais), terrenos e lotes à venda, documentos e institucional.
 
-## 4. Os 39 empreendimentos
+## 4. Os 46 itens
 
-Entrega como está no site em 29/10/2026. A coluna de preço é o "a partir de" do **site**, só como referência: o preço que vale é o das tabelas do Linktree. O ! marca preço publicado com formato errado.
+Um item por torre com unidade à venda. Preço e área vêm das tabelas de novembro/2026 do Linktree: o preço é o menor preço vigente (o promocional, quando a tabela traz os dois). A coluna "Site" é o "a partir de" do site, só para comparar. Entrega: a das tabelas, salvo o Terrazzo (vale o site, Mar/2028) e o Easy Jaçanã (o site diz "36 meses após a assinatura com a CEF"; a tabela, Mar/2029).
 
-| Nome | Condomínio | Status | Bairro, cidade | Dorms | Área | Site (referência) | Entrega |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Marco Zero One | | Lançamento | Jardim do Mar, São Bernardo do Campo | 3 e 4 | 152–357 m² | — | — |
-| Mundi MBigucci | Mundi | Lançamento | Pauliceia, São Bernardo do Campo | 2 e 3 | 43–53 m² | R$ 344.000 | — |
-| Elleva MBigucci | | Breve lançamento | Centro, São Bernardo do Campo | 2 | 67 m² | A combinar | — |
-| Dom MBigucci | | Breve lançamento | Campestre, Santo André | 2 | 70 m² | A combinar | — |
-| Terra Nostra Modena | Terra Nostra | Em obras | Jardim Diogo, Guarulhos | 2 | 44 m² | R$ 343.700 | Mai/2027 |
-| MBigucci Joy | | Em obras | Vila Prudente, São Paulo | 2 | 35–40 m² | R$ 318.400 | Out/2028 |
-| Easy Jaçanã | | Em obras | Jaçanã, São Paulo | 1 e 2 | 25–45 m² | R$ 239.100 | 36 meses após a CEF |
-| Infinite São Caetano | | Em obras | Barcelona, São Caetano do Sul | 3 | 81 m² | R$ 1.086.700 | Abr/2028 |
-| Palatium Ipiranga | | Em obras | Ipiranga, São Paulo | 2 a 3 | 56–85 m² | R$ 729.600 | Mar/2027 |
-| Terrazzo MBigucci | | Em obras | Vila Carrão, São Paulo | 2 a 3 | 66–82 m² | R$ 857.400 | Mar/2028 |
-| Alameda MBigucci | | Pronto | Campestre, Santo André | 2 | 56–61 m² | ! R$ 570.00,00 | Entregue |
-| Exuberance MBigucci | Exuberance | Pronto | Rudge Ramos, São Bernardo do Campo | 3 | 70 m² | R$ 615.000 | Entregue |
-| Imperium MBigucci | | Pronto | Ipiranga, São Paulo | 3 | 103 m² | R$ 1.261.500 | Entregue |
-| Life MBigucci | | Pronto | Centro, São Bernardo do Campo | Studio | 20–48 m² | R$ 368.900 | Entregue |
-| New Park MBigucci | | Pronto | Aclimação, São Paulo | 1 | 35–99 m² | R$ 637.500 | Entregue |
-| Sonata MBigucci | Sonata | Pronto | Santa Teresinha, Santo André | 1 e 2 | 37–50 m² | ! R$ 365.00,00 | Entregue |
-| Station MBigucci | | Pronto | Jabaquara, São Paulo | 1 ou 2 | 37–48 m² | R$ 417.400 | Entregue |
-| Unique MBigucci | | Pronto | Rudge Ramos, São Bernardo do Campo | Loft e 2 | 36–54 m² | R$ 457.000 | Entregue |
-| Vert MBigucci | | Pronto | Aclimação, São Paulo | 2 | 56–63 m² | R$ 711.100 | Entregue |
-| Essenza MBigucci | Essenza | Pronto | Vila Gonçalves, São Bernardo do Campo | 2 | 58 m² | R$ 530.000 | Entregue |
-| Impactus MBigucci | | Pronto | Parque Jaçatuba, Santo André | 2 e 3 | 50–61 m² | R$ 420.000 | Entregue |
-| America MBigucci | America | Pronto | Cooperativa, São Bernardo do Campo | 2 | 43–44 m² | R$ 299.000 | Entregue |
-| Stylo MBigucci | | Pronto | Rudge Ramos, São Bernardo do Campo | 2 a 3 | 71–82 m² | R$ 776.700 | Entregue |
-| Alvorada MBigucci | | Pronto | Itaquera, São Paulo | 2 | 37 m² | R$ 270.000 | Entregue |
-| Domani MBigucci | | Pronto | Nova Petrópolis, São Bernardo do Campo | 2 suítes | 67 m² | R$ 659.400 | Entregue |
-| Maximus MBigucci | | Pronto | Jardim das Américas, São Bernardo do Campo | 3 suítes | 132 m² | R$ 1.200.000 | Entregue |
-| Wynn Tower MBigucci | | Pronto | Rudge Ramos, São Bernardo do Campo | sala comercial | 32–36 m² | R$ 365.600 | Entregue |
-| First Class MBigucci | First Class | Pronto | Morumbi, São Paulo | 2 suítes | 64 m² | R$ 571.900 | Entregue |
-| Olimpic MBigucci | Olimpic | Pronto | Saúde, São Paulo | 2 e 3 | 56–71 m² | R$ 350.000 | Entregue |
-| Wish Residence MBigucci | | Pronto | Ipiranga, São Paulo | 2 | 68 m² | R$ 760.000 | Entregue |
-| Piemonte MBigucci | | Pronto | Água Funda, São Paulo | 3 | 58 m² | R$ 522.100 | Entregue |
-| Marco Zero Mix Residence | Marco Zero Mix | Pronto | Jardim do Mar, São Bernardo do Campo | Loft | 36–73 m² (Mix todo) | R$ 369.700 (Mix todo) | Entregue |
-| Marco Zero Mix Work | Marco Zero Mix | Pronto | Jardim do Mar, São Bernardo do Campo | sala comercial | 36–73 m² (Mix todo) | R$ 369.700 (Mix todo) | Entregue |
-| Marco Zero Tower | | Pronto | Jardim do Mar, São Bernardo do Campo | sala comercial | 46–77 m² | R$ 435.000 | Entregue |
-| Marco Zero Premier & Prime | Marco Zero Premier & Prime | Pronto | Jardim do Mar, São Bernardo do Campo | 2 e 3 | 65–83 m² | R$ 680.000 | — |
-| Marco Zero Home | | Pronto | Jardim do Mar, São Bernardo do Campo | Loft e 2 | 42–50 m² | R$ 420.000 | Entregue |
-| Easy São Vicente | | Pronto | Centro, São Vicente | 2 | 38–53 m² | R$ 276.700 | Entregue |
-| Royal Palace | | Pronto | Vila Monumento, São Paulo | 3 | 71,65 m² | — (tabelão set/2026: R$ 773.700) | Entregue |
-| Terra Nostra Parma | Terra Nostra | Pronto | Jardim Diogo, Guarulhos | 2 | 43,77 m² | — (tabelão set/2026: R$ 363.000) | Entregue |
+| Nome | Condomínio | Status | Bairro, cidade | Dorms | Área | A partir de | Site | Entrega |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Marco Zero One |  | Lançamento | Jardim do Mar, São Bernardo do Campo | 3, 4 | 152–357 m² | R$ 2.436.300 | — | Ago/2030 |
+| Mundi - Thiago | Mundi | Pronto | Pauliceia, São Bernardo do Campo | 3 | 53,54 m² | R$ 459.900 | R$ 344.000 | Entregue |
+| Mundi - Lucca | Mundi | Lançamento | Pauliceia, São Bernardo do Campo | 2 | 44–48 m² | R$ 344.800 | R$ 344.000 | Dez/2029 |
+| Mundi - Vitor | Mundi | Lançamento | Pauliceia, São Bernardo do Campo | 2, 3 | 43,77–53,54 m² | R$ 344.800 | R$ 344.000 | Dez/2029 |
+| Elleva MBigucci |  | Breve lançamento | Centro, São Bernardo do Campo | — | — | — | — | — |
+| Dom MBigucci |  | Breve lançamento | Campestre, Santo André | — | — | — | — | — |
+| Terra Nostra Modena | Terra Nostra | Em obras | Jardim Diogo, Guarulhos | 2 | 43,77–44,36 m² | R$ 344.500 | R$ 343.700 | Mai/2027 |
+| MBigucci Joy - Loja | MBigucci Joy | Em obras | Vila Prudente, São Paulo | loja | 90,92 m² | R$ 1.179.400 | R$ 318.400 | Out/2028 |
+| MBigucci Joy |  | Em obras | Vila Prudente, São Paulo | 2 | 35,63–70,24 m² | R$ 319.100 | R$ 318.400 | Out/2028 |
+| Easy Jaçanã |  | Em obras | Jaçanã, São Paulo | 1, 2 | 25,5–45,92 m² | R$ 239.600 | R$ 239.100 | Mar/2029 |
+| Infinite São Caetano |  | Em obras | Santa Paula, São Caetano do Sul | 3 | 81,82 m² | R$ 1.089.100 | R$ 1.086.700 | Abr/2028 |
+| Palatium Ipiranga |  | Em obras | Ipiranga, São Paulo | 2, 3 | 57–85 m² | R$ 731.200 | R$ 729.600 | Mar/2027 |
+| Terrazzo MBigucci |  | Em obras | Vila Carrão, São Paulo | 2, 3 | 66,81–82,02 m² | R$ 859.300 | R$ 857.400 | Mar/2028 |
+| Alameda MBigucci |  | Pronto | Campestre, Santo André | 2 | 56,79–61,06 m² | R$ 609.400 | — | Entregue |
+| Exuberance - Bellatrix | Exuberance | Pronto | Rudge Ramos, São Bernardo do Campo | 3 | 70,37 m² | R$ 657.600 | R$ 615.000 | Entregue |
+| Imperium MBigucci |  | Pronto | Ipiranga, São Paulo | 3 | 103,69 m² | R$ 1.348.700 | R$ 1.261.500 | Entregue |
+| Life MBigucci |  | Pronto | Centro, São Bernardo do Campo | 2, studio | 25–48,24 m² | R$ 394.400 | R$ 368.900 | Entregue |
+| New Park MBigucci |  | Pronto | Aclimação, São Paulo | 1 | 38,45–99,27 m² | R$ 681.600 | R$ 637.500 | Entregue |
+| Sonata - Beethoven | Sonata | Pronto | Santa Teresinha, Santo André | 1, 2 | 37,71–50,18 m² | R$ 370.700 | — | Entregue |
+| Sonata - Mozart | Sonata | Pronto | Santa Teresinha, Santo André | 2 | 48,95–50,18 m² | R$ 457.100 | — | Entregue |
+| Station MBigucci |  | Pronto | Jabaquara, São Paulo | 1, 2 | 37,29–48,2 m² | R$ 424.000 | R$ 417.400 | Entregue |
+| Unique MBigucci |  | Pronto | Rudge Ramos, São Bernardo do Campo | 1 | 35,72 m² | R$ 488.700 | R$ 457.000 | Entregue |
+| Vert MBigucci |  | Pronto | Aclimação, São Paulo | 2 | 57,35–69,98 m² | R$ 760.300 | R$ 711.100 | Entregue |
+| Essenza - Thiago | Essenza | Pronto | Vila Gonçalves, São Bernardo do Campo | 2 | 58,24 m² | R$ 566.700 | R$ 530.000 | Entregue |
+| Impactus MBigucci |  | Pronto | Parque Jaçatuba, Santo André | 2, 3 | 50,6–61,37 m² | R$ 426.600 | R$ 420.000 | Entregue |
+| America - California | America | Pronto | Cooperativa, São Bernardo do Campo | 2 | 43,6 m² | R$ 303.700 | R$ 299.000 | Entregue |
+| America - Flórida | America | Pronto | Cooperativa, São Bernardo do Campo | 2 | 43,6–44,86 m² | R$ 303.700 | R$ 299.000 | Entregue |
+| Stylo MBigucci |  | Pronto | Rudge Ramos, São Bernardo do Campo | 2, 3 | 71,28–81,98 m² | R$ 830.400 | R$ 776.700 | Entregue |
+| Alvorada MBigucci |  | Pronto | Itaquera, São Paulo | 2 | 37,88–39,58 m² | R$ 274.200 | R$ 270.000 | Entregue |
+| Domani MBigucci |  | Pronto | Nova Petrópolis, São Bernardo do Campo | 2 | 67,81 m² | R$ 705.000 | R$ 659.400 | Entregue |
+| Maximus MBigucci |  | Pronto | Jardim das Américas, São Bernardo do Campo | 3 | 132 m² | R$ 1.283.000 | R$ 1.200.000 | Entregue |
+| Wynn Tower MBigucci |  | Pronto | Rudge Ramos, São Bernardo do Campo | sala | 32,09–35,81 m² | R$ 390.800 | R$ 365.600 | Entregue |
+| First Class - Premium | First Class | Pronto | Morumbi, São Paulo | 2 | 64,14 m² | R$ 611.500 | R$ 571.900 | Entregue |
+| First Class - Vip | First Class | Pronto | Morumbi, São Paulo | 2 | 64,14 m² | R$ 633.800 | R$ 571.900 | Entregue |
+| Olimpic - Rio de Janeiro | Olimpic | Pronto | Jardim Santa Cruz, São Paulo | 2, 3 | 64,82–71,38 m² | R$ 457.100 | R$ 350.000 | Entregue |
+| Wish Residence MBigucci |  | Pronto | Ipiranga, São Paulo | 2, 3 | 68,55–120,69 m² | R$ 812.600 | R$ 760.000 | Entregue |
+| Piemonte MBigucci |  | Pronto | Água Funda, São Paulo | 3 | 58,75 m² | R$ 530.300 | R$ 522.100 | Entregue |
+| Marco Zero Mix Residence | Marco Zero Mix | Pronto | Jardim do Mar, São Bernardo do Campo | 1 | 40,4–73,5 m² | R$ 449.000 | R$ 369.700 | Entregue |
+| Marco Zero Mix Work | Marco Zero Mix | Pronto | Jardim do Mar, São Bernardo do Campo | sala | 32,66–36,32 m² | R$ 395.300 | R$ 369.700 | Entregue |
+| Marco Zero Tower |  | Pronto | Jardim do Mar, São Bernardo do Campo | sala | 42,68–46,09 m² | R$ 465.100 | R$ 435.000 | Entregue |
+| Marco Zero Premier | Marco Zero Premier & Prime | Pronto | Jardim do Mar, São Bernardo do Campo | 2, 3 | 65,3–83,92 m² | R$ 727.000 | R$ 680.000 | Entregue |
+| Marco Zero Prime | Marco Zero Premier & Prime | Pronto | Rudge Ramos, São Bernardo do Campo | 2, 3 | 65,3–83,92 m² | R$ 727.000 | R$ 680.000 | Entregue |
+| Marco Zero Home |  | Pronto | Jardim do Mar, São Bernardo do Campo | loft | 42,9–50,7 m² | R$ 449.000 | R$ 420.000 | Entregue |
+| Easy São Vicente |  | Pronto | Centro, São Vicente | 2 | 38,71–53,54 m² | R$ 295.900 | R$ 276.700 | Entregue |
+| Royal Palace |  | Pronto | Vila Monumento, São Paulo | 3 | 71,65 m² | R$ 785.800 | — | Entregue |
+| Terra Nostra Parma | Terra Nostra | Pronto | Jardim Diogo, Guarulhos | 2 | 43,77 m² | R$ 350.300 | — | Entregue |
+
+Restrição de renda, como a tabela traz: Piemonte e Station, renda familiar até 10 salários mínimos; Alvorada, do 1º ao 12º andar, até 10; America, até 6. Está em `restricao_renda`.
 
 ## 5. Cruzamento com a lista atual e o tabelão
 
@@ -107,7 +116,7 @@ Comparado com `crm/src/lib/empreendimentos.ts` (37 nomes) e `ref/CRM Bruna/impor
 | --- | --- |
 | Incluir | Marco Zero One, Elleva, Dom |
 | Tirar | Cortina D'Ampezzo, Village da Serra |
-| Incluir como chave | Modena (de Terra Nostra), Mundi Marcela (4ª torre do Mundi), Marco Zero Mix Work e Residence (já são chaves) |
+| Incluir como chave | Modena (de Terra Nostra), as torres da tabela ("Mundi Lucca", "Sonata Mozart" etc.) e Marco Zero Mix Work e Residence (já são chaves) |
 | Manter | Os outros 35, incluindo Royal Palace e Terra Nostra, que seguem à venda |
 
 ### Nomes que divergem
@@ -124,41 +133,46 @@ Comparado com `crm/src/lib/empreendimentos.ts` (37 nomes) e `ref/CRM Bruna/impor
 | Marco Zero Mix | Marco Zero Mix (uma página) | Marco Zero Mix Residence e Marco Zero Mix Work |
 | Easy Jaçanã | Easy Jaçanã | "Easy Jaçana" no índice |
 
-### Torres que o tabelão cita
-Mundi (Thiago pronta; Lucca e Vitor em lançamento; Marcela só no texto do site), Olimpic (Athenas, Rio de Janeiro, Londres), Sonata (Beethoven, Mozart), America (California, Flórida), First Class (Premium, Vip), Exuberance (Bellatrix), Essenza (Thiago), Marco Zero (Premier nº 2087, Prime nº 2099) e Terra Nostra (Modena, Parma). O site não separa as plantas por torre; a tabela mensal deve separar.
+### Torres na tabela de novembro
+Viraram item próprio: Mundi (Thiago pronta; Lucca e Vitor em lançamento), Olimpic (só Rio de Janeiro tem unidade), Sonata (Beethoven, Mozart), America (California, Flórida), First Class (Premium, Vip), Exuberance (Bellatrix), Essenza (Thiago), Marco Zero Premier (nº 2087) e Prime (nº 2099), Terra Nostra (Modena, Parma) e MBigucci Joy (a loja à parte). Olimpic Athenas e Londres e Mundi Marcela não têm unidade na tabela.
 
 ### Endereços: o que vale (Linktree) e onde os outros erram
-| Empreendimento | Vale (ficha do Linktree) | Site | Tabelão |
-| --- | --- | --- | --- |
-| Life | Rua Príncipe Humberto, 230 | nº 168 | nº 230 |
-| Easy Jaçanã | Rua José Buono, 180/184 | nº 178 | nº 180/184 |
-| Marco Zero Mix | Av. Kennedy, 1.230 | nº 1200 (o mesmo do Marco Zero One) | nº 1230 |
-| Domani | Rua Princesa Maria Amélia, 500 | igual | "Rua Princesa Amélia" |
-| Infinite | Rua Alegre, 968 (plantão), Barcelona | nº 968, sem bairro | nº 988, Santa Paula |
-| Terrazzo | Rua Biguaçu, 91 (plantão), Tatuapé; o índice do Linktree diz Vila Carrão | nº 91 | nº 92 |
-| Olimpic | Rua Manoel Salgado, 381, Saúde; o índice do Linktree diz Jd. Caraguatá | Jd. Santa Cruz | Jardim Santa Cruz |
-| Maximus | Av. Redenção, 423, Jd. das Américas; o índice do Linktree diz Centro | igual à ficha | igual à ficha |
+Entre os documentos do Linktree, vale a tabela do mês, que é o mais recente. A ficha técnica de alguns traz só o endereço do plantão.
 
-Na Infinite e no Terrazzo a ficha só traz o endereço do plantão e do decorado. O JSON usa esse endereço, com aviso.
+| Empreendimento | Vale | Site | Outros |
+| --- | --- | --- | --- |
+| Life | Rua Príncipe Humberto, 230 (ficha e tabela) | nº 168 | |
+| Easy Jaçanã | Rua José Buono, 180/184 (ficha e tabela) | nº 178 | |
+| Marco Zero Mix e Marco Zero One | Av. Kennedy, 1.230 (fichas e tabelas) | nº 1200 | |
+| Infinite | Rua Alegre, 988, Santa Paula (tabela) | nº 968, sem bairro | ficha: nº 968 é o plantão; índice do Linktree: Barcelona |
+| Terrazzo | Rua Biguaçu, 92, Vila Carrão (tabela) | nº 91 | ficha: nº 91 é o plantão, no Tatuapé |
+| Olimpic | Rua Manoel Salgado, 381, Jardim Santa Cruz (tabela e site) | igual | ficha: Saúde; índice do Linktree: Jd. Caraguatá |
+| Marco Zero Prime | Av. Senador Vergueiro, 2099, Rudge Ramos (tabela) | Jardim do Mar | |
+| Domani | Rua Princesa Maria Amélia, 500 (ficha) | igual | tabela: "Rua Princesa Amelia" |
+| Maximus | Av. Redenção, 423, Jd. das Américas (ficha, tabela e site) | igual | índice do Linktree: Centro |
 
 ## 6. Lacunas
 
-| Campo | Faltam (de 39) | Quais |
+| Campo | Faltam (de 46) | Quais |
 | --- | --- | --- |
-| Preço (empreendimento e tipologia) | Todos | Vem das tabelas do Linktree, que não foram lidas. |
-| Previsão de entrega (dos 10 em lançamento ou obras) | 5 | Marco Zero One, Mundi, Elleva, Dom ("Consulte") e Easy Jaçanã (só o texto da CEF). |
-| Tour virtual | 17 | Normal: nem todos têm decorado virtual. |
-| Apresentação | 6 | Marco Zero One, Mundi (têm book), Elleva, Dom, First Class e Royal Palace. |
-| Memorial descritivo | 5 | Elleva, Dom, Marco Zero Premier & Prime, Marco Zero Home e Royal Palace. |
+| Preço e tipologias | 2 | Elleva e Dom: não estão na Tabela Promocional e não têm tabela própria no Linktree. |
+| Previsão de entrega (dos 12 em lançamento ou obras) | 2 | Elleva e Dom. |
+| Taxa de condomínio | 10 (+ Elleva e Dom) | Os em obras e o Marco Zero One: a tabela não traz. |
+| Tour virtual | 19 | Normal: nem todos têm decorado virtual. |
+| Apresentação | 9 | Marco Zero One e as torres do Mundi (têm book), Elleva, Dom, as torres do First Class e Royal Palace. |
+| Memorial descritivo | 6 | Elleva, Dom, Marco Zero Premier, Marco Zero Prime, Marco Zero Home e Royal Palace. |
 | Página oficial | 2 | Royal Palace e Terra Nostra Parma. |
-| Tipologias | 1 | Dom (o site não publica planta). |
-| Taxa de condomínio | 39 | O site não publica. Só o tabelão traz. |
 
-Nas 88 tipologias, 44 não dizem quantas suítes e 22 não dizem vagas. A tabela mensal deve completar.
+As tipologias da tabela trazem dormitórios, suítes, vagas, área, preço, condomínio e IPTU. As do Marco Zero One vêm do site (planta) com o preço da tabela; a de 304 m² do site não está na tabela e ficou de fora.
 
 ## 7. Pendências
 
-- **Ler as tabelas do Linktree.** Todo preço vem delas, inclusive o de Marco Zero One, Elleva e Dom, que o site não publica (dúvida 9, resolvida pelo Felipe). A divisão por torre também. Primeira tarefa da etapa do catálogo. A tabela do Marco Zero One, por exemplo, traz por unidade a área, o ato, as mensais e o preço de venda.
+- **Elleva e Dom sem preço.** Não estão nas tabelas de novembro. Dúvida para o Felipe.
+- **Cortina D'Ampezzo está na Tabela Promocional** (cobertura 152, 230 m², R$ 2.644.400, locada até maio/2027). Ficou de fora por decisão do Felipe. Confirmar.
+- **O que quer dizer o \* no preço promocional?** Aparece em Olimpic, Piemonte, Station, Alvorada, Terra Nostra Parma, America, Sonata e Impactus. Em quatro deles a tabela diz que há limite de renda; nos outros, não diz. Ficou registrado na `preco_nota`.
+- **Tabelas próprias dos em obras.** Mundi, Modena, MBigucci Joy, Easy Jaçanã, Infinite, Palatium e Terrazzo têm tabela própria, com preço por unidade. Não foram lidas: o "a partir de" deles veio da Tabela Promocional. A etapa do catálogo pode ler as próprias.
+- **Terrazzo:** a tabela de novembro ainda diz entrega em 01/06/2026. Vale o site (Mar/2028), por decisão do Felipe; vale avisar quem faz a tabela.
+- **Marco Zero One:** o site marca as coberturas como esgotadas, mas a tabela ainda lista as unidades 261 a 264.
 - **Link oficial da apresentação.** Depende do marketing (seção 8).
 
 ## 8. Lista para o marketing
@@ -174,22 +188,27 @@ Pronta para enviar.
 6. Sonata: aparece na categoria São Bernardo do Campo, mas fica em Santo André.
 7. Life: o endereço está como Rua Príncipe Humberto, 168. A ficha técnica diz 230.
 8. Easy Jaçanã: o endereço está como Rua José Buono, 178. A ficha técnica diz 180/184.
-9. Marco Zero Mix: o endereço está como Av. Kennedy, 1200 (o mesmo do Marco Zero One). A ficha técnica diz 1.230.
-10. Infinite: a página não diz o bairro.
-11. Piemonte: a ficha diz 58 m² e 3 dormitórios, mas as plantas vão de 43 a 58 m², com 2 e 3 dormitórios.
-12. New Park: a ficha diz 35 a 99 m², mas só há a planta de 40 m².
-13. Imperium: a primeira planta diz "103m³".
-14. Erros de digitação: "Saão de Festas" (Domani), "Psicina" (Unique), "Fitnss" (Station), "dormitíorios" (Vert), "Pizzza" (Piemonte), "Comunicação entre Andres" (Wynn Tower), "50m" sem o ² (Marco Zero Home).
-15. Royal Palace e Terra Nostra Parma: seguem à venda, mas não têm página.
+9. Marco Zero Mix e Marco Zero One: o endereço está como Av. Kennedy, 1200. A ficha técnica e as tabelas dizem 1.230.
+10. Infinite: a página diz R. Alegre, 968 e não diz o bairro. A tabela diz Rua Alegre, 988, Santa Paula (o 968 é o plantão).
+11. Terrazzo: a página diz Rua Biguaçu, 91 (o plantão); a tabela diz 92.
+12. Marco Zero One: a página marca as coberturas como esgotadas, mas a tabela de novembro ainda lista as unidades 261 a 264.
+13. Marco Zero Premier & Prime: a página põe os dois no Jardim do Mar; a tabela põe o Prime (nº 2099) em Rudge Ramos.
+14. Piemonte: a ficha diz 58 m² e 3 dormitórios, mas as plantas vão de 43 a 58 m², com 2 e 3 dormitórios.
+15. New Park: a ficha diz 35 a 99 m², mas só há a planta de 40 m².
+16. Imperium: a primeira planta diz "103m³".
+17. Erros de digitação: "Saão de Festas" (Domani), "Psicina" (Unique), "Fitnss" (Station), "dormitíorios" (Vert), "Pizzza" (Piemonte), "Comunicação entre Andres" (Wynn Tower), "50m" sem o ² (Marco Zero Home).
+18. Royal Palace e Terra Nostra Parma: seguem à venda, mas não têm página.
 
 **Linktree**
-16. Índice de São Paulo: o Olimpic está em "Jd. Caraguatá", mas a ficha diz Saúde e o site diz Jardim Santa Cruz.
-17. Índice de São Bernardo: o Maximus está em "Centro", mas fica no Jardim das Américas.
-18. "Easy Jaçana" e "New.Park" no índice: grafia diferente da do site.
-19. Os links "Easy Jaçanã · Tabela de preços" e "Tabela mês de aniversário" têm a URL repetida duas vezes.
+19. Índice de São Paulo: o Olimpic está em "Jd. Caraguatá", mas a ficha diz Saúde e o site diz Jardim Santa Cruz.
+20. Índice de São Bernardo: o Maximus está em "Centro", mas fica no Jardim das Américas.
+21. "Easy Jaçana" e "New.Park" no índice: grafia diferente da do site.
+22. Os links "Easy Jaçanã · Tabela de preços" e "Tabela mês de aniversário" têm a URL repetida duas vezes.
+23. Tabela Promocional de novembro: o Terrazzo ainda está com entrega em 01/06/2026 (o site diz Mar/2028); o Domani está como "Rua Princesa Amelia" (a ficha diz "Princesa Maria Amélia").
+24. Fichas técnicas: Olimpic diz bairro Saúde; tabela e site dizem Jardim Santa Cruz.
 
 **Pedido**
-20. Hospedar as apresentações num link oficial da MBigucci (por exemplo, na página de cada empreendimento no site), para os corretores enviarem ao cliente sem passar pelo Google Drive.
+25. Hospedar as apresentações num link oficial da MBigucci (por exemplo, na página de cada empreendimento no site), para os corretores enviarem ao cliente sem passar pelo Google Drive.
 
 ## 9. Proposta de esquema: `empreendimentos` e `tipologias`
 
