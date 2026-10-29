@@ -2,23 +2,23 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Casca } from "@/components/casca";
+import { Casca, ehListaDoDia } from "@/components/casca";
+import { ListaDoDia } from "@/components/leads/lista-do-dia";
 import { db } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
 import { nomePerfil, type Team } from "@/lib/tipos";
 
 export default function InicioPage() {
-  return (
-    <Casca titulo="Início">
-      <Inicio />
-    </Casca>
-  );
+  const { pode } = useSessao();
+  const lista = ehListaDoDia(pode);
+  return <Casca titulo={lista ? "Lista do dia" : "Início"}>{lista ? <ListaDoDia /> : <Inicio />}</Casca>;
 }
 
 function Inicio() {
   const perfil = usePerfil();
   const { pode } = useSessao();
   const ehGG = perfil.perfil === "gerente_geral";
+  const verLeads = pode("leads.atribuir") || pode("dados.ver_equipe") || pode("dados.ver_todos");
 
   return (
     <div className="grid gap-4">
@@ -27,8 +27,15 @@ function Inicio() {
         <p className="mt-1 text-[16px]">Olá, {perfil.nome.split(" ")[0] || perfil.nome}.</p>
       </div>
 
-      {ehGG || pode("usuarios.gerenciar") || pode("equipes.gerenciar") ? (
+      {ehGG || pode("usuarios.gerenciar") || pode("equipes.gerenciar") || verLeads ? (
         <div className="grid gap-4 md:grid-cols-3">
+          {verLeads && (
+            <Atalho
+              href="/leads/"
+              titulo={ehGG ? "Leads" : "Leads da equipe"}
+              texto="Acompanhe os leads e atribua os leads da empresa aos corretores."
+            />
+          )}
           {pode("usuarios.gerenciar") && (
             <Atalho href="/usuarios/" titulo="Usuários" texto="Cadastre pessoas e defina perfil, equipe e situação." />
           )}
@@ -44,11 +51,11 @@ function Inicio() {
       {perfil.perfil === "gerente" && <MinhasEquipes gerenteId={perfil.id} />}
       {perfil.equipe_id && <MinhaEquipe equipeId={perfil.equipe_id} />}
 
-      {!ehGG && (
+      {!ehGG && !verLeads && (
         <div className="card">
           <h2 className="titulo-card">Em construção</h2>
           <p className="mt-2 text-ink-soft">
-            O CRM está sendo montado por etapas. Leads, agenda e metas aparecem aqui nas próximas versões.
+            O CRM está sendo montado por etapas. As próximas telas aparecem aqui nas próximas versões.
           </p>
         </div>
       )}

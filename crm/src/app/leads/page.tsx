@@ -1,0 +1,158 @@
+"use client";
+
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import { Casca } from "@/components/casca";
+import { CardLead, RodapeAcao } from "@/components/leads/partes";
+import { Filtros, useLeadsVisiveis } from "@/components/leads/filtros";
+import { useSessao } from "@/lib/sessao";
+import { grupoDoLead, type Lead } from "@/lib/leads";
+import { useCatalogos } from "@/lib/leads-dados";
+
+export default function LeadsPage() {
+  const { pode } = useSessao();
+  const daEquipe = pode("dados.ver_equipe") && !pode("dados.ver_todos");
+  return (
+    <Casca titulo={daEquipe ? "Leads da equipe" : "Leads"}>
+      <Leads />
+    </Casca>
+  );
+}
+
+/** Ordem da lista completa: pelo próximo contato (os atrasados vêm primeiro) e os sem data no fim. */
+function ordenar(leads: Lead[]) {
+  const t = (l: Lead) => (l.proximo_contato ? new Date(l.proximo_contato).getTime() : Infinity);
+  return [...leads].sort((a, b) => t(a) - t(b) || b.created_at.localeCompare(a.created_at));
+}
+
+function Leads() {
+  const { pode } = useSessao();
+  const atribui = pode("leads.atribuir");
+  const { catalogos } = useCatalogos();
+  const f = useLeadsVisiveis();
+  const [busca, setBusca] = useState("");
+  const [agora] = useState(() => new Date());
+
+  const visiveis = useMemo(() => {
+    const b = busca.trim().toLowerCase();
+    const digitos = b.replace(/\D/g, "");
+    const lista = (f.leads ?? []).filter(
+      (l) => !b || l.nome.toLowerCase().includes(b) || (digitos.length >= 3 && l.whatsapp.includes(digitos)),
+    );
+    return ordenar(lista);
+  }, [f.leads, busca]);
+
+  const resumo = useMemo(() => resumoPorCorretor(f.leads ?? [], agora), [f.leads, agora]);
+  const nomeEtapa = (slug: string) => catalogos?.etapas.find((e) => e.slug === slug)?.nome ?? slug;
+
+  return (
+    <div className="grid gap-5 pb-20 md:pb-0">
+      <Filtros {...f}>
+        <div className="min-w-[200px] flex-[2]">
+          <label className="field-label" htmlFor="busca">
+            Buscar
+          </label>
+          <input
+            id="busca"
+            className="input"
+            placeholder="Nome ou WhatsApp"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+          />
+        </div>
+      </Filtros>
+
+      {f.veOutros && f.status === "ativo" && !f.corretor && resumo.length > 0 && (
+        <section aria-labelledby="resumo">
+          <h2 id="resumo" className="eyebrow mb-2">
+            Por corretor
+          </h2>
+          <div className="card overflow-x-auto p-0">
+            <table className="w-full text-left text-[13px]">
+              <thead>
+                <tr className="border-b border-line text-concrete">
+                  <th className="px-4 py-2 font-semibold">Corretor</th>
+                  <th className="px-2 py-2 text-right font-semibold">Ativos</th>
+                  <th className="px-2 py-2 text-right font-semibold">Atrasados</th>
+                  <th className="px-4 py-2 text-right font-semibold">Sem contato</th>
+                </tr>
+              </thead>
+              <tbody>
+                {resumo.map((r) => (
+                  <tr key={r.id} className="border-b border-line last:border-0">
+                    <td className="px-4 py-2">
+                      <button
+                        type="button"
+                        className="focus-ring text-left font-semibold"
+                        onClick={() => f.setCorretor(r.id)}
+                      >
+                        {f.nomeDono.get(r.id) ?? "Corretor"}
+                      </button>
+                    </td>
+                    <td className="num px-2 py-2 text-right">{r.ativos}</td>
+                    <td className={`num px-2 py-2 text-right ${r.atrasados ? "font-semibold text-brand" : ""}`}>
+                      {r.atrasados ? `! ${r.atrasados}` : "0"}
+                    </td>
+                    <td className="num px-4 py-2 text-right">{r.semData}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {f.erro && <p className="aviso-erro">! {f.erro}</p>}
+      {!f.leads && !f.erro && <p className="text-concrete">Carregando…</p>}
+      {f.leads && !visiveis.length && (
+        <p className="text-ink-soft">
+          {busca
+            ? "Nenhum lead com essa busca."
+            : f.status === "ativo"
+              ? "Nenhum lead ativo."
+              : "Nenhum lead descartado."}
+        </p>
+      )}
+
+      {visiveis.length > 0 && (
+        <section aria-labelledby="lista">
+          <h2 id="lista" className="eyebrow mb-2">
+            {f.status === "ativo" ? "Leads ativos" : "Descartados"} · <span className="num">{visiveis.length}</span>
+          </h2>
+          <ul className="grid gap-3 md:grid-cols-2">
+            {visiveis.map((l) => (
+              <CardLead
+                key={l.id}
+                lead={l}
+                agora={agora}
+                etapa={nomeEtapa(l.etapa)}
+                dono={f.veOutros ? f.nomeDono.get(l.dono_id) : undefined}
+              />
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {(atribui || pode("leads.cadastrar")) && (
+        <RodapeAcao>
+          <Link href="/leads/novo/" className="btn btn-red btn-lg focus-ring">
+            {atribui ? "+ Lead da empresa" : "+ Novo lead"}
+          </Link>
+        </RodapeAcao>
+      )}
+    </div>
+  );
+}
+
+function resumoPorCorretor(leads: Lead[], agora: Date) {
+  const m = new Map<string, { id: string; ativos: number; atrasados: number; semData: number }>();
+  for (const l of leads) {
+    const r = m.get(l.dono_id) ?? { id: l.dono_id, ativos: 0, atrasados: 0, semData: 0 };
+    r.ativos++;
+    const g = grupoDoLead(l, agora);
+    if (g === "atrasados") r.atrasados++;
+    if (g === "sem_data") r.semData++;
+    m.set(l.dono_id, r);
+  }
+  return [...m.values()].sort((a, b) => b.atrasados - a.atrasados || b.ativos - a.ativos);
+}

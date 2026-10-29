@@ -56,7 +56,11 @@ export function Casca({
   }
 
   const ehGG = estado.perfil.perfil === "gerente_geral";
-  const itens: ItemMenu[] = [{ href: "/", rotulo: "Início" }];
+  const itens: ItemMenu[] = [{ href: "/", rotulo: ehListaDoDia(pode) ? "Lista do dia" : "Início" }];
+  if (pode("leads.cadastrar") || pode("dados.ver_equipe") || pode("dados.ver_todos")) {
+    itens.push({ href: "/leads/", rotulo: "Leads" });
+    itens.push({ href: "/leads/quadro/", rotulo: "Quadro" });
+  }
   if (pode("usuarios.gerenciar")) itens.push({ href: "/usuarios/", rotulo: "Usuários" });
   if (pode("equipes.gerenciar")) itens.push({ href: "/equipes/", rotulo: "Equipes" });
   if (ehGG) itens.push({ href: "/configuracoes/", rotulo: "Configurações" });
@@ -80,6 +84,12 @@ export function Casca({
     </>
   );
 }
+
+/**
+ * A lista do dia é o início de quem trabalha os próprios leads e não distribui
+ * leads (o corretor, no padrão). Quem distribui fica com o painel.
+ */
+export const ehListaDoDia = (pode: (p: string) => boolean) => pode("leads.cadastrar") && !pode("leads.atribuir");
 
 export function SemConfiguracao() {
   return (
