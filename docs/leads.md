@@ -44,6 +44,8 @@
 
 É a tela inicial de quem tem `leads.cadastrar` e não tem `leads.atribuir` (o corretor, no padrão). A regra fica em `crm/src/lib/leads.ts`, com testes.
 
+Acima dos grupos ficam as **Visitas de hoje** e as que estão **Aguardando baixa** (`docs/visitas.md`, seção 6).
+
 1. **Aguardando primeiro contato:** lead da empresa ativo em "novo", com ou sem dia marcado, pelo fim do prazo (seção 4). Os estourados vêm primeiro.
 2. **Atrasados:** o próximo contato já passou, inclusive hoje mais cedo.
 3. **Hoje:** o próximo contato é até o fim do dia, pela hora do aparelho.
@@ -170,6 +172,7 @@ As regras ficam em `crm/src/lib/busca.ts`, com testes. A busca vem do `search-di
 | `/leads/ficha/?id=` | Ficha: WhatsApp com mensagem pronta, Ligar, prazo do primeiro contato (lead da empresa em "novo"), Sem resposta, sugestão de descarte, interação por tipo, andamento e descarte com Desfazer, perfil do cliente (com e-mail), atribuição com o aviso ao corretor (e o Lead perdido, com o prazo estourado) e histórico com os eventos |
 | `/painel/` | Painel da equipe (gerente) ou Meu painel (corretor), por dia, semana ou mês, com o relatório do corretor e a versão para imprimir (`docs/painel.md`) |
 | `/leads/quadro/` | Quadro por etapas, com rolagem lateral no celular, filtros e o mais esquecido no topo |
+| `/agenda/` | Agenda: as visitas da semana, as que aguardam baixa e, para o gerente, o filtro por corretor (`docs/visitas.md`) |
 | `/conta/` | Minha conta: o próprio WhatsApp, troca de senha e instalação no celular |
 | `/configuracoes/` | Gerente geral: chaves, horário de atendimento, mensagens prontas e permissões |
 

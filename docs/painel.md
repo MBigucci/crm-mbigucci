@@ -47,11 +47,15 @@ Tudo sai de `lead_eventos` (`montarPainel` em `crm/src/lib/painel.ts`, com teste
 
 O botão "Imprimir" abre a impressão do navegador. No papel saem o título ("Painel da equipe" ou "Relatório de Carla Souza"), o período e a data e hora da impressão. O menu, os botões e as barras coloridas somem. O texto fica preto no branco, com 16px no mínimo, as tabelas com borda preta e os cards sem quebra no meio. O relatório do corretor imprime a lista de todos os leads do período, para o gerente mostrar ao corretor.
 
-## 5. Sigilo
+## 5. Visitas
+
+A tabela "Visitas no período, por corretor" (agendadas, realizadas, não compareceu e aguardando baixa) e os mesmos números no relatório do corretor contam pela data da visita, direto da tabela `visitas` (`contarVisitas` em `crm/src/lib/visitas.ts`). Regras em `docs/visitas.md`.
+
+## 6. Sigilo
 
 O painel não mostra campanha, verba, pontos nem ranking, e o campo campanha fica fora da conta (`docs/pontuacao-verba.md`). A "conversão por origem e campanha" do item 11 da Bruna entrou só por origem. A conta por campanha volta a ser avaliada depois da reunião de novembro. O tempo médio de resposta e o ticket médio também ficaram de fora.
 
-## 6. Testes
+## 7. Testes
 
 - `npm test`: períodos (semana de segunda a domingo, rótulos, anterior e seguinte) e os números do painel (recebidos, perdidos, cadastrados por origem, descartes com Desfazer, funil com saída da carteira, lead perdido que o corretor não vê mais, soma da equipe).
 - `npm run test:banco`: `fim_do_prazo` igual ao do app (fora do horário, sexta para segunda), `lead_perdido` (só gerente, só lead da empresa com prazo estourado, só dentro da equipe, motivo gravado pelo gatilho, prazo recomeça, troca comum sem motivo) e `leads_perdidos` por perfil.

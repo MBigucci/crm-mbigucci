@@ -2,6 +2,9 @@
 
 > Decisões tomadas na fundação do CRM (`crm/`), em 28/10/2026. O passo a passo de instalação está em `crm/README.md`. As regras de negócio estão em `docs/acessos-perfis.md`, `docs/leads.md` e `docs/pontuacao-verba.md`, e as regras visuais em `docs/design-system.md`.
 
+## Sumário
+Deploy estático · Modelo de permissões · RLS · Sigilo do programa de verba · Módulo de leads · Visitas · PWA · Testes
+
 ## Deploy estático
 
 - **Stack:** Next.js 15, React 19, Tailwind 3, Supabase e zod.
@@ -76,6 +79,16 @@ As regras de negócio estão em `docs/leads.md`. Aqui ficam só as decisões té
   - A ficha usa `/leads/ficha/?id=`, porque a exportação estática não gera rotas dinâmicas.
   - "Hoje" e "atrasado" usam o fuso do aparelho do corretor.
 
+## Visitas (29/10/2026)
+
+As regras de negócio estão em `docs/visitas.md`.
+
+- **Tabela `visitas`:** sem exclusão, RLS por `pode_ver_dados_de(corretor_id)`. Escrita por coluna: o app grava `lead_id`, `empreendimento`, `inicio`, `local` e `observacao` no insert, e `empreendimento`, `inicio`, `local`, `status`, `observacao` e `comprovante` no update. `corretor_id` vem do `auth.uid()`; `baixa_por`, `baixa_em`, `criado_por` e as datas são do gatilho.
+- **Gatilhos:** `visitas_guard` (antes: status inicial, agendar e remarcar de agora em diante, baixa só depois do horário, carimbo da baixa, status final só com motivo, gerente só dá baixa e corrige), `visita_atualiza_lead` (depois: etapa do lead, última interação e tentativas na realizada; a escrita no lead passa pelo `leads_guard` por `pg_trigger_depth() > 1`) e `visita_registra_eventos` (depois: `lead_eventos` com `visita_id`).
+- **Correção:** `corrigir_visita(visita, status, motivo)` é `security invoker` (passa pelo RLS e pelo guard) e marca `crm.motivo_visita` na transação, como o `lead_perdido`.
+- **Permissão nova:** `visitas.baixa_equipe` (gerente), com o padrão só na criação.
+- **Front:** `visitas.ts` (puro, com testes), `visitas-dados.ts` (leitura com o lead embutido, `lead:leads(...)`, e escrita) e `components/visitas/visitas.tsx` (card, ações, agendar). A lista do dia e o painel seguem sem as visitas se a leitura falhar.
+
 ## PWA (29/10/2026)
 
 - **Manifest estático:** `crm/public/manifest.webmanifest`, e não um `app/manifest.ts`. Todos os caminhos dentro dele são **relativos** (`./`, `icons/...`), então resolvem para `/crm/` a partir da URL do manifest, com qualquer `BASE_PATH`. Nome "CRM MBigucci", nome curto "CRM", `display: standalone`, fundo e tema `paper` #f7f6f2.
@@ -90,7 +103,8 @@ As regras de negócio estão em `docs/leads.md`. Aqui ficam só as decisões té
 
 - **Schema e RLS da base:** testados no PGlite (Postgres em WASM), com uma simulação do `auth.users`, do `auth.uid()` e dos papéis `anon` e `authenticated`. Foram 44 verificações por perfil, e o script rodou três vezes para provar que é idempotente. Esse script continua fora do repositório, na pasta de notas da sessão da base (`sqltest/test.mjs`). Ele conta 2 permissões fixas, então acusa 1 falha desde que as de leads entraram.
 - **RLS de leads:** `crm/supabase/testes/leads.test.mjs`, com o mesmo tipo de simulação, roda com `npm run test:banco`. São 25 testes por perfil, incluindo `lead_eventos`, tentativas, avanço de etapa, a mensagem original e o horário de atendimento, (corretor, colega, gerente da equipe, gerente de outra equipe, gerente geral, recepção, desativado e anônimo).
-- **Regras puras:** `npm test` roda `leads.test.ts` (lista do dia, WhatsApp), `followup.test.ts` (follow-up e histórico), `cadastro-magico.test.ts` (parser), `prazo.test.ts`, `mensagens.test.ts` (modelos e repasse) e `busca.test.ts` (busca, ordem e filtros).
+- **RLS e gatilhos das visitas:** `crm/supabase/testes/visitas.test.mjs`, também no `npm run test:banco`, com 13 testes (`docs/visitas.md`, seção 9).
+- **Regras puras:** `npm test` roda `leads.test.ts` (lista do dia, WhatsApp), `followup.test.ts` (follow-up e histórico), `cadastro-magico.test.ts` (parser), `prazo.test.ts`, `mensagens.test.ts` (modelos e repasse), `busca.test.ts` (busca, ordem e filtros), `painel.test.ts` e `visitas.test.ts`.
 - **Scripts do SQL Editor:** `schema.sql`, `dados-teste.sql`, `verificar-rls.sql` e `limpar-dados-teste.sql` rodaram em sequência no PGlite em 29/10/2026, com o resultado esperado por perfil.
 - **Telas:** conferidas em 375px com um Supabase falso (`sqltest/fake-supabase-leads.mjs`, na pasta de notas), que imita o RLS por perfil. A versão `fake-supabase-leads-v2.mjs` imita também eventos, tentativas e o avanço de etapa.
 - **Ainda não validado:** o módulo de leads num Supabase real e a Edge Function pela tela.
