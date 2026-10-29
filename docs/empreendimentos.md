@@ -1,116 +1,114 @@
 # Empreendimentos: dados coletados para o catálogo e o Radar de Match
 
-> Coleta feita em 29/10/2026 para os itens 13 (empreendimentos e tipologias) e 14 (Radar de Match) de `docs/referencia-crm-bruna.md`. Os dados estão em `docs/empreendimentos-dados.json`. Nada em `crm/` foi alterado: a lista fixa de `crm/src/lib/empreendimentos.ts` continua valendo até a tabela existir.
+> Coleta feita em 29/10/2026 para os itens 13 (empreendimentos e tipologias) e 14 (Radar de Match) de `docs/referencia-crm-bruna.md`. Decisões do Felipe aplicadas no mesmo dia. Os dados estão em `docs/empreendimentos-dados.json`. Nada em `crm/` foi alterado: a lista fixa de `crm/src/lib/empreendimentos.ts` continua valendo até a tabela existir.
 
 ## Sumário
 1. Resumo
-2. Fontes e método
-3. Os 42 empreendimentos
-4. Cruzamento com a lista atual e o tabelão
-5. Lacunas
-6. Dúvidas para o Felipe
-7. Proposta de esquema: `empreendimentos` e `tipologias`
-8. Como o Radar de Match usa esses dados
-9. Da Bruna: o que veio, o que foi adaptado e o que ficou de fora
+2. Decisões do Felipe (29/10/2026)
+3. Fontes e método
+4. Os 39 empreendimentos
+5. Cruzamento com a lista atual e o tabelão
+6. Lacunas
+7. Pendências
+8. Lista para o marketing
+9. Proposta de esquema: `empreendimentos` e `tipologias`
+10. Como o Radar de Match usa esses dados
+11. Da Bruna: o que veio, o que foi adaptado e o que ficou de fora
 
 ## 1. Resumo
 
-- **42 empreendimentos** no JSON: 38 com página no site oficial e 4 só no Linktree (Classic, UP, Cortina D'Ampezzo e Village da Serra).
-- **Por status:** 2 em breve lançamento (Elleva, Dom), 2 em lançamento (Marco Zero One, Mundi), 6 em obras, 31 prontos e 1 sem status (Village da Serra, um lote).
-- **91 tipologias**, quase todas tiradas das "Plantas disponíveis" do site.
-- **Novos em relação à lista atual:** Marco Zero One, Elleva, Dom, Classic, UP e a Mansão Jardim Acapulco.
-- **Fora do ar:** Royal Palace e Terra Nostra Parma estão na lista atual e no tabelão, mas não aparecem no Linktree nem no site.
-- **Maior lacuna:** preço por tipologia. O site só publica o "a partir de" do empreendimento, e as tabelas por unidade são PDFs no Drive, que não foram abertos.
+- **39 empreendimentos** e **88 tipologias** no JSON. São 37 com página no site oficial e 2 que seguem à venda sem página (Royal Palace e Terra Nostra Parma).
+- **Por status:** 2 em breve lançamento (Elleva, Dom), 2 em lançamento (Marco Zero One, Mundi), 6 em obras e 29 prontos.
+- **Entram no catálogo:** apartamentos e salas comerciais. Casas, lotes, Classic, UP e Cortina D'Ampezzo ficam de fora.
+- **Novos em relação à lista atual:** Marco Zero One, Elleva e Dom. O Marco Zero Mix Work vira item próprio.
+- **Preço oficial:** a tabela mensal em PDF do Linktree. O JSON ainda não tem preço por tipologia: o "a partir de" é o do site, e a leitura das tabelas fica para a etapa do catálogo.
 
-## 2. Fontes e método
+## 2. Decisões do Felipe (29/10/2026)
+
+| Tema | Decisão | Efeito no JSON e na próxima etapa |
+| --- | --- | --- |
+| Royal Palace e Terra Nostra Parma | Seguem à venda, sem página própria. O Parma usa o material do Modena. | Entraram com os dados do tabelão de set/2026. O Parma usa os links do Modena. |
+| Classic, UP e Cortina D'Ampezzo | Não entram. | Saíram do JSON. A próxima etapa tira o Cortina D'Ampezzo da lista do Cadastro Mágico. |
+| Casas, lotes e salas | Casas e lotes não; salas sim. | Saíram a Mansão Jardim Acapulco e o Village da Serra. Wynn Tower, Marco Zero Tower e Marco Zero Mix Work ficam, com `tipo: comercial`. A próxima etapa tira o Village da Serra da lista do Cadastro Mágico. |
+| Torres e fases | Igual à Bruna. | Cada item tem `condominio` e `torres_conhecidas`. Na tabela, um registro por torre quando a tabela mensal separar (seção 9). |
+| Preço | Tabela mensal em PDF, atualizada no Linktree todo mês. | O preço por tipologia sai da tabela. A importação mensal vira parte da etapa do catálogo (seção 11). |
+| Endereço | Vale o do Linktree. | Conferido nas fichas técnicas: Life nº 230, Easy Jaçanã nº 180/184, Marco Zero Mix nº 1.230, Domani "Princesa Maria Amélia", Infinite nº 968 (bairro Barcelona) e Olimpic na Saúde. |
+| Entrega do Terrazzo | Vale o site. | Mar/2028. |
+| Link para o cliente | A apresentação, mas o ideal é um link oficial da MBigucci, não o Drive. | Por ora, `links.apresentacao` (Drive). O pedido de hospedar as apresentações no site está na lista para o marketing (seção 8). |
+
+## 3. Fontes e método
 
 | Fonte | O que traz | Como foi lida |
 | --- | --- | --- |
-| Linktree `linktr.ee/construtoraMBigucci` | Índice por cidade e bairro, com o status entre parênteses ("Pronto", "Construção", "breve lançamento"). Cada empreendimento tem um Linktree próprio com apresentação, ficha técnica, memorial, fotos, vídeos e tour virtual (quase tudo no Google Drive). | As 56 páginas do Linktree, todas visitadas (índice, cidades, empreendimentos, tabelas, documentos, locação, marketing, institucional, galpões, imóveis comerciais e plantas do Easy Jaçanã). |
-| Site oficial `mbigucci.com.br/empreendimentos/` | Uma página por empreendimento com o bloco "Detalhes do imóvel": área, dormitórios, suítes, vagas, fase da obra, previsão de entrega, "A partir de", plantas, lazer, endereço e mapa. | As 37 páginas, todas abertas. Cada uma diz "Informações atualizadas em …" (entre 8 e 29/10/2026). O site não está no Linktree, mas é a fonte em texto mais completa. |
-| Fichas técnicas (PDF no Drive) | Endereço, número de unidades, tipologias, entrega. | Abertas só no visualizador, sem baixar, para os que não têm página no site: Classic e UP. |
+| Linktree `linktr.ee/construtoraMBigucci` | Índice por cidade e bairro, com o status entre parênteses. Cada empreendimento tem um Linktree próprio com apresentação, ficha técnica, memorial, fotos, vídeos e tour virtual (quase tudo no Google Drive). | As 56 páginas, todas visitadas. |
+| Site oficial `mbigucci.com.br/empreendimentos/` | O bloco "Detalhes do imóvel" de cada empreendimento: área, dormitórios, suítes, vagas, fase da obra, previsão de entrega, "A partir de", plantas, lazer, endereço e mapa. | As 37 páginas, todas abertas. Cada uma diz "Informações atualizadas em …" (entre 8 e 29/10/2026). |
+| Fichas técnicas (PDF no Drive, pelo Linktree) | Endereço, unidades, tipologias, entrega. | Abertas só no visualizador, sem baixar, para conferir os endereços divergentes: Life, Terrazzo, Infinite, Easy Jaçanã, Marco Zero Mix, Domani, Olimpic e Maximus. |
+| Tabelão de set/2026 (`ref/`) | Unidades à venda com preço, por torre. | Usado só para Royal Palace e Terra Nostra Parma, que não têm página. |
 | Tabelas de preço (PDF no Drive) | Preço por unidade, de outubro e de novembro. | **Não abertas.** Os links estão no JSON (`tabela_outubro`, `tabela_novembro`). |
 
 Regras seguidas:
 - Campo vazio (`null`) quer dizer "não publicado". Nada foi deduzido.
-- Cada empreendimento tem `fonte` (as URLs visitadas), `fontes` (de onde veio cada grupo de campos) e `avisos` (divergências e erros encontrados).
-- O link do Google Maps é montado com o mesmo endereço do mapa incorporado na página do site.
-- Ficaram de fora do catálogo, por não serem lançamentos à venda: locação (galpões, terrenos e imóveis comerciais), terrenos à venda, lotes no Guarujá, documentos e institucional.
+- Cada empreendimento tem `fonte` (URLs visitadas), `fontes` (de onde veio cada grupo de campos) e `avisos` (divergências e erros).
+- O link do Google Maps é montado com o endereço que vale (o do Linktree, ou o do mapa do site quando não houve divergência).
+- Ficaram de fora: locação (galpões, terrenos e imóveis comerciais), terrenos e lotes à venda, documentos e institucional.
 
-## 3. Os 42 empreendimentos
+## 4. Os 39 empreendimentos
 
-Preço "a partir de" e entrega como estão no site em 29/10/2026.
+Preço "a partir de" e entrega como estão no site em 29/10/2026. O ! marca preço publicado com formato errado.
 
-| Nome oficial | Status | Bairro, cidade | Dorms | Área | A partir de | Entrega | Fonte |
+| Nome | Condomínio | Status | Bairro, cidade | Dorms | Área | A partir de | Entrega |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Marco Zero One | Lançamento | Jardim do Mar, São Bernardo do Campo | 3 e 4 | 152–357 m² | — | — | site + Linktree |
-| Mundi MBigucci | Lançamento | Pauliceia, São Bernardo do Campo | 2 e 3 | 43–53 m² | R$ 344.000 | — | site + Linktree |
-| Elleva MBigucci | Breve lançamento | Centro, São Bernardo do Campo | 2 | 67 m² | — | — | site + Linktree |
-| Dom MBigucci | Breve lançamento | Campestre, Santo André | 2 | 70 m² | — | — | site + Linktree |
-| Modena MBigucci | Em obras | Jardim Diogo, Guarulhos | 2 | 44 m² | R$ 343.700 | Mai/2027 | site + Linktree |
-| MBigucci Joy | Em obras | Vila Prudente, São Paulo | 2 | 35–40 m² | R$ 318.400 | Out/2028 | site + Linktree |
-| Easy Jaçanã | Em obras | Jaçanã, São Paulo | 1 e 2 | 25–45 m² | R$ 239.100 | 36 meses após a assinatura com a CEF | site + Linktree |
-| Infinite São Caetano | Em obras | —, São Caetano do Sul | 3 | 81 m² | R$ 1.086.700 | Abr/2028 | site + Linktree |
-| Palatium Ipiranga | Em obras | Ipiranga, São Paulo | 2 a 3 | 56–85 m² | R$ 729.600 | Mar/2027 | site + Linktree |
-| Terrazzo MBigucci | Em obras | Vila Carrão, São Paulo | 2 a 3 | 66–82 m² | R$ 857.400 | Mar/2028 | site + Linktree |
-| Alameda MBigucci | Pronto | Campestre, Santo André | 2 | 56–61 m² | ! erro no site | Entregue | site + Linktree |
-| Exuberance MBigucci | Pronto | Rudge Ramos, São Bernardo do Campo | 3 | 70 m² | R$ 615.000 | Entregue | site + Linktree |
-| Imperium MBigucci | Pronto | Ipiranga, São Paulo | 3 | 103 m² | R$ 1.261.500 | Entregue | site + Linktree |
-| Life MBigucci | Pronto | Centro, São Bernardo do Campo | Studio | 20–48 m² | R$ 368.900 | Entregue | site + Linktree |
-| New Park MBigucci | Pronto | Aclimação, São Paulo | 1 | 35–99 m² | R$ 637.500 | Entregue | site + Linktree |
-| Sonata MBigucci | Pronto | Santa Teresinha, Santo André | 1 e 2 | 37–50 m² | ! erro no site | Entregue | site + Linktree |
-| Station MBigucci | Pronto | Jabaquara, São Paulo | 1 ou 2 | 37–48 m² | R$ 417.400 | Entregue | site + Linktree |
-| Unique MBigucci | Pronto | Rudge Ramos, São Bernardo do Campo | Loft e 2 | 36–54 m² | R$ 457.000 | Entregue | site + Linktree |
-| Vert MBigucci | Pronto | Aclimação, São Paulo | 2 | 56–63 m² | R$ 711.100 | Entregue | site + Linktree |
-| Essenza MBigucci | Pronto | Vila Gonçalves, São Bernardo do Campo | 2 | 58 m² | R$ 530.000 | Entregue | site + Linktree |
-| Impactus MBigucci | Pronto | Parque Jaçatuba, Santo André | 2 e 3 | 50–61 m² | R$ 420.000 | Entregue | site + Linktree |
-| America MBigucci | Pronto | Cooperativa, São Bernardo do Campo | 2 | 43–44 m² | R$ 299.000 | Entregue | site + Linktree |
-| Stylo MBigucci | Pronto | Rudge Ramos, São Bernardo do Campo | 2 a 3 | 71–82 m² | R$ 776.700 | Entregue | site + Linktree |
-| Alvorada MBigucci | Pronto | Itaquera, São Paulo | 2 | 37–39 m² | R$ 270.000 | Entregue | site + Linktree |
-| Domani MBigucci | Pronto | Nova Petrópolis, São Bernardo do Campo | 2 suítes | 67 m² | R$ 659.400 | Entregue | site + Linktree |
-| Maximus MBigucci | Pronto | Jardim das Américas, São Bernardo do Campo | 3 suítes | 132 m² | R$ 1.200.000 | Entregue | site + Linktree |
-| Wynn Tower MBigucci | Pronto | Rudge Ramos, São Bernardo do Campo | sala comercial | 32–36 m² | R$ 365.600 | Entregue | site + Linktree |
-| First Class MBigucci | Pronto | Morumbi, São Paulo | 2 suítes | 64 m² | R$ 571.900 | Entregue | site + Linktree |
-| Olimpic MBigucci | Pronto | Jardim Santa Cruz, São Paulo | 2 e 3 | 56–71 m² | R$ 350.000 | Entregue | site + Linktree |
-| Wish Residence MBigucci | Pronto | Ipiranga, São Paulo | 2 | 68 m² | R$ 760.000 | Entregue | site + Linktree |
-| Piemonte MBigucci | Pronto | Água Funda, São Paulo | 2 e 3 | 43–58 m² | R$ 522.100 | Entregue | site + Linktree |
-| Marco Zero Mix Residence | Pronto | Jardim do Mar, São Bernardo do Campo | Loft | 36–73 m² (Mix todo) | R$ 369.700 (Mix todo) | Entregue | site + Linktree |
-| Marco Zero Mix Work | Pronto | Jardim do Mar, São Bernardo do Campo | sala comercial | 36–73 m² (Mix todo) | R$ 369.700 (Mix todo) | Entregue | site + Linktree |
-| Marco Zero Tower | Pronto | Jardim do Mar, São Bernardo do Campo | sala comercial | 46–77 m² | R$ 435.000 | Entregue | site + Linktree |
-| Marco Zero Premier & Prime | Pronto | Jardim do Mar, São Bernardo do Campo | 2 e 3 | 65–83 m² | R$ 680.000 | — | site + Linktree |
-| Marco Zero Home | Pronto | Jardim do Mar, São Bernardo do Campo | Loft | 42–50 m² | R$ 420.000 | Entregue | site + Linktree |
-| Easy São Vicente | Pronto | Centro, São Vicente | 2 | 38–53 m² | R$ 276.700 | Entregue | site + Linktree |
-| Mansão Guarujá – Jardim Acapulco II | Pronto | Jardim Acapulco, Guarujá | casa, 7 dorms | 628 m² | a combinar | Entregue | só site |
-| Classic MBigucci | Pronto | Rudge Ramos, São Bernardo do Campo | 3 | 77–80 m² | — | Entregue (2014) | Linktree + ficha |
-| UP MBigucci | Pronto | Centro, São Bernardo do Campo | 2 e 3 | — | — | Entregue (2014) | Linktree + ficha |
-| Cortina D'Ampezzo | Pronto | Jardim da Saúde, São Paulo | — | — | — | — | Linktree (só fotos) |
-| Village da Serra | — | Tremembé | lote | — | — | — | Linktree (só tabela) |
+| Marco Zero One | | Lançamento | Jardim do Mar, São Bernardo do Campo | 3 e 4 | 152–357 m² | — | — |
+| Mundi MBigucci | Mundi | Lançamento | Pauliceia, São Bernardo do Campo | 2 e 3 | 43–53 m² | R$ 344.000 | — |
+| Elleva MBigucci | | Breve lançamento | Centro, São Bernardo do Campo | 2 | 67 m² | A combinar | — |
+| Dom MBigucci | | Breve lançamento | Campestre, Santo André | 2 | 70 m² | A combinar | — |
+| Terra Nostra Modena | Terra Nostra | Em obras | Jardim Diogo, Guarulhos | 2 | 44 m² | R$ 343.700 | Mai/2027 |
+| MBigucci Joy | | Em obras | Vila Prudente, São Paulo | 2 | 35–40 m² | R$ 318.400 | Out/2028 |
+| Easy Jaçanã | | Em obras | Jaçanã, São Paulo | 1 e 2 | 25–45 m² | R$ 239.100 | 36 meses após a CEF |
+| Infinite São Caetano | | Em obras | Barcelona, São Caetano do Sul | 3 | 81 m² | R$ 1.086.700 | Abr/2028 |
+| Palatium Ipiranga | | Em obras | Ipiranga, São Paulo | 2 a 3 | 56–85 m² | R$ 729.600 | Mar/2027 |
+| Terrazzo MBigucci | | Em obras | Vila Carrão, São Paulo | 2 a 3 | 66–82 m² | R$ 857.400 | Mar/2028 |
+| Alameda MBigucci | | Pronto | Campestre, Santo André | 2 | 56–61 m² | ! R$ 570.00,00 | Entregue |
+| Exuberance MBigucci | Exuberance | Pronto | Rudge Ramos, São Bernardo do Campo | 3 | 70 m² | R$ 615.000 | Entregue |
+| Imperium MBigucci | | Pronto | Ipiranga, São Paulo | 3 | 103 m² | R$ 1.261.500 | Entregue |
+| Life MBigucci | | Pronto | Centro, São Bernardo do Campo | Studio | 20–48 m² | R$ 368.900 | Entregue |
+| New Park MBigucci | | Pronto | Aclimação, São Paulo | 1 | 35–99 m² | R$ 637.500 | Entregue |
+| Sonata MBigucci | Sonata | Pronto | Santa Teresinha, Santo André | 1 e 2 | 37–50 m² | ! R$ 365.00,00 | Entregue |
+| Station MBigucci | | Pronto | Jabaquara, São Paulo | 1 ou 2 | 37–48 m² | R$ 417.400 | Entregue |
+| Unique MBigucci | | Pronto | Rudge Ramos, São Bernardo do Campo | Loft e 2 | 36–54 m² | R$ 457.000 | Entregue |
+| Vert MBigucci | | Pronto | Aclimação, São Paulo | 2 | 56–63 m² | R$ 711.100 | Entregue |
+| Essenza MBigucci | Essenza | Pronto | Vila Gonçalves, São Bernardo do Campo | 2 | 58 m² | R$ 530.000 | Entregue |
+| Impactus MBigucci | | Pronto | Parque Jaçatuba, Santo André | 2 e 3 | 50–61 m² | R$ 420.000 | Entregue |
+| America MBigucci | America | Pronto | Cooperativa, São Bernardo do Campo | 2 | 43–44 m² | R$ 299.000 | Entregue |
+| Stylo MBigucci | | Pronto | Rudge Ramos, São Bernardo do Campo | 2 a 3 | 71–82 m² | R$ 776.700 | Entregue |
+| Alvorada MBigucci | | Pronto | Itaquera, São Paulo | 2 | 37 m² | R$ 270.000 | Entregue |
+| Domani MBigucci | | Pronto | Nova Petrópolis, São Bernardo do Campo | 2 suítes | 67 m² | R$ 659.400 | Entregue |
+| Maximus MBigucci | | Pronto | Jardim das Américas, São Bernardo do Campo | 3 suítes | 132 m² | R$ 1.200.000 | Entregue |
+| Wynn Tower MBigucci | | Pronto | Rudge Ramos, São Bernardo do Campo | sala comercial | 32–36 m² | R$ 365.600 | Entregue |
+| First Class MBigucci | First Class | Pronto | Morumbi, São Paulo | 2 suítes | 64 m² | R$ 571.900 | Entregue |
+| Olimpic MBigucci | Olimpic | Pronto | Saúde, São Paulo | 2 e 3 | 56–71 m² | R$ 350.000 | Entregue |
+| Wish Residence MBigucci | | Pronto | Ipiranga, São Paulo | 2 | 68 m² | R$ 760.000 | Entregue |
+| Piemonte MBigucci | | Pronto | Água Funda, São Paulo | 3 | 58 m² | R$ 522.100 | Entregue |
+| Marco Zero Mix Residence | Marco Zero Mix | Pronto | Jardim do Mar, São Bernardo do Campo | Loft | 36–73 m² (Mix todo) | R$ 369.700 (Mix todo) | Entregue |
+| Marco Zero Mix Work | Marco Zero Mix | Pronto | Jardim do Mar, São Bernardo do Campo | sala comercial | 36–73 m² (Mix todo) | R$ 369.700 (Mix todo) | Entregue |
+| Marco Zero Tower | | Pronto | Jardim do Mar, São Bernardo do Campo | sala comercial | 46–77 m² | R$ 435.000 | Entregue |
+| Marco Zero Premier & Prime | Marco Zero Premier & Prime | Pronto | Jardim do Mar, São Bernardo do Campo | 2 e 3 | 65–83 m² | R$ 680.000 | — |
+| Marco Zero Home | | Pronto | Jardim do Mar, São Bernardo do Campo | Loft e 2 | 42–50 m² | R$ 420.000 | Entregue |
+| Easy São Vicente | | Pronto | Centro, São Vicente | 2 | 38–53 m² | R$ 276.700 | Entregue |
+| Royal Palace | | Pronto | Vila Monumento, São Paulo | 3 | 71,65 m² | — (tabelão set/2026: R$ 773.700) | Entregue |
+| Terra Nostra Parma | Terra Nostra | Pronto | Jardim Diogo, Guarulhos | 2 | 43,77 m² | — (tabelão set/2026: R$ 363.000) | Entregue |
 
-## 4. Cruzamento com a lista atual e o tabelão
+## 5. Cruzamento com a lista atual e o tabelão
 
 Comparado com `crm/src/lib/empreendimentos.ts` (37 nomes) e `ref/CRM Bruna/importacoes/mbigucci-tabelao-2026-09-24.json` (48 itens, por torre).
 
-### Nos dois (lista atual e Linktree ou site)
-Marco Zero Prime, Marco Zero Premier, Marco Zero Home, Marco Zero Tower, Marco Zero Mix, Wynn Tower, Unique, Stylo, Exuberance, Maximus, Domani, Essenza, Life, Mundi, América, Sonata, Alameda, Impactus, Infinite, Olimpic, Wish, Cortina D'Ampezzo, Imperium, New Park, Vert, First Class, Piemonte, Station, Alvorada, Terra Nostra (como Modena), Palatium, Terrazzo, MBigucci Joy, Easy São Vicente, Easy Jaçanã e Village da Serra. São 35 dos 37.
-
-### Só no Linktree ou no site (novos)
-| Empreendimento | Onde aparece | Observação |
-| --- | --- | --- |
-| Marco Zero One | site (landing própria) e Linktree | Pré-lançamento, 104 apartamentos de 152 a 357 m². Está nas tabelas de outubro e novembro. |
-| Elleva MBigucci | site e Linktree | Breve lançamento, Centro de SBC. |
-| Dom MBigucci | site e Linktree | Breve lançamento, Campestre, Santo André. |
-| Classic MBigucci | só Linktree | Pronto desde 2014. Fora do tabelão. |
-| UP MBigucci | só Linktree | Pronto desde 2014. Linktree com "Fotos Apto 14", talvez uma unidade só. |
-| Mansão Jardim Acapulco II | só site | O tabelão tem duas casas no Jardim Acapulco (Guarujá). Fora da lista atual. |
-| Marco Zero Mix Work | site e Linktree | Já estava na lista como chave do Marco Zero Mix. Aqui vira item próprio por ser comercial. |
-
-### Só na lista atual (encerrados ou fora do ar?)
-| Nome | No tabelão de set/2026 | Situação em 29/10/2026 |
-| --- | --- | --- |
-| Royal Palace | Pronto, Vila Monumento (SP), 3 dorms, 71,65 m², R$ 773.700 | Fora do Linktree e do site. |
-| Terra Nostra Parma | Pronto, Guarulhos, 2 dorms, 43,77 m², R$ 363.000 | Fora do Linktree e do site. Só a fase Modena aparece. |
-| Exuberance Bellatrix | Torre do Exuberance | O site não cita torres. |
-| Olimpic Athenas, Rio de Janeiro e Londres; Sonata Beethoven e Mozart; América California e Flórida; First Class Premium e Vip; Mundi Thiago, Lucca e Vitor | Torres do mesmo condomínio | O site trata cada condomínio como um item só. O Mundi tem uma 4ª torre, Marcela, que não está na lista. |
+### O que muda na lista do Cadastro Mágico (para a próxima etapa)
+| Ação | Nomes |
+| --- | --- |
+| Incluir | Marco Zero One, Elleva, Dom |
+| Tirar | Cortina D'Ampezzo, Village da Serra |
+| Incluir como chave | Modena (de Terra Nostra), Mundi Marcela (4ª torre do Mundi), Marco Zero Mix Work e Residence (já são chaves) |
+| Manter | Os outros 35, incluindo Royal Palace e Terra Nostra, que seguem à venda |
 
 ### Nomes que divergem
 | Lista atual | Nome no site | Nome no Linktree |
@@ -126,86 +124,101 @@ Marco Zero Prime, Marco Zero Premier, Marco Zero Home, Marco Zero Tower, Marco Z
 | Marco Zero Mix | Marco Zero Mix (uma página) | Marco Zero Mix Residence e Marco Zero Mix Work |
 | Easy Jaçanã | Easy Jaçanã | "Easy Jaçana" no índice |
 
-### Dados que divergem entre site e tabelão
-| Empreendimento | Site (29/10/2026) | Tabelão (set/2026) |
+### Torres que o tabelão cita
+Mundi (Thiago pronta; Lucca e Vitor em lançamento; Marcela só no texto do site), Olimpic (Athenas, Rio de Janeiro, Londres), Sonata (Beethoven, Mozart), America (California, Flórida), First Class (Premium, Vip), Exuberance (Bellatrix), Essenza (Thiago), Marco Zero (Premier nº 2087, Prime nº 2099) e Terra Nostra (Modena, Parma). O site não separa as plantas por torre; a tabela mensal deve separar.
+
+### Endereços: o que vale (Linktree) e onde os outros erram
+| Empreendimento | Vale (ficha do Linktree) | Site | Tabelão |
+| --- | --- | --- | --- |
+| Life | Rua Príncipe Humberto, 230 | nº 168 | nº 230 |
+| Easy Jaçanã | Rua José Buono, 180/184 | nº 178 | nº 180/184 |
+| Marco Zero Mix | Av. Kennedy, 1.230 | nº 1200 (o mesmo do Marco Zero One) | nº 1230 |
+| Domani | Rua Princesa Maria Amélia, 500 | igual | "Rua Princesa Amélia" |
+| Infinite | Rua Alegre, 968 (plantão), Barcelona | nº 968, sem bairro | nº 988, Santa Paula |
+| Terrazzo | Rua Biguaçu, 91 (plantão), Tatuapé; o índice do Linktree diz Vila Carrão | nº 91 | nº 92 |
+| Olimpic | Rua Manoel Salgado, 381, Saúde; o índice do Linktree diz Jd. Caraguatá | Jd. Santa Cruz | Jardim Santa Cruz |
+| Maximus | Av. Redenção, 423, Jd. das Américas; o índice do Linktree diz Centro | igual à ficha | igual à ficha |
+
+Na Infinite e no Terrazzo a ficha só traz o endereço do plantão e do decorado. O JSON usa esse endereço, com aviso.
+
+## 6. Lacunas
+
+| Campo | Faltam (de 39) | Quais |
 | --- | --- | --- |
-| Terrazzo | Rua Biguaçu, 91; entrega Mar/2028 | nº 92; entrega Jun/2026 |
-| Easy Jaçanã | Rua José Buono, 178; entrega 36 meses após a CEF | nº 180/184; Mar/2029 |
-| Mundi | Entrega "Consulte" | Lucca e Vitor em Dez/2029; Thiago pronto |
-| Life | Rua Príncipe Humberto, 168 | nº 230 |
-| Infinite | R. Alegre, 968 | nº 988; bairro Santa Paula (o Linktree diz Barcelona) |
-| Marco Zero Mix | Av. Kennedy, 1200 (o mesmo número do Marco Zero One) | Av. Kennedy, 1230 |
-| Marco Zero Prime | Jardim do Mar | Rudge Ramos |
-| Domani | Rua Princesa Maria Amélia, 500 | Rua Princesa Amélia, 500 |
-| Olimpic | Jardim Santa Cruz | Jardim Santa Cruz (o Linktree diz Jd. Caraguatá) |
-| Maximus | Jardim das Américas | Jardim das Américas (o Linktree põe em Centro) |
+| Preço por tipologia | 88 de 88 tipologias | Todas. Vem da tabela mensal em PDF. |
+| Previsão de entrega (dos 10 em lançamento ou obras) | 5 | Marco Zero One, Mundi, Elleva, Dom ("Consulte") e Easy Jaçanã (só o texto da CEF). |
+| Tour virtual | 17 | Normal: nem todos têm decorado virtual. |
+| Preço "a partir de" | 7 | Marco Zero One, Elleva e Dom (sem preço), Alameda e Sonata (formato errado no site), Royal Palace e Terra Nostra Parma (sem página). |
+| Apresentação | 6 | Marco Zero One, Mundi (têm book), Elleva, Dom, First Class e Royal Palace. |
+| Memorial descritivo | 5 | Elleva, Dom, Marco Zero Premier & Prime, Marco Zero Home e Royal Palace. |
+| Página oficial | 2 | Royal Palace e Terra Nostra Parma. |
+| Tipologias | 1 | Dom (o site não publica planta). |
+| Taxa de condomínio | 39 | O site não publica. Só o tabelão traz. |
 
-## 5. Lacunas
+Nas 88 tipologias, 44 não dizem quantas suítes e 22 não dizem vagas. A tabela mensal deve completar.
 
-### Por campo (dos 42)
-| Campo | Faltam | Quais |
-| --- | --- | --- |
-| Preço por tipologia | 91 de 91 | Todas. Está só nas tabelas em PDF. |
-| Book para o cliente | 39 | Só Marco Zero One, Mundi e Easy Jaçanã têm "Book". Os outros têm "Apresentação", que serve para o mesmo fim. |
-| Previsão de entrega (dos 10 em lançamento ou obras) | 5 | Marco Zero One, Mundi, Elleva, Dom (o site diz "Consulte") e Easy Jaçanã (só o texto da CEF). |
-| Tour virtual | 21 | Normal: nem todos têm decorado virtual. |
-| Preço "a partir de" | 10 | Marco Zero One, Elleva, Dom e Jardim Acapulco ("A combinar"), Alameda e Sonata (formato errado no site: "R$ 570.00,00" e "R$ 365.00,00"), Classic, UP, Cortina e Village da Serra. |
-| Apresentação | 9 | Marco Zero One, Mundi e Easy Jaçanã (têm book), Elleva, Dom, First Class, Jardim Acapulco, UP, Cortina e Village da Serra. |
-| Memorial descritivo | 8 | Elleva, Dom, Marco Zero Premier & Prime, Marco Zero Home, Jardim Acapulco, UP, Cortina e Village da Serra. |
-| Página oficial e Google Maps | 4 | Classic, UP, Cortina e Village da Serra. |
-| Tipologias | 3 | Dom (o site não publica planta), Cortina e Village da Serra. |
-| Endereço | 2 | Cortina e Village da Serra (só no tabelão). |
-| Bairro | 2 | Infinite (divergente) e Village da Serra. |
-| Condomínio (taxa) | 42 | O site não publica. Só o tabelão traz. |
+## 7. Pendências
 
-Nas 91 tipologias, 45 não dizem quantas suítes, 24 não dizem vagas e 2 não têm área (UP).
+- **Leads de empreendimento sem preço (Marco Zero One, Elleva, Dom).** A dúvida 9 era esta: o Radar compara o orçamento do cliente com o preço, e esses três ainda não têm preço publicado. Proposta: o Radar mostra os três como "Breve lançamento", sem nota de orçamento, e o lead pode ficar em "aguardando lançamento" para ser avisado quando a tabela sair. Precisa do sim do Felipe.
+- **Ler as tabelas mensais.** O preço por tipologia e a divisão por torre dependem delas. Primeira tarefa da etapa do catálogo.
+- **Link oficial da apresentação.** Depende do marketing (seção 8).
 
-### Erros no site que vale avisar ao marketing
-- Preços com formato errado: Alameda ("R$ 570.00,00") e Sonata ("R$ 365.00,00").
-- Marco Zero Tower: o campo de área mostra o bairro.
-- Marco Zero Premier & Prime: o campo de entrega mostra o bairro.
-- Olimpic, Wish e Marco Zero Tower têm a mesma lista de lazer, palavra por palavra. Parece texto de modelo.
-- Sonata está na categoria São Bernardo do Campo, mas fica em Santo André.
-- Piemonte e New Park: a ficha não bate com as plantas publicadas.
-- Imperium: "103m³" na planta.
+## 8. Lista para o marketing
 
-## 6. Dúvidas para o Felipe
+Pronta para enviar.
 
-1. **Royal Palace e Terra Nostra Parma** saíram do Linktree e do site. Estão vendidos ou encerrados? Saem da lista do Cadastro Mágico?
-2. **Classic, UP e Cortina D'Ampezzo** só aparecem no Linktree, sem preço. Ainda têm unidade à venda? Entram no catálogo?
-3. **Casas, lotes e salas comerciais** (Jardim Acapulco, Village da Serra, Wynn Tower, Marco Zero Tower e Mix Work) entram no catálogo e no Radar de Match, ou o catálogo é só de apartamentos?
-4. **Torres e fases:** um item por condomínio, com a torre na tipologia (proposta da seção 7), ou um item por torre, como faz a Bruna? Afeta Mundi, Olimpic, Sonata, América, First Class, Marco Zero Mix e Marco Zero Premier & Prime.
-5. **Preço oficial:** o "a partir de" do site basta para o Radar, ou o preço deve vir da tabela mensal (PDF)? Quem atualiza todo mês? Hoje há duas tabelas: outubro ("mês de aniversário") e novembro ("promocional").
-6. **Endereços divergentes** entre site e tabelão (seção 4): qual vale? Life, Terrazzo, Infinite, Easy Jaçanã, Marco Zero Mix e Domani.
-7. **Entrega do Terrazzo:** Mar/2028 (site) ou Jun/2026 (tabelão)? E o Mundi 2ª fase: Dez/2029?
-8. **Link para o cliente:** nas mensagens prontas, usar a página do site (`mbigucci.com.br/<nome>/`) ou a apresentação no Drive? O Linktree também tem material interno (ex.: "Book Técnico Corretores" do Marco Zero One), que não deve ir para o cliente.
-9. **Marco Zero One, Elleva e Dom:** sem preço. Os leads desses ficam em "aguardando lançamento" até a tabela sair?
-10. **Erros do site** (seção 5): quer que eu escreva a lista para o marketing?
+**Site mbigucci.com.br**
+1. Alameda: o preço "A partir de" está como "R$ 570.00,00".
+2. Sonata: o preço está como "R$ 365.00,00".
+3. Marco Zero Tower: no topo e na ficha, o campo "Área privativa" mostra "Jardim do Mar, SBC".
+4. Marco Zero Premier & Prime: o campo "Previsão de entrega" mostra "Jardim do Mar, SBC".
+5. Olimpic, Wish e Marco Zero Tower: a lista "Diferenciais e lazer" é a mesma nos três, palavra por palavra (inclui "pet care" e "car wash").
+6. Sonata: aparece na categoria São Bernardo do Campo, mas fica em Santo André.
+7. Life: o endereço está como Rua Príncipe Humberto, 168. A ficha técnica diz 230.
+8. Easy Jaçanã: o endereço está como Rua José Buono, 178. A ficha técnica diz 180/184.
+9. Marco Zero Mix: o endereço está como Av. Kennedy, 1200 (o mesmo do Marco Zero One). A ficha técnica diz 1.230.
+10. Infinite: a página não diz o bairro.
+11. Piemonte: a ficha diz 58 m² e 3 dormitórios, mas as plantas vão de 43 a 58 m², com 2 e 3 dormitórios.
+12. New Park: a ficha diz 35 a 99 m², mas só há a planta de 40 m².
+13. Imperium: a primeira planta diz "103m³".
+14. Erros de digitação: "Saão de Festas" (Domani), "Psicina" (Unique), "Fitnss" (Station), "dormitíorios" (Vert), "Pizzza" (Piemonte), "Comunicação entre Andres" (Wynn Tower), "50m" sem o ² (Marco Zero Home).
+15. Royal Palace e Terra Nostra Parma: seguem à venda, mas não têm página.
 
-## 7. Proposta de esquema: `empreendimentos` e `tipologias`
+**Linktree**
+16. Índice de São Paulo: o Olimpic está em "Jd. Caraguatá", mas a ficha diz Saúde e o site diz Jardim Santa Cruz.
+17. Índice de São Bernardo: o Maximus está em "Centro", mas fica no Jardim das Américas.
+18. "Easy Jaçana" e "New.Park" no índice: grafia diferente da do site.
+19. Os links "Easy Jaçanã · Tabela de preços" e "Tabela mês de aniversário" têm a URL repetida duas vezes.
 
-Para a próxima sessão. Base: o formato de importação da Bruna (`crm-imoveis/1`, em `ref/CRM Bruna/src/lib/import-schema.ts`), adaptado para uma construtora que vende só o que é dela.
+**Pedido**
+20. Hospedar as apresentações num link oficial da MBigucci (por exemplo, na página de cada empreendimento no site), para os corretores enviarem ao cliente sem passar pelo Google Drive.
 
-### `empreendimentos`
+## 9. Proposta de esquema: `empreendimentos` e `tipologias`
+
+Para a próxima etapa. Base: o formato de importação da Bruna (`crm-imoveis/1`, em `ref/CRM Bruna/src/lib/import-schema.ts`), com um registro por torre, como na Bruna.
+
+### `empreendimentos` (um registro por torre ou fase com nome próprio)
 | Coluna | Tipo | Observação |
 | --- | --- | --- |
 | `id` | uuid | |
-| `slug` | text único | O `id` do JSON (`mundi`, `marco-zero-one`). |
-| `nome` | text | Nome oficial do site. |
+| `slug` | text único | `olimpic-athenas`, `marco-zero-one`. |
+| `nome` | text | "Olimpic - Athenas", como na Bruna. |
+| `condominio` | text | "Olimpic". Null quando a torre é única. As telas agrupam por ele, com "a partir de". |
 | `variacoes` | text[] | Chaves do Cadastro Mágico (hoje `chaves` em `empreendimentos.ts`). |
-| `pede_contexto` | boolean | Nome que é palavra comum ("Life", "Unique"). Hoje em `empreendimentos.ts`. |
+| `pede_contexto` | boolean | Nome que é palavra comum ("Life", "Unique"). |
 | `marca` | text | `MBigucci` ou `Easy MBigucci`. |
-| `tipo` | text check | `residencial`, `comercial`, `casa`, `lote`. |
+| `tipo` | text check | `residencial` ou `comercial`. |
 | `status` | text check | `breve_lancamento`, `lancamento`, `em_obras`, `pronto`. |
 | `ativo` | boolean | Sai das listas sem apagar. Leads e vendas antigos continuam apontando. |
-| `endereco`, `bairro`, `cidade`, `uf` | text | `bairro` e `cidade` alimentam a região do Radar. |
+| `endereco`, `bairro`, `cidade`, `uf` | text | Endereço do Linktree. `bairro` e `cidade` alimentam a região do Radar. |
 | `entrega_prevista` | date | Primeiro dia do mês. Null quando pronto ou não publicado. |
 | `entrega_texto` | text | Para casos como "36 meses após a assinatura com a CEF". |
-| `preco_a_partir_de` | numeric(14,2) | O "a partir de" do empreendimento. |
-| `preco_conferido_em` | date | Quando o preço foi conferido. O Radar avisa se estiver velho. |
 | `chamada` | text | Frase curta do site. |
 | `lazer` | text[] | |
-| `link_pagina`, `link_apresentacao`, `link_book`, `link_ficha`, `link_memorial`, `link_tour`, `link_fotos`, `link_maps`, `link_tabela` | text | Os que vão para o cliente: página, apresentação, book, tour e maps. Os outros são internos. |
+| `link_apresentacao` | text | O link que vai para o cliente. Hoje é o Drive; troca quando o marketing hospedar no site. |
+| `link_pagina`, `link_book`, `link_tour`, `link_maps` | text | Também podem ir para o cliente. |
+| `link_ficha`, `link_memorial`, `link_fotos`, `link_tabela` | text | Uso interno. |
+| `tabela_mes` | date | Mês da tabela da qual vieram os preços. |
 | `observacao` | text | |
 | `atualizado_em`, `atualizado_por` | | |
 
@@ -214,50 +227,50 @@ Para a próxima sessão. Base: o formato de importação da Bruna (`crm-imoveis/
 | --- | --- | --- |
 | `id` | uuid | |
 | `empreendimento_id` | uuid → `empreendimentos` | |
-| `rotulo` | text | Como está no material ("Final 3 · 152 m² · 3 suítes"). |
-| `torre` | text | Null quando não há. Resolve Mundi, Olimpic, Sonata etc. sem multiplicar empreendimentos. |
-| `tipo` | text check | `apartamento`, `studio`, `loft`, `cobertura`, `garden`, `sala_comercial`, `casa`, `lote`. |
-| `dormitorios`, `suites` | smallint | Null em studio, loft, sala e lote. A Bruna usa studio = 1. Aqui o tipo diz o que é, e o Radar trata studio e loft como 1. |
+| `rotulo` | text | Como está na tabela ou no site ("Final 3 · 152 m² · 3 suítes"). |
+| `tipo` | text check | `apartamento`, `studio`, `loft`, `cobertura`, `garden`, `sala_comercial`. |
+| `dormitorios`, `suites` | smallint | Null em studio, loft e sala. O Radar conta studio e loft como 1. |
 | `vagas_min`, `vagas_max` | smallint | O site publica "1 ou 2". |
 | `area_m2` | numeric(8,2) | Área privativa. |
 | `deposito` | boolean | |
-| `preco_a_partir_de` | numeric(14,2) | Da tabela mensal, quando houver. Senão, o Radar usa o do empreendimento. |
-| `preco_nota` | text | "unidade 84 · tabela R$ 515.000", como o `priceNote` da Bruna. |
+| `preco_a_partir_de` | numeric(14,2) | Menor preço da tipologia na tabela mensal. |
+| `preco_nota` | text | "unid. 84 · tabela R$ 515.000", como o `priceNote` da Bruna. |
+| `condominio_valor` | numeric(10,2) | Quando a tabela trouxer. |
 | `esgotada` | boolean | Ex.: coberturas do Marco Zero One. |
 | `ordem` | smallint | |
 
 ### Acesso (RLS)
 - Leitura: qualquer usuário ativo.
-- Cadastro e edição: permissão nova `empreendimentos.editar` na tabela `permissions`, dada ao gerente geral e, na proposta de `docs/acessos-perfis.md`, ao operacional. Sem `if (role === ...)`.
+- Cadastro, edição e importação da tabela: permissão nova `empreendimentos.editar` na tabela `permissions`, dada ao gerente geral e, na proposta de `docs/acessos-perfis.md`, ao operacional. Sem `if (role === ...)`.
 - Sem exclusão: `ativo = false`.
 
 ### Ligação com o que já existe
 - `leads.empreendimento`, `vendas` e `visitas` guardam o nome em texto. Proposta: coluna nova `empreendimento_id` (nula), preenchida pelo nome ou pelas variações. O texto fica para o histórico.
 - O Cadastro Mágico passa a ler nomes e variações da tabela. `empreendimentos.ts` vira só o fallback offline.
-- As mensagens prontas ganham `{endereco}` e `{apresentacao}` (já previstas em `docs/referencia-crm-bruna.md`, item 13).
+- As mensagens prontas ganham `{endereco}` e `{apresentacao}` (já previstas no item 13 de `docs/referencia-crm-bruna.md`).
 
 ### Carga inicial
-O `docs/empreendimentos-dados.json` vira a carga, com os campos com o mesmo nome. Correspondência com o formato da Bruna:
+`docs/empreendimentos-dados.json` dá os empreendimentos, endereços, links, lazer e plantas. A tabela mensal dá o preço por tipologia e a divisão por torre. Correspondência com o formato da Bruna:
 
 | Bruna (`crm-imoveis/1`) | Aqui |
 | --- | --- |
-| `name`, `condominium` | `nome`; torre vai para `tipologias.torre` |
+| `name`, `condominium` | `nome`, `condominio` |
 | `type` (`planta`, `pronto`, `usado`) | `status` com 4 valores. Não há usado. |
 | `neighborhood`, `city`, `address` | `bairro`, `cidade`, `endereco` |
 | `deliveryDate` ("Dez/2028") | `entrega_prevista` (data) + `entrega_texto` |
-| `condoFee` | Não entra: o site não publica. Pode vir depois. |
+| `condoFee` | `tipologias.condominio_valor`, quando a tabela trouxer |
 | `highlights` | `chamada` + `lazer` |
-| `photosUrl` | `link_fotos`; e mais oito links |
+| `photosUrl` | `link_fotos`, e mais oito links |
 | `units[]` (`bedrooms`, `suites`, `parking`, `area`, `price`, `priceNote`) | `tipologias` (`dormitorios`, `suites`, `vagas_min`/`vagas_max`, `area_m2`, `preco_a_partir_de`, `preco_nota`) |
 | `warnings` | `avisos`, por empreendimento |
 
-## 8. Como o Radar de Match usa esses dados
+## 10. Como o Radar de Match usa esses dados
 
 O lead já guarda `valor`, `dormitorios`, `regiao` e `finalidade` (`crm/supabase/schema.sql`, tabela `leads`). Proposta de pesos, adaptada da Bruna (`ref/CRM Bruna/src/lib/match.ts`):
 
 | Critério | Peso na Bruna | Proposta | Dado usado |
 | --- | --- | --- | --- |
-| Orçamento | 35, com 10% de tolerância | 40, com 10% | `leads.valor` × preço da tipologia ou "a partir de" |
+| Orçamento | 35, com 10% de tolerância | 40, com 10% | `leads.valor` × `tipologias.preco_a_partir_de` |
 | Região | 20 | 25 | `leads.regiao` × `bairro` e `cidade` |
 | Dormitórios | 15 | 20 | `leads.dormitorios` × `tipologias.dormitorios` (studio e loft = 1) |
 | Tipo | 20 | 10 | Residencial × comercial. Finalidade "investir" aceita studio, loft e sala. |
@@ -265,9 +278,10 @@ O lead já guarda `valor`, `dormitorios`, `regiao` e `finalidade` (`crm/supabase
 
 - Mostra a partir de 50%, com motivos ✓ e ✕, como na Bruna.
 - Esconde empreendimento inativo e tipologia esgotada.
-- Breve lançamento entra só como "aguardando lançamento", sem preço.
+- Sem preço (breve lançamento): pendência da seção 7.
+- Avisa quando a tabela do empreendimento for de um mês anterior (`tabela_mes`).
 
-## 9. Da Bruna: o que veio, o que foi adaptado e o que ficou de fora
+## 11. Da Bruna: o que veio, o que foi adaptado e o que ficou de fora
 
 Lido em 29/10/2026: `ref/CRM Bruna/src/lib/import-schema.ts`, `src/lib/import-types.ts`, `public/importar-imoveis.md`, `importacoes/mbigucci-tabelao-2026-09-24.json` e a seção 9 de `docs/referencia-crm-bruna.md`.
 
@@ -275,18 +289,18 @@ Lido em 29/10/2026: `ref/CRM Bruna/src/lib/import-schema.ts`, `src/lib/import-ty
 | --- | --- | --- |
 | **Trazido como está** | | |
 | Um empreendimento com várias tipologias; tipologia = combinação de dormitórios e metragem | Igual | Mesmo modelo para o catálogo e o Radar |
+| `condominium` + um item por torre ou fase com nome próprio | Igual (`condominio`) | Decisão do Felipe |
 | "Use só o que está no material; o que faltar fica `null` e vai para os avisos" | Igual, com `avisos` por empreendimento | Premissa da coleta |
-| Preço como número, área privativa em m², entrega "Mmm/AAAA" | Igual no JSON; no banco, entrega vira data | |
+| Preço como número, menor preço da tipologia como "a partir de", com nota | Igual (`preco_a_partir_de`, `preco_nota`) | |
 | Ler o Linktree e abrir books, tabelas, fichas e páginas | Igual, mais o site oficial, que tem os dados em texto | |
 | **Adaptado** | | |
-| `condominium` + um item por torre | Um item por condomínio, com `torre` na tipologia | A MBigucci fala do condomínio; as torres viram detalhe (dúvida 4) |
+| Importação "Resposta de outra IA" (colar o JSON que a IA devolve a partir do PDF) | Passa a ser o caminho da **tabela mensal**, e não um "depois" | O preço oficial é a tabela em PDF, trocada todo mês no Linktree |
 | `type`: planta, pronto, usado | `status`: breve lançamento, lançamento, em obras, pronto | Não há usado; o "aguardando lançamento" precisa separar breve lançamento |
 | `photosUrl` (um link) | Nove links, separando o que vai para o cliente do que é interno | O Linktree da MBigucci tem material interno |
 | `highlights` em 200 caracteres | `chamada` + lista de `lazer` | O site já separa |
 | Studio = 1 dormitório | `tipo` = studio e dormitórios nulo; o Radar conta 1 | Não inventar dado na coleta |
-| Código BR-n do imóvel | `slug` legível (`marco-zero-one`) | Catálogo pequeno |
+| Código BR-n do imóvel | `slug` legível | Catálogo pequeno |
 | **Ficou de fora** | | |
 | `developer` (construtora) | Não entra | Tudo é MBigucci; `marca` separa a linha Easy |
-| `condoFee` | Não entra agora | O site não publica |
-| Tipo `usado` e imóveis de terceiros | Não entra | A MBigucci vende os próprios |
-| Importação "Ler aqui com IA" (rota de API) | Não entra | Exportação estática, sem servidor (já decidido na seção 9) |
+| Tipo `usado`, casas, lotes e imóveis de terceiros | Não entram | Decisão do Felipe: só apartamentos e salas |
+| Importação "Ler aqui com IA" (rota de API) | Não entra | Exportação estática, sem servidor |

@@ -11,7 +11,8 @@
     "preco_a_partir_de é o \"A partir de\" do site, por empreendimento. O preço por tipologia está só nas tabelas mensais em PDF (Drive), que não foram abertas.",
     "dormitorios = null em studio, loft, sala comercial e lote: o tipo diz o que é.",
     "status: breve_lancamento | lancamento | em_obras | pronto. status_site guarda o texto original.",
-    "fontes diz de onde veio cada grupo de campos; fonte lista as URLs visitadas."
+    "fontes diz de onde veio cada grupo de campos; fonte lista as URLs visitadas.",
+    "Decisões do Felipe em 29/10/2026: preço oficial = tabela mensal em PDF do Linktree; endereço = o do Linktree (ficha técnica); entrega do Terrazzo = site; casas e lotes fora; salas comerciais dentro; Classic, UP e Cortina fora; Royal Palace e Terra Nostra Parma seguem à venda; torres como na Bruna (condominio + um item por torre quando a tabela separar)."
   ],
   "empreendimentos": [
     {
@@ -20,6 +21,8 @@
       "variacoes": [],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "lancamento",
       "status_site": "Pré-lançamento (\"Antecipe-se ao lançamento\")",
       "endereco": "Av. Kennedy, 1200 - Jardim do Mar, São Bernardo do Campo",
@@ -162,8 +165,7 @@
         "google_maps": "site (mapa incorporado, coordenadas)"
       },
       "avisos": [
-        "Página própria (landing), sem ficha padrão: sem preço nem previsão de entrega publicados. O site diz que a comercialização só começa após o registro da incorporação.",
-        "O endereço (Av. Kennedy, 1200) é o mesmo que o site mostra para o Marco Zero Mix; o tabelão põe o Mix no 1230."
+        "Página própria (landing), sem ficha padrão: sem preço nem previsão de entrega publicados. O site diz que a comercialização só começa após o registro da incorporação."
       ],
       "fonte": [
         "https://mbigucci.com.br/marcozeroone/",
@@ -186,6 +188,13 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": "Mundi",
+      "torres_conhecidas": [
+        "Thiago",
+        "Lucca",
+        "Vitor",
+        "Marcela"
+      ],
       "status": "lancamento",
       "status_site": "Lançamento",
       "endereco": "Rua Camargo, 790 - Pauliceia, São Bernardo do Campo",
@@ -306,6 +315,8 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "breve_lancamento",
       "status_site": "Futuro lançamento",
       "endereco": "Avenida Senador Vergueiro 1.650 - Centro, SBC",
@@ -389,6 +400,8 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "breve_lancamento",
       "status_site": "Futuro lançamento",
       "endereco": "Avenida Dom Pedro II, 2.474 - Campestre, Santo André",
@@ -451,14 +464,16 @@
     },
     {
       "id": "modena",
-      "nome": "Modena MBigucci",
+      "nome": "Terra Nostra Modena",
       "variacoes": [
         "Modena",
-        "Terra Nostra Modena",
+        "Modena MBigucci",
         "Terra Nostra"
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": "Terra Nostra",
+      "torres_conhecidas": [],
       "status": "em_obras",
       "status_site": "Em construção",
       "endereco": "Avenida Rio de Janeiro, 611 - Jardim Diogo, Guarulhos",
@@ -552,6 +567,8 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "em_obras",
       "status_site": "Em construção",
       "endereco": "Rua Ibitirama, 1749 - Vila Prudente, São Paulo",
@@ -645,9 +662,11 @@
       ],
       "marca": "Easy MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "em_obras",
       "status_site": "Em construção",
-      "endereco": "Rua José Buono, 178 - Jaçanã, São Paulo",
+      "endereco": "Rua José Buono, 180/184 - Jaçanã, São Paulo",
       "bairro": "Jaçanã",
       "cidade": "São Paulo",
       "uf": "SP",
@@ -723,7 +742,7 @@
         "tabela_precos": "https://drive.google.com/file/d/1b0VzMJNOB64KtIoAnguwOR_taT1Blle7/view?usp=drive_link",
         "tour_virtual": null,
         "fotos": "https://drive.google.com/drive/folders/1FSfMjoJiU1EtkbWBEVLB7e_j6hHGymAa?usp=drive_link",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Jos%C3%A9%20Buono%2C%20178%20-%20Ja%C3%A7an%C3%A3%2C%20S%C3%A3o%20Paulo",
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Jos%C3%A9%20Buono%2C%20180%2F184%20-%20Ja%C3%A7an%C3%A3%2C%20S%C3%A3o%20Paulo",
         "tabela_outubro": "https://drive.google.com/file/d/1b0VzMJNOB64KtIoAnguwOR_taT1Blle7/view?usp=drive_link",
         "tabela_novembro": "https://drive.google.com/file/d/1_lGD0RpUC4X_cqOchS6p6x6ieX3Oz6N6/view?usp=drive_link"
       },
@@ -732,18 +751,19 @@
         "entrega": "site",
         "preco": "site",
         "tipologias": "site",
-        "endereco": "site",
+        "endereco": "ficha técnica do Linktree",
         "status": "site",
         "google_maps": "site (mapa incorporado)"
       },
       "avisos": [
-        "O site diz Rua José Buono, 178; o tabelão, 180/184. A entrega no site é \"36 meses após a assinatura com a CEF\"; o tabelão diz Mar/2029."
+        "O site diz nº 178; a ficha do Linktree diz 180/184. A entrega no site é \"36 meses após a assinatura com a CEF\"; o tabelão diz Mar/2029."
       ],
       "fonte": [
         "https://mbigucci.com.br/easyjacana/",
         "https://linktr.ee/EasyJacana",
         "https://linktr.ee/TABELAS_ATUAIS",
-        "https://linktr.ee/TABELAS_FUTURAS"
+        "https://linktr.ee/TABELAS_FUTURAS",
+        "https://drive.google.com/file/d/14gAcSsKDN7EykhIxSdyuY9xSUV4AScQE/view?usp=sharing"
       ],
       "coletado_em": "2026-10-29",
       "atualizado_no_site": "22 de outubro de 2026"
@@ -757,10 +777,12 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "em_obras",
       "status_site": "Em construção",
-      "endereco": "R. Alegre, 968 - São Caetano do Sul - SP, 09550-250",
-      "bairro": null,
+      "endereco": "Rua Alegre, 968 - Barcelona, São Caetano do Sul",
+      "bairro": "Barcelona",
       "cidade": "São Caetano do Sul",
       "uf": "SP",
       "entrega_prevista": "Abr/2028",
@@ -816,7 +838,7 @@
         "tabela_precos": "https://drive.google.com/file/d/1guRIBITipXXQSPtCPkqf_Aimz6EDwMIt/view?usp=drive_link",
         "tour_virtual": null,
         "fotos": "https://drive.google.com/drive/folders/1AGFC_3JjoBcKHU9EUn75z5yWIRc_ZjD8",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=R.%20Alegre%2C%20968%20-%20S%C3%A3o%20Caetano%20do%20Sul%20-%20SP%2C%2009550-250",
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Alegre%2C%20968%20-%20Barcelona%2C%20S%C3%A3o%20Caetano%20do%20Sul",
         "tabela_outubro": "https://drive.google.com/file/d/1YPDBT_79OzoWbFGgV45UEfAc_99lIRAq/view?usp=drive_link",
         "tabela_novembro": "https://drive.google.com/file/d/1sY8IfAGDT4i2KPeVXLKPPNlAsRNT1FxK/view?usp=drive_link"
       },
@@ -825,19 +847,20 @@
         "entrega": "site",
         "preco": "site",
         "tipologias": "site",
-        "endereco": "site",
+        "endereco": "ficha técnica do Linktree",
         "status": "site",
         "google_maps": "site (mapa incorporado)"
       },
       "avisos": [
         "Bairro divergente: o Linktree agrupa em \"Barcelona\"; o tabelão diz Santa Paula. O site não diz o bairro.",
-        "Número divergente: site \"R. Alegre, 968\"; tabelão \"Rua Alegre, 988\"."
+        "A ficha do Linktree dá Rua Alegre, 968 como plantão e decorado. Bairro do índice do Linktree (Barcelona); o tabelão diz Santa Paula e nº 988."
       ],
       "fonte": [
         "https://mbigucci.com.br/infinite/",
         "https://linktr.ee/InfiniteMbigu",
         "https://linktr.ee/TABELAS_ATUAIS",
-        "https://linktr.ee/TABELAS_FUTURAS"
+        "https://linktr.ee/TABELAS_FUTURAS",
+        "https://drive.google.com/file/d/1ihuQaBb5r51xBsO7cmnJOuDx2gnZg1TH/view?usp=sharing"
       ],
       "coletado_em": "2026-10-29",
       "atualizado_no_site": "23 de outubro de 2026"
@@ -851,6 +874,8 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "em_obras",
       "status_site": "Em construção",
       "endereco": "R. Cipriano Barata, 662 - Ipiranga São Paulo - SP 04205-000",
@@ -961,9 +986,11 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "em_obras",
       "status_site": "Em construção",
-      "endereco": "Rua Biguaçu, 91 - Vila Carrão, São Paulo - SP",
+      "endereco": "Rua Biguaçu, 91 - Vila Carrão, São Paulo",
       "bairro": "Vila Carrão",
       "cidade": "São Paulo",
       "uf": "SP",
@@ -1044,7 +1071,7 @@
         "tabela_precos": null,
         "tour_virtual": null,
         "fotos": "https://drive.google.com/drive/folders/1s9RleGhosCqZtm3lm5wLPOYQ-rfczs--",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Bigua%C3%A7u%2C%2091%20-%20Vila%20Carr%C3%A3o%2C%20S%C3%A3o%20Paulo%20-%20SP",
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Bigua%C3%A7u%2C%2091%20-%20Vila%20Carr%C3%A3o%2C%20S%C3%A3o%20Paulo",
         "tabela_outubro": "https://drive.google.com/file/d/1_EF-bJPKSuHgiouZ-6iYyf-J_frBWhU-/view?usp=drive_link",
         "tabela_novembro": "https://drive.google.com/file/d/19ToY9xXMR0j7iO98EcUvIq0DrLrZj7H_/view?usp=drive_link"
       },
@@ -1053,18 +1080,19 @@
         "entrega": "site",
         "preco": "site",
         "tipologias": "site",
-        "endereco": "site",
+        "endereco": "ficha técnica do Linktree",
         "status": "site",
         "google_maps": "site (mapa incorporado)"
       },
       "avisos": [
-        "O site diz Rua Biguaçu, 91 e entrega em Mar/2028; o tabelão diz nº 92 e Jun/2026."
+        "A ficha do Linktree dá Rua Biguaçu, 91 como endereço do plantão e do decorado, no Tatuapé; o índice do Linktree agrupa em Vila Carrão; o tabelão diz nº 92. Entrega: vale o site (Mar/2028), por decisão do Felipe."
       ],
       "fonte": [
         "https://mbigucci.com.br/terrazzo/",
         "https://linktr.ee/TerrazzoMbigucci",
         "https://linktr.ee/TABELAS_ATUAIS",
-        "https://linktr.ee/TABELAS_FUTURAS"
+        "https://linktr.ee/TABELAS_FUTURAS",
+        "https://drive.google.com/file/d/10f9aRKiu6IVH4oyYiZff6GglAUu1BBvz/view?usp=drive_link"
       ],
       "coletado_em": "2026-10-29",
       "atualizado_no_site": "23 de outubro de 2026"
@@ -1077,6 +1105,8 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Alameda São Caetano, 1337 - Campestre - Santo André",
@@ -1174,6 +1204,10 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": "Exuberance",
+      "torres_conhecidas": [
+        "Bellatrix"
+      ],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Av. Winston Churchill, 1477 - Rudge Ramos, São Bernardo do Campo",
@@ -1254,6 +1288,8 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Rua Marcondes de Andrade, 62 Ipiranga - São Paulo",
@@ -1354,9 +1390,11 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "pronto",
       "status_site": "Pronto",
-      "endereco": "Rua Príncipe Humberto, 168 - Centro, São Bernardo do Campo",
+      "endereco": "Rua Príncipe Humberto, 230 - Centro, São Bernardo do Campo",
       "bairro": "Centro",
       "cidade": "São Bernardo do Campo",
       "uf": "SP",
@@ -1446,23 +1484,24 @@
         "tabela_precos": null,
         "tour_virtual": null,
         "fotos": "https://drive.google.com/drive/folders/1MICjoTRxsPxpvDpe9XVaVDhwjST66pb9",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Pr%C3%ADncipe%20Humberto%2C%20168%20-%20Centro%2C%20S%C3%A3o%20Bernardo%20do%20Campo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Pr%C3%ADncipe%20Humberto%2C%20230%20-%20Centro%2C%20S%C3%A3o%20Bernardo%20do%20Campo"
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
         "preco": "site",
         "tipologias": "site",
-        "endereco": "site",
+        "endereco": "ficha técnica do Linktree",
         "status": "site",
         "google_maps": "site (mapa incorporado)"
       },
       "avisos": [
-        "O site diz Rua Príncipe Humberto, 168; o tabelão, nº 230."
+        "O site diz nº 168; a ficha do Linktree e o tabelão dizem 230."
       ],
       "fonte": [
         "https://mbigucci.com.br/life/",
-        "https://linktr.ee/LifeMbigucci"
+        "https://linktr.ee/LifeMbigucci",
+        "https://drive.google.com/file/d/1olKqF5LemGEeFOEF6L9rRk28KXoeZNH_/view?usp=drive_link"
       ],
       "coletado_em": "2026-10-29",
       "atualizado_no_site": "19 de outubro de 2026"
@@ -1476,6 +1515,8 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Rua Batista Caetano, 59 - Aclimação - São Paulo",
@@ -1555,6 +1596,11 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": "Sonata",
+      "torres_conhecidas": [
+        "Beethoven",
+        "Mozart"
+      ],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Praça Carlos Abondante, 100 - Santa Terezinha - Santo André",
@@ -1663,6 +1709,8 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Rua Conduru, 49 - São Paulo-SP",
@@ -1760,6 +1808,8 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Rua Ângela Tomé, 85 - Rudge Ramos - São Bernardo do Campo",
@@ -1862,6 +1912,8 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Rua Bueno de Andrade, 726, Aclimação - São Paulo",
@@ -1979,6 +2031,10 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": "Essenza",
+      "torres_conhecidas": [
+        "Thiago"
+      ],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Rua Leila Gonçalves, 449 - Vila Gonçalves - São Bernardo do Campo",
@@ -2062,6 +2118,8 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Rua Lombroso, 211 - Parque Jaçatuba - Santo André",
@@ -2157,6 +2215,11 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": "America",
+      "torres_conhecidas": [
+        "California",
+        "Flórida"
+      ],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Estrada Particular Eiji Kikuti, 1.315 - Cooperativa, São Bernardo do Campo",
@@ -2248,6 +2311,8 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Av. Doutor Washington Luíz, 328 - Rudge Ramos, São Bernardo do Campo",
@@ -2353,6 +2418,8 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Rua Alayde de Souza Costa, 187 - Itaquera, São Paulo",
@@ -2440,6 +2507,8 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Rua Princesa Maria Amélia, 500 - Nova Petrópolis, São Bernardo do Campo",
@@ -2499,16 +2568,17 @@
         "entrega": "site",
         "preco": "site",
         "tipologias": "site",
-        "endereco": "site",
+        "endereco": "ficha técnica do Linktree",
         "status": "site",
         "google_maps": "site (mapa incorporado)"
       },
       "avisos": [
-        "O site diz Rua Princesa Maria Amélia, 500; o tabelão, \"Rua Princesa Amélia, 500\"."
+        "O tabelão escreve \"Rua Princesa Amélia\"; a ficha e o site, \"Princesa Maria Amélia\"."
       ],
       "fonte": [
         "https://mbigucci.com.br/domani/",
-        "https://linktr.ee/DomaniMbigucci"
+        "https://linktr.ee/DomaniMbigucci",
+        "https://drive.google.com/file/d/1wIDaLSGlYqyBoFLm-VOYHCnIhJgnVjDC/view?usp=drivesdk"
       ],
       "coletado_em": "2026-10-29",
       "atualizado_no_site": "22 de outubro de 2026"
@@ -2521,6 +2591,8 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Av. Redenção, 423 - Jardim das Américas - São Bernardo do Campo",
@@ -2583,7 +2655,7 @@
         "google_maps": "site (mapa incorporado)"
       },
       "avisos": [
-        "O Linktree agrupa o Maximus em \"Centro\"; o site diz Jardim das Américas."
+        "O índice do Linktree agrupa o Maximus em \"Centro\"; a ficha do Linktree e o site dizem Jardim das Américas."
       ],
       "fonte": [
         "https://mbigucci.com.br/maximus/",
@@ -2600,6 +2672,8 @@
       ],
       "marca": "MBigucci",
       "tipo": "comercial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Travessa Daré, 74 - Rudge Ramos - São Bernardo do Campo",
@@ -2688,6 +2762,11 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": "First Class",
+      "torres_conhecidas": [
+        "Premium",
+        "Vip"
+      ],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Rua Ascencional, 237 - Morumbi, São Paulo",
@@ -2770,10 +2849,16 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": "Olimpic",
+      "torres_conhecidas": [
+        "Athenas",
+        "Rio de Janeiro",
+        "Londres"
+      ],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Rua Manoel Salgado, 381 - Jd. Santa Cruz, São Paulo",
-      "bairro": "Jardim Santa Cruz",
+      "bairro": "Saúde",
       "cidade": "São Paulo",
       "uf": "SP",
       "entrega_prevista": null,
@@ -2854,11 +2939,12 @@
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
-        "google_maps": "site (mapa incorporado)"
+        "google_maps": "site (mapa incorporado)",
+        "bairro": "ficha técnica do Linktree"
       },
       "avisos": [
         "A lista de lazer do site é idêntica entre Olimpic, Wish e Marco Zero Tower; parece texto de modelo, conferir no book.",
-        "O Linktree agrupa o Olimpic em \"Jd. Caraguatá\"; site e tabelão dizem Jardim Santa Cruz."
+        "Bairro: a ficha do Linktree diz Saúde; o índice do Linktree agrupa em \"Jd. Caraguatá\"; site e tabelão dizem Jardim Santa Cruz."
       ],
       "fonte": [
         "https://mbigucci.com.br/olimpic/",
@@ -2876,6 +2962,8 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Rua Clemente Pereira, 64 Ipiranga - São Paulo",
@@ -2956,6 +3044,8 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Rua Francisco Hurtado, 30 - Água Funda, São Paulo",
@@ -3073,9 +3163,11 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": "Marco Zero Mix",
+      "torres_conhecidas": [],
       "status": "pronto",
       "status_site": "Pronto",
-      "endereco": "Av. Kennedy, 1200 - Jardim do Mar, São Bernardo do Campo",
+      "endereco": "Av. Kennedy, 1230 - Jardim do Mar, São Bernardo do Campo",
       "bairro": "Jardim do Mar",
       "cidade": "São Bernardo do Campo",
       "uf": "SP",
@@ -3122,24 +3214,25 @@
         "tabela_precos": null,
         "tour_virtual": "https://www.mbigucci.com.br/mb/tourvirtual/marcozeromix",
         "fotos": null,
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Av.%20Kennedy%2C%201200%20-%20Jardim%20do%20Mar%2C%20S%C3%A3o%20Bernardo%20do%20Campo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Av.%20Kennedy%2C%201230%20-%20Jardim%20do%20Mar%2C%20S%C3%A3o%20Bernardo%20do%20Campo"
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
         "preco": "site",
         "tipologias": "site",
-        "endereco": "site",
+        "endereco": "ficha técnica do Linktree",
         "status": "site",
         "google_maps": "site (mapa incorporado)"
       },
       "avisos": [
         "O site tem uma página só para o Marco Zero Mix (Residence + Work); a faixa de área e o preço \"a partir de\" valem para o conjunto.",
-        "O site mostra Av. Kennedy, 1200; o tabelão, Av. Kennedy, 1230."
+        "O site diz Av. Kennedy, 1200; a ficha do Linktree diz 1.230."
       ],
       "fonte": [
         "https://mbigucci.com.br/marcozeromix/",
-        "https://linktr.ee/MarcoZeroMixResidence"
+        "https://linktr.ee/MarcoZeroMixResidence",
+        "https://drive.google.com/file/d/1miMh5NNFaHBakEVi9I2U0emWwIoJvNZo/view?usp=drive_link"
       ],
       "coletado_em": "2026-10-29",
       "atualizado_no_site": "22 de outubro de 2026"
@@ -3152,9 +3245,11 @@
       ],
       "marca": "MBigucci",
       "tipo": "comercial",
+      "condominio": "Marco Zero Mix",
+      "torres_conhecidas": [],
       "status": "pronto",
       "status_site": "Pronto",
-      "endereco": "Av. Kennedy, 1200 - Jardim do Mar, São Bernardo do Campo",
+      "endereco": "Av. Kennedy, 1230 - Jardim do Mar, São Bernardo do Campo",
       "bairro": "Jardim do Mar",
       "cidade": "São Bernardo do Campo",
       "uf": "SP",
@@ -3205,14 +3300,14 @@
         "tabela_precos": null,
         "tour_virtual": null,
         "fotos": null,
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Av.%20Kennedy%2C%201200%20-%20Jardim%20do%20Mar%2C%20S%C3%A3o%20Bernardo%20do%20Campo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Av.%20Kennedy%2C%201230%20-%20Jardim%20do%20Mar%2C%20S%C3%A3o%20Bernardo%20do%20Campo"
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
         "preco": "site",
         "tipologias": "site",
-        "endereco": "site",
+        "endereco": "ficha técnica do Linktree",
         "status": "site",
         "google_maps": "site (mapa incorporado)"
       },
@@ -3221,7 +3316,8 @@
       ],
       "fonte": [
         "https://mbigucci.com.br/marcozeromix/",
-        "https://linktr.ee/MarcoZeroMixWork"
+        "https://linktr.ee/MarcoZeroMixWork",
+        "https://drive.google.com/file/d/1SKFZ0RDVk1PoGGFAIaNFBbMkCqLvW8kq/view?usp=drive_link"
       ],
       "coletado_em": "2026-10-29",
       "atualizado_no_site": "22 de outubro de 2026"
@@ -3232,6 +3328,8 @@
       "variacoes": [],
       "marca": "MBigucci",
       "tipo": "comercial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Av. Sen. Vergueiro, 2123 - Jardim do Mar, São Bernardo do Campo",
@@ -3327,6 +3425,11 @@
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": "Marco Zero Premier & Prime",
+      "torres_conhecidas": [
+        "Premier",
+        "Prime"
+      ],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Avenida Senador Vergueiro, 2087 e 2099 - Jardim do Mar - São Bernardo do Campo",
@@ -3419,6 +3522,8 @@
       "variacoes": [],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Av. Sen. Vergueiro, 2123 - Jardim do Mar, São Bernardo do Campo",
@@ -3506,6 +3611,8 @@
       ],
       "marca": "Easy MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "pronto",
       "status_site": "Pronto",
       "endereco": "Rua Canrobert Pereira da Costa, 200 - Centro, São Vicente",
@@ -3629,324 +3736,47 @@
       "atualizado_no_site": "28 de outubro de 2026"
     },
     {
-      "id": "jardim-acapulco",
-      "nome": "Mansão Guarujá – Jardim Acapulco II",
+      "id": "royal-palace",
+      "nome": "Royal Palace",
       "variacoes": [
-        "Jardim Acapulco",
-        "Mansão Guarujá"
-      ],
-      "marca": "MBigucci",
-      "tipo": "casa",
-      "status": "pronto",
-      "status_site": "Pronto",
-      "endereco": "Av. 6 (Rua Manoel Alexandre) Jd. Acapulco - Guarujá",
-      "bairro": "Jardim Acapulco",
-      "cidade": "Guarujá",
-      "uf": "SP",
-      "entrega_prevista": null,
-      "entrega_texto": "Entregue",
-      "area_min_m2": 628,
-      "area_max_m2": 628,
-      "dormitorios_texto": "7",
-      "suites_texto": null,
-      "vagas_texto": "4",
-      "preco_a_partir_de": null,
-      "preco_texto": "A combinar",
-      "chamada": null,
-      "lazer": [],
-      "tipologias": [
-        {
-          "rotulo": "Casa 628 m² · 7 dormitórios · 4 vagas",
-          "tipo": "casa",
-          "dormitorios": 7,
-          "suites": null,
-          "vagas_min": 4,
-          "vagas_max": 4,
-          "area_m2": 628,
-          "deposito": null,
-          "preco_a_partir_de": null,
-          "fonte": "site"
-        }
-      ],
-      "links": {
-        "pagina_oficial": "https://mbigucci.com.br/mansao-guaruja-jardim-acapulco-ii/",
-        "linktree": null,
-        "apresentacao": null,
-        "book": null,
-        "ficha_tecnica": null,
-        "memorial_descritivo": null,
-        "tabela_precos": null,
-        "tour_virtual": null,
-        "fotos": null,
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Av.%206%20(Rua%20Manoel%20Alexandre)%20Jd.%20Acapulco%20-%20Guaruj%C3%A1"
-      },
-      "fontes": {
-        "lazer": "site",
-        "entrega": "site",
-        "preco": "site",
-        "tipologias": "site",
-        "endereco": "site",
-        "status": "site",
-        "google_maps": "site (mapa incorporado)"
-      },
-      "avisos": [
-        "Não aparece no Linktree. O tabelão lista duas casas (nº 1507, 773 m², 9 dorms; nº 1527, 452 m², 7 dorms); o site, uma mansão de 628 m²."
-      ],
-      "fonte": [
-        "https://mbigucci.com.br/mansao-guaruja-jardim-acapulco-ii/"
-      ],
-      "coletado_em": "2026-10-29",
-      "atualizado_no_site": "8 de outubro de 2026"
-    },
-    {
-      "id": "classic",
-      "nome": "Classic MBigucci",
-      "variacoes": [
-        "Classic",
-        "Ed. Diego",
-        "Ed. Isabella"
+        "Royal Palace MBigucci"
       ],
       "marca": "MBigucci",
       "tipo": "residencial",
+      "condominio": null,
+      "torres_conhecidas": [],
       "status": "pronto",
-      "status_site": "Pronto (Linktree)",
-      "endereco": "Rua Engenheiro Isac Garcez, 418 - Vila Caminho do Mar, São Bernardo do Campo",
-      "bairro": "Rudge Ramos",
-      "cidade": "São Bernardo do Campo",
-      "uf": "SP",
-      "entrega_prevista": null,
-      "entrega_texto": "Entregue (Torre B em nov/2014)",
-      "area_min_m2": 77.36,
-      "area_max_m2": 80.18,
-      "dormitorios_texto": "3",
-      "suites_texto": "1",
-      "vagas_texto": "1 ou 2",
-      "preco_a_partir_de": null,
-      "preco_texto": null,
-      "chamada": null,
-      "lazer": [
-        "Piscina com raia",
-        "Piscina infantil",
-        "SPA com hidromassagem",
-        "Sauna",
-        "Fitness Center",
-        "Sala de cinema",
-        "Salão de festas",
-        "Salão de jogos",
-        "Espaço gourmet",
-        "Churrasqueira",
-        "Brinquedoteca",
-        "Espaço pet"
-      ],
-      "tipologias": [
-        {
-          "rotulo": "3 dorms c/ 1 suíte · 80,18 m²",
-          "tipo": "apartamento",
-          "dormitorios": 3,
-          "suites": 1,
-          "vagas_min": 1,
-          "vagas_max": 2,
-          "area_m2": 80.18,
-          "deposito": null,
-          "preco_a_partir_de": null,
-          "fonte": "ficha técnica (Drive)"
-        },
-        {
-          "rotulo": "3 dorms c/ 1 suíte · 77,36 m²",
-          "tipo": "apartamento",
-          "dormitorios": 3,
-          "suites": 1,
-          "vagas_min": 1,
-          "vagas_max": 2,
-          "area_m2": 77.36,
-          "deposito": null,
-          "preco_a_partir_de": null,
-          "fonte": "ficha técnica (Drive)"
-        }
-      ],
-      "links": {
-        "pagina_oficial": null,
-        "linktree": "https://linktr.ee/ClassicMbigucci",
-        "apresentacao": "https://drive.google.com/file/d/1-aAjwvD3piqTPMCuENARrL47IEbOskjU/view?usp=drivesdk",
-        "book": null,
-        "ficha_tecnica": "https://drive.google.com/file/d/1SYLLCyNdSZ6p-5CzUy6ZNJLh3vz9uenP/view?usp=drivesdk",
-        "memorial_descritivo": "https://drive.google.com/file/d/1AvOpdTVMTEGijywgznF4P-hyrxk_5-2J/view?usp=drivesdk",
-        "tabela_precos": null,
-        "tour_virtual": null,
-        "fotos": "https://drive.google.com/drive/folders/1cpeA2R9cztTIDBw33zvRjme-NVOwQ-Cy",
-        "google_maps": null
-      },
-      "fontes": {
-        "status": "linktree",
-        "endereco": "ficha técnica (Drive)",
-        "tipologias": "ficha técnica (Drive)",
-        "lazer": "ficha técnica (Drive)"
-      },
-      "avisos": [
-        "Sem página no site oficial e fora da lista atual e do tabelão. Bairro: o Linktree agrupa em Rudge Ramos; a ficha diz Vila Caminho do Mar. Não há preço publicado. Confirmar se ainda tem unidade à venda."
-      ],
-      "fonte": [
-        "https://linktr.ee/ClassicMbigucci",
-        "https://drive.google.com/file/d/1SYLLCyNdSZ6p-5CzUy6ZNJLh3vz9uenP/view?usp=drivesdk"
-      ],
-      "coletado_em": "2026-10-29",
-      "atualizado_no_site": null
-    },
-    {
-      "id": "up",
-      "nome": "UP MBigucci",
-      "variacoes": [
-        "UP"
-      ],
-      "marca": "MBigucci",
-      "tipo": "residencial",
-      "status": "pronto",
-      "status_site": "Pronto (Linktree)",
-      "endereco": "Rua Amparo, 37, esquina com Rua Itu, 293 - Centro, São Bernardo do Campo",
-      "bairro": "Centro",
-      "cidade": "São Bernardo do Campo",
-      "uf": "SP",
-      "entrega_prevista": null,
-      "entrega_texto": "Entregue (jun/2014)",
-      "area_min_m2": null,
-      "area_max_m2": null,
-      "dormitorios_texto": "2 e 3",
-      "suites_texto": "1",
-      "vagas_texto": null,
-      "preco_a_partir_de": null,
-      "preco_texto": null,
-      "chamada": null,
-      "lazer": [],
-      "tipologias": [
-        {
-          "rotulo": "2 dorms c/ 1 suíte",
-          "tipo": "apartamento",
-          "dormitorios": 2,
-          "suites": 1,
-          "vagas_min": null,
-          "vagas_max": null,
-          "area_m2": null,
-          "deposito": null,
-          "preco_a_partir_de": null,
-          "fonte": "ficha técnica (Drive)"
-        },
-        {
-          "rotulo": "3 dorms c/ 1 suíte",
-          "tipo": "apartamento",
-          "dormitorios": 3,
-          "suites": 1,
-          "vagas_min": null,
-          "vagas_max": null,
-          "area_m2": null,
-          "deposito": null,
-          "preco_a_partir_de": null,
-          "fonte": "ficha técnica (Drive)"
-        }
-      ],
-      "links": {
-        "pagina_oficial": null,
-        "linktree": "https://linktr.ee/UpMbigucci",
-        "apresentacao": null,
-        "book": null,
-        "ficha_tecnica": "https://drive.google.com/file/d/17yNrFOQg292KPfHhBsdoOUIIfWqRhXdT/view?usp=drive_link",
-        "memorial_descritivo": null,
-        "tabela_precos": null,
-        "tour_virtual": null,
-        "fotos": "https://drive.google.com/drive/folders/1qUa_VbcrXqhwynjT_mbUKpkrlao0cEib",
-        "google_maps": null
-      },
-      "fontes": {
-        "status": "linktree",
-        "endereco": "ficha técnica (Drive)",
-        "tipologias": "ficha técnica (Drive)"
-      },
-      "avisos": [
-        "Sem página no site oficial e fora da lista atual e do tabelão. O Linktree tem \"Fotos Apto 14\", o que sugere uma unidade específica à venda. A ficha não traz metragem."
-      ],
-      "fonte": [
-        "https://linktr.ee/UpMbigucci",
-        "https://drive.google.com/file/d/17yNrFOQg292KPfHhBsdoOUIIfWqRhXdT/view?usp=drive_link"
-      ],
-      "coletado_em": "2026-10-29",
-      "atualizado_no_site": null
-    },
-    {
-      "id": "cortina-dampezzo",
-      "nome": "Cortina D'Ampezzo",
-      "variacoes": [
-        "Cortina D Ampezzo"
-      ],
-      "marca": "MBigucci",
-      "tipo": "residencial",
-      "status": "pronto",
-      "status_site": "Pronto (Linktree)",
-      "endereco": null,
-      "bairro": "Jardim da Saúde",
+      "status_site": "Pronto (tabelão set/2026)",
+      "endereco": "Rua Frederico Von Martius, 225 - Vila Monumento, São Paulo",
+      "bairro": "Vila Monumento",
       "cidade": "São Paulo",
       "uf": "SP",
       "entrega_prevista": null,
-      "entrega_texto": null,
-      "area_min_m2": null,
-      "area_max_m2": null,
-      "dormitorios_texto": null,
+      "entrega_texto": "Entregue",
+      "area_min_m2": 71.65,
+      "area_max_m2": 71.65,
+      "dormitorios_texto": "3",
       "suites_texto": null,
       "vagas_texto": null,
       "preco_a_partir_de": null,
       "preco_texto": null,
       "chamada": null,
       "lazer": [],
-      "tipologias": [],
-      "links": {
-        "pagina_oficial": null,
-        "linktree": "https://linktr.ee/SaoPauloMB",
-        "apresentacao": null,
-        "book": null,
-        "ficha_tecnica": null,
-        "memorial_descritivo": null,
-        "tabela_precos": null,
-        "tour_virtual": null,
-        "fotos": "https://drive.google.com/drive/folders/1kbIN3Wlft2XtAXsOQNzSd63FYAnj6gt6",
-        "google_maps": null
-      },
-      "fontes": {
-        "status": "linktree"
-      },
-      "avisos": [
-        "No Linktree é só uma pasta de fotos (\"Cobertura 152\" e \"Fotos tratadas\"). Sem página no site. O tabelão traz uma unidade de 230 m², 3 dorms, na Rua General Chagas Santos, 1108."
+      "tipologias": [
+        {
+          "rotulo": "3 dorms (1 suíte) · 71,65 m²",
+          "tipo": "apartamento",
+          "dormitorios": 3,
+          "suites": 1,
+          "vagas_min": 2,
+          "vagas_max": 2,
+          "area_m2": 71.65,
+          "deposito": null,
+          "preco_a_partir_de": null,
+          "preco_nota": "tabelão set/2026: R$ 773.700 · preço promocional · unid. 103 · tabela R$ 866.500",
+          "fonte": "tabelão set/2026 (ref/)"
+        }
       ],
-      "fonte": [
-        "https://linktr.ee/SaoPauloMB",
-        "https://drive.google.com/drive/folders/1kbIN3Wlft2XtAXsOQNzSd63FYAnj6gt6"
-      ],
-      "coletado_em": "2026-10-29",
-      "atualizado_no_site": null
-    },
-    {
-      "id": "village-da-serra",
-      "nome": "Village da Serra",
-      "variacoes": [
-        "Condomínio Village da Serra"
-      ],
-      "marca": "MBigucci",
-      "tipo": "lote",
-      "status": null,
-      "status_site": null,
-      "endereco": null,
-      "bairro": null,
-      "cidade": "Tremembé",
-      "uf": "SP",
-      "entrega_prevista": null,
-      "entrega_texto": null,
-      "area_min_m2": null,
-      "area_max_m2": null,
-      "dormitorios_texto": null,
-      "suites_texto": null,
-      "vagas_texto": null,
-      "preco_a_partir_de": null,
-      "preco_texto": null,
-      "chamada": null,
-      "lazer": [],
-      "tipologias": [],
       "links": {
         "pagina_oficial": null,
         "linktree": null,
@@ -3956,19 +3786,88 @@
         "memorial_descritivo": null,
         "tabela_precos": null,
         "tour_virtual": null,
-        "fotos": null,
-        "google_maps": null,
-        "tabela_outubro": "https://drive.google.com/file/d/1zcarNQF5fY_oFjsB1xUPX5L2KDaSY292/view?usp=drive_link",
-        "tabela_novembro": "https://drive.google.com/file/d/1VjDkBPf6hEwaeVFBZ9WftNjzu7CiGF6I/view?usp=drive_link"
+        "fotos": "https://drive.google.com/drive/folders/1EiYK87MLqeVxNUZ-1RkO7O5TA7pkIftl?usp=drive_link",
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Frederico%20Von%20Martius%2C%20225%20-%20Vila%20Monumento%2C%20S%C3%A3o%20Paulo"
       },
-      "fontes": {},
+      "fontes": {
+        "status": "Felipe (29/10/2026)",
+        "endereco": "tabelão set/2026 (ref/)",
+        "tipologias": "tabelão set/2026 (ref/)"
+      },
       "avisos": [
-        "No Linktree só aparece a tabela (PDF no Drive, grupo \"Terrenos / Lotes\"), que não foi aberta. Não é apartamento: o tabelão traz um lote de 1.000 m² na Rodovia SP-123, km 17,5. Avaliar se entra no catálogo."
+        "Segue à venda, sem página no site nem no Linktree (Felipe, 29/10/2026). Dados só do tabelão de set/2026; o preço atual vem da tabela mensal."
       ],
       "fonte": [
-        "https://linktr.ee/TABELAS_ATUAIS",
-        "https://linktr.ee/TABELAS_FUTURAS",
-        "https://linktr.ee/TABELAS_ATUAIS"
+        "ref/CRM Bruna/importacoes/mbigucci-tabelao-2026-09-24.json"
+      ],
+      "coletado_em": "2026-10-29",
+      "atualizado_no_site": null
+    },
+    {
+      "id": "terra-nostra-parma",
+      "nome": "Terra Nostra Parma",
+      "variacoes": [
+        "Parma",
+        "Terra Nostra"
+      ],
+      "marca": "MBigucci",
+      "tipo": "residencial",
+      "condominio": "Terra Nostra",
+      "torres_conhecidas": [],
+      "status": "pronto",
+      "status_site": "Pronto (tabelão set/2026)",
+      "endereco": "Av. Rio de Janeiro, 611 - Jardim Diogo, Guarulhos",
+      "bairro": "Jardim Diogo",
+      "cidade": "Guarulhos",
+      "uf": "SP",
+      "entrega_prevista": null,
+      "entrega_texto": "Entregue",
+      "area_min_m2": 43.77,
+      "area_max_m2": 43.77,
+      "dormitorios_texto": "2",
+      "suites_texto": null,
+      "vagas_texto": null,
+      "preco_a_partir_de": null,
+      "preco_texto": null,
+      "chamada": null,
+      "lazer": [],
+      "tipologias": [
+        {
+          "rotulo": "2 dorms · 43,77 m²",
+          "tipo": "apartamento",
+          "dormitorios": 2,
+          "suites": 0,
+          "vagas_min": 1,
+          "vagas_max": 1,
+          "area_m2": 43.77,
+          "deposito": null,
+          "preco_a_partir_de": null,
+          "preco_nota": "tabelão set/2026: R$ 363.000 · preço promocional · unid. 114 · tabela R$ 406.600 · locado",
+          "fonte": "tabelão set/2026 (ref/)"
+        }
+      ],
+      "links": {
+        "pagina_oficial": null,
+        "linktree": "https://linktr.ee/TerraNostraMbigucci",
+        "apresentacao": "https://drive.google.com/file/d/1b-NW5Nn7YdvYmjG4W88f32c6EcnayLNQ/view?usp=drive_link",
+        "book": null,
+        "ficha_tecnica": "https://drive.google.com/file/d/1jneLnCFSFG93Jycdc5xwq7DaAMPjfHOV/view?usp=drive_link",
+        "memorial_descritivo": "https://drive.google.com/file/d/1x-mP7ShJ_fYYeMs_LtTHaZ2sGd4_Zwrc/view?usp=drive_link",
+        "tabela_precos": null,
+        "tour_virtual": "https://www.mbigucci.com.br/mb/tourvirtual/terranostra/index.html",
+        "fotos": "https://drive.google.com/drive/folders/16CsYBiYmh-32j4ItUGGgh112H5LskRw9",
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Av.%20Rio%20de%20Janeiro%2C%20611%20-%20Jardim%20Diogo%2C%20Guarulhos"
+      },
+      "fontes": {
+        "status": "Felipe (29/10/2026)",
+        "endereco": "tabelão set/2026 (ref/)",
+        "tipologias": "tabelão set/2026 (ref/)"
+      },
+      "avisos": [
+        "Segue à venda e usa o material do Modena (Felipe, 29/10/2026). Mesmo terreno do Modena (Av. Rio de Janeiro, 611). Dados só do tabelão de set/2026."
+      ],
+      "fonte": [
+        "ref/CRM Bruna/importacoes/mbigucci-tabelao-2026-09-24.json"
       ],
       "coletado_em": "2026-10-29",
       "atualizado_no_site": null
