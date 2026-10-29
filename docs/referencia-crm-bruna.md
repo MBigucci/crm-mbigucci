@@ -180,11 +180,11 @@ Tamanho: **P** = até meia sessão, **M** = uma sessão, **G** = duas ou mais se
 
 | # | O que | Etapa | Tamanho | Pesquisa |
 | --- | --- | --- | --- | --- |
-| 1 | **Cadastro Mágico**: colar e-mail ou mensagem do WhatsApp, prévia com selo por campo, tags opt-in, mensagem original guardada, card de boas-vindas | leads | M | R-zap, T3 |
-| 2 | **Follow-up com tentativas**: tipo da interação, "Sem resposta (+1)" em 1 toque com próximo contato sugerido, contador no banco, sugestão de descarte na 3ª com o motivo novo `sem_retorno`, "Sem contato há N dias" no card | leads | M | T1, T2, N3 |
-| 3 | **`lead_eventos`** por gatilho (etapa, temperatura, status, dono, autor) e avanço automático de etapa. Barato e urgente, porque o histórico já está sendo perdido | leads | P | N2, N4 |
+| 1 ✓ | **Feito.** **Cadastro Mágico**: colar e-mail ou mensagem do WhatsApp, prévia com selo por campo, tags opt-in, mensagem original guardada, card de boas-vindas | leads | M | R-zap, T3 |
+| 2 ✓ | **Feito.** **Follow-up com tentativas**: tipo da interação, "Sem resposta (+1)" em 1 toque com próximo contato sugerido, contador no banco, sugestão de descarte na 3ª com o motivo novo `sem_retorno`, "Sem contato há N dias" no card | leads | M | T1, T2, N3 |
+| 3 ✓ | **Feito.** **`lead_eventos`** por gatilho (etapa, temperatura, status, dono, autor) e avanço automático de etapa. Barato e urgente, porque o histórico já está sendo perdido | leads | P | N2, N4 |
 | 4 | **Mensagens prontas no WhatsApp**: tabela de modelos, sugestão pela etapa, diálogo de mensagem, botão Ligar | leads | M | T9, T5 |
-| 5 | **Duplicado entre corretores** (RPC que só diz se existe) e o 9º dígito no `normalizarWhatsapp` | leads | P | T2 |
+| 5 | **Duplicado entre corretores** (RPC que só diz se existe). O 9º dígito no `normalizarWhatsapp` já entrou com o item 1 | leads | P | T2 |
 | 6 | **Repasse do lead da empresa**: WhatsApp do corretor em `profiles` e botão "Avisar no WhatsApp" ao atribuir | leads | P | T9 |
 | 7 | **Ajustes de lista e quadro**: "mais tempo sem contato" em `/leads/`, mais esquecido no topo do quadro, Desfazer em vez de confirmação, busca tolerante a acento e telefone | leads | P | N3, T3 |
 | 8 | **PWA instalável** (manifest e ícones com `basePath`) e aviso de sem internet | base | P | T6 |
@@ -198,3 +198,5 @@ Tamanho: **P** = até meia sessão, **M** = uma sessão, **G** = duas ou mais se
 | 16 | Depois: perfil ampliado (prazo de compra, financiamento, FGTS), documentos no bucket, dados pessoais e aniversário, importação de tabela de preços por IA externa | outra | M cada | T3 |
 
 Os itens 1, 2 e 3 mexem no mesmo gatilho e nas mesmas telas (cadastro, ficha, `lead_interacoes`). Por isso convém fazê-los na mesma sessão ou em sequência, nunca em paralelo.
+
+**29/10/2026:** os itens 1, 2 e 3 foram feitos juntos, com o 9º dígito do item 5. As regras estão em `docs/leads.md` (seções 4 a 6). Ficaram de fora: o motivo `sem_credito` (seção 4 desta referência), o grupo da lista do dia para quem passou de N dias sem contato com data longe (o próximo contato marcado continua mandando) e o N em `app_settings` (é constante em `followup.ts`). O avanço automático só tira o lead de "novo"; as etapas de visita esperam a tabela de visitas (item 10), porque a visita realizada precisa de baixa auditável.

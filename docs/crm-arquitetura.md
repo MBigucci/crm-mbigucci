@@ -57,16 +57,19 @@
 
 As regras de negócio estão em `docs/leads.md`. Aqui ficam só as decisões técnicas.
 
-- **Tabelas:** `leads`, `lead_interacoes` e os catálogos `lead_origens` e `lead_etapas`. Origens e etapas são tabelas, e não enums, para serem ajustadas no Table Editor sem mexer no código.
-- **Sem exclusão:** não há GRANT de `delete` em `leads` nem em `lead_interacoes`. O descarte é `status = 'descartado'` com motivo obrigatório (check `leads_descarte_tem_motivo`).
-- **Escritas por coluna:** o app grava só as colunas de dados. `criado_por`, `atribuido_por`, `atribuido_em`, `ultima_interacao_*` e as datas são preenchidas por gatilho.
+- **Tabelas:** `leads`, `lead_interacoes`, `lead_eventos` (histórico automático) e os catálogos `lead_origens` e `lead_etapas`. Origens e etapas são tabelas, e não enums, para serem ajustadas no Table Editor sem mexer no código.
+- **Sem exclusão:** não há GRANT de `delete` em `leads` nem em `lead_interacoes`. Em `lead_eventos` não há GRANT de escrita nenhuma: só o gatilho grava. O descarte é `status = 'descartado'` com motivo obrigatório (check `leads_descarte_tem_motivo`).
+- **Escritas por coluna:** o app grava só as colunas de dados. `criado_por`, `atribuido_por`, `atribuido_em`, `ultima_interacao_*`, `tentativas` e as datas são preenchidas por gatilho.
 - **Gatilhos:**
   - `leads_guard`: carimba criador e atribuição, deixa quem não é o dono só trocar o dono, e protege a origem restrita (`lead_origens.restrita`).
-  - `lead_interacao_atualiza_lead`: a interação grava no lead a última interação e o próximo contato. O front não precisa de duas escritas.
+  - `lead_interacao_atualiza_lead`: a interação grava no lead a última interação e o próximo contato, soma ou zera `tentativas` pelo tipo e tira o lead de "novo" na primeira conversa. O front não precisa de duas escritas.
+  - `lead_registra_eventos` (depois de gravar o lead): grava em `lead_eventos` o cadastro e cada mudança de etapa, temperatura, status e dono, com o autor da sessão. O que vem de outro gatilho sai com `automatico = true`.
+  - `pg_trigger_depth() > 1` marca a escrita que veio de outro gatilho. O `leads_guard` deixa passar essa escrita (a regra de quem pode já foi checada na policy da interação), e o `lead_registra_eventos` a marca como automática. Não depende de nenhuma variável que o cliente consiga ajustar.
+- **Migração:** colunas e checks novos entram com `add column if not exists` e `drop constraint if exists` + `add constraint`, para o mesmo `schema.sql` servir no banco novo e no que já está em produção. Os leads antigos ganham o evento "criado" uma vez.
 - **Funções novas:** `pode_atribuir_a(u)` e `origem_restrita(slug)`, `security definer` como as da base.
 - **Permissões novas:** `leads.cadastrar` (corretor) e `leads.atribuir` (gerente). O padrão entra só quando a permissão é criada (`insert ... on conflict ... returning (xmax = 0)`), então rodar o schema de novo não desfaz ajustes.
 - **Front:**
-  - As regras puras (ordem da lista do dia, WhatsApp e datas) ficam em `crm/src/lib/leads.ts`, sem importar nada, para rodar no `node --test` direto do TypeScript (Node 24). Por isso o `tsconfig` tem `allowImportingTsExtensions`.
+  - As regras puras ficam em `crm/src/lib/`: `leads.ts` (lista do dia, WhatsApp e datas), `followup.ts` (dias sem contato, tentativas), `historico.ts` (linha do tempo da ficha) e `cadastro-magico.ts` com `empreendimentos.ts` (Cadastro Mágico). Elas só importam umas às outras, com a extensão `.ts`, para rodar no `node --test` direto do TypeScript (Node 24). Por isso o `tsconfig` tem `allowImportingTsExtensions`.
   - O início vira a lista do dia para quem tem `leads.cadastrar` e não tem `leads.atribuir` (`ehListaDoDia` em `casca.tsx`). A decisão é por permissão, não por perfil.
   - A ficha usa `/leads/ficha/?id=`, porque a exportação estática não gera rotas dinâmicas.
   - "Hoje" e "atrasado" usam o fuso do aparelho do corretor.
@@ -74,8 +77,8 @@ As regras de negócio estão em `docs/leads.md`. Aqui ficam só as decisões té
 ## Testes
 
 - **Schema e RLS da base:** testados no PGlite (Postgres em WASM), com uma simulação do `auth.users`, do `auth.uid()` e dos papéis `anon` e `authenticated`. Foram 44 verificações por perfil, e o script rodou três vezes para provar que é idempotente. Esse script continua fora do repositório, na pasta de notas da sessão da base (`sqltest/test.mjs`). Ele conta 2 permissões fixas, então acusa 1 falha desde que as de leads entraram.
-- **RLS de leads:** `crm/supabase/testes/leads.test.mjs`, com o mesmo tipo de simulação, roda com `npm run test:banco`. São 14 testes por perfil (corretor, colega, gerente da equipe, gerente de outra equipe, gerente geral, recepção, desativado e anônimo).
-- **Lista do dia:** `crm/src/lib/leads.test.ts`, com `npm test`.
+- **RLS de leads:** `crm/supabase/testes/leads.test.mjs`, com o mesmo tipo de simulação, roda com `npm run test:banco`. São 20 testes por perfil, incluindo `lead_eventos`, tentativas, avanço de etapa e a mensagem original, (corretor, colega, gerente da equipe, gerente de outra equipe, gerente geral, recepção, desativado e anônimo).
+- **Regras puras:** `npm test` roda `leads.test.ts` (lista do dia, WhatsApp), `followup.test.ts` (follow-up e histórico) e `cadastro-magico.test.ts` (parser).
 - **Scripts do SQL Editor:** `schema.sql`, `dados-teste.sql`, `verificar-rls.sql` e `limpar-dados-teste.sql` rodaram em sequência no PGlite em 29/10/2026, com o resultado esperado por perfil.
-- **Telas:** conferidas em 375px com um Supabase falso (`sqltest/fake-supabase-leads.mjs`, na pasta de notas), que imita o RLS por perfil.
+- **Telas:** conferidas em 375px com um Supabase falso (`sqltest/fake-supabase-leads.mjs`, na pasta de notas), que imita o RLS por perfil. A versão `fake-supabase-leads-v2.mjs` imita também eventos, tentativas e o avanço de etapa.
 - **Ainda não validado:** o módulo de leads num Supabase real e a Edge Function pela tela.

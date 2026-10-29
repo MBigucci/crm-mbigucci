@@ -149,7 +149,8 @@ Um **usuário desativado** perde todas as permissões na hora. Ele continua vend
 | `app_settings` | Só o gerente geral | Só o gerente geral, e só a coluna valor. Cada mudança registra quem fez e quando. |
 | `lead_origens`, `lead_etapas` | Qualquer usuário ativo | Ninguém pelo app. Ajuste as opções no Table Editor. |
 | `leads` | `pode_ver_dados_de(dono)`: o corretor vê os dele, o gerente os da equipe, o gerente geral todos | Cadastrar: o corretor, para si, fora da origem Empresa; ou quem tem `leads.atribuir`, para um corretor ativo da equipe. Alterar: o dono; quem atribui só troca o dono. Sem exclusão. |
-| `lead_interacoes` | Quem vê o lead | Registrar: só o dono do lead. Sem edição nem exclusão. |
+| `lead_interacoes` | Quem vê o lead | Registrar: o dono do lead; quem cadastrou um lead da empresa só guarda a mensagem original. Sem edição nem exclusão. |
+| `lead_eventos` | Quem vê o lead | Ninguém pelo app. Só o gatilho grava o histórico automático. |
 
 ### Gatilhos que completam as policies
 
@@ -158,7 +159,8 @@ Um **usuário desativado** perde todas as permissões na hora. Ele continua vend
 - **Edição de perfil:** aplica as regras fixas da seção "Perfis e permissões" (gerente geral, gerente com equipe, gerente fora de equipe).
 - **Equipe:** o gerente escolhido precisa ter o perfil Gerente.
 - **Lead:** carimba quem criou e quem atribuiu, deixa quem não é o dono só trocar o dono e protege a origem Empresa.
-- **Interação:** grava no lead a última interação e o próximo contato.
+- **Interação:** grava no lead a última interação e o próximo contato, conta as tentativas sem resposta e tira o lead de "novo" na primeira conversa.
+- **Histórico:** cada mudança de etapa, temperatura, status e dono do lead vira uma linha em `lead_eventos`.
 
 ### Como o schema foi testado
 
@@ -185,7 +187,7 @@ Abra `http://localhost:3000/crm`. Sem o `.env.local`, as telas avisam que o Supa
 npm run typecheck
 ```
 
-Testes da lista do dia:
+Testes das regras puras (lista do dia, follow-up, histórico e Cadastro Mágico):
 
 ```bash
 npm test

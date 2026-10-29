@@ -44,7 +44,7 @@ O CRM de corretores da MBigucci (construtora em São Bernardo do Campo). O usuá
 - `docs/pesquisa-resultados.md`: abra ao desenhar leads, cadastro, lista do dia, painel ou qualquer tela do corretor. São as 34 respostas consolidadas e as decisões que saem delas.
 - `docs/design-system.md`: abra antes de criar ou alterar qualquer tela.
 - `docs/crm-arquitetura.md`: abra ao mexer na estrutura do `crm/` (schema, RLS, deploy).
-- `docs/leads.md`: abra ao mexer em leads, lista do dia, cadastro, ficha, quadro, interações, descarte ou atribuição de lead.
+- `docs/leads.md`: abra ao mexer em leads, lista do dia, cadastro (e Cadastro Mágico), ficha, quadro, interações, follow-up e tentativas, histórico (`lead_eventos`), descarte ou atribuição de lead.
 - `docs/referencia-crm-bruna.md`: abra antes de planejar uma etapa nova ou ajustar um fluxo. Diz o que vem do CRM da Bruna, como adaptar e em que ordem.
 - `docs/fontes/regras-comerciais-2026-10.md`: o documento original do Felipe. Abra só para conferir o texto exato de uma regra.
 - `docs/candidatos-automacao.md`: abra ao criar testes, hooks ou skills, ou quando um hook bloquear algo e você precisar entender por quê.
