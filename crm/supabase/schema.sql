@@ -546,8 +546,7 @@ create table if not exists public.leads (
   etapa                   text not null default 'novo' references public.lead_etapas (slug),
   proximo_contato         timestamptz,
   status                  text not null default 'ativo' check (status in ('ativo', 'descartado')),
-  motivo_descarte         text check (motivo_descarte in
-                            ('sem_interesse', 'fora_do_perfil', 'fora_da_regiao', 'contato_invalido', 'duplicado')),
+  motivo_descarte         text,
   descartado_em           timestamptz,
   valor                   numeric(14, 2) check (valor is null or valor >= 0),
   dormitorios             smallint check (dormitorios is null or dormitorios between 0 and 9),
@@ -564,6 +563,19 @@ create table if not exists public.leads (
     check ((status = 'descartado') = (motivo_descarte is not null))
 );
 
+-- Colunas que vieram depois do primeiro corte (add column if not exists para
+-- o banco que já está em produção).
+-- tentativas: "Sem resposta" seguidas; só o gatilho das interações mexe nela.
+alter table public.leads add column if not exists tentativas smallint not null default 0;
+alter table public.leads add column if not exists email text;
+alter table public.leads drop constraint if exists leads_email_check;
+alter table public.leads add constraint leads_email_check check (email is null or email ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
+-- Motivos de descarte. Para mudar, altere aqui e em MOTIVOS_DESCARTE (crm/src/lib/leads.ts).
+alter table public.leads drop constraint if exists leads_motivo_descarte_check;
+alter table public.leads add constraint leads_motivo_descarte_check check (motivo_descarte in
+  ('sem_interesse', 'fora_do_perfil', 'fora_da_regiao', 'contato_invalido', 'duplicado', 'sem_retorno'));
+
 create index if not exists leads_dono_status_idx on public.leads (dono_id, status, proximo_contato);
 create index if not exists leads_whatsapp_idx on public.leads (whatsapp);
 
@@ -573,11 +585,42 @@ create table if not exists public.lead_interacoes (
   autor_id         uuid default auth.uid() references public.profiles (id) on delete set null,
   criado_em        timestamptz not null default now(),
   texto            text not null check (length(btrim(texto)) > 0),
-  -- Toda interação termina com o próximo contato (dia e hora).
-  proximo_contato  timestamptz not null
+  proximo_contato  timestamptz
 );
 
+-- Tipo da interação. "tentativa" é o "Sem resposta (+1)"; "mensagem" é a
+-- mensagem original colada no Cadastro Mágico. Conversa de verdade (whatsapp,
+-- ligacao, email, visita) zera as tentativas e tira o lead de "novo".
+alter table public.lead_interacoes add column if not exists tipo text not null default 'nota';
+alter table public.lead_interacoes drop constraint if exists lead_interacoes_tipo_check;
+alter table public.lead_interacoes add constraint lead_interacoes_tipo_check
+  check (tipo in ('whatsapp', 'ligacao', 'email', 'visita', 'nota', 'tentativa', 'mensagem'));
+
+-- Toda interação termina com o próximo contato (dia e hora), menos a mensagem original.
+alter table public.lead_interacoes alter column proximo_contato drop not null;
+alter table public.lead_interacoes drop constraint if exists lead_interacoes_pede_proximo_contato;
+alter table public.lead_interacoes add constraint lead_interacoes_pede_proximo_contato
+  check (tipo = 'mensagem' or proximo_contato is not null);
+
 create index if not exists lead_interacoes_lead_idx on public.lead_interacoes (lead_id, criado_em desc);
+
+-- Histórico automático: cada mudança de etapa, temperatura, status e dono vira
+-- uma linha, gravada só pelo gatilho lead_registra_eventos. Ninguém escreve
+-- direto. "automatico" marca o que o banco fez sozinho (ex.: a primeira
+-- conversa tira o lead de "novo").
+create table if not exists public.lead_eventos (
+  id          uuid primary key default gen_random_uuid(),
+  lead_id     uuid not null references public.leads (id) on delete restrict,
+  tipo        text not null check (tipo in ('criado', 'etapa', 'temperatura', 'status', 'dono')),
+  de          text,
+  para        text,
+  detalhe     text,
+  automatico  boolean not null default false,
+  autor_id    uuid references public.profiles (id) on delete set null,
+  criado_em   timestamptz not null default now()
+);
+
+create index if not exists lead_eventos_lead_idx on public.lead_eventos (lead_id, criado_em desc);
 
 -- ---------- Funções do módulo ----------
 
@@ -631,17 +674,23 @@ begin
   new.campanha := nullif(btrim(coalesce(new.campanha, '')), '');
   new.empreendimento := nullif(btrim(coalesce(new.empreendimento, '')), '');
   new.regiao := nullif(btrim(coalesce(new.regiao, '')), '');
+  new.email := nullif(lower(btrim(coalesce(new.email, ''))), '');
 
   if new.status = 'descartado' and (tg_op = 'INSERT' or old.status <> 'descartado') then
     new.descartado_em := now();
   elsif new.status = 'ativo' then
     new.descartado_em := null;
+    -- Reativar começa a contagem de tentativas do zero.
+    if tg_op = 'UPDATE' and old.status = 'descartado' then
+      new.tentativas := 0;
+    end if;
   end if;
 
   if tg_op = 'INSERT' then
     new.criado_por := coalesce(v_eu, new.criado_por);
     new.ultima_interacao_em := null;
     new.ultima_interacao_texto := null;
+    new.tentativas := 0;
     new.created_at := now();
     if v_eu is not null and new.dono_id <> v_eu then
       new.atribuido_por := v_eu;
@@ -655,7 +704,9 @@ begin
 
   new.criado_por := old.criado_por;
   new.created_at := old.created_at;
-  if v_eu is null then
+  -- Sem usuário logado (SQL Editor) ou vindo de outro gatilho (a interação
+  -- atualizando o lead): as regras de quem pode o quê já foram checadas.
+  if v_eu is null or pg_trigger_depth() > 1 then
     return new;
   end if;
 
@@ -711,18 +762,28 @@ drop trigger if exists lead_interacao_carimbo on public.lead_interacoes;
 create trigger lead_interacao_carimbo before insert on public.lead_interacoes
   for each row execute function public.lead_interacao_carimbo();
 
--- A interação atualiza o lead: última interação e próximo contato.
+-- A interação atualiza o lead: última interação e próximo contato. Também
+-- conta as tentativas sem resposta (zera na conversa de verdade) e tira o lead
+-- de "novo" na primeira conversa. A etapa nunca volta.
 create or replace function public.lead_interacao_atualiza_lead()
 returns trigger
 language plpgsql
 security definer
 set search_path = ''
 as $$
+declare
+  v_conversa boolean := new.tipo in ('whatsapp', 'ligacao', 'email', 'visita');
 begin
   update public.leads
      set ultima_interacao_em = new.criado_em,
          ultima_interacao_texto = left(new.texto, 280),
-         proximo_contato = new.proximo_contato
+         proximo_contato = coalesce(new.proximo_contato, proximo_contato),
+         tentativas = case
+                        when new.tipo = 'tentativa' then least(tentativas + 1, 99)
+                        when v_conversa then 0
+                        else tentativas
+                      end,
+         etapa = case when v_conversa and etapa = 'novo' then 'em_contato' else etapa end
    where id = new.lead_id;
   return new;
 end;
@@ -732,13 +793,61 @@ drop trigger if exists lead_interacao_atualiza_lead on public.lead_interacoes;
 create trigger lead_interacao_atualiza_lead after insert on public.lead_interacoes
   for each row execute function public.lead_interacao_atualiza_lead();
 
+-- Histórico automático do lead. Roda depois de gravar, com o autor da sessão
+-- (nulo pelo SQL Editor). O que vem de outro gatilho é marcado como automático.
+create or replace function public.lead_registra_eventos()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_eu uuid := auth.uid();
+  v_auto boolean := pg_trigger_depth() > 1;
+begin
+  if tg_op = 'INSERT' then
+    insert into public.lead_eventos (lead_id, tipo, para, autor_id, criado_em)
+    values (new.id, 'criado', new.dono_id::text, coalesce(v_eu, new.criado_por), new.created_at);
+    return new;
+  end if;
+
+  if new.etapa is distinct from old.etapa then
+    insert into public.lead_eventos (lead_id, tipo, de, para, automatico, autor_id)
+    values (new.id, 'etapa', old.etapa, new.etapa, v_auto, v_eu);
+  end if;
+  if new.temperatura is distinct from old.temperatura then
+    insert into public.lead_eventos (lead_id, tipo, de, para, automatico, autor_id)
+    values (new.id, 'temperatura', old.temperatura, new.temperatura, v_auto, v_eu);
+  end if;
+  if new.status is distinct from old.status then
+    insert into public.lead_eventos (lead_id, tipo, de, para, detalhe, automatico, autor_id)
+    values (new.id, 'status', old.status, new.status, new.motivo_descarte, v_auto, v_eu);
+  end if;
+  if new.dono_id is distinct from old.dono_id then
+    insert into public.lead_eventos (lead_id, tipo, de, para, automatico, autor_id)
+    values (new.id, 'dono', old.dono_id::text, new.dono_id::text, v_auto, v_eu);
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists lead_registra_eventos on public.leads;
+create trigger lead_registra_eventos after insert or update on public.leads
+  for each row execute function public.lead_registra_eventos();
+
+-- Leads cadastrados antes do histórico ganham o evento "criado", uma vez.
+insert into public.lead_eventos (lead_id, tipo, para, autor_id, criado_em)
+select l.id, 'criado', l.dono_id::text, l.criado_por, l.created_at
+from public.leads l
+where not exists (select 1 from public.lead_eventos e where e.lead_id = l.id and e.tipo = 'criado');
+
 -- ---------- RLS do módulo ----------
 
 do $$
 declare
   t text;
 begin
-  foreach t in array array['lead_origens', 'lead_etapas', 'leads', 'lead_interacoes'] loop
+  foreach t in array array['lead_origens', 'lead_etapas', 'leads', 'lead_interacoes', 'lead_eventos'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('revoke all on public.%I from anon, authenticated', t);
     execute format('grant select on public.%I to authenticated', t);
@@ -746,14 +855,15 @@ begin
 end;
 $$;
 
--- Escritas permitidas, coluna a coluna. Não há exclusão pelo app.
-grant insert (dono_id, nome, whatsapp, origem, campanha, empreendimento, temperatura, etapa, proximo_contato,
+-- Escritas permitidas, coluna a coluna. Não há exclusão pelo app. Em
+-- lead_eventos ninguém escreve: só o gatilho lead_registra_eventos.
+grant insert (dono_id, nome, whatsapp, email, origem, campanha, empreendimento, temperatura, etapa, proximo_contato,
               status, motivo_descarte, valor, dormitorios, regiao, finalidade)
   on public.leads to authenticated;
-grant update (dono_id, nome, whatsapp, origem, campanha, empreendimento, temperatura, etapa, proximo_contato,
+grant update (dono_id, nome, whatsapp, email, origem, campanha, empreendimento, temperatura, etapa, proximo_contato,
               status, motivo_descarte, valor, dormitorios, regiao, finalidade)
   on public.leads to authenticated;
-grant insert (lead_id, texto, proximo_contato) on public.lead_interacoes to authenticated;
+grant insert (lead_id, tipo, texto, proximo_contato) on public.lead_interacoes to authenticated;
 
 drop policy if exists "ativos leem origens" on public.lead_origens;
 create policy "ativos leem origens" on public.lead_origens
@@ -798,10 +908,26 @@ create policy "ver interacoes" on public.lead_interacoes
     exists (select 1 from public.leads l where l.id = lead_id and public.pode_ver_dados_de(l.dono_id))
   );
 
+-- O dono registra qualquer tipo. Quem cadastrou o lead da empresa para um
+-- corretor (gerente) só guarda a mensagem original colada no Cadastro Mágico.
 drop policy if exists "registrar interacao" on public.lead_interacoes;
 create policy "registrar interacao" on public.lead_interacoes
   for insert to authenticated with check (
     autor_id = auth.uid()
-    and public.has_permission('leads.cadastrar')
-    and exists (select 1 from public.leads l where l.id = lead_id and l.dono_id = auth.uid())
+    and (
+      (public.has_permission('leads.cadastrar')
+       and exists (select 1 from public.leads l where l.id = lead_id and l.dono_id = auth.uid()))
+      or
+      (tipo = 'mensagem'
+       and public.has_permission('leads.atribuir')
+       and exists (select 1 from public.leads l
+                   where l.id = lead_id and l.criado_por = auth.uid() and public.pode_ver_dados_de(l.dono_id)))
+    )
+  );
+
+-- Histórico automático: mesma leitura das interações; sem escrita pelo app.
+drop policy if exists "ver eventos" on public.lead_eventos;
+create policy "ver eventos" on public.lead_eventos
+  for select to authenticated using (
+    exists (select 1 from public.leads l where l.id = lead_id and public.pode_ver_dados_de(l.dono_id))
   );

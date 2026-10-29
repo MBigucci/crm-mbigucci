@@ -4,6 +4,10 @@ delete from public.lead_interacoes where lead_id in (
   select l.id from public.leads l join public.profiles p on p.id = l.dono_id
   where p.email in ('felipe+corretora@mbigucci.com.br', 'felipe+corretorb@mbigucci.com.br')
 );
+delete from public.lead_eventos where lead_id in (
+  select l.id from public.leads l join public.profiles p on p.id = l.dono_id
+  where p.email in ('felipe+corretora@mbigucci.com.br', 'felipe+corretorb@mbigucci.com.br')
+);
 delete from public.leads where dono_id in (
   select id from public.profiles
   where email in ('felipe+corretora@mbigucci.com.br', 'felipe+corretorb@mbigucci.com.br')

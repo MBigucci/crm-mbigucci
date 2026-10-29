@@ -168,7 +168,7 @@ test("interações: o dono registra, e o lead ganha última interação e próxi
   const [i] = await linhas(`select autor_id from public.lead_interacoes where lead_id = '${leadId}'`);
   assert.equal(i.autor_id, id(CA));
 
-  await falha(CA, `insert into public.lead_interacoes (lead_id, texto) values ('${leadId}', 'sem próximo')`, "not-null");
+  await falha(CA, `insert into public.lead_interacoes (lead_id, texto) values ('${leadId}', 'sem próximo')`, "lead_interacoes_pede_proximo_contato");
   await falha(CA2, `insert into public.lead_interacoes (lead_id, texto, proximo_contato) values ('${leadId}', 'x', now())`, "row-level security");
   await falha(GA, `insert into public.lead_interacoes (lead_id, texto, proximo_contato) values ('${leadId}', 'x', now())`, "row-level security");
   await falha(CA, `update public.lead_interacoes set texto = 'mudei'`, "permission denied");
@@ -191,4 +191,113 @@ test("corretor desativado perde o acesso aos próprios leads", async () => {
   assert.equal((await como(DES, () => linhas(`select * from public.leads`))).length, 0);
   // E o gerente da equipe ainda vê e pode reatribuir.
   await como(GA, () => db.exec(`update public.leads set dono_id = '${id(CA2)}' where nome = 'Cliente A2-1'`));
+});
+
+// ---------- Histórico automático, tentativas e Cadastro Mágico ----------
+
+const idDe = async (nome) => (await linhas(`select id from public.leads where nome = $1`, [nome]))[0].id;
+const interacao = (leadId, tipo, proximo = "'2026-11-05 10:00-03'") =>
+  `insert into public.lead_interacoes (lead_id, tipo, texto, proximo_contato) values ('${leadId}', '${tipo}', 'x', ${proximo})`;
+const eventos = async (leadId) =>
+  linhas(`select tipo, de, para, detalhe, automatico, autor_id from public.lead_eventos where lead_id = $1 order by criado_em, tipo`, [leadId]);
+
+test("eventos: cadastro, etapa, temperatura, descarte e atribuição, com o autor", async () => {
+  await como(CA, () => db.exec(lead(CA, "Histórico 1")));
+  const h1 = await idDe("Histórico 1");
+  await como(CA, () => db.exec(`update public.leads set temperatura = 'quente', etapa = 'proposta' where id = '${h1}'`));
+  await como(CA, () => db.exec(`update public.leads set status = 'descartado', motivo_descarte = 'sem_retorno' where id = '${h1}'`));
+  await como(CA, () => db.exec(`update public.leads set status = 'ativo', motivo_descarte = null where id = '${h1}'`));
+  await como(GA, () => db.exec(`update public.leads set dono_id = '${id(CA2)}' where id = '${h1}'`));
+  const ev = (await eventos(h1)).map(({ tipo, de, para, detalhe, autor_id }) => [tipo, de, para, detalhe, autor_id]);
+  assert.deepEqual(ev, [
+    ["criado", null, id(CA), null, id(CA)],
+    ["etapa", "novo", "proposta", null, id(CA)],
+    ["temperatura", null, "quente", null, id(CA)],
+    ["status", "ativo", "descartado", "sem_retorno", id(CA)],
+    ["status", "descartado", "ativo", null, id(CA)],
+    ["dono", id(CA), id(CA2), null, id(GA)],
+  ]);
+  // Lead que já existia ganhou o "criado" uma vez, mesmo rodando o schema de novo.
+  await db.exec(schema);
+  const criados = await linhas(`select count(*)::int n from public.lead_eventos where tipo = 'criado' group by lead_id having count(*) > 1`);
+  assert.equal(criados.length, 0);
+  assert.equal((await linhas(`select count(*)::int n from public.leads l where not exists
+    (select 1 from public.lead_eventos e where e.lead_id = l.id and e.tipo = 'criado')`))[0].n, 0);
+});
+
+test("eventos: RLS igual à das interações, e ninguém escreve direto", async () => {
+  const h1 = await idDe("Histórico 1"); // agora do Corretor A2, equipe A
+  const conta = async (n) =>
+    (await como(n, () => linhas(`select count(*)::int n from public.lead_eventos where lead_id = '${h1}'`)))[0].n;
+  assert.equal(await conta(CA2), 6);
+  assert.equal(await conta(GA), 6);
+  assert.equal(await conta(GG), 6);
+  assert.equal(await conta(CA), 0); // não é mais dono
+  assert.equal(await conta(CB), 0);
+  assert.equal(await conta(GB), 0);
+  assert.equal(await conta(REC), 0);
+  assert.equal(await conta(DES), 0);
+  await falha(0, `select * from public.lead_eventos`, "permission denied");
+  for (const n of [CA2, GA, GG]) {
+    await falha(n, `insert into public.lead_eventos (lead_id, tipo) values ('${h1}', 'etapa')`, "permission denied");
+    await falha(n, `update public.lead_eventos set para = 'venda'`, "permission denied");
+    await falha(n, `delete from public.lead_eventos`, "permission denied");
+  }
+});
+
+test("tentativas: Sem resposta soma, conversa zera, e o cliente não mexe no contador", async () => {
+  await como(CA, () => db.exec(lead(CA, "Tentativas 1")));
+  const t1 = await idDe("Tentativas 1");
+  for (let i = 0; i < 3; i++) await como(CA, () => db.exec(interacao(t1, "tentativa")));
+  let [l] = await linhas(`select tentativas, etapa from public.leads where id = '${t1}'`);
+  assert.deepEqual(l, { tentativas: 3, etapa: "novo" }); // tentativa não é conversa
+  await como(CA, () => db.exec(interacao(t1, "nota")));
+  assert.equal((await linhas(`select tentativas from public.leads where id = '${t1}'`))[0].tentativas, 3);
+  await como(CA, () => db.exec(`update public.leads set status = 'descartado', motivo_descarte = 'sem_retorno' where id = '${t1}'`));
+  await como(CA, () => db.exec(`update public.leads set status = 'ativo', motivo_descarte = null where id = '${t1}'`));
+  assert.equal((await linhas(`select tentativas from public.leads where id = '${t1}'`))[0].tentativas, 0);
+  await como(CA, () => db.exec(interacao(t1, "tentativa")));
+  await como(CA, () => db.exec(interacao(t1, "ligacao")));
+  [l] = await linhas(`select tentativas from public.leads where id = '${t1}'`);
+  assert.equal(l.tentativas, 0);
+  await falha(CA, `update public.leads set tentativas = 0 where id = '${t1}'`, "permission denied");
+  await falha(CA, interacao(t1, "sms"), "lead_interacoes_tipo_check");
+  await falha(CA, `update public.leads set status = 'descartado', motivo_descarte = 'sumiu' where id = '${t1}'`, "leads_motivo_descarte_check");
+});
+
+test("avanço automático: a primeira conversa tira o lead de novo, e a etapa nunca volta", async () => {
+  await como(CA, () => db.exec(lead(CA, "Avanço 1")));
+  const a1 = await idDe("Avanço 1");
+  await como(CA, () => db.exec(interacao(a1, "nota")));
+  assert.equal((await linhas(`select etapa from public.leads where id = '${a1}'`))[0].etapa, "novo");
+  await como(CA, () => db.exec(interacao(a1, "whatsapp")));
+  assert.equal((await linhas(`select etapa from public.leads where id = '${a1}'`))[0].etapa, "em_contato");
+  const [ev] = (await eventos(a1)).filter((e) => e.tipo === "etapa");
+  assert.deepEqual(ev, { tipo: "etapa", de: "novo", para: "em_contato", detalhe: null, automatico: true, autor_id: id(CA) });
+  await como(CA, () => db.exec(`update public.leads set etapa = 'proposta' where id = '${a1}'`));
+  await como(CA, () => db.exec(interacao(a1, "ligacao")));
+  assert.equal((await linhas(`select etapa from public.leads where id = '${a1}'`))[0].etapa, "proposta");
+});
+
+test("mensagem original: sem próximo contato; o gerente só guarda a do lead que cadastrou", async () => {
+  await como(CA, () => db.exec(lead(CA, "Mágico 1")));
+  const m1 = await idDe("Mágico 1");
+  await como(CA, () => db.exec(interacao(m1, "mensagem", "null")));
+  let [l] = await linhas(`select etapa, proximo_contato, ultima_interacao_texto from public.leads where id = '${m1}'`);
+  assert.deepEqual(l, { etapa: "novo", proximo_contato: null, ultima_interacao_texto: "x" });
+
+  await como(GA, () => db.exec(lead(CA, "Mágico empresa").replace("'plantao'", "'empresa'")));
+  const m2 = await idDe("Mágico empresa");
+  await como(GA, () => db.exec(interacao(m2, "mensagem", "null")));
+  [l] = await linhas(`select ultima_interacao_texto, dono_id from public.leads where id = '${m2}'`);
+  assert.deepEqual(l, { ultima_interacao_texto: "x", dono_id: id(CA) });
+  await falha(GA, interacao(m2, "nota"), "row-level security");
+  await falha(GA, interacao(m1, "mensagem", "null"), "row-level security"); // não foi ele quem cadastrou
+  await falha(GB, interacao(m2, "mensagem", "null"), "row-level security");
+});
+
+test("e-mail do lead: guardado em minúsculas e validado", async () => {
+  await como(CA, () => db.exec(`update public.leads set email = '  Ana.Paula@Gmail.com ' where nome = 'Mágico 1'`));
+  assert.equal((await linhas(`select email from public.leads where nome = 'Mágico 1'`))[0].email, "ana.paula@gmail.com");
+  await falha(CA, `update public.leads set email = 'sem arroba' where nome = 'Mágico 1'`, "leads_email_check");
 });
