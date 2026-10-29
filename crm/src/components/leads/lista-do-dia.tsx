@@ -5,9 +5,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { db } from "@/lib/supabase";
 import { usePerfil } from "@/lib/sessao";
 import { mensagemErro } from "@/lib/erros";
-import { COLUNAS_LEAD, formatarQuando, grupoDoLead, montarListaDoDia, TITULOS_GRUPO, type Lead } from "@/lib/leads";
+import { COLUNAS_LEAD, fimDoDia, formatarQuando, grupoDoLead, montarListaDoDia, TITULOS_GRUPO, type Lead } from "@/lib/leads";
 import { registrarSemResposta, useCatalogos, useHorarioAtendimento } from "@/lib/leads-dados";
 import { CardLead, RodapeAcao } from "./partes";
+import { visitasDoDia } from "@/lib/visitas";
+import { COLUNAS_VISITA_COM_LEAD, type VisitaComLead } from "@/lib/visitas-dados";
+import { ListaVisitas } from "@/components/visitas/visitas";
 
 const diaDaSemana = new Intl.DateTimeFormat("pt-BR", { weekday: "long" });
 
@@ -17,15 +20,29 @@ export function ListaDoDia() {
   const { catalogos } = useCatalogos();
   const horario = useHorarioAtendimento();
   const [leads, setLeads] = useState<Lead[] | null>(null);
+  const [visitas, setVisitas] = useState<VisitaComLead[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<{ id: string; texto: string } | null>(null);
   const [agora, setAgora] = useState(() => new Date());
 
   const carregar = useCallback(async () => {
-    const { data, error } = await db().from("leads").select(COLUNAS_LEAD).eq("dono_id", eu.id).eq("status", "ativo");
-    if (error) return setErro(mensagemErro(error));
-    setLeads(data as unknown as Lead[]);
-    setAgora(new Date());
+    const agoraLeitura = new Date();
+    const [l, v] = await Promise.all([
+      db().from("leads").select(COLUNAS_LEAD).eq("dono_id", eu.id).eq("status", "ativo"),
+      // Visitas abertas até o fim de hoje: as de hoje e as que passaram sem baixa.
+      db()
+        .from("visitas")
+        .select(COLUNAS_VISITA_COM_LEAD)
+        .eq("corretor_id", eu.id)
+        .in("status", ["agendada", "confirmada"])
+        .lte("inicio", fimDoDia(agoraLeitura).toISOString())
+        .order("inicio"),
+    ]);
+    if (l.error) return setErro(mensagemErro(l.error));
+    setLeads(l.data as unknown as Lead[]);
+    // A lista do dia continua de pé se as visitas falharem (o SQL das visitas ainda não rodou, por exemplo).
+    setVisitas(v.error ? [] : (v.data as unknown as VisitaComLead[]));
+    setAgora(agoraLeitura);
   }, [eu.id]);
 
   useEffect(() => {
@@ -48,6 +65,8 @@ export function ListaDoDia() {
   }
 
   const grupos = useMemo(() => montarListaDoDia(leads ?? [], agora, horario), [leads, agora, horario]);
+  const doDia = useMemo(() => visitasDoDia(visitas, agora), [visitas, agora]);
+  const comVisitas = doDia.hoje.length + doDia.aguardandoBaixa.length > 0;
   const depois = (leads ?? []).filter((l) => grupoDoLead(l, agora) === null).length;
   const nomeEtapa = (slug: string) => catalogos?.etapas.find((e) => e.slug === slug)?.nome ?? slug;
   const hoje = `${diaDaSemana.format(agora)}, ${agora.toLocaleDateString("pt-BR")}`;
@@ -87,7 +106,25 @@ export function ListaDoDia() {
         </div>
       )}
 
-      {leads && leads.length > 0 && !grupos.length && (
+      {leads &&
+        (
+          [
+            ["hoje", "Visitas de hoje", doDia.hoje, false],
+            ["baixa", "Aguardando baixa", doDia.aguardandoBaixa, true],
+          ] as const
+        ).map(
+          ([chave, titulo, lista, comDia]) =>
+            lista.length > 0 && (
+              <section key={chave} aria-labelledby={`visitas-${chave}`}>
+                <h2 id={`visitas-${chave}`} className="eyebrow mb-2">
+                  {titulo} · <span className="num">{lista.length}</span>
+                </h2>
+                <ListaVisitas visitas={lista} agora={agora} comDia={comDia} />
+              </section>
+            ),
+        )}
+
+      {leads && leads.length > 0 && !grupos.length && !comVisitas && (
         <div className="card">
           <h2 className="titulo-card">✓ Nada para hoje</h2>
           <p className="mt-2 text-ink-soft">

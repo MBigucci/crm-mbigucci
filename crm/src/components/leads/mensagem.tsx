@@ -16,19 +16,35 @@ type LeadDaMensagem = Pick<
  * Botão WhatsApp das listas e da ficha: abre o diálogo com a mensagem pronta
  * sugerida pela etapa do lead. O texto pode ser editado antes de abrir o WhatsApp.
  */
-export function BotaoMensagem({ lead, className }: { lead: LeadDaMensagem; className?: string }) {
+export function BotaoMensagem({
+  lead,
+  className,
+  rotulo = "WhatsApp →",
+  rotuloAcessivel,
+  modelo,
+  visita,
+}: {
+  lead: LeadDaMensagem;
+  className?: string;
+  rotulo?: string;
+  rotuloAcessivel?: string;
+  /** Slug do modelo que já vem marcado (ex.: "confirmar_visita"); sem ele, vale a sugestão pela etapa. */
+  modelo?: string;
+  /** O texto de {visita} (textoDaVisita), na confirmação de uma visita. */
+  visita?: string;
+}) {
   const [aberto, setAberto] = useState(false);
   return (
     <>
       <button
         type="button"
         className={clsx("btn btn-ghost focus-ring", className)}
-        aria-label={`WhatsApp de ${lead.nome}, ${formatarWhatsapp(lead.whatsapp)}`}
+        aria-label={rotuloAcessivel ?? `WhatsApp de ${lead.nome}, ${formatarWhatsapp(lead.whatsapp)}`}
         onClick={() => setAberto(true)}
       >
-        WhatsApp →
+        {rotulo}
       </button>
-      {aberto && <DialogoMensagem lead={lead} onFechar={() => setAberto(false)} />}
+      {aberto && <DialogoMensagem lead={lead} modelo={modelo} visita={visita} onFechar={() => setAberto(false)} />}
     </>
   );
 }
@@ -46,7 +62,17 @@ export function BotaoLigar({ numero, className }: { numero: string; className?: 
 }
 
 /** Diálogo de mensagem: escolhe o modelo em 1 toque, edita o texto, copia ou abre o WhatsApp. */
-function DialogoMensagem({ lead, onFechar }: { lead: LeadDaMensagem; onFechar: () => void }) {
+function DialogoMensagem({
+  lead,
+  modelo,
+  visita,
+  onFechar,
+}: {
+  lead: LeadDaMensagem;
+  modelo?: string;
+  visita?: string;
+  onFechar: () => void;
+}) {
   const eu = usePerfil();
   const modelos = useModelosMensagem();
   const ref = useRef<HTMLDialogElement>(null);
@@ -62,16 +88,16 @@ function DialogoMensagem({ lead, onFechar }: { lead: LeadDaMensagem; onFechar: (
   // Quando os modelos chegam, já vem o sugerido pela etapa.
   useEffect(() => {
     if (!modelos || slug !== null) return;
-    const m = sugerirModelo(modelos, lead, new Date());
+    const m = modelos.find((x) => x.ativo && x.slug === modelo) ?? sugerirModelo(modelos, lead, new Date());
     setSlug(m?.slug ?? "");
-    setTexto(m ? preencherModelo(m.texto, lead, eu.nome) : "");
-  }, [modelos, slug, lead, eu.nome]);
+    setTexto(m ? preencherModelo(m.texto, lead, eu.nome, visita) : "");
+  }, [modelos, slug, lead, eu.nome, modelo, visita]);
 
   function escolher(s: string) {
     const m = ativos.find((x) => x.slug === s);
     if (!m) return;
     setSlug(s);
-    setTexto(preencherModelo(m.texto, lead, eu.nome));
+    setTexto(preencherModelo(m.texto, lead, eu.nome, visita));
     setCopiado(false);
   }
 

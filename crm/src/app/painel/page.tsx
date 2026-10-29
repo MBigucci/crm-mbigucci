@@ -23,7 +23,8 @@ import {
   type Periodo,
   type TipoPeriodo,
 } from "@/lib/painel";
-import { usePainel, type DadosPainel } from "@/lib/painel-dados";
+import { usePainel, useVisitasPainel, type DadosPainel } from "@/lib/painel-dados";
+import { somarVisitas, visitasZeradas, type NumerosVisita } from "@/lib/visitas";
 
 export default function PainelPage() {
   const { pode } = useSessao();
@@ -65,6 +66,7 @@ function Painel() {
   };
 
   const { dados, erro } = usePainel(per);
+  const visitas = useVisitasPainel(per);
   const corretores = useCorretores(veOutros);
   const equipes = useEquipes(pode("dados.ver_todos"));
   const nomes = useNomes(dados, corretores);
@@ -117,6 +119,7 @@ function Painel() {
             sel={sel}
             setSel={setSel}
             voltar={veOutros ? () => ir({ c: null }) : undefined}
+            visitas={visitas ? (visitas.get(corretorId) ?? visitasZeradas()) : null}
           />
         )}
       </div>
@@ -146,6 +149,7 @@ function Painel() {
           relatorio={(id) => ir({ c: id })}
         />
       )}
+      {dados && visitas && linhas.length > 0 && <TabelaVisitas linhas={linhas.map((x) => x.corretor)} numeros={visitas} nomes={nomes} />}
       {dados && sel && <ListaLeads sel={sel} dados={dados} nomes={nomes} onFechar={() => setSel(null)} rolar />}
     </div>
   );
@@ -467,6 +471,94 @@ function Distribuicao({
   );
 }
 
+// ---------- Visitas ----------
+
+const COLUNAS_VISITAS: { chave: keyof NumerosVisita; rotulo: string }[] = [
+  { chave: "agendadas", rotulo: "Agendadas" },
+  { chave: "realizadas", rotulo: "Realizadas" },
+  { chave: "naoCompareceu", rotulo: "Não compareceu" },
+  { chave: "aguardandoBaixa", rotulo: "Aguardando baixa" },
+];
+
+/** Visitas com data no período, por corretor (as canceladas ficam fora). Detalhes na Agenda. */
+function TabelaVisitas({ linhas, numeros, nomes }: { linhas: string[]; numeros: Map<string, NumerosVisita>; nomes: Map<string, string> }) {
+  const total = somarVisitas(linhas.map((id) => numeros.get(id) ?? visitasZeradas()));
+  const th = "px-2 py-2 text-right font-semibold align-bottom";
+  const celulas = (x: NumerosVisita) =>
+    COLUNAS_VISITAS.map((c, i) => (
+      <td
+        key={c.chave}
+        className={clsx(
+          "num px-2 py-2 text-right",
+          i === COLUNAS_VISITAS.length - 1 && "pr-4",
+          !x[c.chave] && "text-concrete",
+          c.chave === "aguardandoBaixa" && x[c.chave] > 0 && "font-semibold text-wa",
+        )}
+      >
+        {c.chave === "aguardandoBaixa" && x[c.chave] > 0 ? `! ${x[c.chave]}` : x[c.chave]}
+      </td>
+    ));
+  return (
+    <section aria-labelledby="t-visitas" className="min-w-0">
+      <h2 id="t-visitas" className="eyebrow mb-2">
+        Visitas no período, por corretor · pela data da visita
+      </h2>
+      <div className="card tabela-painel overflow-x-auto p-0">
+        <table className="w-full text-left text-[14px]">
+          <thead>
+            <tr className="border-b border-line text-concrete">
+              <th className="px-4 py-2 font-semibold">Corretor</th>
+              {COLUNAS_VISITAS.map((c, i) => (
+                <th key={c.chave} className={clsx(th, i === COLUNAS_VISITAS.length - 1 && "pr-4")}>
+                  {c.rotulo}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {linhas.map((id) => (
+              <tr key={id} className="border-b border-line">
+                <td className="px-4 py-2">{nomes.get(id) ?? "Corretor"}</td>
+                {celulas(numeros.get(id) ?? visitasZeradas())}
+              </tr>
+            ))}
+            <tr className="font-semibold">
+              <td className="px-4 py-2">Equipe</td>
+              {celulas(total)}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function VisitasDoCorretor({ numeros }: { numeros: NumerosVisita }) {
+  return (
+    <section aria-labelledby="r-visitas" className="grid gap-2">
+      <h2 id="r-visitas" className="eyebrow">
+        Visitas no período · pela data da visita
+      </h2>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {COLUNAS_VISITAS.map((c) => (
+          <div key={c.chave} className="card">
+            <span className="eyebrow">{c.rotulo}</span>
+            <span
+              className={clsx(
+                "num mt-1 block font-display text-[30px] font-extrabold leading-none",
+                !numeros[c.chave] && "text-concrete",
+                c.chave === "aguardandoBaixa" && numeros[c.chave] > 0 && "text-wa",
+              )}
+            >
+              {c.chave === "aguardandoBaixa" && numeros[c.chave] > 0 ? `! ${numeros[c.chave]}` : numeros[c.chave]}
+            </span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 // ---------- Relatório de um corretor ----------
 
 function RelatorioCorretor({
@@ -479,6 +571,7 @@ function RelatorioCorretor({
   sel,
   setSel,
   voltar,
+  visitas,
 }: {
   nome: string;
   proprio: boolean;
@@ -489,6 +582,7 @@ function RelatorioCorretor({
   sel: Selecao | null;
   setSel: (s: Selecao | null) => void;
   voltar?: () => void;
+  visitas: NumerosVisita | null;
 }) {
   const { catalogos } = useCatalogos();
   const nomeEtapa = (s: string) => catalogos?.etapas.find((e) => e.slug === s)?.nome ?? s;
@@ -570,6 +664,8 @@ function RelatorioCorretor({
           </ul>
         </section>
       </div>
+
+      {visitas && <VisitasDoCorretor numeros={visitas} />}
 
       <ListaLeads
         sel={sel ?? { titulo: "Todos os leads do período", ids: todos }}

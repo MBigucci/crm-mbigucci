@@ -1236,3 +1236,312 @@ end;
 $$;
 
 create index if not exists lead_eventos_quando_idx on public.lead_eventos (criado_em);
+
+-- =====================================================================
+-- Visitas e agenda (item 10 de docs/referencia-crm-bruna.md). Regras em
+-- docs/visitas.md. A baixa da visita é auditável: quem deu, quando e o
+-- comprovante opcional ficam na visita, e cada mudança vai para lead_eventos.
+-- =====================================================================
+
+-- ---------- Permissão do módulo ----------
+-- O corretor agenda e dá baixa nas próprias visitas com leads.cadastrar. Esta
+-- permissão deixa o gerente dar baixa e corrigir as visitas da equipe.
+with novas as (
+  insert into public.permissions (slug, descricao, ordem) values
+    ('visitas.baixa_equipe', 'Dar baixa e corrigir as visitas da equipe', 7)
+  on conflict (slug) do update set descricao = excluded.descricao, ordem = excluded.ordem
+  returning slug, (xmax = 0) as nova
+)
+insert into public.role_permissions (perfil, permissao)
+select v.perfil, v.permissao
+from (values ('gerente', 'visitas.baixa_equipe')) as v (perfil, permissao)
+join novas n on n.slug = v.permissao and n.nova
+on conflict do nothing;
+
+-- ---------- Visitas ----------
+-- Sem exclusão: a visita desmarcada fica como "cancelada". O corretor é o dono
+-- do lead quando a visita foi agendada e não muda depois.
+-- baixa_por e baixa_em: quem deu a baixa (realizada ou não compareceu) e quando,
+-- carimbados pelo gatilho. comprovante: link opcional (foto, mensagem do cliente).
+create table if not exists public.visitas (
+  id              uuid primary key default gen_random_uuid(),
+  lead_id         uuid not null references public.leads (id) on delete restrict,
+  corretor_id     uuid not null default auth.uid() references public.profiles (id) on delete restrict,
+  empreendimento  text not null check (length(btrim(empreendimento)) > 0),
+  inicio          timestamptz not null,
+  local           text,
+  status          text not null default 'agendada'
+                  check (status in ('agendada', 'confirmada', 'realizada', 'nao_compareceu', 'cancelada')),
+  observacao      text,
+  baixa_por       uuid references public.profiles (id) on delete set null,
+  baixa_em        timestamptz,
+  comprovante     text check (comprovante is null or comprovante ~* '^https?://[^\s]+$'),
+  criado_por      uuid default auth.uid() references public.profiles (id) on delete set null,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now(),
+  constraint visitas_baixa_carimbada check ((status in ('realizada', 'nao_compareceu')) = (baixa_em is not null))
+);
+
+create index if not exists visitas_corretor_inicio_idx on public.visitas (corretor_id, inicio);
+create index if not exists visitas_lead_idx on public.visitas (lead_id, inicio desc);
+
+-- O histórico do lead ganha os eventos da visita: "visita" (mudança de status,
+-- de/para; detalhe = motivo da correção), "visita_horario" (remarcação, de/para
+-- em ISO) e "visita_comprovante" (link anexado, trocado ou removido).
+alter table public.lead_eventos add column if not exists visita_id uuid references public.visitas (id) on delete restrict;
+alter table public.lead_eventos drop constraint if exists lead_eventos_tipo_check;
+alter table public.lead_eventos add constraint lead_eventos_tipo_check check (tipo in
+  ('criado', 'etapa', 'temperatura', 'status', 'dono', 'visita', 'visita_horario', 'visita_comprovante'));
+
+-- Regras da visita que as policies sozinhas não expressam. Pelo SQL Editor
+-- (sem usuário logado) só valem os checks, para permitir correções.
+-- - Agendar e remarcar: só de agora em diante (10 min de folga), com o lead ativo.
+-- - Remarcar volta a visita para "agendada" (a confirmação era do horário antigo).
+-- - A baixa (realizada ou não compareceu) só depois do horário da visita.
+-- - Status final (realizada, não compareceu, cancelada) só muda pela função
+--   corrigir_visita, com o motivo, que vai para o histórico.
+-- - Quem não é o corretor da visita (o gerente) só dá baixa, corrige e anota.
+create or replace function public.visitas_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_eu uuid := auth.uid();
+  v_motivo text := nullif(btrim(coalesce(current_setting('crm.motivo_visita', true), '')), '');
+  v_finais constant text[] := array['realizada', 'nao_compareceu', 'cancelada'];
+  v_baixa constant text[] := array['realizada', 'nao_compareceu'];
+  v_folga constant interval := interval '10 minutes';
+begin
+  new.empreendimento := btrim(new.empreendimento);
+  new.local := nullif(btrim(coalesce(new.local, '')), '');
+  new.observacao := nullif(btrim(coalesce(new.observacao, '')), '');
+  new.comprovante := nullif(btrim(coalesce(new.comprovante, '')), '');
+
+  if tg_op = 'INSERT' then
+    new.created_at := now();
+    new.criado_por := coalesce(v_eu, new.criado_por);
+    if v_eu is null then
+      if new.status = any (v_baixa) then new.baixa_em := coalesce(new.baixa_em, now()); end if;
+      return new;
+    end if;
+    if not exists (select 1 from public.leads l where l.id = new.lead_id and l.status = 'ativo') then
+      raise exception 'Só um lead ativo pode ter visita agendada.' using errcode = 'P0001';
+    end if;
+    if new.inicio < now() - v_folga then
+      raise exception 'Escolha um dia e hora a partir de agora.' using errcode = 'P0001';
+    end if;
+    new.status := 'agendada';
+    new.baixa_por := null;
+    new.baixa_em := null;
+    new.comprovante := null;
+    return new;
+  end if;
+
+  new.lead_id := old.lead_id;
+  new.corretor_id := old.corretor_id;
+  new.criado_por := old.criado_por;
+  new.created_at := old.created_at;
+
+  -- Quem deu a baixa e quando: só o banco carimba.
+  if new.status = any (v_baixa) and new.status is distinct from old.status then
+    new.baixa_por := v_eu;
+    new.baixa_em := now();
+  elsif new.status = any (v_baixa) then
+    new.baixa_por := old.baixa_por;
+    new.baixa_em := old.baixa_em;
+  else
+    new.baixa_por := null;
+    new.baixa_em := null;
+  end if;
+
+  if v_eu is null then
+    return new;
+  end if;
+
+  if old.status = any (v_finais) and new.status is distinct from old.status and v_motivo is null then
+    raise exception 'Esta visita já tem baixa. Para mudar, use Corrigir e escreva o motivo.' using errcode = 'P0001';
+  end if;
+
+  if new.inicio is distinct from old.inicio then
+    if not (old.status in ('agendada', 'confirmada') and new.status in ('agendada', 'confirmada')) then
+      raise exception 'Só a visita agendada pode ser remarcada.' using errcode = 'P0001';
+    end if;
+    if new.inicio < now() - v_folga then
+      raise exception 'Escolha um dia e hora a partir de agora.' using errcode = 'P0001';
+    end if;
+    new.status := 'agendada';
+  end if;
+
+  if new.status = any (v_baixa) and new.status is distinct from old.status and now() < new.inicio then
+    raise exception 'A baixa só pode ser dada depois do horário da visita.' using errcode = 'P0001';
+  end if;
+
+  if new.comprovante is distinct from old.comprovante and new.status <> 'realizada' then
+    raise exception 'O comprovante vale só para a visita realizada.' using errcode = 'P0001';
+  end if;
+
+  -- O gerente (não é o corretor da visita) só dá baixa, corrige com motivo e anota.
+  if old.corretor_id <> v_eu then
+    if new.empreendimento is distinct from old.empreendimento or new.inicio is distinct from old.inicio
+       or new.local is distinct from old.local
+       or (new.status is distinct from old.status and v_motivo is null and not (new.status = any (v_baixa))) then
+      raise exception 'Só o corretor da visita agenda, remarca, confirma e cancela.' using errcode = '42501';
+    end if;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists visitas_guard on public.visitas;
+create trigger visitas_guard before insert or update on public.visitas
+  for each row execute function public.visitas_guard();
+
+drop trigger if exists visitas_set_updated_at on public.visitas;
+create trigger visitas_set_updated_at before update on public.visitas
+  for each row execute function public.set_updated_at();
+
+-- A visita move o lead: agendar leva a "visita agendada" e a baixa "realizada"
+-- leva a "visita realizada" (a etapa nunca volta, nem na correção). A visita
+-- realizada também conta como conversa: última interação e tentativas zeradas.
+create or replace function public.visita_atualiza_lead()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.status in ('agendada', 'confirmada') and (tg_op = 'INSERT' or old.status not in ('agendada', 'confirmada')) then
+    update public.leads
+       set etapa = 'visita_agendada'
+     where id = new.lead_id and etapa in ('novo', 'em_contato', 'aguardando_lancamento');
+  elsif tg_op = 'UPDATE' and new.status = 'realizada' and old.status <> 'realizada' then
+    update public.leads
+       set etapa = case when etapa in ('novo', 'em_contato', 'aguardando_lancamento', 'visita_agendada')
+                        then 'visita_realizada' else etapa end,
+           ultima_interacao_em = new.baixa_em,
+           ultima_interacao_texto = left('Visita realizada: ' || new.empreendimento, 280),
+           tentativas = 0
+     where id = new.lead_id;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists visita_atualiza_lead on public.visitas;
+create trigger visita_atualiza_lead after insert or update on public.visitas
+  for each row execute function public.visita_atualiza_lead();
+
+-- Histórico: cada mudança de status, horário e comprovante vai para
+-- lead_eventos, com o autor da sessão. O motivo da correção vai no detalhe.
+create or replace function public.visita_registra_eventos()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_eu uuid := auth.uid();
+  v_auto boolean := pg_trigger_depth() > 1;
+  v_motivo text := nullif(btrim(coalesce(current_setting('crm.motivo_visita', true), '')), '');
+begin
+  if tg_op = 'INSERT' then
+    insert into public.lead_eventos (lead_id, visita_id, tipo, para, automatico, autor_id, criado_em)
+    values (new.lead_id, new.id, 'visita', new.status, v_auto, coalesce(v_eu, new.criado_por), new.created_at);
+    return new;
+  end if;
+
+  if new.inicio is distinct from old.inicio then
+    insert into public.lead_eventos (lead_id, visita_id, tipo, de, para, automatico, autor_id)
+    values (new.lead_id, new.id, 'visita_horario',
+            to_char(old.inicio at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+            to_char(new.inicio at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'), v_auto, v_eu);
+  end if;
+  if new.status is distinct from old.status then
+    insert into public.lead_eventos (lead_id, visita_id, tipo, de, para, detalhe, automatico, autor_id)
+    values (new.lead_id, new.id, 'visita', old.status, new.status, v_motivo, v_auto, v_eu);
+  end if;
+  if new.comprovante is distinct from old.comprovante then
+    insert into public.lead_eventos (lead_id, visita_id, tipo, de, para, automatico, autor_id)
+    values (new.lead_id, new.id, 'visita_comprovante', old.comprovante, new.comprovante, v_auto, v_eu);
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists visita_registra_eventos on public.visitas;
+create trigger visita_registra_eventos after insert or update on public.visitas
+  for each row execute function public.visita_registra_eventos();
+
+-- Corrigir uma visita com baixa (ou cancelada): muda o status com o motivo, que
+-- vai para o histórico. Passa pelo RLS e pelo visitas_guard (a baixa continua
+-- só depois do horário). Também é o Desfazer do cancelamento.
+create or replace function public.corrigir_visita(p_visita uuid, p_status text, p_motivo text)
+returns void
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'Entre no CRM para corrigir a visita.' using errcode = '42501';
+  end if;
+  if length(btrim(coalesce(p_motivo, ''))) < 3 then
+    raise exception 'Escreva o motivo da correção.' using errcode = 'P0001';
+  end if;
+  perform set_config('crm.motivo_visita', left(btrim(p_motivo), 280), true);
+  update public.visitas set status = p_status where id = p_visita;
+  if not found then
+    raise exception 'Visita não encontrada, ou você não pode alterá-la.' using errcode = '42501';
+  end if;
+  perform set_config('crm.motivo_visita', '', true);
+end;
+$$;
+
+revoke all on function public.corrigir_visita(uuid, text, text) from public, anon;
+grant execute on function public.corrigir_visita(uuid, text, text) to authenticated, service_role;
+
+-- ---------- RLS das visitas ----------
+alter table public.visitas enable row level security;
+revoke all on public.visitas from anon, authenticated;
+grant select on public.visitas to authenticated;
+grant insert (lead_id, empreendimento, inicio, local, observacao) on public.visitas to authenticated;
+grant update (empreendimento, inicio, local, status, observacao, comprovante) on public.visitas to authenticated;
+
+-- O corretor vê as dele, o gerente as da equipe, quem vê tudo vê todas.
+drop policy if exists "ver visitas" on public.visitas;
+create policy "ver visitas" on public.visitas
+  for select to authenticated using (public.pode_ver_dados_de(corretor_id));
+
+-- Agendar: só o dono do lead, para ele mesmo.
+drop policy if exists "agendar visita" on public.visitas;
+create policy "agendar visita" on public.visitas
+  for insert to authenticated with check (
+    corretor_id = auth.uid()
+    and public.has_permission('leads.cadastrar')
+    and exists (select 1 from public.leads l where l.id = lead_id and l.dono_id = auth.uid())
+  );
+
+-- Alterar: o corretor da visita, ou o gerente com visitas.baixa_equipe que vê
+-- o corretor (o gatilho limita este à baixa, à correção e às anotações).
+drop policy if exists "alterar visita" on public.visitas;
+create policy "alterar visita" on public.visitas
+  for update to authenticated
+  using (
+    (corretor_id = auth.uid() and public.has_permission('leads.cadastrar'))
+    or (public.has_permission('visitas.baixa_equipe') and public.pode_ver_dados_de(corretor_id))
+  )
+  with check (
+    (corretor_id = auth.uid() and public.has_permission('leads.cadastrar'))
+    or (public.has_permission('visitas.baixa_equipe') and public.pode_ver_dados_de(corretor_id))
+  );
+
+-- ---------- Mensagem "Confirmar visita" com o dia e a hora ----------
+-- {visita} vira "amanhã, às 10h, no Stand de vendas". Só troca o texto se ele
+-- ainda for o original: o que o gerente geral ajustou fica como está.
+update public.mensagens_modelo
+   set texto = E'Oi, {primeiro_nome}, tudo bem?\n\nPassando para confirmar nossa visita a {empreendimento}, {visita}. Se surgir qualquer imprevisto, é só me avisar por aqui.\n\nAté lá. {corretor}, da MBigucci.'
+ where slug = 'confirmar_visita'
+   and texto = E'Oi, {primeiro_nome}, tudo bem?\n\nPassando para confirmar nossa visita a {empreendimento}. Se surgir qualquer imprevisto, é só me avisar por aqui.\n\nAté lá. {corretor}, da MBigucci.';

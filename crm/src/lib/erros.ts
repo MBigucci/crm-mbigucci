@@ -8,6 +8,8 @@ export function mensagemErro(e: { message?: string } | null | undefined): string
   if (m.includes("leads_whatsapp_check")) return "Confira o WhatsApp: DDD e número, só com dígitos.";
   if (m.includes("leads_descarte_tem_motivo")) return "Escolha o motivo do descarte.";
   if (m.includes("lead_interacoes_texto_check") || m.includes("leads_nome_check")) return "Preencha o texto.";
+  if (m.includes("visitas_empreendimento_check")) return "Escolha o empreendimento.";
+  if (m.includes("visitas_comprovante_check")) return "O comprovante precisa ser um link que começa com https://.";
   if (m.includes("row-level security") || m.includes("permission denied")) return "Você não tem permissão para isso.";
   if (/failed to fetch|network|load failed/i.test(m)) return "Sem conexão com o servidor. Tente de novo.";
   return m;

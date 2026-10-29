@@ -40,6 +40,8 @@ import { LIMITE_TENTATIVAS, seloSemContato, sugereDescarte } from "@/lib/followu
 import { descreverEvento, montarHistorico } from "@/lib/historico";
 import { registrarSemResposta, useCatalogos, useCorretores, useHorarioAtendimento } from "@/lib/leads-dados";
 import { aguardaPrimeiroContato, prazoDoLead, type HorarioAtendimento } from "@/lib/prazo";
+import { COLUNAS_VISITA, estaAberta, type Visita } from "@/lib/visitas";
+import { AgendarVisita, ListaVisitas } from "@/components/visitas/visitas";
 
 export default function FichaPage() {
   return (
@@ -65,6 +67,8 @@ function Ficha({ id }: { id: string }) {
   const [lead, setLead] = useState<Lead | null | undefined>(undefined);
   const [interacoes, setInteracoes] = useState<Interacao[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
+  const [visitas, setVisitas] = useState<Visita[] | null>(null);
+  const [erroVisitas, setErroVisitas] = useState<string | null>(null);
   const [nomes, setNomes] = useState<Map<string, string>>(new Map());
   const [erro, setErro] = useState<string | null>(null);
   const [tentativa, setTentativa] = useState<{ n: number; proximo: string } | null>(null);
@@ -73,15 +77,19 @@ function Ficha({ id }: { id: string }) {
   const fecharDesfazer = useCallback(() => setDesfazer(null), []);
 
   const carregar = useCallback(async () => {
-    const [l, h, e] = await Promise.all([
+    const [l, h, e, v] = await Promise.all([
       db().from("leads").select(COLUNAS_LEAD).eq("id", id).maybeSingle(),
       db().from("lead_interacoes").select(COLUNAS_INTERACAO).eq("lead_id", id).order("criado_em", { ascending: false }),
       db().from("lead_eventos").select(COLUNAS_EVENTO).eq("lead_id", id).order("criado_em", { ascending: false }),
+      db().from("visitas").select(COLUNAS_VISITA).eq("lead_id", id).order("inicio", { ascending: false }),
     ]);
     if (l.error || h.error || e.error) return setErro(mensagemErro(l.error ?? h.error ?? e.error));
     setLead((l.data as unknown as Lead) ?? null);
     setInteracoes((h.data ?? []) as Interacao[]);
     setEventos((e.data ?? []) as Evento[]);
+    // A ficha continua de pé se as visitas falharem.
+    setErroVisitas(v.error ? mensagemErro(v.error) : null);
+    setVisitas((v.data ?? []) as unknown as Visita[]);
     setAgora(new Date());
   }, [id]);
 
@@ -259,6 +267,29 @@ function Ficha({ id }: { id: string }) {
         </section>
       )}
 
+      {(ehDono || !!visitas?.length || erroVisitas) && (
+        <section className="card grid gap-3" aria-labelledby="visitas-titulo">
+          <h2 id="visitas-titulo" className="eyebrow">
+            Visitas
+          </h2>
+          {erroVisitas && <p className="aviso-erro">! {erroVisitas}</p>}
+          {visitas && visitas.length > 0 && (
+            <ListaVisitas
+              visitas={[
+                ...visitas.filter(estaAberta).sort((a, b) => a.inicio.localeCompare(b.inicio)),
+                ...visitas.filter((v) => !estaAberta(v)),
+              ]}
+              agora={agora}
+              lead={lead}
+              comDia
+              onMudou={carregar}
+            />
+          )}
+          {visitas && !visitas.length && !erroVisitas && <p className="text-ink-soft">Nenhuma visita ainda.</p>}
+          {ehDono && lead.status === "ativo" && !erroVisitas && <AgendarVisita lead={lead} onAgendada={carregar} />}
+        </section>
+      )}
+
       {ehDono && lead.status === "ativo" && (
         <>
           <RegistrarInteracao leadId={id} onSalvo={carregar} />
@@ -335,7 +366,9 @@ function Ficha({ id }: { id: string }) {
                       {formatarQuando(e.criado_em, agora)}
                       {e.automatico ? " · automático" : autor(e.autor_id)}
                     </p>
-                    <p className="mt-1 text-ink-soft">{descreverEvento(e, nomeEtapa, (u) => nomes.get(u))}</p>
+                    <p className="mt-1 text-ink-soft">
+                      {descreverEvento(e, nomeEtapa, (u) => nomes.get(u), (vid) => visitas?.find((x) => x.id === vid))}
+                    </p>
                   </li>
                 );
               }

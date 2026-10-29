@@ -25,9 +25,12 @@ export const VARIAVEIS: { chave: string; descricao: string }[] = [
   { chave: "nome", descricao: "Nome completo do cliente" },
   { chave: "empreendimento", descricao: "Empreendimento do lead" },
   { chave: "corretor", descricao: "Seu nome" },
+  { chave: "visita", descricao: "Dia, hora e local da visita (na confirmação)" },
 ];
 /** Sem empreendimento no lead, o texto continua fazendo sentido. */
 export const EMPREENDIMENTO_PADRAO = "nossos empreendimentos";
+/** Fora da confirmação de uma visita, {visita} continua fazendo sentido. */
+export const VISITA_PADRAO = "no dia combinado";
 
 /** "ANA paula souza" → "Ana". */
 export function primeiroNome(nome: string): string {
@@ -37,13 +40,17 @@ export function primeiroNome(nome: string): string {
 
 type LeadDaMensagem = Pick<Lead, "nome" | "empreendimento">;
 
-/** Troca as variáveis {assim}. Variável desconhecida fica como está, para o gerente geral ver o erro. */
-export function preencherModelo(texto: string, lead: LeadDaMensagem, corretor: string): string {
+/**
+ * Troca as variáveis {assim}. Variável desconhecida fica como está, para o
+ * gerente geral ver o erro. `visita`: o texto de textoDaVisita (visitas.ts).
+ */
+export function preencherModelo(texto: string, lead: LeadDaMensagem, corretor: string, visita?: string): string {
   const valores: Record<string, string> = {
     primeiro_nome: primeiroNome(lead.nome),
     nome: lead.nome.trim(),
     empreendimento: lead.empreendimento?.trim() || EMPREENDIMENTO_PADRAO,
     corretor: corretor.trim(),
+    visita: visita?.trim() || VISITA_PADRAO,
   };
   return texto.replace(/\{(\w+)\}/g, (m, chave: string) => valores[chave] ?? m);
 }

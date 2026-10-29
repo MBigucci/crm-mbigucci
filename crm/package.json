@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "npx --yes serve out",
     "typecheck": "tsc --noEmit",
-    "test": "node --test src/lib/leads.test.ts src/lib/followup.test.ts src/lib/cadastro-magico.test.ts src/lib/prazo.test.ts src/lib/mensagens.test.ts src/lib/busca.test.ts src/lib/painel.test.ts",
-    "test:banco": "node --test supabase/testes/leads.test.mjs"
+    "test": "node --test src/lib/leads.test.ts src/lib/followup.test.ts src/lib/cadastro-magico.test.ts src/lib/prazo.test.ts src/lib/mensagens.test.ts src/lib/busca.test.ts src/lib/painel.test.ts src/lib/visitas.test.ts",
+    "test:banco": "node --test supabase/testes/leads.test.mjs supabase/testes/visitas.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.1",

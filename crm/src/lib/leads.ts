@@ -81,15 +81,17 @@ export const COLUNAS_INTERACAO = "id, lead_id, autor_id, criado_em, tipo, texto,
 export type Evento = {
   id: string;
   lead_id: string;
-  tipo: "criado" | "etapa" | "temperatura" | "status" | "dono";
+  tipo: "criado" | "etapa" | "temperatura" | "status" | "dono" | "visita" | "visita_horario" | "visita_comprovante";
   de: string | null;
   para: string | null;
   detalhe: string | null;
   automatico: boolean;
   autor_id: string | null;
   criado_em: string;
+  /** Só nos eventos de visita. */
+  visita_id?: string | null;
 };
-export const COLUNAS_EVENTO = "id, lead_id, tipo, de, para, detalhe, automatico, autor_id, criado_em";
+export const COLUNAS_EVENTO = "id, lead_id, visita_id, tipo, de, para, detalhe, automatico, autor_id, criado_em";
 
 export type Origem = {
   slug: string;

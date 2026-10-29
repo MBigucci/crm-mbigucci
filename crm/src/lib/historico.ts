@@ -3,6 +3,7 @@
 // mais antigo. Funções puras, testadas com `node --test`.
 
 import { MOTIVOS_DESCARTE, temperatura, type Evento, type Interacao } from "./leads.ts";
+import { descreverEventoVisita, type Visita } from "./visitas.ts";
 
 export type ItemHistorico =
   | { tipo: "interacao"; quando: string; interacao: Interacao }
@@ -29,8 +30,13 @@ export function descreverEvento(
   e: Evento,
   etapa: (slug: string) => string,
   pessoa: (id: string) => string | undefined,
+  visita: (id: string) => Pick<Visita, "empreendimento" | "inicio"> | undefined = () => undefined,
 ): string {
   switch (e.tipo) {
+    case "visita":
+    case "visita_horario":
+    case "visita_comprovante":
+      return descreverEventoVisita(e, e.visita_id ? visita(e.visita_id) : undefined);
     case "criado": {
       const dono = e.para && e.para !== e.autor_id ? pessoa(e.para) : undefined;
       return dono ? `Lead cadastrado para ${dono}` : "Lead cadastrado";
