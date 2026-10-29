@@ -50,7 +50,7 @@ export function Cabecalho({ itens, onSair, nome }: { itens?: ItemMenu[]; onSair?
   const ativo = (href: string) => semBarra(href) === atual;
 
   return (
-    <header className="sticky top-0 z-20 border-b border-line bg-header-glass backdrop-blur-[12px]">
+    <header className="sem-impressao sticky top-0 z-20 border-b border-line bg-header-glass backdrop-blur-[12px]">
       <div className="mx-auto flex h-header max-w-content items-center justify-between gap-3 px-5">
         <Marca />
         {itens && (

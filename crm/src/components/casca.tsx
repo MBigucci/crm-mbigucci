@@ -60,6 +60,7 @@ export function Casca({
   if (pode("leads.cadastrar") || pode("dados.ver_equipe") || pode("dados.ver_todos")) {
     itens.push({ href: "/leads/", rotulo: "Leads" });
     itens.push({ href: "/leads/quadro/", rotulo: "Quadro" });
+    itens.push({ href: "/painel/", rotulo: "Painel" });
   }
   if (pode("usuarios.gerenciar")) itens.push({ href: "/usuarios/", rotulo: "Usuários" });
   if (pode("equipes.gerenciar")) itens.push({ href: "/equipes/", rotulo: "Equipes" });

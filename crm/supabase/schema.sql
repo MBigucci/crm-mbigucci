@@ -823,9 +823,12 @@ begin
     insert into public.lead_eventos (lead_id, tipo, de, para, detalhe, automatico, autor_id)
     values (new.id, 'status', old.status, new.status, new.motivo_descarte, v_auto, v_eu);
   end if;
+  -- O motivo da troca de dono ("perdido") vem só da função lead_perdido, que o
+  -- marca na transação; a troca comum fica sem motivo.
   if new.dono_id is distinct from old.dono_id then
-    insert into public.lead_eventos (lead_id, tipo, de, para, automatico, autor_id)
-    values (new.id, 'dono', old.dono_id::text, new.dono_id::text, v_auto, v_eu);
+    insert into public.lead_eventos (lead_id, tipo, de, para, detalhe, automatico, autor_id)
+    values (new.id, 'dono', old.dono_id::text, new.dono_id::text,
+            nullif(current_setting('crm.motivo_dono', true), ''), v_auto, v_eu);
   end if;
   return new;
 end;
@@ -1114,3 +1117,122 @@ create policy "gerente geral altera modelo" on public.mensagens_modelo
   for update to authenticated
   using (public.is_gerente_geral())
   with check (public.is_gerente_geral());
+
+-- =====================================================================
+-- Lead perdido e painel da equipe (itens 1 e 2 de "Onde entra" em
+-- docs/gerentes-necessidades.md). Regras em docs/painel.md.
+-- =====================================================================
+
+-- ---------- Fim do prazo do primeiro contato ----------
+-- Mesma conta de fimDoPrazo (crm/src/lib/prazo.ts): p_minutos de horário de
+-- atendimento depois da chegada, na hora de São Paulo. Sem linha de horário,
+-- vale o padrão (9h às 19h, todos os dias).
+create or replace function private.fim_do_prazo(p_chegada timestamptz, p_minutos integer default 15)
+returns timestamptz
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_dias smallint[] := '{0,1,2,3,4,5,6}';
+  v_abre time := '09:00';
+  v_fecha time := '19:00';
+  t timestamp := p_chegada at time zone 'America/Sao_Paulo';
+  v_resta numeric := p_minutos;
+  v_de timestamp;
+  v_fecha_em timestamp;
+  v_livre numeric;
+begin
+  select h.dias, h.inicio, h.fim into v_dias, v_abre, v_fecha from public.horario_atendimento h where h.id;
+  if v_dias is null or cardinality(v_dias) = 0 or v_abre >= v_fecha then
+    return p_chegada + p_minutos * interval '1 minute';
+  end if;
+  for i in 1..14 loop
+    v_fecha_em := date_trunc('day', t) + v_fecha;
+    if extract(dow from t)::smallint = any (v_dias) and t < v_fecha_em then
+      v_de := greatest(t, date_trunc('day', t) + v_abre);
+      v_livre := extract(epoch from v_fecha_em - v_de) / 60;
+      if v_livre >= v_resta then
+        return (v_de + v_resta * interval '1 minute') at time zone 'America/Sao_Paulo';
+      end if;
+      v_resta := v_resta - v_livre;
+    end if;
+    t := date_trunc('day', t) + interval '1 day';
+  end loop;
+  return p_chegada + p_minutos * interval '1 minute';
+end;
+$$;
+
+-- ---------- Lead perdido ----------
+-- O gerente passa para outro corretor da equipe o lead da empresa que ficou
+-- sem primeiro contato além do prazo. O evento de troca de dono sai com o
+-- detalhe "perdido", gravado pelo gatilho lead_registra_eventos. A troca
+-- passa pelo leads_guard (pode_atribuir_a) e recomeça o prazo para quem recebe.
+create or replace function public.lead_perdido(p_lead uuid, p_corretor uuid)
+returns void
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  l public.leads;
+begin
+  if auth.uid() is null or not public.has_permission('leads.atribuir') then
+    raise exception 'Só o gerente marca um lead como perdido.' using errcode = '42501';
+  end if;
+  select * into l from public.leads where id = p_lead for update;
+  if l.id is null then
+    raise exception 'Lead não encontrado, ou você não tem acesso a ele.' using errcode = '42501';
+  end if;
+  if l.origem <> 'empresa' or l.status <> 'ativo' or l.etapa <> 'novo'
+     or now() <= private.fim_do_prazo(greatest(l.created_at, coalesce(l.atribuido_em, l.created_at))) then
+    raise exception 'Só o lead da empresa com prazo estourado pode ser marcado como perdido.' using errcode = 'P0001';
+  end if;
+  if p_corretor = l.dono_id then
+    raise exception 'Escolha outro corretor para receber o lead.' using errcode = 'P0001';
+  end if;
+
+  perform set_config('crm.motivo_dono', 'perdido', true);
+  update public.leads set dono_id = p_corretor where id = p_lead;
+  perform set_config('crm.motivo_dono', '', true);
+end;
+$$;
+
+-- Leads perdidos no período, pelo corretor que perdeu. Security definer porque
+-- o lead já está na carteira de outro: o corretor vê os que ele perdeu, o
+-- gerente os da equipe, quem vê tudo vê todos (pode_ver_dados_de de quem perdeu).
+-- recebido_em: quando quem perdeu tinha recebido o lead (o painel conta como
+-- recebido no período, mesmo que o corretor não veja mais o histórico).
+drop function if exists public.leads_perdidos(timestamptz, timestamptz);
+create function public.leads_perdidos(p_de timestamptz, p_ate timestamptz)
+returns table (lead_id uuid, nome text, corretor_id uuid, recebeu_id uuid, criado_em timestamptz, recebido_em timestamptz)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select e.lead_id, l.nome, e.de::uuid, e.para::uuid, e.criado_em,
+         (select max(r.criado_em) from public.lead_eventos r
+          where r.lead_id = e.lead_id and r.tipo in ('criado', 'dono') and r.para = e.de and r.criado_em <= e.criado_em)
+  from public.lead_eventos e
+  join public.leads l on l.id = e.lead_id
+  where e.tipo = 'dono' and e.detalhe = 'perdido'
+    and e.criado_em >= p_de and e.criado_em < p_ate
+    and public.pode_ver_dados_de(e.de::uuid)
+  order by e.criado_em;
+$$;
+
+do $$
+declare
+  f text;
+begin
+  foreach f in array array['private.fim_do_prazo(timestamptz, integer)', 'public.lead_perdido(uuid, uuid)',
+                           'public.leads_perdidos(timestamptz, timestamptz)'] loop
+    execute format('revoke all on function %s from public, anon', f);
+    execute format('grant execute on function %s to authenticated, service_role', f);
+  end loop;
+end;
+$$;
+
+create index if not exists lead_eventos_quando_idx on public.lead_eventos (criado_em);

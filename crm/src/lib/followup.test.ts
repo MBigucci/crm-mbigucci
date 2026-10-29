@@ -88,4 +88,5 @@ test("texto dos eventos", () => {
   assert.equal(t(ev("status", "descartado", "ativo", "x")), "Reativado");
   assert.equal(t(ev("dono", "u1", "u2", "x")), "Atribuído a Carla");
   assert.equal(t(ev("dono", "u1", "u9", "x")), "Atribuído a outro corretor");
+  assert.equal(t(ev("dono", "u2", "u1", "x", { detalhe: "perdido" })), "! Lead perdido por Carla. Passado para Ana");
 });

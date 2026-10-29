@@ -36,6 +36,13 @@ function Inicio() {
               texto="Acompanhe os leads e atribua os leads da empresa aos corretores."
             />
           )}
+          {verLeads && (
+            <Atalho
+              href="/painel/"
+              titulo="Painel da equipe"
+              texto="Recebidos, perdidos, descartes e funil por corretor, no dia, na semana ou no mês. Dá para imprimir."
+            />
+          )}
           {pode("usuarios.gerenciar") && (
             <Atalho href="/usuarios/" titulo="Usuários" texto="Cadastre pessoas e defina perfil, equipe e situação." />
           )}

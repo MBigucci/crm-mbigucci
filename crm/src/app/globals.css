@@ -151,3 +151,85 @@
     transition: none !important;
   }
 }
+
+/*
+ * Impressão (painel e relatório do corretor). Os gerentes leem no papel:
+ * letra grande, preto no branco, sem cor de fundo, sem menu e sem botões.
+ */
+.so-impressao {
+  display: none;
+}
+@media print {
+  @page {
+    margin: 14mm 12mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+    font-size: 16px;
+  }
+  * {
+    background: transparent !important;
+    color: #000 !important;
+    box-shadow: none !important;
+  }
+  .sem-impressao,
+  .btn,
+  .fixed {
+    display: none !important;
+  }
+  .so-impressao {
+    display: block;
+    margin-bottom: 4mm;
+  }
+  .titulo-impressao {
+    font-family: "Bricolage Grotesque", Inter, Arial, sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.1;
+  }
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  main > h1 {
+    display: none;
+  }
+  .card {
+    border: 1px solid #000 !important;
+    padding: 10px 12px !important;
+    break-inside: avoid;
+  }
+  .card::before {
+    display: none;
+  }
+  .eyebrow,
+  .field-label {
+    font-size: 13px;
+  }
+  .text-\[13px\],
+  .text-\[14px\],
+  .text-\[15px\] {
+    font-size: 16px !important;
+  }
+  .tabela-painel {
+    overflow: visible !important;
+  }
+  .tabela-painel table {
+    font-size: 16px !important;
+  }
+  .tabela-painel tr {
+    break-inside: avoid;
+    border-color: #000 !important;
+  }
+  .lista-painel li {
+    break-inside: avoid;
+  }
+  a,
+  button {
+    text-decoration: none !important;
+  }
+  .link-acao::after {
+    content: "";
+  }
+}

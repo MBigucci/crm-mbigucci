@@ -400,3 +400,80 @@ test("mensagens prontas: todo usuário ativo lê, só o gerente geral cria e alt
   assert.equal(depois.length, 6); // 5 padrão ativos + o novo
   assert.equal(depois[0].texto, "Oi, {primeiro_nome}.");
 });
+
+test("fim do prazo no banco: mesma conta do app, na hora de São Paulo", async () => {
+  await db.exec(`update public.horario_atendimento set dias = '{0,1,2,3,4,5,6}', inicio = '09:00', fim = '19:00'`);
+  const fim = async (chegada) =>
+    (await linhas(`select to_char(private.fim_do_prazo($1::timestamptz) at time zone 'America/Sao_Paulo', 'YYYY-MM-DD HH24:MI') f`, [chegada]))[0].f;
+  assert.equal(await fim("2026-10-29 10:00-03"), "2026-10-29 10:15");
+  assert.equal(await fim("2026-10-29 22:00-03"), "2026-10-30 09:15");
+  assert.equal(await fim("2026-10-29 18:50-03"), "2026-10-30 09:05");
+  await db.exec(`update public.horario_atendimento set dias = '{1,2,3,4,5}'`);
+  assert.equal(await fim("2026-10-30 18:55-03"), "2026-11-02 09:10"); // sexta → segunda
+  await db.exec(`update public.horario_atendimento set dias = '{0,1,2,3,4,5,6}'`);
+});
+
+/** Volta o cadastro e a atribuição do lead no tempo, para o prazo estourar. */
+const envelhecer = (nome, dias = 3) => db.exec(`
+  alter table public.leads disable trigger leads_guard;
+  update public.leads set created_at = now() - interval '${dias} days', atribuido_em = now() - interval '${dias} days' where nome = '${nome}';
+  alter table public.leads enable trigger leads_guard;
+`);
+const perdido = (leadId, corretor) => `select public.lead_perdido('${leadId}', '${id(corretor)}')`;
+
+test("lead perdido: só o gerente, só lead da empresa com prazo estourado, e o motivo vem do gatilho", async () => {
+  await como(GA, () => db.exec(lead(CA, "Perdido 1").replace("'plantao'", "'empresa'")));
+  const p1 = await idDe("Perdido 1");
+  await falha(GA, perdido(p1, CA2), "prazo estourado"); // acabou de chegar
+  await envelhecer("Perdido 1");
+
+  await falha(CA, perdido(p1, CA2), "Só o gerente");
+  await falha(GB, perdido(p1, CB), "não encontrado");
+  await falha(GA, perdido(p1, CB), "atribuir leads"); // fora da equipe
+  await falha(GA, perdido(p1, CA), "outro corretor");
+  await falha(0, perdido(p1, CA2), "permission denied");
+
+  await como(GA, () => db.exec(perdido(p1, CA2)));
+  const [l] = await linhas(`select dono_id, atribuido_por, atribuido_em > now() - interval '1 minute' as agora from public.leads where id = $1`, [p1]);
+  assert.deepEqual(l, { dono_id: id(CA2), atribuido_por: id(GA), agora: true });
+  const ev = (await eventos(p1)).filter((e) => e.tipo === "dono");
+  assert.deepEqual(ev.map(({ de, para, detalhe, autor_id }) => [de, para, detalhe, autor_id]), [[id(CA), id(CA2), "perdido", id(GA)]]);
+  // O prazo recomeça para quem recebeu.
+  await falha(GA, perdido(p1, CA), "prazo estourado");
+
+  // A troca comum continua sem motivo, e o motivo não vaza para a próxima troca.
+  await como(GA, () => db.exec(`update public.leads set dono_id = '${id(CA)}' where id = '${p1}'`));
+  assert.equal((await eventos(p1)).filter((e) => e.tipo === "dono").at(-1).detalhe, null);
+
+  // Lead do próprio corretor, descartado ou que já saiu de "novo" não é perdido.
+  await como(CA, () => db.exec(lead(CA, "Perdido plantão")));
+  await envelhecer("Perdido plantão");
+  await falha(GA, perdido(await idDe("Perdido plantão"), CA2), "prazo estourado");
+  await como(GA, () => db.exec(lead(CA, "Perdido descartado").replace("'plantao'", "'empresa'")));
+  await envelhecer("Perdido descartado");
+  await como(CA, () => db.exec(`update public.leads set status = 'descartado', motivo_descarte = 'duplicado' where nome = 'Perdido descartado'`));
+  await falha(GA, perdido(await idDe("Perdido descartado"), CA2), "prazo estourado");
+
+  // O gerente geral marca em qualquer equipe.
+  await como(GG, () => db.exec(lead(CB, "Perdido B").replace("'plantao'", "'empresa'")));
+  await envelhecer("Perdido B");
+  const pb = await idDe("Perdido B");
+  await como(GG, () => db.exec(perdido(pb, CA)));
+});
+
+test("leads perdidos no período: cada um vê os que ele perdeu, o gerente os da equipe", async () => {
+  const lista = (n, de = "now() - interval '1 day'", ate = "now() + interval '1 day'") =>
+    como(n, () => linhas(`select nome, corretor_id, recebeu_id from public.leads_perdidos(${de}, ${ate}) order by nome`));
+  assert.deepEqual(await lista(CA), [{ nome: "Perdido 1", corretor_id: id(CA), recebeu_id: id(CA2) }]);
+  assert.deepEqual(await lista(CB), [{ nome: "Perdido B", corretor_id: id(CB), recebeu_id: id(CA) }]);
+  assert.deepEqual(await lista(CA2), []);
+  const [r] = await como(CA, () => linhas(
+    "select recebido_em is not null and recebido_em <= criado_em as ok from public.leads_perdidos(now() - interval '1 day', now() + interval '1 day')"));
+  assert.equal(r.ok, true);
+  assert.deepEqual((await lista(GA)).map((r) => r.nome), ["Perdido 1"]);
+  assert.deepEqual((await lista(GB)).map((r) => r.nome), ["Perdido B"]);
+  assert.equal((await lista(GG)).length, 2);
+  assert.deepEqual(await lista(REC), []);
+  assert.deepEqual(await lista(CA, "now() + interval '1 hour'"), []);
+  await falha(0, `select * from public.leads_perdidos(now() - interval '1 day', now())`, "permission denied");
+});

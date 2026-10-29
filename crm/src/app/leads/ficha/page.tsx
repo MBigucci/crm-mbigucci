@@ -39,7 +39,7 @@ import {
 import { LIMITE_TENTATIVAS, seloSemContato, sugereDescarte } from "@/lib/followup";
 import { descreverEvento, montarHistorico } from "@/lib/historico";
 import { registrarSemResposta, useCatalogos, useCorretores, useHorarioAtendimento } from "@/lib/leads-dados";
-import { aguardaPrimeiroContato, type HorarioAtendimento } from "@/lib/prazo";
+import { aguardaPrimeiroContato, prazoDoLead, type HorarioAtendimento } from "@/lib/prazo";
 
 export default function FichaPage() {
   return (
@@ -148,6 +148,14 @@ function Ficha({ id }: { id: string }) {
       { status: "descartado", motivo_descarte: motivo },
       `Descartado: ${MOTIVOS_DESCARTE.find((m) => m.slug === motivo)?.nome ?? motivo}`,
     );
+
+  /** Lead perdido: o banco confere o prazo, reatribui e grava o motivo no histórico. Devolve o erro, se houver. */
+  async function marcarPerdido(dono: string): Promise<string | null> {
+    const { error } = await db().rpc("lead_perdido", { p_lead: id, p_corretor: dono });
+    if (error) return mensagemErro(error);
+    await carregar();
+    return null;
+  }
 
   async function semResposta() {
     if (!lead) return;
@@ -306,8 +314,10 @@ function Ficha({ id }: { id: string }) {
         <Atribuir
           lead={lead}
           horario={horario}
+          agora={agora}
           nomeDe={(u) => nomes.get(u)}
           onAtribuir={(dono) => alterar({ dono_id: dono })}
+          onPerdido={marcarPerdido}
         />
       )}
 
@@ -641,24 +651,52 @@ function Descartar({ onDescartar }: { onDescartar: (m: MotivoDescarte) => void }
   );
 }
 
+/**
+ * Atribuir ou reatribuir. No lead da empresa com prazo estourado, a ação
+ * principal é "Lead perdido": o banco confere o prazo, reatribui e grava o motivo.
+ */
 function Atribuir({
   lead,
   horario,
+  agora,
   nomeDe,
   onAtribuir,
+  onPerdido,
 }: {
   lead: Lead;
   horario: HorarioAtendimento;
+  agora: Date;
   nomeDe: (id: string) => string | undefined;
   onAtribuir: (dono: string) => Promise<void>;
+  onPerdido: (dono: string) => Promise<string | null>;
 }) {
   const corretores = useCorretores(true);
   const [dono, setDono] = useState(lead.dono_id);
-  const [atribuido, setAtribuido] = useState<string | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const [atribuido, setAtribuido] = useState<{ id: string; perdido: boolean } | null>(null);
+  const estourado = prazoDoLead(lead, agora, horario)?.estado === "estourado";
+  const escolhido = dono !== lead.dono_id;
+  const atribuir = async () => {
+    await onAtribuir(dono);
+    setAtribuido({ id: dono, perdido: false });
+  };
+
   return (
     <section className="card">
+      {estourado && (
+        <div className="mb-4">
+          <span className="eyebrow">Lead da empresa sem primeiro contato</span>
+          <p className="mt-1">
+            <PrazoPrimeiroContato lead={lead} agora={agora} horario={horario} />
+          </p>
+          <p className="mt-1 text-ink-soft">
+            Escolha outro corretor e toque em Lead perdido. O histórico registra que{" "}
+            {nomeDe(lead.dono_id) ?? "o corretor"} perdeu o lead, e o prazo recomeça para quem recebe.
+          </p>
+        </div>
+      )}
       <label className="field-label" htmlFor="atribuir">
-        Atribuir a
+        {estourado ? "Passar para" : "Atribuir a"}
       </label>
       <div className="flex flex-wrap gap-2">
         <select
@@ -670,30 +708,46 @@ function Atribuir({
             setAtribuido(null);
           }}
         >
-          {corretores.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.nome}
-            </option>
-          ))}
+          {estourado && <option value={lead.dono_id}>Escolha o corretor</option>}
+          {corretores
+            .filter((c) => !estourado || c.id !== lead.dono_id)
+            .map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nome}
+              </option>
+            ))}
         </select>
-        <button
-          type="button"
-          className="btn btn-red focus-ring"
-          disabled={dono === lead.dono_id}
-          onClick={async () => {
-            await onAtribuir(dono);
-            setAtribuido(dono);
-          }}
-        >
-          Atribuir
-        </button>
+        {estourado ? (
+          <button
+            type="button"
+            className="btn btn-red btn-lg focus-ring w-full whitespace-normal md:w-auto"
+            disabled={!escolhido}
+            onClick={async () => {
+              const e = await onPerdido(dono);
+              setErro(e);
+              if (!e) setAtribuido({ id: dono, perdido: true });
+            }}
+          >
+            Lead perdido: passar para outro corretor
+          </button>
+        ) : (
+          <button type="button" className="btn btn-red focus-ring" disabled={!escolhido} onClick={atribuir}>
+            Atribuir
+          </button>
+        )}
       </div>
-      {atribuido && atribuido === lead.dono_id && (
+      {erro && <p className="aviso-erro mt-3">! {erro}</p>}
+      {estourado && escolhido && (
+        <button type="button" className="link-acao focus-ring mt-3 text-[13px]" onClick={atribuir}>
+          Só atribuir, sem contar como perdido
+        </button>
+      )}
+      {atribuido && atribuido.id === lead.dono_id && (
         <div className="mt-3 grid gap-2">
-          <p className="aviso-ok">✓ Lead atribuído</p>
+          <p className="aviso-ok">{atribuido.perdido ? "✓ Lead perdido registrado e repassado" : "✓ Lead atribuído"}</p>
           <AvisarCorretor
-            corretorId={atribuido}
-            corretorNome={corretores.find((c) => c.id === atribuido)?.nome ?? nomeDe(atribuido) ?? "Corretor"}
+            corretorId={atribuido.id}
+            corretorNome={corretores.find((c) => c.id === atribuido.id)?.nome ?? nomeDe(atribuido.id) ?? "Corretor"}
             lead={lead}
             horario={horario}
           />

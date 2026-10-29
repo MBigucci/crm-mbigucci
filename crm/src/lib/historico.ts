@@ -45,7 +45,10 @@ export function descreverEvento(
         return motivo ? `Descartado: ${motivo}` : "Descartado";
       }
       return "Reativado";
-    case "dono":
-      return `Atribuído a ${(e.para && pessoa(e.para)) ?? "outro corretor"}`;
+    case "dono": {
+      const recebeu = `${(e.para && pessoa(e.para)) ?? "outro corretor"}`;
+      if (e.detalhe === "perdido") return `! Lead perdido por ${(e.de && pessoa(e.de)) ?? "outro corretor"}. Passado para ${recebeu}`;
+      return `Atribuído a ${recebeu}`;
+    }
   }
 }
