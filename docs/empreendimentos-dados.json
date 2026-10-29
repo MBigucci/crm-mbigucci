@@ -8,7 +8,7 @@
   },
   "observacoes": [
     "Campos vazios (null) = não publicado nas fontes. Nada foi inferido.",
-    "preco_a_partir_de é o \"A partir de\" do site, por empreendimento. O preço por tipologia está só nas tabelas mensais em PDF (Drive), que não foram abertas.",
+    "Preço: sempre das tabelas do Linktree (PDF no Drive, links tabela_outubro e tabela_novembro ou a tabela do mês). preco_a_partir_de fica null até as tabelas serem lidas. preco_site é o \"A partir de\" do site, só como referência.",
     "dormitorios = null em studio, loft, sala comercial e lote: o tipo diz o que é.",
     "status: breve_lancamento | lancamento | em_obras | pronto. status_site guarda o texto original.",
     "fontes diz de onde veio cada grupo de campos; fonte lista as URLs visitadas.",
@@ -37,7 +37,8 @@
       "suites_texto": "2 a 4",
       "vagas_texto": "3 a 6",
       "preco_a_partir_de": null,
-      "preco_texto": null,
+      "preco_site": null,
+      "preco_site_texto": null,
       "chamada": "Torre única · 104 apartamentos exclusivos",
       "lazer": [
         "Piscinas adulto e infantil",
@@ -162,7 +163,8 @@
         "endereco": "site",
         "tipologias": "site",
         "lazer": "site",
-        "google_maps": "site (mapa incorporado, coordenadas)"
+        "google_maps": "site (mapa incorporado, coordenadas)",
+        "preco": "tabelas do Linktree (ainda não lidas)"
       },
       "avisos": [
         "Página própria (landing), sem ficha padrão: sem preço nem previsão de entrega publicados. O site diz que a comercialização só começa após o registro da incorporação."
@@ -208,8 +210,9 @@
       "dormitorios_texto": "2 e 3",
       "suites_texto": null,
       "vagas_texto": "1",
-      "preco_a_partir_de": 344000,
-      "preco_texto": "R$ 344.000,00",
+      "preco_a_partir_de": null,
+      "preco_site": 344000,
+      "preco_site_texto": "R$ 344.000,00",
       "chamada": "O seu novo mundo está aqui",
       "lazer": [
         "Piscina Adulto e Infantil",
@@ -289,7 +292,7 @@
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -331,7 +334,8 @@
       "suites_texto": "2",
       "vagas_texto": "1",
       "preco_a_partir_de": null,
-      "preco_texto": "A combinar",
+      "preco_site": null,
+      "preco_site_texto": "A combinar",
       "chamada": "Viver melhor é elevar o essencial.",
       "lazer": [
         "Piscina Adulto e Infantil",
@@ -373,12 +377,15 @@
         "tabela_precos": null,
         "tour_virtual": null,
         "fotos": "https://drive.google.com/drive/folders/1W-YMcN-djJsGmWloaN967TQ2IptePpyh?usp=drive_link",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Avenida%20Senador%20Vergueiro%201.650%20-%20Centro%2C%20SBC"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Avenida%20Senador%20Vergueiro%201.650%20-%20Centro%2C%20SBC",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -416,7 +423,8 @@
       "suites_texto": "2",
       "vagas_texto": "1 ou 1 + DEP",
       "preco_a_partir_de": null,
-      "preco_texto": "A combinar",
+      "preco_site": null,
+      "preco_site_texto": "A combinar",
       "chamada": "Mais vida para o seu tempo.",
       "lazer": [
         "Espaço Beleza",
@@ -443,12 +451,15 @@
         "tabela_precos": null,
         "tour_virtual": null,
         "fotos": "https://drive.google.com/drive/folders/1Bipq2HLnFG7Z-neOn1quw_vyHAC9WnEL?usp=drive_link",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Avenida%20Dom%20Pedro%20II%2C%202.474%20-%20Campestre%2C%20Santo%20Andr%C3%A9"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Avenida%20Dom%20Pedro%20II%2C%202.474%20-%20Campestre%2C%20Santo%20Andr%C3%A9",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -487,8 +498,9 @@
       "dormitorios_texto": "2",
       "suites_texto": null,
       "vagas_texto": "1",
-      "preco_a_partir_de": 343700,
-      "preco_texto": "R$ 343.700,00",
+      "preco_a_partir_de": null,
+      "preco_site": 343700,
+      "preco_site_texto": "R$ 343.700,00",
       "chamada": "A sua nova vida, está aqui!",
       "lazer": [
         "Piscina adulto e infantil",
@@ -542,7 +554,7 @@
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -582,8 +594,9 @@
       "dormitorios_texto": "2",
       "suites_texto": null,
       "vagas_texto": "0 ou 1",
-      "preco_a_partir_de": 318400,
-      "preco_texto": "R$ 318.400,00",
+      "preco_a_partir_de": null,
+      "preco_site": 318400,
+      "preco_site_texto": "R$ 318.400,00",
       "chamada": "Viva o seu melhor",
       "lazer": [
         "Bicicletário",
@@ -638,7 +651,7 @@
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -677,8 +690,9 @@
       "dormitorios_texto": "1 e 2",
       "suites_texto": null,
       "vagas_texto": null,
-      "preco_a_partir_de": 239100,
-      "preco_texto": "R$ 239.100,00",
+      "preco_a_partir_de": null,
+      "preco_site": 239100,
+      "preco_site_texto": "R$ 239.100,00",
       "chamada": "Praticidade e Conforto no Lugar Certo",
       "lazer": [
         "Bicicletário",
@@ -749,7 +763,7 @@
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "ficha técnica do Linktree",
         "status": "site",
@@ -792,8 +806,9 @@
       "dormitorios_texto": "3",
       "suites_texto": "1",
       "vagas_texto": "2 a 3",
-      "preco_a_partir_de": 1086700,
-      "preco_texto": "R$ 1.086.700,00",
+      "preco_a_partir_de": null,
+      "preco_site": 1086700,
+      "preco_site_texto": "R$ 1.086.700,00",
       "chamada": "Combinando sofisticação, segurança e qualidade.",
       "lazer": [
         "Lounge Gourmet",
@@ -845,7 +860,7 @@
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "ficha técnica do Linktree",
         "status": "site",
@@ -889,8 +904,9 @@
       "dormitorios_texto": "2 a 3",
       "suites_texto": "1 a 2",
       "vagas_texto": "1 a 2",
-      "preco_a_partir_de": 729600,
-      "preco_texto": "R$ 729.600,00",
+      "preco_a_partir_de": null,
+      "preco_site": 729600,
+      "preco_site_texto": "R$ 729.600,00",
       "chamada": "A independência que você procurava",
       "lazer": [
         "Salão de Festas",
@@ -962,7 +978,7 @@
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -1001,8 +1017,9 @@
       "dormitorios_texto": "2 a 3",
       "suites_texto": "1 a 2",
       "vagas_texto": "1 a 2",
-      "preco_a_partir_de": 857400,
-      "preco_texto": "R$ 857.400,00",
+      "preco_a_partir_de": null,
+      "preco_site": 857400,
+      "preco_site_texto": "R$ 857.400,00",
       "chamada": "Amplie seus horizontes",
       "lazer": [
         "Churrasqueira c/ Forno de Pizza",
@@ -1078,7 +1095,7 @@
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "ficha técnica do Linktree",
         "status": "site",
@@ -1121,7 +1138,8 @@
       "suites_texto": "1",
       "vagas_texto": "1",
       "preco_a_partir_de": null,
-      "preco_texto": "R$ 570.00,00",
+      "preco_site": null,
+      "preco_site_texto": "R$ 570.00,00",
       "chamada": "Você nunca pensou em morar tão bem assim",
       "lazer": [
         "Piscina Adulto e Infantil",
@@ -1174,12 +1192,15 @@
         "tabela_precos": null,
         "tour_virtual": "https://www.mbigucci.com.br/mb/tourvirtual/alameda/Tour_MBigucci_Alameda.html",
         "fotos": "https://drive.google.com/drive/folders/1TpsJdSOOoZQTXDl-Sgi-r-ekKy430_50",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Alameda%20S%C3%A3o%20Caetano%2C%201337%20-%20Campestre%20-%20Santo%20Andr%C3%A9"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Alameda%20S%C3%A3o%20Caetano%2C%201337%20-%20Campestre%20-%20Santo%20Andr%C3%A9",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -1221,8 +1242,9 @@
       "dormitorios_texto": "3",
       "suites_texto": "1",
       "vagas_texto": "1 a 2",
-      "preco_a_partir_de": 615000,
-      "preco_texto": "R$ 615.000,00",
+      "preco_a_partir_de": null,
+      "preco_site": 615000,
+      "preco_site_texto": "R$ 615.000,00",
       "chamada": "Desfrute de uma localização privilegiada, com tudo ao seu alcance",
       "lazer": [
         "Piscinas adulto e infantil",
@@ -1261,12 +1283,15 @@
         "tabela_precos": null,
         "tour_virtual": "https://yourside.com.br/jobs/MBigucci/Tour_MBigucci_Exuberance.html",
         "fotos": "https://drive.google.com/drive/folders/1j6TBibKDj7MT2yGn02Vj_0mBUAoIbT3v?usp=sharing",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Av.%20Winston%20Churchill%2C%201477%20-%20Rudge%20Ramos%2C%20S%C3%A3o%20Bernardo%20do%20Campo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Av.%20Winston%20Churchill%2C%201477%20-%20Rudge%20Ramos%2C%20S%C3%A3o%20Bernardo%20do%20Campo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -1303,8 +1328,9 @@
       "dormitorios_texto": "3",
       "suites_texto": "3",
       "vagas_texto": "2",
-      "preco_a_partir_de": 1261500,
-      "preco_texto": "R$ 1.261.500,00",
+      "preco_a_partir_de": null,
+      "preco_site": 1261500,
+      "preco_site_texto": "R$ 1.261.500,00",
       "chamada": null,
       "lazer": [
         "Piscinas Adulto e Infantil",
@@ -1361,12 +1387,15 @@
         "tabela_precos": null,
         "tour_virtual": "https://www.mbigucci.com.br/mb/tourvirtual/imperium/Tour_MBigucci_Imperium.html",
         "fotos": "https://drive.google.com/drive/folders/1UK_IhrIjxCU8yyieWiyBnDIsdMKTfkIc",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Marcondes%20de%20Andrade%2C%2062%20Ipiranga%20-%20S%C3%A3o%20Paulo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Marcondes%20de%20Andrade%2C%2062%20Ipiranga%20-%20S%C3%A3o%20Paulo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -1405,8 +1434,9 @@
       "dormitorios_texto": "Studio",
       "suites_texto": null,
       "vagas_texto": "1",
-      "preco_a_partir_de": 368900,
-      "preco_texto": "R$ 368.900,00",
+      "preco_a_partir_de": null,
+      "preco_site": 368900,
+      "preco_site_texto": "R$ 368.900,00",
       "chamada": "Liberdade é viver perto do que realmente importa",
       "lazer": [
         "Piscina",
@@ -1484,12 +1514,15 @@
         "tabela_precos": null,
         "tour_virtual": null,
         "fotos": "https://drive.google.com/drive/folders/1MICjoTRxsPxpvDpe9XVaVDhwjST66pb9",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Pr%C3%ADncipe%20Humberto%2C%20230%20-%20Centro%2C%20S%C3%A3o%20Bernardo%20do%20Campo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Pr%C3%ADncipe%20Humberto%2C%20230%20-%20Centro%2C%20S%C3%A3o%20Bernardo%20do%20Campo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "ficha técnica do Linktree",
         "status": "site",
@@ -1530,8 +1563,9 @@
       "dormitorios_texto": "1",
       "suites_texto": null,
       "vagas_texto": "1 a 2",
-      "preco_a_partir_de": 637500,
-      "preco_texto": "R$ 637.500,00",
+      "preco_a_partir_de": null,
+      "preco_site": 637500,
+      "preco_site_texto": "R$ 637.500,00",
       "chamada": "Extrapole as possibilidades",
       "lazer": [
         "SPA c/ Hidro",
@@ -1565,12 +1599,15 @@
         "tabela_precos": null,
         "tour_virtual": "https://www.mbigucci.com.br/mb/tourvirtual/newpark/index.html",
         "fotos": "https://drive.google.com/drive/folders/1sjTs4f_GS_rqWWHOQfTEGrRehRtlCYIJ",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Batista%20Caetano%2C%2059%20-%20Aclima%C3%A7%C3%A3o%20-%20S%C3%A3o%20Paulo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Batista%20Caetano%2C%2059%20-%20Aclima%C3%A7%C3%A3o%20-%20S%C3%A3o%20Paulo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -1615,7 +1652,8 @@
       "suites_texto": "1",
       "vagas_texto": "1",
       "preco_a_partir_de": null,
-      "preco_texto": "R$ 365.00,00",
+      "preco_site": null,
+      "preco_site_texto": "R$ 365.00,00",
       "chamada": "Para investir ou morar, você já tem o endereço",
       "lazer": [
         "Piscina Coberta e Aquecida",
@@ -1679,12 +1717,15 @@
         "tabela_precos": null,
         "tour_virtual": "https://www.mbigucci.com.br/mb/tourvirtual/beethoven/Tour_MBigucci_Sonata.html",
         "fotos": "https://drive.google.com/drive/folders/1M_1s8xA5TIG9suaOzAQIIp-PoVnkArrC",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Pra%C3%A7a%20Carlos%20Abondante%2C%20100%20-%20Santa%20Terezinha%20-%20Santo%20Andr%C3%A9"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Pra%C3%A7a%20Carlos%20Abondante%2C%20100%20-%20Santa%20Terezinha%20-%20Santo%20Andr%C3%A9",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -1724,8 +1765,9 @@
       "dormitorios_texto": "1 ou 2",
       "suites_texto": null,
       "vagas_texto": "0 ou 1",
-      "preco_a_partir_de": 417400,
-      "preco_texto": "R$ 417.400,00",
+      "preco_a_partir_de": null,
+      "preco_site": 417400,
+      "preco_site_texto": "R$ 417.400,00",
       "chamada": "Sua próxima parada é aqui",
       "lazer": [
         "Salão de Festas",
@@ -1781,12 +1823,15 @@
         "tabela_precos": null,
         "tour_virtual": null,
         "fotos": "https://drive.google.com/drive/folders/1fCgsCGz_Vy0DEdmtONw5gY0dlkqmvR3s",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Conduru%2C%2049%20-%20S%C3%A3o%20Paulo-SP"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Conduru%2C%2049%20-%20S%C3%A3o%20Paulo-SP",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -1823,8 +1868,9 @@
       "dormitorios_texto": "Loft e 2",
       "suites_texto": "1",
       "vagas_texto": "1",
-      "preco_a_partir_de": 457000,
-      "preco_texto": "R$ 457.000,00",
+      "preco_a_partir_de": null,
+      "preco_site": 457000,
+      "preco_site_texto": "R$ 457.000,00",
       "chamada": "Prático, dinâmico e único, assim como você",
       "lazer": [
         "Psicina",
@@ -1885,12 +1931,15 @@
         "tabela_precos": null,
         "tour_virtual": "https://www.mbigucci.com.br/mb/tourvirtual/unique/tour.html",
         "fotos": "https://drive.google.com/drive/folders/1GUzh4jKnj-8bM1N33gJ7Sw4jsKCsuALY",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20%C3%82ngela%20Tom%C3%A9%2C%2085%20-%20Rudge%20Ramos%20-%20S%C3%A3o%20Bernardo%20do%20Campo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20%C3%82ngela%20Tom%C3%A9%2C%2085%20-%20Rudge%20Ramos%20-%20S%C3%A3o%20Bernardo%20do%20Campo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -1927,8 +1976,9 @@
       "dormitorios_texto": "2",
       "suites_texto": "1",
       "vagas_texto": "1",
-      "preco_a_partir_de": 711100,
-      "preco_texto": "R$ 711.100,00",
+      "preco_a_partir_de": null,
+      "preco_site": 711100,
+      "preco_site_texto": "R$ 711.100,00",
       "chamada": "O apartamento que não sai da sua cabeça vai entrar na sua vida",
       "lazer": [
         "Piscina adulto e infantil climatizada",
@@ -2003,12 +2053,15 @@
         "tabela_precos": null,
         "tour_virtual": null,
         "fotos": "https://drive.google.com/drive/folders/1ahrxO7jUJH1CgYlkhbspTic1_2DcPh2j",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Bueno%20de%20Andrade%2C%20726%2C%20Aclima%C3%A7%C3%A3o%20-%20S%C3%A3o%20Paulo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Bueno%20de%20Andrade%2C%20726%2C%20Aclima%C3%A7%C3%A3o%20-%20S%C3%A3o%20Paulo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -2048,8 +2101,9 @@
       "dormitorios_texto": "2",
       "suites_texto": "1",
       "vagas_texto": "1",
-      "preco_a_partir_de": 530000,
-      "preco_texto": "R$ 530.000,00",
+      "preco_a_partir_de": null,
+      "preco_site": 530000,
+      "preco_site_texto": "R$ 530.000,00",
       "chamada": "Uma vida com estilo. Um lugar com a sua essência.",
       "lazer": [
         "Piscina adulto e infantil",
@@ -2091,12 +2145,15 @@
         "tabela_precos": null,
         "tour_virtual": "https://www.mbigucci.com.br/mb/tourvirtual/essenza",
         "fotos": "https://drive.google.com/drive/folders/1yEbjChPE_QL2nwJ0dw901Rqk0hxq5unz",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Leila%20Gon%C3%A7alves%2C%20449%20-%20Vila%20Gon%C3%A7alves%20-%20S%C3%A3o%20Bernardo%20do%20Campo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Leila%20Gon%C3%A7alves%2C%20449%20-%20Vila%20Gon%C3%A7alves%20-%20S%C3%A3o%20Bernardo%20do%20Campo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -2133,8 +2190,9 @@
       "dormitorios_texto": "2 e 3",
       "suites_texto": "1",
       "vagas_texto": "1 ou 2",
-      "preco_a_partir_de": 420000,
-      "preco_texto": "R$ 420.000,00",
+      "preco_a_partir_de": null,
+      "preco_site": 420000,
+      "preco_site_texto": "R$ 420.000,00",
       "chamada": "Bem-vindo a um projeto impactante",
       "lazer": [
         "Jardins",
@@ -2186,12 +2244,15 @@
         "tabela_precos": null,
         "tour_virtual": "https://www.mbigucci.com.br/mb/tourvirtual/impactus",
         "fotos": "https://drive.google.com/drive/folders/1vTiOjNgwyk-6qpmTAV47oOzkyyd93ktJ",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Lombroso%2C%20211%20-%20Parque%20Ja%C3%A7atuba%20-%20Santo%20Andr%C3%A9"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Lombroso%2C%20211%20-%20Parque%20Ja%C3%A7atuba%20-%20Santo%20Andr%C3%A9",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -2233,8 +2294,9 @@
       "dormitorios_texto": "2",
       "suites_texto": null,
       "vagas_texto": "0 ou 1",
-      "preco_a_partir_de": 299000,
-      "preco_texto": "R$ 299.000,00",
+      "preco_a_partir_de": null,
+      "preco_site": 299000,
+      "preco_site_texto": "R$ 299.000,00",
       "chamada": "A hora da sua grande virada chegou",
       "lazer": [
         "Piscina Adulto e Infantil",
@@ -2282,12 +2344,15 @@
         "tabela_precos": null,
         "tour_virtual": "https://www.mbigucci.com.br/mb/tourvirtual/america/castelobranco.html",
         "fotos": "https://drive.google.com/drive/folders/1u5BWMcxyd8yveEAKYcL-LW5gRJpBQCHn",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Estrada%20Particular%20Eiji%20Kikuti%2C%201.315%20-%20Cooperativa%2C%20S%C3%A3o%20Bernardo%20do%20Campo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Estrada%20Particular%20Eiji%20Kikuti%2C%201.315%20-%20Cooperativa%2C%20S%C3%A3o%20Bernardo%20do%20Campo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -2326,8 +2391,9 @@
       "dormitorios_texto": "2 a 3",
       "suites_texto": "1",
       "vagas_texto": "1 ou 2",
-      "preco_a_partir_de": 776700,
-      "preco_texto": "R$ 776.700,00",
+      "preco_a_partir_de": null,
+      "preco_site": 776700,
+      "preco_site_texto": "R$ 776.700,00",
       "chamada": "Um ícone de arquitetura, design e estilo de vida",
       "lazer": [
         "Piscina adulto e infantil",
@@ -2391,12 +2457,15 @@
         "tabela_precos": null,
         "tour_virtual": "https://yourside.com.br/jobs/MBigucci/Tour_MBigucci_Stylo.html",
         "fotos": "https://drive.google.com/drive/folders/1NPf7TEHLv0dnOmBOw76nkdrmI_fcR6f0?usp=sharing",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Av.%20Doutor%20Washington%20Lu%C3%ADz%2C%20328%20-%20Rudge%20Ramos%2C%20S%C3%A3o%20Bernardo%20do%20Campo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Av.%20Doutor%20Washington%20Lu%C3%ADz%2C%20328%20-%20Rudge%20Ramos%2C%20S%C3%A3o%20Bernardo%20do%20Campo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -2433,8 +2502,9 @@
       "dormitorios_texto": "2",
       "suites_texto": null,
       "vagas_texto": "0 ou 1",
-      "preco_a_partir_de": 270000,
-      "preco_texto": "R$ 270.000,00",
+      "preco_a_partir_de": null,
+      "preco_site": 270000,
+      "preco_site_texto": "R$ 270.000,00",
       "chamada": "Aqui você consegue chegar mais cedo em casa",
       "lazer": [
         "Quadra Gramada",
@@ -2480,12 +2550,15 @@
         "tabela_precos": null,
         "tour_virtual": "https://www.mbigucci.com.br/mb/tourvirtual/alvorada/Tour_Alvorada/Tour_Alvorada.html",
         "fotos": "https://drive.google.com/drive/folders/1nckD_r930IfL5YNGT0YWkZzLRs-EEhwR",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Alayde%20de%20Souza%20Costa%2C%20187%20-%20Itaquera%2C%20S%C3%A3o%20Paulo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Alayde%20de%20Souza%20Costa%2C%20187%20-%20Itaquera%2C%20S%C3%A3o%20Paulo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -2522,8 +2595,9 @@
       "dormitorios_texto": "2",
       "suites_texto": "2",
       "vagas_texto": "1 ou 2",
-      "preco_a_partir_de": 659400,
-      "preco_texto": "R$ 659.400,00",
+      "preco_a_partir_de": null,
+      "preco_site": 659400,
+      "preco_site_texto": "R$ 659.400,00",
       "chamada": "Qualidade de vida é uma escolha",
       "lazer": [
         "Piscina adulto e infantil",
@@ -2561,12 +2635,15 @@
         "tabela_precos": null,
         "tour_virtual": "https://www.mbigucci.com.br/mb/tourvirtual/domani/domani.html",
         "fotos": "https://drive.google.com/drive/folders/1Y7tuOwq6EE3mnKY2m3YfpUX_HLa3a_zx",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Princesa%20Maria%20Am%C3%A9lia%2C%20500%20-%20Nova%20Petr%C3%B3polis%2C%20S%C3%A3o%20Bernardo%20do%20Campo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Princesa%20Maria%20Am%C3%A9lia%2C%20500%20-%20Nova%20Petr%C3%B3polis%2C%20S%C3%A3o%20Bernardo%20do%20Campo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "ficha técnica do Linktree",
         "status": "site",
@@ -2606,8 +2683,9 @@
       "dormitorios_texto": "3",
       "suites_texto": "3",
       "vagas_texto": "2 a 4",
-      "preco_a_partir_de": 1200000,
-      "preco_texto": "R$ 1.200.000,00",
+      "preco_a_partir_de": null,
+      "preco_site": 1200000,
+      "preco_site_texto": "R$ 1.200.000,00",
       "chamada": "Imponência e modernidade em uma única torre",
       "lazer": [
         "Piscinas Adulto e Infantil",
@@ -2643,12 +2721,15 @@
         "tabela_precos": null,
         "tour_virtual": null,
         "fotos": "https://drive.google.com/drive/folders/1Bv6sMYXPZKRqAeVOc663Ct_EFNUD1bha",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Av.%20Reden%C3%A7%C3%A3o%2C%20423%20-%20Jardim%20das%20Am%C3%A9ricas%20-%20S%C3%A3o%20Bernardo%20do%20Campo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Av.%20Reden%C3%A7%C3%A3o%2C%20423%20-%20Jardim%20das%20Am%C3%A9ricas%20-%20S%C3%A3o%20Bernardo%20do%20Campo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -2687,8 +2768,9 @@
       "dormitorios_texto": null,
       "suites_texto": null,
       "vagas_texto": "1",
-      "preco_a_partir_de": 365600,
-      "preco_texto": "R$ 365.600,00",
+      "preco_a_partir_de": null,
+      "preco_site": 365600,
+      "preco_site_texto": "R$ 365.600,00",
       "chamada": "A evolução do seu jeito de trabalhar",
       "lazer": [
         "Catracas Eletrônicas",
@@ -2733,12 +2815,15 @@
         "tabela_precos": null,
         "tour_virtual": null,
         "fotos": null,
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Travessa%20Dar%C3%A9%2C%2074%20-%20Rudge%20Ramos%20-%20S%C3%A3o%20Bernardo%20do%20Campo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Travessa%20Dar%C3%A9%2C%2074%20-%20Rudge%20Ramos%20-%20S%C3%A3o%20Bernardo%20do%20Campo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -2780,8 +2865,9 @@
       "dormitorios_texto": "2",
       "suites_texto": "2",
       "vagas_texto": "1 ou 2",
-      "preco_a_partir_de": 571900,
-      "preco_texto": "R$ 571.900,00",
+      "preco_a_partir_de": null,
+      "preco_site": 571900,
+      "preco_site_texto": "R$ 571.900,00",
       "chamada": "Aproveite toda a exclusividade",
       "lazer": [
         "Piscina adulto e infantil",
@@ -2819,12 +2905,15 @@
         "tabela_precos": null,
         "tour_virtual": null,
         "fotos": "https://drive.google.com/drive/folders/1BZXj26JCh3y-4B_c29HhyNC35Go0onN9",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Ascencional%2C%20237%20-%20Morumbi%2C%20S%C3%A3o%20Paulo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Ascencional%2C%20237%20-%20Morumbi%2C%20S%C3%A3o%20Paulo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -2868,8 +2957,9 @@
       "dormitorios_texto": "2 e 3",
       "suites_texto": "1",
       "vagas_texto": "1 ou 2",
-      "preco_a_partir_de": 350000,
-      "preco_texto": "R$ 350.000,00",
+      "preco_a_partir_de": null,
+      "preco_site": 350000,
+      "preco_site_texto": "R$ 350.000,00",
       "chamada": "Completo em todos os sentidos",
       "lazer": [
         "Piscina adulto e infantil aquecida",
@@ -2930,12 +3020,15 @@
         "tabela_precos": null,
         "tour_virtual": "https://www.mbigucci.com.br/mb/tourvirtual/olimpic/",
         "fotos": "https://drive.google.com/drive/folders/18y3xUGZhgO1mGhvOurCRQcqcjdueMJCu",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Manoel%20Salgado%2C%20381%20-%20Jd.%20Santa%20Cruz%2C%20S%C3%A3o%20Paulo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Manoel%20Salgado%2C%20381%20-%20Jd.%20Santa%20Cruz%2C%20S%C3%A3o%20Paulo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -2977,8 +3070,9 @@
       "dormitorios_texto": "2",
       "suites_texto": "1",
       "vagas_texto": "1 ou 2",
-      "preco_a_partir_de": 760000,
-      "preco_texto": "R$ 760.000,00",
+      "preco_a_partir_de": null,
+      "preco_site": 760000,
+      "preco_site_texto": "R$ 760.000,00",
       "chamada": "Tranquilidade, lazer e conforto",
       "lazer": [
         "Piscina adulto e infantil aquecida",
@@ -3015,12 +3109,15 @@
         "tabela_precos": null,
         "tour_virtual": null,
         "fotos": "https://drive.google.com/drive/folders/1IX6-7QINqPSV6e0cmugwyVq5jEIVPVgJ",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Clemente%20Pereira%2C%2064%20Ipiranga%20-%20S%C3%A3o%20Paulo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Clemente%20Pereira%2C%2064%20Ipiranga%20-%20S%C3%A3o%20Paulo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -3059,8 +3156,9 @@
       "dormitorios_texto": "3",
       "suites_texto": "1",
       "vagas_texto": "1",
-      "preco_a_partir_de": 522100,
-      "preco_texto": "R$ 522.100,00",
+      "preco_a_partir_de": null,
+      "preco_site": 522100,
+      "preco_site_texto": "R$ 522.100,00",
       "chamada": "Para você viver da melhor maneira",
       "lazer": [
         "Piscina adulto e infantil",
@@ -3134,12 +3232,15 @@
         "tabela_precos": null,
         "tour_virtual": null,
         "fotos": "https://drive.google.com/drive/folders/1WzzcHphJnWH7Y0xb2v3OlplMTBisDYZd",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Francisco%20Hurtado%2C%2030%20-%20%C3%81gua%20Funda%2C%20S%C3%A3o%20Paulo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Francisco%20Hurtado%2C%2030%20-%20%C3%81gua%20Funda%2C%20S%C3%A3o%20Paulo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -3178,8 +3279,9 @@
       "dormitorios_texto": "Loft",
       "suites_texto": null,
       "vagas_texto": "1 ou 2",
-      "preco_a_partir_de": 369700,
-      "preco_texto": "R$ 369.700,00",
+      "preco_a_partir_de": null,
+      "preco_site": 369700,
+      "preco_site_texto": "R$ 369.700,00",
       "chamada": "Um jeito de morar diferente. Um jeito de trabalhar inteligente.",
       "lazer": [
         "Piscina Adulto",
@@ -3214,12 +3316,15 @@
         "tabela_precos": null,
         "tour_virtual": "https://www.mbigucci.com.br/mb/tourvirtual/marcozeromix",
         "fotos": null,
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Av.%20Kennedy%2C%201230%20-%20Jardim%20do%20Mar%2C%20S%C3%A3o%20Bernardo%20do%20Campo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Av.%20Kennedy%2C%201230%20-%20Jardim%20do%20Mar%2C%20S%C3%A3o%20Bernardo%20do%20Campo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "ficha técnica do Linktree",
         "status": "site",
@@ -3260,8 +3365,9 @@
       "dormitorios_texto": null,
       "suites_texto": null,
       "vagas_texto": "1 ou 2",
-      "preco_a_partir_de": 369700,
-      "preco_texto": "R$ 369.700,00",
+      "preco_a_partir_de": null,
+      "preco_site": 369700,
+      "preco_site_texto": "R$ 369.700,00",
       "chamada": "Um jeito de morar diferente. Um jeito de trabalhar inteligente.",
       "lazer": [],
       "tipologias": [
@@ -3300,12 +3406,15 @@
         "tabela_precos": null,
         "tour_virtual": null,
         "fotos": null,
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Av.%20Kennedy%2C%201230%20-%20Jardim%20do%20Mar%2C%20S%C3%A3o%20Bernardo%20do%20Campo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Av.%20Kennedy%2C%201230%20-%20Jardim%20do%20Mar%2C%20S%C3%A3o%20Bernardo%20do%20Campo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "ficha técnica do Linktree",
         "status": "site",
@@ -3343,8 +3452,9 @@
       "dormitorios_texto": null,
       "suites_texto": null,
       "vagas_texto": "1",
-      "preco_a_partir_de": 435000,
-      "preco_texto": "435.000,00",
+      "preco_a_partir_de": null,
+      "preco_site": 435000,
+      "preco_site_texto": "435.000,00",
       "chamada": null,
       "lazer": [
         "Piscina adulto e infantil aquecida",
@@ -3393,12 +3503,15 @@
         "tabela_precos": null,
         "tour_virtual": "https://www.mbigucci.com.br/mb/tourvirtual/marcozerotower/marcozero-tower.html",
         "fotos": "https://drive.google.com/drive/folders/14aaFwUqsqVn2mdhdG_XEMzgGcMoAfPNc",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Av.%20Sen.%20Vergueiro%2C%202123%20-%20Jardim%20do%20Mar%2C%20S%C3%A3o%20Bernardo%20do%20Campo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Av.%20Sen.%20Vergueiro%2C%202123%20-%20Jardim%20do%20Mar%2C%20S%C3%A3o%20Bernardo%20do%20Campo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -3443,8 +3556,9 @@
       "dormitorios_texto": "2 e 3",
       "suites_texto": "1",
       "vagas_texto": "1 ou 2",
-      "preco_a_partir_de": 680000,
-      "preco_texto": "R$ 680.000,00",
+      "preco_a_partir_de": null,
+      "preco_site": 680000,
+      "preco_site_texto": "R$ 680.000,00",
       "chamada": "O Marco Zero da cidade mudou. A sua forma de viver também.",
       "lazer": [
         "Salão de Jogos",
@@ -3494,12 +3608,15 @@
         "tabela_precos": null,
         "tour_virtual": "https://www.mbigucci.com.br/mb/tourvirtual/marcozeropremier",
         "fotos": "https://drive.google.com/drive/folders/1ff8V-C0s7pddviVs4XqLQ8XPPq_BZPRr",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Avenida%20Senador%20Vergueiro%2C%202087%20e%202099%20-%20Jardim%20do%20Mar%20-%20S%C3%A3o%20Bernardo%20do%20Campo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Avenida%20Senador%20Vergueiro%2C%202087%20e%202099%20-%20Jardim%20do%20Mar%20-%20S%C3%A3o%20Bernardo%20do%20Campo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -3537,8 +3654,9 @@
       "dormitorios_texto": "Loft e 2",
       "suites_texto": null,
       "vagas_texto": "1",
-      "preco_a_partir_de": 420000,
-      "preco_texto": "420.000,00",
+      "preco_a_partir_de": null,
+      "preco_site": 420000,
+      "preco_site_texto": "420.000,00",
       "chamada": "A esquina mais valorizada do ABC também é a mais charmosa",
       "lazer": [
         "Piscina Adulto e Infantil",
@@ -3584,12 +3702,15 @@
         "tabela_precos": null,
         "tour_virtual": "https://www.mbigucci.com.br/mb/tourvirtual/marcozerohome/marcozero-home.html",
         "fotos": "https://drive.google.com/drive/folders/17eWmvIHnpv5QAdVjQj67blBF9YldQoff",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Av.%20Sen.%20Vergueiro%2C%202123%20-%20Jardim%20do%20Mar%2C%20S%C3%A3o%20Bernardo%20do%20Campo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Av.%20Sen.%20Vergueiro%2C%202123%20-%20Jardim%20do%20Mar%2C%20S%C3%A3o%20Bernardo%20do%20Campo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -3626,8 +3747,9 @@
       "dormitorios_texto": "2",
       "suites_texto": null,
       "vagas_texto": "0 ou 1",
-      "preco_a_partir_de": 276700,
-      "preco_texto": "R$ 276.700,00",
+      "preco_a_partir_de": null,
+      "preco_site": 276700,
+      "preco_site_texto": "R$ 276.700,00",
       "chamada": "Aqui sua vida é muito mais fácil",
       "lazer": [
         "Piscina Adulto c/ Deck Molhado",
@@ -3714,12 +3836,15 @@
         "tabela_precos": null,
         "tour_virtual": "https://www.mbigucci.com.br/mb/tourvirtual/saovicente/Tour_MBigucci_Easy.html",
         "fotos": "https://drive.google.com/drive/folders/1oyJM6hc9efgNhKJkdSpDfMPFgAZ-eu1r?usp=drive_link",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Canrobert%20Pereira%20da%20Costa%2C%20200%20-%20Centro%2C%20S%C3%A3o%20Vicente"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Canrobert%20Pereira%20da%20Costa%2C%20200%20-%20Centro%2C%20S%C3%A3o%20Vicente",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "lazer": "site",
         "entrega": "site",
-        "preco": "site",
+        "preco": "tabelas do Linktree (ainda não lidas)",
         "tipologias": "site",
         "endereco": "site",
         "status": "site",
@@ -3759,7 +3884,8 @@
       "suites_texto": null,
       "vagas_texto": null,
       "preco_a_partir_de": null,
-      "preco_texto": null,
+      "preco_site": null,
+      "preco_site_texto": null,
       "chamada": null,
       "lazer": [],
       "tipologias": [
@@ -3787,12 +3913,16 @@
         "tabela_precos": null,
         "tour_virtual": null,
         "fotos": "https://drive.google.com/drive/folders/1EiYK87MLqeVxNUZ-1RkO7O5TA7pkIftl?usp=drive_link",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Frederico%20Von%20Martius%2C%20225%20-%20Vila%20Monumento%2C%20S%C3%A3o%20Paulo"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Rua%20Frederico%20Von%20Martius%2C%20225%20-%20Vila%20Monumento%2C%20S%C3%A3o%20Paulo",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "status": "Felipe (29/10/2026)",
         "endereco": "tabelão set/2026 (ref/)",
-        "tipologias": "tabelão set/2026 (ref/)"
+        "tipologias": "tabelão set/2026 (ref/)",
+        "preco": "tabelas do Linktree (ainda não lidas)"
       },
       "avisos": [
         "Segue à venda, sem página no site nem no Linktree (Felipe, 29/10/2026). Dados só do tabelão de set/2026; o preço atual vem da tabela mensal."
@@ -3828,7 +3958,8 @@
       "suites_texto": null,
       "vagas_texto": null,
       "preco_a_partir_de": null,
-      "preco_texto": null,
+      "preco_site": null,
+      "preco_site_texto": null,
       "chamada": null,
       "lazer": [],
       "tipologias": [
@@ -3856,12 +3987,16 @@
         "tabela_precos": null,
         "tour_virtual": "https://www.mbigucci.com.br/mb/tourvirtual/terranostra/index.html",
         "fotos": "https://drive.google.com/drive/folders/16CsYBiYmh-32j4ItUGGgh112H5LskRw9",
-        "google_maps": "https://www.google.com/maps/search/?api=1&query=Av.%20Rio%20de%20Janeiro%2C%20611%20-%20Jardim%20Diogo%2C%20Guarulhos"
+        "google_maps": "https://www.google.com/maps/search/?api=1&query=Av.%20Rio%20de%20Janeiro%2C%20611%20-%20Jardim%20Diogo%2C%20Guarulhos",
+        "tabela_outubro": "https://drive.google.com/file/d/1oD55wAATUrqs4i_UPgHqOV-f5jvQoCVW/view?usp=drive_link",
+        "tabela_novembro": "https://drive.google.com/file/d/1SOQt-17LisfrG2lHOFDwIBB-9MnkSonG/view?usp=drive_link",
+        "tabela_geral": true
       },
       "fontes": {
         "status": "Felipe (29/10/2026)",
         "endereco": "tabelão set/2026 (ref/)",
-        "tipologias": "tabelão set/2026 (ref/)"
+        "tipologias": "tabelão set/2026 (ref/)",
+        "preco": "tabelas do Linktree (ainda não lidas)"
       },
       "avisos": [
         "Segue à venda e usa o material do Modena (Felipe, 29/10/2026). Mesmo terreno do Modena (Av. Rio de Janeiro, 611). Dados só do tabelão de set/2026."

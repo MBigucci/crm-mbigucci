@@ -21,7 +21,7 @@
 - **Por status:** 2 em breve lançamento (Elleva, Dom), 2 em lançamento (Marco Zero One, Mundi), 6 em obras e 29 prontos.
 - **Entram no catálogo:** apartamentos e salas comerciais. Casas, lotes, Classic, UP e Cortina D'Ampezzo ficam de fora.
 - **Novos em relação à lista atual:** Marco Zero One, Elleva e Dom. O Marco Zero Mix Work vira item próprio.
-- **Preço oficial:** a tabela mensal em PDF do Linktree. O JSON ainda não tem preço por tipologia: o "a partir de" é o do site, e a leitura das tabelas fica para a etapa do catálogo.
+- **Preço:** sempre das tabelas do Linktree, nunca do site. O JSON ainda não tem preço (`preco_a_partir_de` vazio): as tabelas não foram lidas. O "a partir de" do site ficou em `preco_site`, só como referência.
 
 ## 2. Decisões do Felipe (29/10/2026)
 
@@ -31,7 +31,7 @@
 | Classic, UP e Cortina D'Ampezzo | Não entram. | Saíram do JSON. A próxima etapa tira o Cortina D'Ampezzo da lista do Cadastro Mágico. |
 | Casas, lotes e salas | Casas e lotes não; salas sim. | Saíram a Mansão Jardim Acapulco e o Village da Serra. Wynn Tower, Marco Zero Tower e Marco Zero Mix Work ficam, com `tipo: comercial`. A próxima etapa tira o Village da Serra da lista do Cadastro Mágico. |
 | Torres e fases | Igual à Bruna. | Cada item tem `condominio` e `torres_conhecidas`. Na tabela, um registro por torre quando a tabela mensal separar (seção 9). |
-| Preço | Tabela mensal em PDF, atualizada no Linktree todo mês. | O preço por tipologia sai da tabela. A importação mensal vira parte da etapa do catálogo (seção 11). |
+| Preço | Sempre das tabelas do Linktree (PDF, atualizadas todo mês). Os empreendimentos sem preço no site também têm preço nas tabelas. | `preco_a_partir_de` fica vazio até ler as tabelas; o preço do site foi para `preco_site`, só como referência. Cada item aponta a sua tabela: 8 têm tabela própria (Marco Zero One, Mundi, Modena, Joy, Easy Jaçanã, Infinite, Palatium, Terrazzo); os outros apontam a tabela geral do mês ("Tabela mês de aniversário" em outubro, "Tabela promocional" em novembro), com `tabela_geral: true`. A importação mensal vira parte da etapa do catálogo (seção 11). |
 | Endereço | Vale o do Linktree. | Conferido nas fichas técnicas: Life nº 230, Easy Jaçanã nº 180/184, Marco Zero Mix nº 1.230, Domani "Princesa Maria Amélia", Infinite nº 968 (bairro Barcelona) e Olimpic na Saúde. |
 | Entrega do Terrazzo | Vale o site. | Mar/2028. |
 | Link para o cliente | A apresentação, mas o ideal é um link oficial da MBigucci, não o Drive. | Por ora, `links.apresentacao` (Drive). O pedido de hospedar as apresentações no site está na lista para o marketing (seção 8). |
@@ -54,9 +54,9 @@ Regras seguidas:
 
 ## 4. Os 39 empreendimentos
 
-Preço "a partir de" e entrega como estão no site em 29/10/2026. O ! marca preço publicado com formato errado.
+Entrega como está no site em 29/10/2026. A coluna de preço é o "a partir de" do **site**, só como referência: o preço que vale é o das tabelas do Linktree. O ! marca preço publicado com formato errado.
 
-| Nome | Condomínio | Status | Bairro, cidade | Dorms | Área | A partir de | Entrega |
+| Nome | Condomínio | Status | Bairro, cidade | Dorms | Área | Site (referência) | Entrega |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Marco Zero One | | Lançamento | Jardim do Mar, São Bernardo do Campo | 3 e 4 | 152–357 m² | — | — |
 | Mundi MBigucci | Mundi | Lançamento | Pauliceia, São Bernardo do Campo | 2 e 3 | 43–53 m² | R$ 344.000 | — |
@@ -145,10 +145,9 @@ Na Infinite e no Terrazzo a ficha só traz o endereço do plantão e do decorado
 
 | Campo | Faltam (de 39) | Quais |
 | --- | --- | --- |
-| Preço por tipologia | 88 de 88 tipologias | Todas. Vem da tabela mensal em PDF. |
+| Preço (empreendimento e tipologia) | Todos | Vem das tabelas do Linktree, que não foram lidas. |
 | Previsão de entrega (dos 10 em lançamento ou obras) | 5 | Marco Zero One, Mundi, Elleva, Dom ("Consulte") e Easy Jaçanã (só o texto da CEF). |
 | Tour virtual | 17 | Normal: nem todos têm decorado virtual. |
-| Preço "a partir de" | 7 | Marco Zero One, Elleva e Dom (sem preço), Alameda e Sonata (formato errado no site), Royal Palace e Terra Nostra Parma (sem página). |
 | Apresentação | 6 | Marco Zero One, Mundi (têm book), Elleva, Dom, First Class e Royal Palace. |
 | Memorial descritivo | 5 | Elleva, Dom, Marco Zero Premier & Prime, Marco Zero Home e Royal Palace. |
 | Página oficial | 2 | Royal Palace e Terra Nostra Parma. |
@@ -159,8 +158,7 @@ Nas 88 tipologias, 44 não dizem quantas suítes e 22 não dizem vagas. A tabela
 
 ## 7. Pendências
 
-- **Leads de empreendimento sem preço (Marco Zero One, Elleva, Dom).** A dúvida 9 era esta: o Radar compara o orçamento do cliente com o preço, e esses três ainda não têm preço publicado. Proposta: o Radar mostra os três como "Breve lançamento", sem nota de orçamento, e o lead pode ficar em "aguardando lançamento" para ser avisado quando a tabela sair. Precisa do sim do Felipe.
-- **Ler as tabelas mensais.** O preço por tipologia e a divisão por torre dependem delas. Primeira tarefa da etapa do catálogo.
+- **Ler as tabelas do Linktree.** Todo preço vem delas, inclusive o de Marco Zero One, Elleva e Dom, que o site não publica (dúvida 9, resolvida pelo Felipe). A divisão por torre também. Primeira tarefa da etapa do catálogo. A tabela do Marco Zero One, por exemplo, traz por unidade a área, o ato, as mensais e o preço de venda.
 - **Link oficial da apresentação.** Depende do marketing (seção 8).
 
 ## 8. Lista para o marketing
@@ -233,7 +231,7 @@ Para a próxima etapa. Base: o formato de importação da Bruna (`crm-imoveis/1`
 | `vagas_min`, `vagas_max` | smallint | O site publica "1 ou 2". |
 | `area_m2` | numeric(8,2) | Área privativa. |
 | `deposito` | boolean | |
-| `preco_a_partir_de` | numeric(14,2) | Menor preço da tipologia na tabela mensal. |
+| `preco_a_partir_de` | numeric(14,2) | Menor preço da tipologia na tabela do Linktree. Nunca o preço do site. |
 | `preco_nota` | text | "unid. 84 · tabela R$ 515.000", como o `priceNote` da Bruna. |
 | `condominio_valor` | numeric(10,2) | Quando a tabela trouxer. |
 | `esgotada` | boolean | Ex.: coberturas do Marco Zero One. |
@@ -278,7 +276,7 @@ O lead já guarda `valor`, `dormitorios`, `regiao` e `finalidade` (`crm/supabase
 
 - Mostra a partir de 50%, com motivos ✓ e ✕, como na Bruna.
 - Esconde empreendimento inativo e tipologia esgotada.
-- Sem preço (breve lançamento): pendência da seção 7.
+- Preço só da tabela do Linktree. Sem tabela lida, o empreendimento entra no Radar sem a nota de orçamento.
 - Avisa quando a tabela do empreendimento for de um mês anterior (`tabela_mes`).
 
 ## 11. Da Bruna: o que veio, o que foi adaptado e o que ficou de fora
