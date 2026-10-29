@@ -27,7 +27,7 @@
 
 | Tema | Decisão | Efeito no JSON e na próxima etapa |
 | --- | --- | --- |
-| Royal Palace e Terra Nostra Parma | Seguem à venda, sem página própria. O Parma usa o material do Modena. | Entraram com os dados do tabelão de set/2026. O Parma usa os links do Modena. |
+| Royal Palace e Terra Nostra Parma | Seguem à venda, sem página própria. O Parma usa o material do Modena. | Entraram com os dados da tabela de novembro. O Parma usa os links do Modena. |
 | Classic, UP e Cortina D'Ampezzo | Não entram. | Saíram do JSON. A próxima etapa tira o Cortina D'Ampezzo da lista do Cadastro Mágico. |
 | Casas, lotes e salas | Casas e lotes não; salas sim. | Saíram a Mansão Jardim Acapulco e o Village da Serra. Wynn Tower, Marco Zero Tower e Marco Zero Mix Work ficam, com `tipo: comercial`. A próxima etapa tira o Village da Serra da lista do Cadastro Mágico. |
 | Torres e fases | Igual à Bruna. | Cada item tem `condominio` e `torres_conhecidas`. Na tabela, um registro por torre quando a tabela mensal separar (seção 9). |
