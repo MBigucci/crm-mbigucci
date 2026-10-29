@@ -35,13 +35,13 @@ Testes:
 - `app_settings` só pode ser lida e alterada pelo gerente geral.
 - Só o gerente geral promove alguém a gerente geral, e sempre resta pelo menos um gerente geral ativo.
 - Corretor ativo precisa ter equipe. O gerente de uma equipe precisa ter o perfil Gerente. Uma equipe com membros não pode ser excluída.
-- A busca no `out/` não encontra nenhuma palavra sigilosa (verba, ranking, pontua, premia).
+- ~~A busca no `out/` não encontra nenhuma palavra sigilosa (verba, ranking, pontua, premia).~~ **Mudou em 29/10/2026:** as telas do programa de pontuação estão no código, então o `out/` **vai** conter essas palavras. O teste vira um bloqueio de publicação: a skill `publicar-wordpress` (ou um hook no envio por FTP) procura `verba|ranking|pontos|premia|roleta` no `out/` e, se achar, **recusa publicar antes da reunião de novembro de 2026**, a menos que o Felipe confirme que a reunião já aconteceu. O teste de banco `crm/supabase/testes/programa.test.mjs` já cobre o sigilo dos dados (chave desligada, perfil a perfil).
 - Toda tabela nova com dados de corretor usa `pode_ver_dados_de()` e tem um teste por perfil.
 - Hoje o teste de SQL existe só fora do repositório (`sqltest/test.mjs`, na pasta de notas daquela sessão). Precisa ser trazido para `crm/`.
 
 Hooks:
 - Bloquear tabela nova em `schema.sql` sem `enable row level security`.
-- Bloquear palavras sigilosas em `crm/src` enquanto o programa de verba não for lançado.
+- ~~Bloquear palavras sigilosas em `crm/src` enquanto o programa de verba não for lançado.~~ Não serve mais: o programa foi construído em `crm/src` por decisão do Felipe. O bloqueio passa para a publicação (ver o teste do `out/` acima).
 - Bloquear rotas de API, `"use server"` e `getServerSideProps` em `crm/src`, porque quebram a exportação estática.
 - Bloquear inserts de permissões ligadas à verba em `permissions` antes do lançamento, porque essa tabela é legível por todos os usuários ativos.
 

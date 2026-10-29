@@ -1,6 +1,10 @@
 # Pontuação, verba de leads, premiação e roleta
 
 > Fontes: `docs/fontes/regras-comerciais-2026-10.md` (o documento original do Felipe) e a conversa de 28/10/2026.
+> **! Não publicar o CRM com estas telas antes da reunião de novembro.** Os textos das telas do programa (pontos, verba, ranking, roleta) estão no código do site, e qualquer pessoa baixa os arquivos de `out/`. O banco protege os dados, mas não o código.
+>
+> **Sumário:** Contexto · Pontuação → verba · Lançamentos · Premiação por VGV · Roleta · Como ficou (29/10/2026): telas, banco, decisões, o que cada perfil vê, SQL, testes e o que veio da Bruna.
+>
 > **Sigilo:** a verba por corretor, os pontos que viram verba e o corte dos leads do Google só serão anunciados na reunião de novembro de 2026. Até lá, nada disso aparece para corretores, gerentes ou especialistas. As telas ficam atrás da chave "Programa de verba ativo", que só o gerente geral liga.
 
 ## Contexto
@@ -73,4 +77,70 @@ Vale só a faixa mais alta atingida (não acumula), e só contam vendas **assina
 - Quem não cumpriu os 6 períodos pode ir ao plantão se tiver **visita agendada**, mas fica fora da roleta.
 - A saída para fazer visita durante o período é comprovada com foto para a recepcionista, para o corretor não perder o período.
 - Os períodos lançados para a pontuação já dão ao CRM o que ele precisa para mostrar quem está apto.
-- Quem registra os períodos no dia a dia ainda não está decidido. A proposta é a **Recepção** (ver `docs/acessos-perfis.md`).
+- Quem registra os períodos no dia a dia é a **Recepção**, na tela Plantão (ver `docs/acessos-perfis.md` e a seção abaixo).
+
+## Como ficou (29/10/2026)
+
+Construído atrás da chave `programa_verba_ativo`, desligada. Decisão do Felipe, no pedido desta etapa: o CRM só é entregue em novembro, depois da reunião, então as telas podem existir agora. **Não publique o CRM com estas telas antes da reunião de novembro:** os textos estão no código do site.
+
+### Telas
+
+| Tela | Quem vê | O que faz |
+| --- | --- | --- |
+| **Pontos** (`/programa/`) | Só o gerente geral, sempre | Resumo do mês por corretor: períodos, vídeos, visitas, pendentes, pontos (com o limite e o teto), vendas pagas, verba prevista e prêmio da faixa de VGV (liga com a tela Faixas de VGV). Fechamento do mês, primeiro mês do programa e edição dos critérios. |
+| **Aprovar lançamentos** (`/programa/aprovacao/`) | Só o gerente geral | Fila com filtros por situação, corretor, critério e semana. Aprovar e recusar um a um ou em lote (a recusa pede motivo), com Desfazer, e "Voltar para pendente". |
+| **Plantão** (`/plantao/`) | Gerente geral; com a chave ligada, quem tem `plantao.registrar` (recepção) ou `lancamentos.registrar` (gerente) | O dia, no celular ou no tablet: cada corretor com manhã (9h–14h) e tarde (14h–19h). "Cumpriu o período" e "Saiu para visita" (com o link da foto) geram lançamentos pendentes, com Desfazer. Roleta da semana. Lançar vídeos (com `lancamentos.registrar`). |
+| **Meus pontos** (`/meus-pontos/`) | O corretor, só com a chave ligada | Pontos aprovados do mês por critério, o que falta para o mínimo, a verba prevista (liberada no mês seguinte) e a verba do mês passado já fechada. |
+| **Ranking** (`/ranking/`) | Gerente geral; com a chave ligada, todo usuário ativo | Pontos aprovados no mês, com os limites, do maior para o menor. Empate fica na mesma posição. |
+
+### Banco (`crm/supabase/schema.sql`, seção "Programa de pontuação e verba")
+
+- **`criterios_pontos`:** período, vídeo e visita, com pontos, limite no mês e máximo (pontos × limite, calculado). O gerente geral edita nome, pontos e limite.
+- **`lancamentos_pontos`:** corretor, critério, data, turno (manhã ou tarde), quantidade (só o vídeo passa de 1), comprovante (link), saída para visita, observação, visita de origem, status (pendente, aprovado, recusado ou cancelado), motivo da recusa, quem lançou e quando, quem decidiu e quando.
+  - Um período por corretor, dia e turno (`lancamentos_periodo_unico`, sem contar recusados e cancelados).
+  - A visita realizada com baixa entra sozinha como pendente (gatilho `visita_lanca_pontos`), uma vez por visita. A correção que tira a visita de realizada cancela o lançamento; a que volta reativa. As visitas realizadas antes do SQL entram uma vez.
+  - **Auditoria:** `lancamentos_pontos_historico` grava a criação e cada mudança de status, motivo, comprovante e decisão, com o autor. Só o gatilho escreve; só o gerente geral lê.
+- **`fechamentos_verba`:** a foto do mês por corretor (pontos, pontos válidos, vendas, VGV, verba, prêmio, primeiro mês), gravada pelo gerente geral. Fechar de novo substitui a foto.
+- **`app_settings.programa_verba_inicio`:** o primeiro mês (`{"mes": "2026-12"}`), ajustado na tela Pontos.
+- **Funções:** `programa_estado()` (o app monta o menu; quem não é gerente geral só sabe se está ligada), `plantao_corretores()`, `ranking_pontos(mes)` e `private.ve_programa()`.
+- **Permissões novas**, com descrição neutra porque o catálogo é lido por todos: `plantao.registrar` (recepção e operacional) e `lancamentos.registrar` (gerente e operacional). O padrão entra só na criação.
+
+### Regras decididas na construção
+
+- **Cálculo:** função pura `calcularVerba` em `crm/src/lib/programa.ts`, com os 7 exemplos em `programa.test.ts`. O mínimo, os tetos, o valor do ponto e o valor por venda são os do documento; os pontos e limites de cada critério vêm do banco.
+- **Primeiro mês:** R$ 1.000 fixos para todo corretor ativo, sem pontuação e sem o extra das vendas.
+- **Liberação:** a verba e o prêmio de um mês aparecem como liberados no mês seguinte. O fechamento é manual, pelo gerente geral.
+- **Roleta:** 6 períodos **aprovados** de segunda a sexta. A tela mostra também os pendentes, para a recepção cobrar a aprovação antes do fim de semana.
+- **Quem lança:** sempre para outro corretor, nunca para si. O lançamento nasce pendente. Quem lançou cancela o próprio pendente (o Desfazer da recepção). O gerente lança só para a equipe.
+- **Corretor:** vê só os próprios lançamentos **aprovados**, mesmo os da baixa da própria visita.
+
+### O que cada perfil recebe
+
+| Perfil | Chave desligada | Chave ligada |
+| --- | --- | --- |
+| Gerente geral | Tudo: as cinco telas, todos os lançamentos, a auditoria, o fechamento | Igual |
+| Gerente | Nada: sem telas no menu, e o banco devolve zero linhas | Plantão e roleta da equipe, lançar períodos e vídeos da equipe, os lançamentos da equipe, ranking |
+| Recepção | Nada | Plantão de todos os corretores, roleta, os períodos de todos, ranking |
+| Operacional | Nada | Plantão de todos (`plantao.registrar`); vídeos só de quem vê (precisa de `dados.ver_todos` para todos); ranking |
+| Corretor | Nada | Meus pontos (só aprovados), a verba prevista e a do mês fechado, ranking |
+| Desativado e visitante | Nada | Nada |
+
+### SQL para o Felipe
+
+Rode o `crm/supabase/schema.sql` inteiro no SQL Editor (é idempotente). Ele cria as tabelas e permissões acima e lança como pendentes as visitas já realizadas. A chave continua desligada. Depois de rodar, os nomes das tabelas aparecem no catálogo da API para quem tem a chave anon (os dados, não).
+
+### Testes
+
+- `npm test`: `programa.test.ts` com os 7 exemplos, os limites, os critérios editados, o teto e o mínimo, o primeiro mês, a liberação, o resumo do mês, a roleta, o período do dia, os filtros da fila e o empate do ranking.
+- `npm run test:banco`: `programa.test.mjs`, perfil a perfil, com a chave desligada (nenhum dado para quem não é gerente geral) e ligada (cada perfil só o que é dele), lançamento, aprovação só pelo gerente geral, Desfazer, auditoria, visita automática sem duplicar e fechamento.
+- Telas conferidas em 375px com o Supabase falso `sqltest/fake-supabase-programa-v7.mjs` (na pasta de notas), gerado da v6.
+
+### O que veio do CRM da Bruna
+
+| Da Bruna | Como ficou aqui |
+| --- | --- |
+| Sequência de dias (`computeStreak`, `StreakCard` em `components/performance/cards.tsx`) | **Adaptado** na roleta: em vez da sequência de dias de atendimento, a contagem de períodos aprovados na semana, com "faltam N". |
+| Configurações da equipe em `app_settings` (`lib/app-settings.ts`) | **Adaptado:** o primeiro mês fica em `app_settings` (só o gerente geral lê) e chega aos demais pela função `programa_estado()`. Os critérios ficam numa tabela, porque o corretor precisa lê-los com a chave ligada. |
+| Página Desempenho (`app/desempenho`) com cards de número grande | **Adaptado** em Meus pontos: número grande da verba, barra até o mínimo e um card por critério. |
+| Desfazer em vez de confirmar | **Igual** ao que o CRM já usa (`AvisoDesfazer`): marcar período, aprovar e recusar. |
+| Pontos, aprovação, fechamento, ranking | **Não existe na Bruna** (2 usuários, sem equipes). Construído do zero. |

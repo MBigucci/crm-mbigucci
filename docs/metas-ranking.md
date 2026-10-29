@@ -22,4 +22,4 @@
 
 - É um **ranking de pontos**, não de VGV, **visível para todos os corretores da empresa**.
 - Como os pontos fazem parte do programa de verba, o ranking só aparece quando a chave "Programa de verba ativo" for ligada, depois da reunião de novembro de 2026 (ver `docs/pontuacao-verba.md`).
-- **Ainda não construído.** Nenhuma tela de vendas ou metas ordena corretores nem mostra posição.
+- **Construído em 29/10/2026:** tela `/ranking/` com os pontos aprovados do mês (com o limite de cada critério), pela função `ranking_pontos(mes)`. O gerente geral vê sempre; os demais usuários ativos, só com a chave ligada. Detalhes em `docs/pontuacao-verba.md`, seção "Como ficou".

@@ -3,7 +3,7 @@
 > Decisões tomadas na fundação do CRM (`crm/`), em 28/10/2026. O passo a passo de instalação está em `crm/README.md`. As regras de negócio estão em `docs/acessos-perfis.md`, `docs/leads.md` e `docs/pontuacao-verba.md`, e as regras visuais em `docs/design-system.md`.
 
 ## Sumário
-Deploy estático · Modelo de permissões · RLS · Sigilo do programa de verba · Módulo de leads · Visitas · Vendas e metas · PWA · Testes
+Deploy estático · Modelo de permissões · RLS · Sigilo do programa de verba · Módulo de leads · Visitas · Vendas e metas · Programa de pontuação · PWA · Testes
 
 ## Deploy estático
 
@@ -51,7 +51,7 @@ Deploy estático · Modelo de permissões · RLS · Sigilo do programa de verba 
 
 ## Sigilo do programa de verba (até a reunião de nov/2026)
 
-- **Código público:** o código do front é público, porque qualquer um baixa os arquivos de `out/`. Por isso o código não cita verba, ranking, pontos nem prêmios.
+- **Código público:** o código do front é público, porque qualquer um baixa os arquivos de `out/`. Até 29/10/2026 o código não citava verba, ranking, pontos nem prêmios. **Desde o programa de pontuação, cita:** não publique o CRM antes da reunião de novembro (`docs/pontuacao-verba.md`).
 - **Rótulos sensíveis:** o nome e a descrição da chave `programa_verba_ativo` ficam em `app_settings`, que só o gerente geral lê. A tela de Configurações lista as chaves sem saber quais são.
 - **Gate das policies:** as próximas etapas devem usar `private.programa_verba_ativo()`. O schema `private` não é exposto pela API do Supabase, então o nome da função não aparece no catálogo da API.
 - **Catálogo de permissões:** a tabela `permissions` é legível por todo usuário ativo. As permissões do programa sigiloso só entram nela perto do lançamento.
@@ -102,6 +102,15 @@ As regras de negócio estão em `docs/vendas-metas.md`.
 - **Permissões novas:** `vendas.corrigir_equipe` (gerente), `metas.definir_vgv` (ninguém além do gerente geral) e `painel.campanha` (corretor), com o padrão só na criação.
 - **Front:** `vendas.ts`, `metas.ts` e `faixas.ts` (puros, com testes), `vendas-dados.ts` (leitura em páginas, escrita e RPC), `components/vendas/vendas.tsx` e `components/metas/metas.tsx`, páginas `/vendas/`, `/metas/` e `/faixas/`. A ficha e as telas seguem sem as vendas se a leitura falhar (o SQL ainda não rodou). `formatarReais` usa espaço que não quebra a linha.
 
+## Programa de pontuação e verba (29/10/2026)
+
+As regras de negócio e a tabela por perfil estão em `docs/pontuacao-verba.md`, seção "Como ficou".
+
+- **Gate:** toda policy e função do programa usa `private.ve_programa()` (gerente geral, ou chave ligada e usuário ativo). O app pergunta à `programa_estado()`, que só conta a data de início a quem vê o programa. A `Casca` ganhou a prop `programa`: para quem não é gerente geral, a tela só abre com a chave ligada.
+- **Tabelas:** `criterios_pontos`, `lancamentos_pontos` (sem exclusão; escrita por coluna: o app grava os dados no insert e só `status` e `motivo_recusa` no update), `lancamentos_pontos_historico` (só gatilho) e `fechamentos_verba` (upsert pelo gerente geral).
+- **Gatilhos:** `lancamentos_pontos_guard` (antes: sempre pendente, data até hoje, corretor ativo, visita só pela baixa, identidade imutável, aprovação só do gerente geral, carimbo da decisão), `lancamentos_pontos_auditoria` (depois) e `visita_lanca_pontos` (depois, em `visitas`; usa `on conflict (visita_id)`). A escrita que vem do gatilho da visita passa pelo guard por `pg_trigger_depth() > 1`.
+- **Front:** `programa.ts` (puro, com testes: cálculo, limites, roleta, filtros, ranking), `programa-dados.ts` (leitura em páginas, escrita, RPCs e o estado da chave com cache por usuário), `components/programa/partes.tsx` e as páginas `/programa/`, `/programa/aprovacao/`, `/plantao/`, `/meus-pontos/` e `/ranking/`.
+
 ## PWA (29/10/2026)
 
 - **Manifest estático:** `crm/public/manifest.webmanifest`, e não um `app/manifest.ts`. Todos os caminhos dentro dele são **relativos** (`./`, `icons/...`), então resolvem para `/crm/` a partir da URL do manifest, com qualquer `BASE_PATH`. Nome "CRM MBigucci", nome curto "CRM", `display: standalone`, fundo e tema `paper` #f7f6f2.
@@ -118,7 +127,8 @@ As regras de negócio estão em `docs/vendas-metas.md`.
 - **RLS de leads:** `crm/supabase/testes/leads.test.mjs`, com o mesmo tipo de simulação, roda com `npm run test:banco`. São 25 testes por perfil, incluindo `lead_eventos`, tentativas, avanço de etapa, a mensagem original e o horário de atendimento, (corretor, colega, gerente da equipe, gerente de outra equipe, gerente geral, recepção, desativado e anônimo).
 - **RLS e gatilhos das visitas:** `crm/supabase/testes/visitas.test.mjs`, também no `npm run test:banco`, com 13 testes (`docs/visitas.md`, seção 9).
 - **RLS e gatilhos de vendas e metas:** `crm/supabase/testes/vendas.test.mjs`, também no `npm run test:banco`, com 12 testes (`docs/vendas-metas.md`, seção 10).
-- **Regras puras:** `npm test` roda `leads.test.ts` (lista do dia, WhatsApp), `followup.test.ts` (follow-up e histórico), `cadastro-magico.test.ts` (parser), `prazo.test.ts`, `mensagens.test.ts` (modelos e repasse), `busca.test.ts` (busca, ordem e filtros), `painel.test.ts` (com a conversão por origem e campanha), `visitas.test.ts` e `vendas.test.ts` (vendas, meta anual, metas próprias e faixas).
+- **RLS e gatilhos do programa de pontuação:** `crm/supabase/testes/programa.test.mjs`, também no `npm run test:banco`, com 9 testes perfil a perfil, chave desligada e ligada (`docs/pontuacao-verba.md`, seção "Testes").
+- **Regras puras:** `npm test` roda `programa.test.ts` (os 7 exemplos da verba, limites, primeiro mês e roleta) e também `leads.test.ts` (lista do dia, WhatsApp), `followup.test.ts` (follow-up e histórico), `cadastro-magico.test.ts` (parser), `prazo.test.ts`, `mensagens.test.ts` (modelos e repasse), `busca.test.ts` (busca, ordem e filtros), `painel.test.ts` (com a conversão por origem e campanha), `visitas.test.ts` e `vendas.test.ts` (vendas, meta anual, metas próprias e faixas).
 - **Scripts do SQL Editor:** `schema.sql`, `dados-teste.sql`, `verificar-rls.sql` e `limpar-dados-teste.sql` rodaram em sequência no PGlite em 29/10/2026, com o resultado esperado por perfil.
 - **Telas:** conferidas em 375px com um Supabase falso (`sqltest/fake-supabase-leads.mjs`, na pasta de notas), que imita o RLS por perfil. A versão `fake-supabase-leads-v2.mjs` imita também eventos, tentativas e o avanço de etapa.
 - **Ainda não validado:** o módulo de leads num Supabase real e a Edge Function pela tela.
