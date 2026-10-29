@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "npx --yes serve out",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --test src/lib/leads.test.ts",
+    "test:banco": "node --test supabase/testes/leads.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.1",
@@ -17,6 +19,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.13",
     "@types/node": "^26.6.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

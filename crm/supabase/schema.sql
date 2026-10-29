@@ -467,3 +467,341 @@ select u.id, coalesce(u.email, ''),
        coalesce(nullif(btrim(u.raw_user_meta_data ->> 'nome'), ''), split_part(coalesce(u.email, ''), '@', 1))
 from auth.users u
 on conflict (id) do nothing;
+
+-- =====================================================================
+-- Módulo de leads (primeiro corte). Regras em docs/leads.md.
+-- =====================================================================
+
+-- ---------- Permissões do módulo ----------
+-- O padrão só entra na primeira vez que cada permissão aparece: rodar de novo
+-- não desfaz o que o gerente geral ajustou em Configurações → Permissões.
+with novas as (
+  insert into public.permissions (slug, descricao, ordem) values
+    ('leads.cadastrar', 'Cadastrar e trabalhar os próprios leads', 5),
+    ('leads.atribuir',  'Cadastrar leads da empresa e atribuir a corretores da equipe', 6)
+  on conflict (slug) do update set descricao = excluded.descricao, ordem = excluded.ordem
+  returning slug, (xmax = 0) as nova
+)
+insert into public.role_permissions (perfil, permissao)
+select v.perfil, v.permissao
+from (values ('corretor', 'leads.cadastrar'), ('gerente', 'leads.atribuir')) as v (perfil, permissao)
+join novas n on n.slug = v.permissao and n.nova
+on conflict do nothing;
+
+-- ---------- Catálogos: origens e etapas ----------
+-- Para ajustar as opções, edite as linhas no Table Editor do Supabase. Rodar
+-- o script de novo não sobrescreve nomes nem ordem já ajustados.
+-- "restrita": só quem tem leads.atribuir cadastra ou troca para essa origem.
+-- "pede_campanha": o cadastro mostra o campo campanha.
+
+create table if not exists public.lead_origens (
+  slug           text primary key,
+  nome           text not null,
+  ordem          integer not null default 0,
+  pede_campanha  boolean not null default false,
+  restrita       boolean not null default false,
+  ativo          boolean not null default true
+);
+
+insert into public.lead_origens (slug, nome, ordem, pede_campanha, restrita) values
+  ('plantao',         'Plantão',                1, false, false),
+  ('indicacao',       'Indicação',              2, false, false),
+  ('carteira',        'Carteira',               3, false, false),
+  ('empresa',         'Empresa (gerente)',      4, false, true),
+  ('redes_sociais',   'Redes sociais próprias', 5, false, false),
+  ('anuncio_proprio', 'Anúncio próprio',        6, true,  false),
+  ('outros',          'Outros',                 7, false, false)
+on conflict (slug) do nothing;
+
+create table if not exists public.lead_etapas (
+  slug   text primary key,
+  nome   text not null,
+  ordem  integer not null default 0,
+  ativo  boolean not null default true
+);
+
+insert into public.lead_etapas (slug, nome, ordem) values
+  ('novo',                  'Novo',                  1),
+  ('em_contato',            'Em contato',            2),
+  ('visita_agendada',       'Visita agendada',       3),
+  ('visita_realizada',      'Visita realizada',      4),
+  ('proposta',              'Proposta',              5),
+  ('venda',                 'Venda',                 6),
+  ('aguardando_lancamento', 'Aguardando lançamento', 7)
+on conflict (slug) do nothing;
+
+-- ---------- Leads ----------
+-- Sem exclusão: o lead descartado continua no banco, com o motivo. A carteira
+-- não expira. O WhatsApp fica só com dígitos, com o 55 do país na frente.
+
+create table if not exists public.leads (
+  id                      uuid primary key default gen_random_uuid(),
+  dono_id                 uuid not null default auth.uid() references public.profiles (id) on delete restrict,
+  nome                    text not null check (length(btrim(nome)) > 0),
+  whatsapp                text not null check (whatsapp ~ '^55[0-9]{10,11}$'),
+  origem                  text not null references public.lead_origens (slug),
+  campanha                text,
+  empreendimento          text,
+  temperatura             text check (temperatura in ('quente', 'morno', 'frio')),
+  etapa                   text not null default 'novo' references public.lead_etapas (slug),
+  proximo_contato         timestamptz,
+  status                  text not null default 'ativo' check (status in ('ativo', 'descartado')),
+  motivo_descarte         text check (motivo_descarte in
+                            ('sem_interesse', 'fora_do_perfil', 'fora_da_regiao', 'contato_invalido', 'duplicado')),
+  descartado_em           timestamptz,
+  valor                   numeric(14, 2) check (valor is null or valor >= 0),
+  dormitorios             smallint check (dormitorios is null or dormitorios between 0 and 9),
+  regiao                  text,
+  finalidade              text check (finalidade in ('morar', 'investir')),
+  ultima_interacao_em     timestamptz,
+  ultima_interacao_texto  text,
+  criado_por              uuid default auth.uid() references public.profiles (id) on delete set null,
+  atribuido_por           uuid references public.profiles (id) on delete set null,
+  atribuido_em            timestamptz,
+  created_at              timestamptz not null default now(),
+  updated_at              timestamptz not null default now(),
+  constraint leads_descarte_tem_motivo
+    check ((status = 'descartado') = (motivo_descarte is not null))
+);
+
+create index if not exists leads_dono_status_idx on public.leads (dono_id, status, proximo_contato);
+create index if not exists leads_whatsapp_idx on public.leads (whatsapp);
+
+create table if not exists public.lead_interacoes (
+  id               uuid primary key default gen_random_uuid(),
+  lead_id          uuid not null references public.leads (id) on delete restrict,
+  autor_id         uuid default auth.uid() references public.profiles (id) on delete set null,
+  criado_em        timestamptz not null default now(),
+  texto            text not null check (length(btrim(texto)) > 0),
+  -- Toda interação termina com o próximo contato (dia e hora).
+  proximo_contato  timestamptz not null
+);
+
+create index if not exists lead_interacoes_lead_idx on public.lead_interacoes (lead_id, criado_em desc);
+
+-- ---------- Funções do módulo ----------
+
+-- O usuário logado pode atribuir leads a p_user: p_user é corretor ativo, de uma
+-- equipe que ele gerencia (ou ele vê todas as equipes).
+create or replace function public.pode_atribuir_a(p_user uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select public.has_permission('leads.atribuir')
+     and exists (select 1 from public.profiles p where p.id = p_user and p.ativo and p.perfil = 'corretor')
+     and (public.is_my_team_member(p_user) or public.has_permission('dados.ver_todos'));
+$$;
+
+create or replace function public.origem_restrita(p_origem text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce((select o.restrita from public.lead_origens o where o.slug = p_origem), false);
+$$;
+
+do $$
+declare
+  f text;
+begin
+  foreach f in array array['public.pode_atribuir_a(uuid)', 'public.origem_restrita(text)'] loop
+    execute format('revoke all on function %s from public, anon', f);
+    execute format('grant execute on function %s to authenticated, service_role', f);
+  end loop;
+end;
+$$;
+
+-- Regras que as policies sozinhas não expressam. Pelo SQL Editor (sem usuário
+-- logado) as regras de quem pode o quê não valem, para permitir correções.
+create or replace function public.leads_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_eu uuid := auth.uid();
+begin
+  new.nome := btrim(new.nome);
+  new.campanha := nullif(btrim(coalesce(new.campanha, '')), '');
+  new.empreendimento := nullif(btrim(coalesce(new.empreendimento, '')), '');
+  new.regiao := nullif(btrim(coalesce(new.regiao, '')), '');
+
+  if new.status = 'descartado' and (tg_op = 'INSERT' or old.status <> 'descartado') then
+    new.descartado_em := now();
+  elsif new.status = 'ativo' then
+    new.descartado_em := null;
+  end if;
+
+  if tg_op = 'INSERT' then
+    new.criado_por := coalesce(v_eu, new.criado_por);
+    new.ultima_interacao_em := null;
+    new.ultima_interacao_texto := null;
+    new.created_at := now();
+    if v_eu is not null and new.dono_id <> v_eu then
+      new.atribuido_por := v_eu;
+      new.atribuido_em := now();
+    else
+      new.atribuido_por := null;
+      new.atribuido_em := null;
+    end if;
+    return new;
+  end if;
+
+  new.criado_por := old.criado_por;
+  new.created_at := old.created_at;
+  if v_eu is null then
+    return new;
+  end if;
+
+  -- Quem não é o dono só pode trocar o dono (atribuir), nada mais.
+  if old.dono_id <> v_eu
+     and (to_jsonb(new) - 'dono_id' - 'updated_at' - 'atribuido_por' - 'atribuido_em')
+         is distinct from (to_jsonb(old) - 'dono_id' - 'updated_at' - 'atribuido_por' - 'atribuido_em') then
+    raise exception 'Só o corretor dono do lead altera os dados dele.' using errcode = '42501';
+  end if;
+
+  if new.dono_id <> old.dono_id then
+    if not public.pode_atribuir_a(new.dono_id) then
+      raise exception 'Você só pode atribuir leads a corretores ativos da sua equipe.' using errcode = '42501';
+    end if;
+    new.atribuido_por := v_eu;
+    new.atribuido_em := now();
+  end if;
+
+  if new.origem is distinct from old.origem
+     and (public.origem_restrita(old.origem) or public.origem_restrita(new.origem))
+     and not public.has_permission('leads.atribuir') then
+    raise exception 'Só o gerente muda a origem de um lead da empresa.' using errcode = '42501';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists leads_guard on public.leads;
+create trigger leads_guard before insert or update on public.leads
+  for each row execute function public.leads_guard();
+
+drop trigger if exists leads_set_updated_at on public.leads;
+create trigger leads_set_updated_at before update on public.leads
+  for each row execute function public.set_updated_at();
+
+create or replace function public.lead_interacao_carimbo()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.texto := btrim(new.texto);
+  if auth.uid() is not null then
+    new.autor_id := auth.uid();
+    new.criado_em := now();
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists lead_interacao_carimbo on public.lead_interacoes;
+create trigger lead_interacao_carimbo before insert on public.lead_interacoes
+  for each row execute function public.lead_interacao_carimbo();
+
+-- A interação atualiza o lead: última interação e próximo contato.
+create or replace function public.lead_interacao_atualiza_lead()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  update public.leads
+     set ultima_interacao_em = new.criado_em,
+         ultima_interacao_texto = left(new.texto, 280),
+         proximo_contato = new.proximo_contato
+   where id = new.lead_id;
+  return new;
+end;
+$$;
+
+drop trigger if exists lead_interacao_atualiza_lead on public.lead_interacoes;
+create trigger lead_interacao_atualiza_lead after insert on public.lead_interacoes
+  for each row execute function public.lead_interacao_atualiza_lead();
+
+-- ---------- RLS do módulo ----------
+
+do $$
+declare
+  t text;
+begin
+  foreach t in array array['lead_origens', 'lead_etapas', 'leads', 'lead_interacoes'] loop
+    execute format('alter table public.%I enable row level security', t);
+    execute format('revoke all on public.%I from anon, authenticated', t);
+    execute format('grant select on public.%I to authenticated', t);
+  end loop;
+end;
+$$;
+
+-- Escritas permitidas, coluna a coluna. Não há exclusão pelo app.
+grant insert (dono_id, nome, whatsapp, origem, campanha, empreendimento, temperatura, etapa, proximo_contato,
+              status, motivo_descarte, valor, dormitorios, regiao, finalidade)
+  on public.leads to authenticated;
+grant update (dono_id, nome, whatsapp, origem, campanha, empreendimento, temperatura, etapa, proximo_contato,
+              status, motivo_descarte, valor, dormitorios, regiao, finalidade)
+  on public.leads to authenticated;
+grant insert (lead_id, texto, proximo_contato) on public.lead_interacoes to authenticated;
+
+drop policy if exists "ativos leem origens" on public.lead_origens;
+create policy "ativos leem origens" on public.lead_origens
+  for select to authenticated using (public.current_perfil() is not null);
+
+drop policy if exists "ativos leem etapas" on public.lead_etapas;
+create policy "ativos leem etapas" on public.lead_etapas
+  for select to authenticated using (public.current_perfil() is not null);
+
+-- Leads: o corretor vê os dele, o gerente os da equipe, quem vê tudo vê todos.
+drop policy if exists "ver leads" on public.leads;
+create policy "ver leads" on public.leads
+  for select to authenticated using (public.pode_ver_dados_de(dono_id));
+
+-- Cadastrar: o próprio lead (com leads.cadastrar, fora das origens restritas)
+-- ou um lead atribuído a um corretor da equipe (com leads.atribuir).
+drop policy if exists "cadastrar leads" on public.leads;
+create policy "cadastrar leads" on public.leads
+  for insert to authenticated with check (
+    (dono_id = auth.uid() and public.has_permission('leads.cadastrar') and not public.origem_restrita(origem))
+    or public.pode_atribuir_a(dono_id)
+  );
+
+-- Alterar: o dono, ou quem atribui (o gatilho limita este a trocar o dono).
+drop policy if exists "alterar leads" on public.leads;
+create policy "alterar leads" on public.leads
+  for update to authenticated
+  using (
+    (dono_id = auth.uid() and public.has_permission('leads.cadastrar'))
+    or (public.has_permission('leads.atribuir') and public.pode_ver_dados_de(dono_id))
+  )
+  with check (
+    (dono_id = auth.uid() and public.has_permission('leads.cadastrar'))
+    or public.pode_atribuir_a(dono_id)
+  );
+
+-- Interações: quem vê o lead vê o histórico; só o dono registra. Não há
+-- edição nem exclusão: o histórico fica como foi escrito.
+drop policy if exists "ver interacoes" on public.lead_interacoes;
+create policy "ver interacoes" on public.lead_interacoes
+  for select to authenticated using (
+    exists (select 1 from public.leads l where l.id = lead_id and public.pode_ver_dados_de(l.dono_id))
+  );
+
+drop policy if exists "registrar interacao" on public.lead_interacoes;
+create policy "registrar interacao" on public.lead_interacoes
+  for insert to authenticated with check (
+    autor_id = auth.uid()
+    and public.has_permission('leads.cadastrar')
+    and exists (select 1 from public.leads l where l.id = lead_id and l.dono_id = auth.uid())
+  );
