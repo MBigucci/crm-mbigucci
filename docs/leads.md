@@ -1,6 +1,6 @@
 # Módulo de leads
 
-> Primeiro corte, construído em 29/10/2026 a partir das decisões aprovadas em `docs/pesquisa-resultados.md` (seção 3). No mesmo dia entraram o histórico automático, o follow-up com tentativas, o Cadastro Mágico e o prazo do primeiro contato (itens 1 a 3 e 9 de `docs/referencia-crm-bruna.md`, seção 14). As regras de perfis e de origem dos leads estão em `docs/acessos-perfis.md`, e a estrutura técnica em `docs/crm-arquitetura.md`.
+> Primeiro corte, construído em 29/10/2026 a partir das decisões aprovadas em `docs/pesquisa-resultados.md` (seção 3). No mesmo dia entraram o histórico automático, o follow-up com tentativas, o Cadastro Mágico e o prazo do primeiro contato (itens 1 a 3 e 9 de `docs/referencia-crm-bruna.md`, seção 14). Depois vieram as mensagens prontas, o duplicado entre corretores, o repasse do lead da empresa e os ajustes de lista e quadro (itens 4 a 7). As regras de perfis e de origem dos leads estão em `docs/acessos-perfis.md`, e a estrutura técnica em `docs/crm-arquitetura.md`.
 
 ## Sumário
 1. O que entrou e o que ficou de fora
@@ -10,20 +10,24 @@
 5. Follow-up e tentativas
 6. Histórico automático
 7. Cadastro Mágico
-8. Quem vê e quem faz
-9. Telas
-10. Como ajustar origens, etapas, motivos, empreendimentos, horário e permissões
-11. Testes
+8. Mensagens prontas e Ligar
+9. Duplicado entre corretores
+10. Repasse do lead da empresa
+11. Busca, filtros, ordem e Desfazer
+12. Quem vê e quem faz
+13. Telas
+14. Como ajustar origens, etapas, motivos, empreendimentos, horário, mensagens e permissões
+15. Testes
 
 ## 1. O que entrou e o que ficou de fora
 
-- **Entrou:** cadastro rápido, Cadastro Mágico, lista do dia, prazo de 15 min para o primeiro contato, ficha com interações e histórico automático, follow-up com tentativas, quadro por etapas, leads da equipe e atribuição de lead da empresa pelo gerente.
-- **Ficou de fora:** áudio, lembrete push, cruzar clientes com imóveis, links de apresentação, fila de leads da empresa sem corretor, pontuação e qualquer tema do programa sigiloso.
+- **Entrou:** cadastro rápido, Cadastro Mágico, lista do dia, prazo de 15 min para o primeiro contato, ficha com interações e histórico automático, follow-up com tentativas, quadro por etapas, leads da equipe e atribuição de lead da empresa pelo gerente. Também mensagens prontas no WhatsApp, Ligar, aviso de duplicado entre carteiras, aviso ao corretor no WhatsApp, busca tolerante, filtros por origem e empreendimento, ordem por tempo sem contato e Desfazer.
+- **Ficou de fora:** registrar sozinho no histórico que o WhatsApp foi aberto, áudio, lembrete push, cruzar clientes com imóveis, links de apresentação, fila de leads da empresa sem corretor, pontuação e qualquer tema do programa sigiloso.
 
 ## 2. Regras do lead
 
 - **Obrigatórios no cadastro:** só nome, WhatsApp e origem. Temperatura, empreendimento e próximo contato são opcionais na hora. Sem dia marcado, o lead fica sem próximo contato. O lead da empresa, atribuído pelo gerente, vai para o topo da lista do dia de quem recebe pelo prazo do primeiro contato (seção 4). O lead que o corretor cadastra ele mesmo não tem prazo: sem dia marcado, cai em "Sem próximo contato". O perfil (valor, dormitórios, região, finalidade) fica para a ficha.
-- **WhatsApp:** é guardado só com dígitos e com o 55 na frente (`5511987654321`). Celular antigo de 8 dígitos (começa com 6 a 9) ganha o 9º dígito; fixo (começa com 2 a 5) fica como está. O botão abre `https://wa.me/<número>`. O cadastro avisa quando já existe um lead ativo com o mesmo número, mas deixa cadastrar.
+- **WhatsApp:** é guardado só com dígitos e com o 55 na frente (`5511987654321`). Celular antigo de 8 dígitos (começa com 6 a 9) ganha o 9º dígito; fixo (começa com 2 a 5) fica como está. O botão abre o diálogo de mensagem (seção 8). O cadastro avisa quando o número já está num lead ativo, mas deixa cadastrar (seção 9).
 - **Origem:** plantão, indicação, carteira, empresa (gerente), redes sociais próprias, anúncio próprio e outros. A origem é 1 toque e já vem com a última usada naquele aparelho.
   - **Anúncio próprio** mostra o campo campanha. A campanha é só um dado de origem.
   - **Empresa** é restrita: só quem tem `leads.atribuir` cadastra um lead com essa origem, ou muda a origem de/para ela.
@@ -33,7 +37,7 @@
 - **Interação:** tem um tipo (WhatsApp, ligação, e-mail, visita ou anotação, em 1 toque) e sempre termina com o próximo contato (dia e hora). Ela atualiza no lead a última interação e o próximo contato. O histórico não é editado nem apagado.
   - Dois tipos têm fluxo próprio: "Sem resposta" (seção 5) e "Mensagem original" (seção 7), a única sem próximo contato.
   - Anotação, Sem resposta e Mensagem original não contam como conversa: não tiram o lead de "novo".
-- **Descarte:** 1 toque no motivo (sem interesse, fora do perfil, fora da região, contato inválido, duplicado, sem retorno). O lead continua no banco e pode ser reativado. Não há exclusão física.
+- **Descarte:** 1 toque no motivo (sem interesse, fora do perfil, fora da região, contato inválido, duplicado, sem retorno), com Desfazer no rodapé (seção 11). O lead continua no banco e pode ser reativado. Não há exclusão física.
 - **Carteira:** não expira, e não há justificativa obrigatória.
 
 ## 3. Lista do dia
@@ -48,7 +52,7 @@
 - Nos grupos 2 a 4, a ordem é quentes, mornos, frios e sem temperatura.
 - Na mesma temperatura, nos atrasados e de hoje vem antes o contato mais antigo; nos sem data, o cadastro mais novo.
 - Leads com contato para depois de hoje e leads descartados ficam fora. Eles aparecem em Leads e no Quadro.
-- O card mostra o nome, a temperatura, o prazo do primeiro contato (lead da empresa em "novo") ou o próximo contato e os dias sem contato (seção 5), a última interação, a etapa e os botões Sem resposta (+1), Abrir e WhatsApp.
+- O card mostra o nome, a temperatura, o prazo do primeiro contato (lead da empresa em "novo") ou o próximo contato e os dias sem contato (seção 5), a última interação, a etapa e os botões Sem resposta (+1), Abrir e WhatsApp (que abre a mensagem pronta).
 - Sem nenhum lead, o início mostra um card de boas-vindas que explica o Colar mensagem.
 
 ## 4. Prazo do primeiro contato
@@ -97,7 +101,48 @@ Adaptado da regra de ouro do CRM da Bruna (`followup.ts`). Lá, 2 dias sem inter
 - **Confirmação:** "Usar estes dados" volta ao cadastro rápido preenchido. O corretor confere, escolhe a origem e toca em Cadastrar. Os obrigatórios continuam nome, WhatsApp e origem.
 - **Mensagem original:** o texto colado vira a primeira interação do lead, sem próximo contato. O gerente que cadastra um lead da empresa também guarda a mensagem, mesmo não sendo o dono.
 
-## 8. Quem vê e quem faz
+## 8. Mensagens prontas e Ligar
+
+Adaptado de `templates.ts` e `message-dialog.tsx` da Bruna. As regras ficam em `crm/src/lib/mensagens.ts`, com testes.
+
+- **Diálogo:** o botão WhatsApp (lista do dia, Leads e ficha) abre o diálogo com a mensagem sugerida já preenchida. O corretor troca o modelo em 1 toque, edita o texto e toca em "Abrir no WhatsApp", que abre `wa.me` com o texto. "Copiar" copia o texto. Sem modelos (tabela vazia ou fora do ar), o diálogo abre com o campo vazio.
+- **Modelos:** tabela `mensagens_modelo`. Os 6 iniciais são primeiro contato, retomar contato, convite para visita, confirmar visita, depois da visita e novidades do lançamento. Nenhum cita verba nem campanha paga.
+- **Variáveis:** `{primeiro_nome}` (do cliente, com a primeira letra maiúscula), `{nome}`, `{empreendimento}` (vazio vira "nossos empreendimentos") e `{corretor}` (o nome de quem envia, como está em Usuários). Variável desconhecida fica como está, e o editor avisa.
+- **Sugestão**, entre as mensagens ligadas, na ordem:
+  1. lead em "novo": a marcada para a etapa Novo (primeiro contato);
+  2. lead há 2 dias ou mais sem contato, ou com tentativa sem resposta: a marcada "sem contato" (retomar contato);
+  3. a marcada para a etapa do lead;
+  4. a primeira da lista.
+- **Quem edita:** só o gerente geral, em Configurações > Mensagens prontas do WhatsApp. Ele muda nome, texto, etapas, "sem contato", ordem, e liga ou desliga. Não há exclusão. A mudança vale no próximo carregamento do CRM.
+- **Ligar:** a ficha tem o botão Ligar (`tel:+55…`), ao lado do WhatsApp.
+- **Histórico:** abrir o WhatsApp não grava nada. O corretor registra a conversa como sempre, porque toda interação pede o próximo contato.
+
+## 9. Duplicado entre corretores
+
+- **Entre os leads que a pessoa vê:** o cadastro mostra o nome do lead ativo com o mesmo WhatsApp. Para o gerente, mostra também o corretor ("na carteira de Carla"), porque ele já enxerga a equipe pelo RLS.
+- **Fora disso:** a função `whatsapp_em_outra_carteira(numero)` (`security definer`) diz só se existe lead ativo com o número numa carteira que a pessoa não vê. Não diz de quem é nem devolve dados. O corretor vê "já está num lead ativo de outro corretor. Confira com seu gerente"; o gerente vê "de outra equipe". Decisão desta etapa: o gerente só sabe de quem é dentro da própria equipe.
+- **Sempre deixa seguir:** o segundo toque em Cadastrar cadastra assim mesmo. Lead descartado não conta.
+- **Quem chama:** só quem tem `leads.cadastrar` ou `leads.atribuir`. Recepção, desativado e anônimo recebem erro.
+- **9º dígito:** `normalizarWhatsapp` já põe o 9 no celular antigo de 8 dígitos (começa com 6 a 9), então "(11) 8765-4321" e "(11) 98765-4321" são o mesmo número.
+
+## 10. Repasse do lead da empresa
+
+- **WhatsApp do usuário:** coluna `profiles.whatsapp` (só dígitos, com 55). Quem tem `usuarios.gerenciar` edita em Usuários. Cada um edita o próprio em Minha conta, pela função `salvar_meu_whatsapp`, a única coisa que ele altera no próprio perfil.
+- **Avisar no WhatsApp:** depois que o gerente cadastra um lead da empresa, a tela mostra "✓ Lead cadastrado" e o botão "Avisar Carla no WhatsApp". Na ficha, o mesmo botão aparece depois de atribuir ou reatribuir.
+- **Mensagem:** "Oi, Carla. Você recebeu um lead da empresa no CRM.", o nome do cliente em negrito, o WhatsApp, o empreendimento (se houver), o prazo ("Prazo do primeiro contato: responder em 15 min", só para o lead da empresa em "novo") e o link da ficha.
+- **Sem WhatsApp do corretor:** aparece "! Diego Lima não tem WhatsApp no CRM. Peça para preencher em Minha conta."
+
+## 11. Busca, filtros, ordem e Desfazer
+
+As regras ficam em `crm/src/lib/busca.ts`, com testes. A busca vem do `search-dialog.tsx` da Bruna.
+
+- **Busca em Leads:** ignora acento e maiúscula ("joao" acha "João"). Cada termo precisa aparecer no nome, e-mail, empreendimento, campanha ou região ("ana marco" acha a Ana do Marco Zero One). O telefone vale em qualquer formato: com ou sem +55, 0 de operadora, pontuação, só o final ("4321") ou sem o 9º dígito.
+- **Filtros em Leads e no Quadro:** origem e empreendimento, além de corretor (gerente) e situação. O empreendimento é texto livre, então as grafias que só mudam em acento, maiúscula ou espaço viram uma opção só, com o total. Há também "Sem empreendimento". Com filtro de origem ou empreendimento, o resumo por corretor some, para não confundir os números.
+- **Ordem em Leads:** próximo contato (padrão: atrasados primeiro, sem data no fim), mais tempo sem contato (o mais esquecido primeiro, pela última interação ou pelo cadastro) ou nome. A escolha fica guardada no aparelho.
+- **Quadro:** em cada coluna, o mais esquecido fica no topo, e o cartão mostra "Sem contato há N dias".
+- **Desfazer:** mudar a etapa e descartar (inclusive "Descartar: sem retorno") não pedem confirmação. Aparece no rodapé "✓ Etapa: Proposta" ou "✓ Descartado: Fora do perfil" com Desfazer, por 8 segundos. Desfazer grava de volta o valor anterior, então o histórico mostra as duas mudanças. Desfazer um descarte é uma reativação, e por isso zera as tentativas.
+
+## 12. Quem vê e quem faz
 
 | Quem | Vê | Faz |
 | --- | --- | --- |
@@ -106,33 +151,39 @@ Adaptado da regra de ouro do CRM da Bruna (`followup.ts`). Lá, 2 dias sem inter
 | Gerente geral | Tudo | Atribui para qualquer corretor ativo |
 | Corretor desativado, recepção e visitante | Nada | Nada |
 
+- **Mensagens prontas:** todo usuário ativo lê e usa; só o gerente geral cria, altera e desliga.
+- **WhatsApp do usuário:** quem vê o perfil (ele mesmo, o gerente da equipe, quem gerencia usuários) vê o número.
+
 - A visibilidade usa `pode_ver_dados_de(dono_id)`, a mesma regra da base. Interações e eventos seguem o lead.
 - A atribuição usa `pode_atribuir_a(corretor)`: tem `leads.atribuir`, o destino é corretor ativo e é da equipe do gerente (ou quem atribui vê todas as equipes).
 - O gatilho `leads_guard` completa as policies: quem não é o dono só troca o dono, só o gerente mexe na origem restrita, e `criado_por`, `atribuido_por` e as datas são carimbados pelo banco.
 
-## 9. Telas
+## 13. Telas
 
 | Endereço | Tela |
 | --- | --- |
 | `/` | Lista do dia (corretor) ou painel com atalho para Leads (gerente e gerente geral) |
-| `/leads/` | Todos os leads visíveis, com busca, filtro por corretor e situação, e o resumo por corretor (ativos, prazo estourado, atrasados, sem contato) para o gerente |
-| `/leads/novo/` | Cadastro rápido, com o "+ Colar mensagem" do Cadastro Mágico. Para quem atribui, vira "Lead da empresa", com a escolha do corretor. |
-| `/leads/ficha/?id=` | Ficha: prazo do primeiro contato (lead da empresa em "novo"), Sem resposta, sugestão de descarte, interação por tipo, andamento, perfil do cliente (com e-mail), descarte, atribuição e histórico com os eventos |
-| `/leads/quadro/` | Quadro por etapas, com rolagem lateral no celular |
+| `/leads/` | Todos os leads visíveis, com busca, filtros (corretor, origem, empreendimento e situação), ordem e o resumo por corretor (ativos, prazo estourado, atrasados, sem contato) para o gerente |
+| `/leads/novo/` | Cadastro rápido, com o "+ Colar mensagem" do Cadastro Mágico. Para quem atribui, vira "Lead da empresa", com a escolha do corretor e, depois de cadastrar, o "Avisar no WhatsApp". |
+| `/leads/ficha/?id=` | Ficha: WhatsApp com mensagem pronta, Ligar, prazo do primeiro contato (lead da empresa em "novo"), Sem resposta, sugestão de descarte, interação por tipo, andamento e descarte com Desfazer, perfil do cliente (com e-mail), atribuição com o aviso ao corretor e histórico com os eventos |
+| `/leads/quadro/` | Quadro por etapas, com rolagem lateral no celular, filtros e o mais esquecido no topo |
+| `/conta/` | Minha conta: o próprio WhatsApp, troca de senha e instalação no celular |
+| `/configuracoes/` | Gerente geral: chaves, horário de atendimento, mensagens prontas e permissões |
 
 A ficha usa `?id=` porque a exportação estática não tem rotas dinâmicas.
 
-## 10. Como ajustar origens, etapas, motivos, empreendimentos, horário e permissões
+## 14. Como ajustar origens, etapas, motivos, empreendimentos, horário, mensagens e permissões
 
 - **Origens e etapas:** ficam nas tabelas `lead_origens` e `lead_etapas`. Para renomear, reordenar, desligar (`ativo = false`) ou criar uma opção, edite as linhas no Table Editor do Supabase. O app lê as tabelas, e rodar o `schema.sql` de novo não sobrescreve o que foi ajustado.
 - **Motivos de descarte:** ficam no check `leads_motivo_descarte_check` da tabela `leads` e em `MOTIVOS_DESCARTE` (`crm/src/lib/leads.ts`). Para mudar, altere os dois.
 - **Empreendimentos e bairros do Cadastro Mágico:** em `crm/src/lib/empreendimentos.ts`. Para incluir um, some uma linha e publique de novo.
 - **Dias do follow-up:** `DIAS_FOLLOW_UP`, `LIMITE_TENTATIVAS` e `DIAS_ENTRE_TENTATIVAS` em `crm/src/lib/followup.ts`.
 - **Horário de atendimento:** o gerente geral muda em Configurações. Rodar o `schema.sql` de novo não sobrescreve o horário salvo. Os 15 min são `PRAZO_MINUTOS` em `crm/src/lib/prazo.ts`.
+- **Mensagens prontas:** o gerente geral edita em Configurações. Rodar o `schema.sql` de novo não sobrescreve o que foi ajustado nem religa a mensagem desligada. Os 2 dias do "sem contato" são `DIAS_FOLLOW_UP` em `crm/src/lib/followup.ts`.
 - **Permissões:** `leads.cadastrar` (padrão: corretor) e `leads.atribuir` (padrão: gerente) aparecem em Configurações > Permissões por perfil. O padrão só entra na primeira vez.
 
-## 11. Testes
+## 15. Testes
 
-- `npm test` (em `crm/`): ordenação da lista do dia (com o grupo do primeiro contato), prazo do primeiro contato (só lead da empresa, virada de dia, chegada fora do horário, fim de semana, reatribuição e rótulos), WhatsApp (com o 9º dígito), datas, follow-up, histórico e o parser do Cadastro Mágico (portal, tabela de e-mail, WhatsApp do iPhone e do Android, Facebook, RD Station, nome por assinatura e por e-mail, orçamento e dormitórios).
-- `npm run test:banco`: roda o `schema.sql` três vezes no PGlite e confere o RLS de leads, interações e eventos por perfil, as tentativas, o avanço de etapa, a mensagem original e o horário de atendimento (quem lê, quem altera e os checks).
+- `npm test` (em `crm/`): ordenação da lista do dia (com o grupo do primeiro contato), prazo do primeiro contato (só lead da empresa, virada de dia, chegada fora do horário, fim de semana, reatribuição e rótulos), WhatsApp (com o 9º dígito), datas, follow-up, histórico e o parser do Cadastro Mágico (portal, tabela de e-mail, WhatsApp do iPhone e do Android, Facebook, RD Station, nome por assinatura e por e-mail, orçamento e dormitórios), mensagens prontas (variáveis, sugestão pela etapa e pelo tempo sem contato, links e o aviso de repasse) e busca (acento, termos, telefone em qualquer formato, ordem e filtro de empreendimento).
+- `npm run test:banco`: roda o `schema.sql` três vezes no PGlite e confere o RLS de leads, interações e eventos por perfil, as tentativas, o avanço de etapa, a mensagem original, o horário de atendimento (quem lê, quem altera e os checks), a função de duplicado por perfil, o WhatsApp do usuário e o RLS das mensagens prontas.
 - No Supabase real: `supabase/dados-teste.sql` cria 2 leads por corretor de teste, e `supabase/verificar-rls.sql` mostra o que cada perfil vê e a quem pode atribuir.
