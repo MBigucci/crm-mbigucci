@@ -326,7 +326,7 @@ function Ficha({ id }: { id: string }) {
           {ehDono && lead.status === "ativo" && !erroVendas && vendas && (
             registrando ? (
               <RegistrarVenda
-                lead={lead}
+                lead={{ ...lead, nome: lead.nome }}
                 onCancelar={() => setRegistrando(false)}
                 onRegistrada={() => {
                   setRegistrando(false);

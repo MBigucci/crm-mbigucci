@@ -10,8 +10,8 @@ import { mensagemErro } from "./erros";
 import { COLUNAS_VENDA, diaIso, type Venda } from "./vendas";
 import { COLUNAS_META, COLUNAS_META_VGV, inicioDosDados, type DadosMetas, type Meta, type MetaVgv } from "./metas";
 
-export type VendaComLead = Venda & { lead: { id: string; nome: string } | null };
-export const COLUNAS_VENDA_COM_LEAD = `${COLUNAS_VENDA}, lead:leads(id, nome)`;
+export type VendaComLead = Venda & { lead: { id: string; nome: string; created_at: string } | null };
+export const COLUNAS_VENDA_COM_LEAD = `${COLUNAS_VENDA}, lead:leads(id, nome, created_at)`;
 
 type Resultado = Promise<string | null>;
 const erro = (e: { message?: string } | null) => (e ? mensagemErro(e) : null);

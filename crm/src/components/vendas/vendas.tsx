@@ -3,6 +3,7 @@
 import Link from "next/link";
 import clsx from "clsx";
 import { useEffect, useState } from "react";
+import { db } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
 import { EMPREENDIMENTOS } from "@/lib/empreendimentos";
 import {
@@ -69,7 +70,7 @@ export function RegistrarVenda({
   onRegistrada,
   onCancelar,
 }: {
-  lead: { id: string; empreendimento: string | null; valor: number | null };
+  lead: { id: string; nome?: string; empreendimento: string | null; valor: number | null };
   onRegistrada: () => void;
   onCancelar: () => void;
 }) {
@@ -116,9 +117,12 @@ export function RegistrarVenda({
 
   return (
     <form onSubmit={salvar} className="grid gap-4 border-t border-line pt-4" noValidate>
-      <p className="text-[13px] text-ink-soft">
-        A venda conta no mês da assinatura. O VGV válido é o das vendas assinadas e pagas.
-      </p>
+      <div>
+        <p className="titulo-card">{lead.nome ? `Parabéns pela venda para ${lead.nome}.` : "Registrar venda"}</p>
+        <p className="mt-1 text-[13px] text-ink-soft">
+          A venda conta no mês da assinatura. O VGV válido é o das vendas assinadas e pagas.
+        </p>
+      </div>
       <div className="grid gap-4 md:grid-cols-2">
         <div>
           <label className="field-label" htmlFor="v-emp">
@@ -497,12 +501,15 @@ function Corrigir({
   );
 }
 
-/** As duas visões do VGV: assinado e assinado e pago (o válido). */
+/**
+ * As duas visões do VGV: assinado e assinado e pago (o válido). Como os tiles da
+ * Bruna, o pendente traz o filete do quanto já foi pago.
+ */
 export function ResumoVendas({ t }: { t: Totais }) {
   const blocos = [
     { rotulo: "Assinado e pago", n: t.pagas, vgv: t.vgvValido, destaque: true },
     { rotulo: "Assinado, com pendentes", n: t.assinadas, vgv: t.vgvAssinado },
-    { rotulo: "Pagamento pendente", n: t.assinadas - t.pagas, vgv: t.vgvAssinado - t.vgvValido },
+    { rotulo: "Pagamento pendente", n: t.assinadas - t.pagas, vgv: t.vgvAssinado - t.vgvValido, pago: true },
   ];
   return (
     <section aria-label="Totais do período" className="grid gap-3 md:grid-cols-3">
@@ -510,11 +517,84 @@ export function ResumoVendas({ t }: { t: Totais }) {
         <div key={b.rotulo} className={clsx("card", b.destaque && "bar-brand")}>
           <span className="eyebrow">{b.rotulo}</span>
           <span className="num mt-1 block font-display text-[26px] font-extrabold leading-none">{formatarReais(b.vgv)}</span>
+          {b.pago && t.vgvAssinado > 0 && (
+            <div aria-hidden className="mt-2 h-[4px] overflow-hidden rounded-sm bg-line">
+              <div className="h-full bg-ink" style={{ width: `${Math.round((t.vgvValido / t.vgvAssinado) * 100)}%` }} />
+            </div>
+          )}
           <span className="num mt-1 block text-[13px] text-ink-soft">
             {b.n} {b.n === 1 ? "venda" : "vendas"}
+            {b.pago && t.vgvAssinado > 0 && ` · ${formatarReais(t.vgvValido)} já pago`}
           </span>
         </div>
       ))}
+    </section>
+  );
+}
+
+/**
+ * "Registrar venda" na página de vendas, como na Bruna. Aqui a venda é sempre de
+ * um lead (o histórico e o funil dependem dele): o corretor escolhe o cliente
+ * entre os próprios leads ativos e o registro vem preenchido pelo lead.
+ */
+type LeadParaVenda = { id: string; nome: string; empreendimento: string | null; valor: number | null };
+
+export function NovaVenda({ corretor, onRegistrada }: { corretor: string; onRegistrada: () => void }) {
+  const [aberto, setAberto] = useState(false);
+  const [leads, setLeads] = useState<LeadParaVenda[] | null>(null);
+  const [escolhido, setEscolhido] = useState("");
+  useEffect(() => {
+    if (!aberto || leads) return;
+    db()
+      .from("leads")
+      .select("id, nome, empreendimento, valor")
+      .eq("dono_id", corretor)
+      .eq("status", "ativo")
+      .neq("etapa", "venda")
+      .order("nome")
+      .then(({ data }) => setLeads((data ?? []) as LeadParaVenda[]));
+  }, [aberto, leads, corretor]);
+  const lead = leads?.find((l) => l.id === escolhido);
+
+  if (!aberto)
+    return (
+      <button type="button" className="btn btn-ghost btn-lg focus-ring justify-self-start" onClick={() => setAberto(true)}>
+        + Registrar venda
+      </button>
+    );
+  return (
+    <section className="card grid gap-4" aria-label="Registrar venda">
+      <div>
+        <label className="field-label" htmlFor="nova-venda-lead">
+          Cliente
+        </label>
+        <select id="nova-venda-lead" className="input" value={escolhido} onChange={(e) => setEscolhido(e.target.value)}>
+          <option value="">{leads ? "Escolha o lead" : "Carregando…"}</option>
+          {leads?.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.nome}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-[13px] text-ink-soft">Seus leads ativos que ainda não estão em Venda.</p>
+      </div>
+      {lead ? (
+        <RegistrarVenda
+          key={lead.id}
+          lead={lead}
+          onCancelar={() => setAberto(false)}
+          onRegistrada={() => {
+            setAberto(false);
+            setEscolhido("");
+            setLeads(null);
+            onRegistrada();
+          }}
+        />
+      ) : (
+        <button type="button" className="btn btn-ghost focus-ring justify-self-start" onClick={() => setAberto(false)}>
+          Cancelar
+        </button>
+      )}
     </section>
   );
 }

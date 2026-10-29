@@ -10,6 +10,7 @@ import {
   mesDaVenda,
   seloVenda,
   somarVendas,
+  ticketECiclo,
   totaisPorCorretor,
   type Venda,
 } from "./vendas.ts";
@@ -19,8 +20,10 @@ import {
   META_VGV_PADRAO,
   metaAnualDe,
   metaRepetida,
+  nomeDaMeta,
   progressoAnual,
   progressoMeta,
+  textoMetaRepetida,
   textoRitmo,
   valorDaMetrica,
   type DadosMetas,
@@ -315,4 +318,33 @@ test("faixas: no mês da assinatura, só com as vendas assinadas e pagas, libera
   assert.equal(faixasDoMes(vs, faixas, 2026, 8).size, 0);
   assert.deepEqual(mesSeguinte(2026, 9), { ano: 2026, mes: 10 });
   assert.deepEqual(mesSeguinte(2026, 11), { ano: 2027, mes: 0 });
+});
+
+// ---------- Como na Bruna ----------
+
+test("vendas: ticket e ciclo médio do período, como no conversionReport da Bruna", () => {
+  const lead = (d: string) => ({ created_at: new Date(d).toISOString() });
+  const out = ticketECiclo([
+    { ...venda("2026-10-20", 600000), lead: lead("2026-10-10T15:00:00-03:00") },
+    { ...venda("2026-10-25", 400000), lead: lead("2026-09-25T09:00:00-03:00") },
+    { ...venda("2026-10-26", 999000, { status: "cancelada" }), lead: lead("2026-10-01T09:00:00-03:00") },
+    { ...venda("2026-10-27", 500000), lead: null },
+  ]);
+  assert.deepEqual(out, { vendas: 3, vgv: 1500000, ticket: 500000, cicloDias: 20 });
+  assert.deepEqual(ticketECiclo([]), { vendas: 0, vgv: 0, ticket: null, cicloDias: null });
+});
+
+test("metas: semestre, nome da meta e o texto da meta repetida da Bruna", () => {
+  const s1 = intervaloDaMeta({ periodo: "semestre", inicio: null, meses: null }, agora);
+  assert.equal(s1.rotulo, "2º semestre de 2026");
+  assert.equal(s1.ini.getMonth(), 6);
+  assert.equal(s1.fim.getFullYear(), 2027);
+  assert.equal(intervaloDaMeta({ periodo: "semestre", inicio: null, meses: null }, new Date(2026, 2, 1)).rotulo, "1º semestre de 2026");
+  assert.equal(textoMetaRepetida("vendas", "mes"), "Já existe uma meta mensal de Vendas. Edite a que está na lista.");
+  assert.equal(textoMetaRepetida("vgv", "personalizado"), "Já existe uma meta de VGV para esse período. Edite a que está na lista.");
+  assert.equal(nomeDaMeta({ metrica: "vendas", periodo: "semestre", inicio: null, meses: null }, agora), "Vendas (semestral)");
+  assert.equal(nomeDaMeta({ metrica: "vgv", periodo: "personalizado", inicio: "2026-11-01", meses: 3 }, agora), "VGV (Novembro de 2026 a janeiro de 2027)");
+  const p = progressoMeta(meta({ periodo: "semestre", valor: 3 }), CARLA, dados, agora);
+  assert.equal(textoRitmo(p).principal, "Faltam 2 vendas.");
+  assert.match(textoRitmo(p).detalhe ?? "", /fecha o semestre com/);
 });

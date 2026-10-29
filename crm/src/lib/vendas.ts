@@ -77,6 +77,32 @@ export function totaisPorCorretor(vendas: Pick<Venda, "corretor_id" | "status" |
   return new Map([...grupos].map(([c, xs]) => [c, somarVendas(xs)]));
 }
 
+/**
+ * Ticket e ciclo médio das vendas (ativas) do período, como no conversionReport
+ * da Bruna: ticket = VGV ÷ vendas; ciclo = dias do cadastro do lead à assinatura.
+ */
+export function ticketECiclo(
+  vendas: (Pick<Venda, "status" | "vgv" | "assinada_em"> & { lead?: { created_at?: string } | null })[],
+): { vendas: number; vgv: number; ticket: number | null; cicloDias: number | null } {
+  const ativas = vendas.filter((v) => v.status === "ativa");
+  const vgv = ativas.reduce((s, v) => s + Number(v.vgv), 0);
+  const ciclos = ativas
+    .map((v) => {
+      if (!v.lead?.created_at) return null;
+      const [a, m, d] = v.assinada_em.split("-").map(Number);
+      const c = new Date(v.lead.created_at);
+      const dias = Math.round((new Date(a, m - 1, d).getTime() - new Date(c.getFullYear(), c.getMonth(), c.getDate()).getTime()) / 86400000);
+      return dias >= 0 ? dias : null;
+    })
+    .filter((x): x is number => x !== null);
+  return {
+    vendas: ativas.length,
+    vgv,
+    ticket: ativas.length ? vgv / ativas.length : null,
+    cicloDias: ciclos.length ? ciclos.reduce((s, x) => s + x, 0) / ciclos.length : null,
+  };
+}
+
 // ---------- Formatos ----------
 
 /** "R$ 3.398.300" (centavos só quando há), com espaço que não quebra a linha. Na tela, todo número vai em Bricolage com .num. */

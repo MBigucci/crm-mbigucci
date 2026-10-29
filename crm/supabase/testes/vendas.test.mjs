@@ -268,6 +268,9 @@ test("metas próprias: o corretor cria, sem duplicar métrica e período; o gere
   await falha(CA, meta(`'visitas', 'personalizado', null, null, 5`), "metas_personalizado");
   await falha(CA, meta(`'leads', 'mes', null, null, 2.5`), "metas_contagem_inteira");
   await falha(CA, meta(`'comissao', 'mes', null, null, 2`), "metas_metrica_check");
+  await falha(CA, meta(`'leads', 'quinzena', null, null, 2`), "metas_periodo_check");
+  await como(CA, () => db.exec(meta(`'leads', 'semestre', null, null, 30`)));
+  await como(CA, () => db.exec(`delete from public.metas where periodo = 'semestre'`));
   await como(CA2, () => db.exec(meta(`'vendas', 'mes', null, null, 1`)));
   await falha(GA, meta(`'vendas', 'mes', null, null, 1`), "row-level security");
   await falha(CA, `insert into public.metas (dono_id, metrica, periodo, valor) values ('${id(CA2)}', 'leads', 'mes', 1)`, "permission denied");

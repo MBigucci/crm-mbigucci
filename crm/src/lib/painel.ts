@@ -280,6 +280,7 @@ export type LinhaConversao = {
   leads: string[];
   contato: string[];
   visita: string[];
+  proposta: string[];
   venda: string[];
   /** Dos que entraram, os descartados hoje, por motivo. */
   descartados: string[];
@@ -291,7 +292,7 @@ export type LinhaConversao = {
 /**
  * Para cada origem (e, se `comCampanha`, para cada campanha dentro dela): dos
  * leads que entraram na carteira no período, quantos tiveram primeiro contato,
- * visita realizada e venda, até hoje, e os descartados por motivo. O lead que o
+ * visita realizada, proposta e venda, até hoje (o funil do conversionReport da Bruna), e os descartados por motivo. O lead que o
  * corretor perdeu ele não vê mais: é sempre da empresa.
  */
 export function conversaoPorOrigem(x: NumerosCorretor, leads: Map<string, LeadPainel>, comCampanha: boolean): LinhaConversao[] {
@@ -303,6 +304,7 @@ export function conversaoPorOrigem(x: NumerosCorretor, leads: Map<string, LeadPa
       leads: ids,
       contato: tem(x.funil.em_contato),
       visita: tem(x.funil.visita_realizada),
+      proposta: tem(x.funil.proposta),
       venda: tem(x.funil.venda),
       descartados: [],
       descartadosPorMotivo: {},

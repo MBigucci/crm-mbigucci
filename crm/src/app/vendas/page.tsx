@@ -4,8 +4,8 @@ import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import clsx from "clsx";
 import { Casca } from "@/components/casca";
-import { CardVenda, ResumoVendas } from "@/components/vendas/vendas";
-import { useSessao } from "@/lib/sessao";
+import { CardVenda, NovaVenda, ResumoVendas } from "@/components/vendas/vendas";
+import { usePerfil, useSessao } from "@/lib/sessao";
 import { useCorretores } from "@/lib/leads-dados";
 import { somarVendas } from "@/lib/vendas";
 import { useNomes, useVendas } from "@/lib/vendas-dados";
@@ -41,6 +41,7 @@ function usePeriodoVendas() {
 }
 
 function Vendas() {
+  const eu = usePerfil();
   const { pode } = useSessao();
   const veOutros = pode("dados.ver_equipe") || pode("dados.ver_todos");
   const permitido = veOutros || pode("leads.cadastrar");
@@ -132,13 +133,21 @@ function Vendas() {
 
       {erro && <p className="aviso-erro">! {erro}</p>}
       {!vendas && !erro && <p className="text-concrete">Carregando…</p>}
+      {vendas && (
+        <p className="num -mt-2 text-ink-soft">
+          {ativas.length} {ativas.length === 1 ? "venda assinada" : "vendas assinadas"} no período
+        </p>
+      )}
       {vendas && <ResumoVendas t={t} />}
+      {pode("leads.cadastrar") && !veOutros && <NovaVenda corretor={eu.id} onRegistrada={recarregar} />}
 
       {vendas && !ativas.length && (
         <div className="card">
           <p className="text-ink-soft">
-            Nenhuma venda assinada em {per.rotulo}.
-            {pode("leads.cadastrar") && " Para registrar, abra a ficha do lead e toque em Registrar venda."}
+            Nenhuma venda no período.
+            {pode("leads.cadastrar") && !veOutros
+              ? " Quando um lead for para Venda, o registro aparece aqui."
+              : " Quando um corretor registrar uma venda, ela aparece aqui."}
           </p>
         </div>
       )}

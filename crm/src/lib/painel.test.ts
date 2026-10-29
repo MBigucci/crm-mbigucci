@@ -181,7 +181,7 @@ test("conversão: por origem, dos leads que entraram, até a venda, com descarte
   const por = (o: string) => linhas.find((l) => l.origem === o)!;
   assert.deepEqual(linhas.map((l) => [l.origem, l.leads.length]), [["anuncio_proprio", 3], ["empresa", 2], ["indicacao", 2], ["plantao", 1]]);
   assert.deepEqual(por("plantao"), {
-    origem: "plantao", campanha: null, leads: ["pl1"], contato: ["pl1"], visita: ["pl1"], venda: ["pl1"],
+    origem: "plantao", campanha: null, leads: ["pl1"], contato: ["pl1"], visita: ["pl1"], proposta: ["pl1"], venda: ["pl1"],
     descartados: [], descartadosPorMotivo: {},
   });
   assert.deepEqual(por("indicacao").descartadosPorMotivo, { fora_do_perfil: ["ind1"] });

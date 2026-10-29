@@ -11,6 +11,7 @@ import { CardLead, RodapeAcao } from "./partes";
 import { visitasDoDia } from "@/lib/visitas";
 import { COLUNAS_VISITA_COM_LEAD, type VisitaComLead } from "@/lib/visitas-dados";
 import { ListaVisitas } from "@/components/visitas/visitas";
+import { MetasNoInicio } from "@/components/metas/metas";
 
 const diaDaSemana = new Intl.DateTimeFormat("pt-BR", { weekday: "long" });
 
@@ -162,6 +163,8 @@ export function ListaDoDia() {
           </Link>
         </p>
       )}
+
+      <MetasNoInicio corretor={eu.id} />
     </div>
   );
 }

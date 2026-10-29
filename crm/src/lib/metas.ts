@@ -91,7 +91,7 @@ export function formatarPct(razao: number): string {
 // ---------- Metas próprias ----------
 
 export type Metrica = "leads" | "contatos" | "visitas" | "vendas" | "vgv";
-export type PeriodoMeta = "mes" | "trimestre" | "ano" | "personalizado";
+export type PeriodoMeta = "mes" | "trimestre" | "semestre" | "ano" | "personalizado";
 
 export const METRICAS: { slug: Metrica; nome: string; dica: string; um: string; varios: string; dinheiro?: boolean }[] = [
   { slug: "leads", nome: "Leads cadastrados", dica: "Leads que você cadastrou", um: "lead", varios: "leads" },
@@ -102,11 +102,13 @@ export const METRICAS: { slug: Metrica; nome: string; dica: string; um: string; 
 ];
 export const metrica = (m: Metrica) => METRICAS.find((x) => x.slug === m)!;
 
-export const PERIODOS_META: { slug: PeriodoMeta; nome: string; o: string }[] = [
-  { slug: "mes", nome: "Mensal", o: "o mês" },
-  { slug: "trimestre", nome: "Trimestral", o: "o trimestre" },
-  { slug: "ano", nome: "Anual", o: "o ano" },
-  { slug: "personalizado", nome: "Personalizado", o: "o período" },
+/** Os períodos da Bruna (GOAL_PERIODS), com "o mês" para as frases de ritmo. */
+export const PERIODOS_META: { slug: PeriodoMeta; nome: string; o: string; por: string }[] = [
+  { slug: "mes", nome: "Mensal", o: "o mês", por: "por mês" },
+  { slug: "trimestre", nome: "Trimestral", o: "o trimestre", por: "por trimestre" },
+  { slug: "semestre", nome: "Semestral", o: "o semestre", por: "por semestre" },
+  { slug: "ano", nome: "Anual", o: "o ano", por: "por ano" },
+  { slug: "personalizado", nome: "Personalizado", o: "o período", por: "no período" },
 ];
 
 export const MESES_MAX = 24;
@@ -157,6 +159,11 @@ export function intervaloDaMeta(m: Pick<Meta, "periodo" | "inicio" | "meses">, a
     ini = new Date(y, t * 3, 1);
     fim = new Date(y, t * 3 + 3, 1);
     rotulo = `${t + 1}º trimestre de ${y}`;
+  } else if (m.periodo === "semestre") {
+    const s = mes < 6 ? 0 : 1;
+    ini = new Date(y, s * 6, 1);
+    fim = new Date(y, s * 6 + 6, 1);
+    rotulo = `${s + 1}º semestre de ${y}`;
   } else if (m.periodo === "ano") {
     ini = new Date(y, 0, 1);
     fim = new Date(y + 1, 0, 1);
@@ -301,6 +308,19 @@ export function metaRepetida(
       m.periodo === nova.periodo &&
       (nova.periodo !== "personalizado" || (m.inicio === nova.inicio && Number(m.meses) === Number(nova.meses))),
   );
+}
+
+/** Como na Bruna: "Já existe uma meta mensal de Vendas. Edite a que está na lista." */
+export function textoMetaRepetida(m: Metrica, periodo: PeriodoMeta): string {
+  const nome = metrica(m).nome;
+  if (periodo === "personalizado") return `Já existe uma meta de ${nome} para esse período. Edite a que está na lista.`;
+  return `Já existe uma meta ${PERIODOS_META.find((p) => p.slug === periodo)!.nome.toLowerCase()} de ${nome}. Edite a que está na lista.`;
+}
+
+/** "Vendas (mensal)" ou "VGV (Novembro de 2026 a janeiro de 2027)", para o aviso de exclusão. */
+export function nomeDaMeta(m: Pick<Meta, "metrica" | "periodo" | "inicio" | "meses">, agora: Date): string {
+  const p = m.periodo === "personalizado" ? intervaloDaMeta(m, agora).rotulo : PERIODOS_META.find((x) => x.slug === m.periodo)!.nome.toLowerCase();
+  return `${metrica(m.metrica).nome} (${p})`;
 }
 
 /** O primeiro dia do período mais antigo entre as metas (para ler os dados de uma vez só). */

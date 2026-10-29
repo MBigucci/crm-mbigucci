@@ -27,7 +27,7 @@ import {
 } from "@/lib/painel";
 import { usePainel, useVisitasPainel, type DadosPainel } from "@/lib/painel-dados";
 import { somarVisitas, visitasZeradas, type NumerosVisita } from "@/lib/visitas";
-import { formatarReais, somarVendas, totaisPorCorretor, totaisZerados, type Totais } from "@/lib/vendas";
+import { formatarReais, somarVendas, ticketECiclo, totaisPorCorretor, totaisZerados, type Totais } from "@/lib/vendas";
 import { useMetasVgv, useVendas, useVendasDoAno, type VendaComLead } from "@/lib/vendas-dados";
 import type { MetaVgv } from "@/lib/metas";
 import { CartaoMetaAnual, MetasDoCorretor, TabelaMetaAnual } from "@/components/metas/metas";
@@ -134,6 +134,7 @@ function Painel() {
             voltar={veOutros ? () => ir({ c: null }) : undefined}
             visitas={visitas ? (visitas.get(corretorId) ?? visitasZeradas()) : null}
             vendas={vendasPeriodo ? somarVendas(vendasPeriodo.filter((v) => v.corretor_id === corretorId)) : null}
+            vendasLista={vendasPeriodo?.filter((v) => v.corretor_id === corretorId) ?? null}
             meta={metasVgv && vendasAno ? { ano, linhas: metasVgv, vendas: vendasAno } : null}
             campanha={campanha}
           />
@@ -166,7 +167,12 @@ function Painel() {
         />
       )}
       {dados && linhas.length > 0 && (
-        <Conversao linhas={conversaoPorOrigem(somar(linhas), dados.leads, campanha)} abrir={setSel} campanha={campanha} />
+        <Conversao
+          linhas={conversaoPorOrigem(somar(linhas), dados.leads, campanha)}
+          abrir={setSel}
+          campanha={campanha}
+          vendas={vendasPeriodo?.filter((v) => linhas.some((x) => x.corretor === v.corretor_id)) ?? null}
+        />
       )}
       {dados && visitas && linhas.length > 0 && <TabelaVisitas linhas={linhas.map((x) => x.corretor)} numeros={visitas} nomes={nomes} />}
       {dados && vendasPeriodo && linhas.length > 0 && (
@@ -647,7 +653,17 @@ function TabelaVendas({ linhas, vendas, nomes }: { linhas: string[]; vendas: Ven
  * realizada e venda, até hoje, e os descartados por motivo, por origem. A
  * campanha aparece só com a permissão painel.campanha.
  */
-function Conversao({ linhas, abrir, campanha }: { linhas: LinhaConversao[]; abrir: (s: Selecao) => void; campanha: boolean }) {
+function Conversao({
+  linhas,
+  abrir,
+  campanha,
+  vendas,
+}: {
+  linhas: LinhaConversao[];
+  abrir: (s: Selecao) => void;
+  campanha: boolean;
+  vendas: VendaComLead[] | null;
+}) {
   const { catalogos } = useCatalogos();
   const nomeOrigem = (s: string) => catalogos?.origens.find((o) => o.slug === s)?.nome ?? s;
   const th = "px-2 py-2 text-right font-semibold align-bottom";
@@ -670,12 +686,13 @@ function Conversao({ linhas, abrir, campanha }: { linhas: LinhaConversao[]; abri
           {cel(l.leads, "Leads")}
           {cel(l.contato, "Primeiro contato")}
           {cel(l.visita, "Visita realizada")}
+          {cel(l.proposta, "Proposta")}
           {cel(l.venda, "Venda")}
           {cel(l.descartados, "Descartados", true)}
         </tr>
         {motivos.length > 0 && (
           <tr className="border-b border-line">
-            <td colSpan={6} className={clsx("pb-2 pr-4 text-[12px] text-ink-soft", sub ? "pl-8" : "pl-4")}>
+            <td colSpan={7} className={clsx("pb-2 pr-4 text-[12px] text-ink-soft", sub ? "pl-8" : "pl-4")}>
               ✕ Descartados:{" "}
               {motivos.map((m, i) => (
                 <span key={m.slug}>
@@ -694,6 +711,7 @@ function Conversao({ linhas, abrir, campanha }: { linhas: LinhaConversao[]; abri
       <h2 id="t-conversao" className="eyebrow mb-2">
         {titulo} · leads que entraram na carteira no período, até hoje
       </h2>
+      <ResumoConversao linhas={linhas} vendas={vendas} />
       {linhas.length ? (
         <div className="card tabela-painel overflow-x-auto p-0">
           <table className="w-full text-left text-[14px]">
@@ -703,6 +721,7 @@ function Conversao({ linhas, abrir, campanha }: { linhas: LinhaConversao[]; abri
                 <th className={th}>Leads</th>
                 <th className={th}>Primeiro contato</th>
                 <th className={th}>Visita realizada</th>
+                <th className={th}>Proposta</th>
                 <th className={th}>Venda</th>
                 <th className={clsx(th, "pr-4")}>Descartados</th>
               </tr>
@@ -716,6 +735,42 @@ function Conversao({ linhas, abrir, campanha }: { linhas: LinhaConversao[]; abri
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * Os números do topo da Conversão da Bruna: leads, lead → venda, ticket médio e
+ * ciclo médio. O ticket e o ciclo saem das vendas assinadas no período.
+ */
+function ResumoConversao({ linhas, vendas }: { linhas: LinhaConversao[]; vendas: VendaComLead[] | null }) {
+  const leads = linhas.reduce((s, l) => s + l.leads.length, 0);
+  const venda = linhas.reduce((s, l) => s + l.venda.length, 0);
+  const tc = vendas ? ticketECiclo(vendas) : null;
+  const dias = tc?.cicloDias != null ? Math.round(tc.cicloDias) : null;
+  const tiles = [
+    { rotulo: "Leads", valor: String(leads), nota: leads === 1 ? "entrou no período" : "entraram no período" },
+    {
+      rotulo: "Lead → venda",
+      valor: leads ? taxa(venda, leads) : "–",
+      nota: leads ? `${venda} de ${leads} ${venda === 1 ? "virou" : "viraram"} venda` : "Sem leads no período",
+    },
+    {
+      rotulo: "Ticket médio",
+      valor: tc?.ticket != null ? formatarReais(Math.round(tc.ticket)) : "–",
+      nota: tc?.vendas ? `${tc.vendas} ${tc.vendas === 1 ? "venda" : "vendas"} · VGV ${formatarReais(tc.vgv)}` : "Nenhuma venda no período",
+    },
+    { rotulo: "Ciclo médio", valor: dias !== null ? `${dias} ${dias === 1 ? "dia" : "dias"}` : "–", nota: "Do cadastro do lead à assinatura" },
+  ];
+  return (
+    <div className="mb-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+      {tiles.map((t) => (
+        <div key={t.rotulo} className="card">
+          <span className="eyebrow">{t.rotulo}</span>
+          <span className="num mt-1 block whitespace-nowrap font-display text-[22px] font-extrabold leading-tight">{t.valor}</span>
+          <span className="num mt-1 block text-[12px] text-ink-soft">{t.nota}</span>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -733,6 +788,7 @@ function RelatorioCorretor({
   voltar,
   visitas,
   vendas,
+  vendasLista,
   meta,
   campanha,
 }: {
@@ -747,6 +803,7 @@ function RelatorioCorretor({
   voltar?: () => void;
   visitas: NumerosVisita | null;
   vendas: Totais | null;
+  vendasLista: VendaComLead[] | null;
   meta: { ano: number; linhas: MetaVgv[]; vendas: VendaComLead[] } | null;
   campanha: boolean;
 }) {
@@ -836,7 +893,7 @@ function RelatorioCorretor({
         </section>
       </div>
 
-      <Conversao linhas={conversaoPorOrigem(x, dados.leads, campanha)} abrir={setSel} campanha={campanha} />
+      <Conversao linhas={conversaoPorOrigem(x, dados.leads, campanha)} abrir={setSel} campanha={campanha} vendas={vendasLista} />
 
       {visitas && <VisitasDoCorretor numeros={visitas} />}
 

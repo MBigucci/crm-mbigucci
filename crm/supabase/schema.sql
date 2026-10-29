@@ -1950,14 +1950,14 @@ create policy "definir metas de vgv" on public.metas_vgv
   with check (public.has_permission('metas.definir_vgv'));
 
 -- ---------- Metas próprias do corretor ----------
--- Como as da Bruna: métrica, período (mês, trimestre e ano são os atuais; o
+-- Como as da Bruna: métrica, período (mês, trimestre, semestre e ano são os atuais; o
 -- personalizado começa no mês "inicio" e dura "meses"), valor e "no painel".
 -- O progresso é calculado pelos dados (crm/src/lib/metas.ts).
 create table if not exists public.metas (
   id          uuid primary key default gen_random_uuid(),
   dono_id     uuid not null default auth.uid() references public.profiles (id) on delete cascade,
   metrica     text not null check (metrica in ('leads', 'contatos', 'visitas', 'vendas', 'vgv')),
-  periodo     text not null check (periodo in ('mes', 'trimestre', 'ano', 'personalizado')),
+  periodo     text not null,
   inicio      date,
   meses       smallint check (meses is null or meses between 1 and 24),
   valor       numeric(14, 2) not null check (valor > 0),
@@ -1968,6 +1968,11 @@ create table if not exists public.metas (
   constraint metas_inicio_no_dia_1 check (inicio is null or extract(day from inicio) = 1),
   constraint metas_contagem_inteira check (metrica = 'vgv' or valor = trunc(valor))
 );
+
+-- Períodos da Bruna: mês, trimestre, semestre, ano e personalizado.
+alter table public.metas drop constraint if exists metas_periodo_check;
+alter table public.metas add constraint metas_periodo_check
+  check (periodo in ('mes', 'trimestre', 'semestre', 'ano', 'personalizado'));
 
 -- Uma meta por métrica e período (no personalizado, pelo mesmo início e duração).
 create unique index if not exists metas_sem_duplicar
