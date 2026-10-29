@@ -40,6 +40,7 @@ O CRM de corretores da MBigucci (construtora em São Bernardo do Campo). O usuá
 - `docs/pontuacao-verba.md`: abra ao mexer em pontos, lançamentos e aprovação, cálculo da verba, premiação por VGV ou roleta. Tem a regra do sigilo.
 - `docs/metas-ranking.md`: abra ao mexer na meta anual de VGV, nas metas próprias do corretor ou no ranking.
 - `docs/pesquisa-discovery.md`: abra ao mexer em `discovery/`, ao analisar as respostas da pesquisa ou ao escrever qualquer texto para corretores.
+- `docs/pesquisa-resultados.md`: abra ao desenhar leads, cadastro, lista do dia, painel ou qualquer tela do corretor. São as 34 respostas consolidadas e as decisões que saem delas.
 - `docs/design-system.md`: abra antes de criar ou alterar qualquer tela.
 - `docs/crm-arquitetura.md`: abra ao mexer na estrutura do `crm/` (schema, RLS, deploy). É escrito pela sessão da base do CRM e pode ainda não existir.
 - `docs/fontes/regras-comerciais-2026-10.md`: o documento original do Felipe. Abra só para conferir o texto exato de uma regra.
