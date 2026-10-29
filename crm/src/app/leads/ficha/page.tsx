@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import clsx from "clsx";
 import { Casca } from "@/components/casca";
 import {
-  BotaoWhatsapp,
+  AvisoDesfazer,
   CampoProximoContato,
   PrazoPrimeiroContato,
   EscolhaTemperatura,
@@ -14,6 +14,8 @@ import {
   SeloTemperatura,
   SemContato,
 } from "@/components/leads/partes";
+import { BotaoLigar, BotaoMensagem } from "@/components/leads/mensagem";
+import { AvisarCorretor } from "@/components/leads/repasse";
 import { db } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
 import { mensagemErro } from "@/lib/erros";
@@ -37,7 +39,7 @@ import {
 import { LIMITE_TENTATIVAS, seloSemContato, sugereDescarte } from "@/lib/followup";
 import { descreverEvento, montarHistorico } from "@/lib/historico";
 import { registrarSemResposta, useCatalogos, useCorretores, useHorarioAtendimento } from "@/lib/leads-dados";
-import { aguardaPrimeiroContato } from "@/lib/prazo";
+import { aguardaPrimeiroContato, type HorarioAtendimento } from "@/lib/prazo";
 
 export default function FichaPage() {
   return (
@@ -67,6 +69,8 @@ function Ficha({ id }: { id: string }) {
   const [erro, setErro] = useState<string | null>(null);
   const [tentativa, setTentativa] = useState<{ n: number; proximo: string } | null>(null);
   const [agora, setAgora] = useState(() => new Date());
+  const [desfazer, setDesfazer] = useState<{ texto: string; anterior: Partial<Lead> } | null>(null);
+  const fecharDesfazer = useCallback(() => setDesfazer(null), []);
 
   const carregar = useCallback(async () => {
     const [l, h, e] = await Promise.all([
@@ -126,6 +130,24 @@ function Ficha({ id }: { id: string }) {
     if (error) return setErro(mensagemErro(error));
     await carregar();
   }
+
+  /** Muda e mostra o Desfazer, que grava de volta os valores de antes. */
+  async function alterarComDesfazer(campos: Partial<Lead>, texto: string) {
+    if (!lead) return;
+    const anterior = Object.fromEntries(Object.keys(campos).map((k) => [k, lead[k as keyof Lead]])) as Partial<Lead>;
+    setDesfazer(null);
+    setErro(null);
+    const { error } = await db().from("leads").update(campos).eq("id", id);
+    if (error) return setErro(mensagemErro(error));
+    await carregar();
+    setDesfazer({ texto, anterior });
+  }
+
+  const descartar = (motivo: MotivoDescarte) =>
+    alterarComDesfazer(
+      { status: "descartado", motivo_descarte: motivo },
+      `Descartado: ${MOTIVOS_DESCARTE.find((m) => m.slug === motivo)?.nome ?? motivo}`,
+    );
 
   async function semResposta() {
     if (!lead) return;
@@ -192,7 +214,8 @@ function Ficha({ id }: { id: string }) {
           </p>
         )}
         <div className="mt-4 flex flex-wrap gap-2">
-          <BotaoWhatsapp numero={lead.whatsapp} className="btn-lg flex-1 md:flex-none" />
+          <BotaoMensagem lead={lead} className="btn-lg flex-1 md:flex-none" />
+          <BotaoLigar numero={lead.whatsapp} className="btn-lg flex-1 md:flex-none" />
           {ehDono && lead.status === "ativo" && (
             <button type="button" className="btn btn-ghost btn-lg focus-ring flex-1 md:flex-none" onClick={semResposta}>
               Sem resposta (+1)
@@ -221,7 +244,7 @@ function Ficha({ id }: { id: string }) {
           <button
             type="button"
             className="btn btn-red focus-ring mt-3"
-            onClick={() => alterar({ status: "descartado", motivo_descarte: "sem_retorno" })}
+            onClick={() => descartar("sem_retorno")}
           >
             ✕ Descartar: sem retorno
           </button>
@@ -247,7 +270,7 @@ function Ficha({ id }: { id: string }) {
                   id="etapa"
                   className="input"
                   value={lead.etapa}
-                  onChange={(e) => alterar({ etapa: e.target.value })}
+                  onChange={(e) => alterarComDesfazer({ etapa: e.target.value }, `Etapa: ${nomeEtapa(e.target.value)}`)}
                 >
                   {catalogos?.etapas
                     .filter((x) => x.ativo || x.slug === lead.etapa)
@@ -262,7 +285,7 @@ function Ficha({ id }: { id: string }) {
           </section>
 
           <PerfilCliente lead={lead} onSalvar={alterar} />
-          <Descartar onDescartar={(motivo) => alterar({ status: "descartado", motivo_descarte: motivo })} />
+          <Descartar key={lead.status} onDescartar={descartar} />
         </>
       )}
 
@@ -279,7 +302,14 @@ function Ficha({ id }: { id: string }) {
         </section>
       )}
 
-      {!ehDono && pode("leads.atribuir") && <Atribuir lead={lead} onAtribuir={(dono) => alterar({ dono_id: dono })} />}
+      {!ehDono && pode("leads.atribuir") && (
+        <Atribuir
+          lead={lead}
+          horario={horario}
+          nomeDe={(u) => nomes.get(u)}
+          onAtribuir={(dono) => alterar({ dono_id: dono })}
+        />
+      )}
 
       <section className="card">
         <span className="eyebrow">Histórico</span>
@@ -321,6 +351,18 @@ function Ficha({ id }: { id: string }) {
           <p className="mt-2 text-ink-soft">Nenhuma interação ainda.</p>
         )}
       </section>
+
+      {desfazer && (
+        <AvisoDesfazer
+          texto={desfazer.texto}
+          onFim={fecharDesfazer}
+          onDesfazer={() => {
+            const anterior = desfazer.anterior;
+            setDesfazer(null);
+            alterar(anterior);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -599,10 +641,20 @@ function Descartar({ onDescartar }: { onDescartar: (m: MotivoDescarte) => void }
   );
 }
 
-function Atribuir({ lead, onAtribuir }: { lead: Lead; onAtribuir: (dono: string) => Promise<void> }) {
+function Atribuir({
+  lead,
+  horario,
+  nomeDe,
+  onAtribuir,
+}: {
+  lead: Lead;
+  horario: HorarioAtendimento;
+  nomeDe: (id: string) => string | undefined;
+  onAtribuir: (dono: string) => Promise<void>;
+}) {
   const corretores = useCorretores(true);
   const [dono, setDono] = useState(lead.dono_id);
-  const [salvo, setSalvo] = useState(false);
+  const [atribuido, setAtribuido] = useState<string | null>(null);
   return (
     <section className="card">
       <label className="field-label" htmlFor="atribuir">
@@ -615,7 +667,7 @@ function Atribuir({ lead, onAtribuir }: { lead: Lead; onAtribuir: (dono: string)
           value={dono}
           onChange={(e) => {
             setDono(e.target.value);
-            setSalvo(false);
+            setAtribuido(null);
           }}
         >
           {corretores.map((c) => (
@@ -630,13 +682,23 @@ function Atribuir({ lead, onAtribuir }: { lead: Lead; onAtribuir: (dono: string)
           disabled={dono === lead.dono_id}
           onClick={async () => {
             await onAtribuir(dono);
-            setSalvo(true);
+            setAtribuido(dono);
           }}
         >
           Atribuir
         </button>
       </div>
-      {salvo && <p className="aviso-ok mt-2">✓ Lead atribuído</p>}
+      {atribuido && atribuido === lead.dono_id && (
+        <div className="mt-3 grid gap-2">
+          <p className="aviso-ok">✓ Lead atribuído</p>
+          <AvisarCorretor
+            corretorId={atribuido}
+            corretorNome={corretores.find((c) => c.id === atribuido)?.nome ?? nomeDe(atribuido) ?? "Corretor"}
+            lead={lead}
+            horario={horario}
+          />
+        </div>
+      )}
     </section>
   );
 }

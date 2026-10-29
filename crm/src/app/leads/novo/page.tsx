@@ -8,9 +8,17 @@ import { CampoProximoContato, EscolhaTemperatura, RodapeAcao, SeloCampo } from "
 import { db } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
 import { mensagemErro } from "@/lib/erros";
-import { deCampos, formatarWhatsapp, normalizarWhatsapp, type Temperatura } from "@/lib/leads";
+import { COLUNAS_LEAD, deCampos, formatarWhatsapp, normalizarWhatsapp, type Lead, type Temperatura } from "@/lib/leads";
 import { camposEncontrados, lerMensagem, type LeadLido } from "@/lib/cadastro-magico";
-import { gravarUltimaOrigem, lerUltimaOrigem, useCatalogos, useCorretores } from "@/lib/leads-dados";
+import {
+  gravarUltimaOrigem,
+  lerUltimaOrigem,
+  useCatalogos,
+  useCorretores,
+  useHorarioAtendimento,
+} from "@/lib/leads-dados";
+import { AvisarCorretor } from "@/components/leads/repasse";
+import Link from "next/link";
 
 export default function NovoLeadPage() {
   const { pode } = useSessao();
@@ -60,6 +68,8 @@ function NovoLead() {
   const [erro, setErro] = useState<string | null>(null);
   const [duplicado, setDuplicado] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const [repasse, setRepasse] = useState<Lead | null>(null);
+  const horario = useHorarioAtendimento();
 
   const origens = useMemo(
     () => (catalogos?.origens ?? []).filter((o) => o.ativo && (atribui || !o.restrita)),
@@ -101,14 +111,14 @@ function NovoLead() {
 
     setSalvando(true);
     if (duplicado !== numero) {
-      // Aviso de duplicado entre os leads que a pessoa enxerga; não impede o cadastro.
-      const { data } = await db().from("leads").select("nome").eq("whatsapp", numero).eq("status", "ativo").limit(1);
-      if (data?.length) {
+      // Aviso de duplicado; não impede o cadastro. Entre os leads que a pessoa
+      // enxerga, mostra o nome (e o corretor, para o gerente). Nos outros, a
+      // função do banco só diz que o número está em outra carteira.
+      const aviso = await avisoDeDuplicado(numero);
+      if (aviso) {
         setDuplicado(numero);
         setSalvando(false);
-        return setErro(
-          `Já existe um lead ativo com este WhatsApp: ${data[0].nome}. Toque em Cadastrar de novo para confirmar.`,
-        );
+        return setErro(`${aviso} Toque em Cadastrar de novo para seguir assim mesmo.`);
       }
     }
 
@@ -126,8 +136,8 @@ function NovoLead() {
         proximo_contato: proximo,
         ...(perfil ?? {}),
       })
-      .select("id")
-      .single();
+      .select(COLUNAS_LEAD)
+      .single<Lead>();
     if (error) {
       setSalvando(false);
       return setErro(mensagemErro(error));
@@ -144,8 +154,71 @@ function NovoLead() {
       }
     }
     setSalvando(false);
-    router.push(atribui ? "/leads/" : `/leads/ficha/?id=${data.id}`);
+    if (atribui) setRepasse(data);
+    else router.push(`/leads/ficha/?id=${data.id}`);
   }
+
+  async function avisoDeDuplicado(numero: string): Promise<string | null> {
+    const { data } = await db()
+      .from("leads")
+      .select("nome, dono_id")
+      .eq("whatsapp", numero)
+      .eq("status", "ativo")
+      .limit(1);
+    const visivel = data?.[0] as { nome: string; dono_id: string } | undefined;
+    if (visivel) {
+      const deOutro = visivel.dono_id !== eu.id ? corretores.find((c) => c.id === visivel.dono_id)?.nome : undefined;
+      return `Já existe um lead ativo com este WhatsApp: ${visivel.nome}${deOutro ? `, na carteira de ${deOutro}` : ""}.`;
+    }
+    const { data: emOutra } = await db().rpc("whatsapp_em_outra_carteira", { p_whatsapp: numero });
+    if (emOutra !== true) return null;
+    return atribui
+      ? "Este WhatsApp já está num lead ativo de outra equipe."
+      : "Este WhatsApp já está num lead ativo de outro corretor. Confira com seu gerente.";
+  }
+
+  function novoCadastro() {
+    setRepasse(null);
+    setNome("");
+    setWhatsapp("");
+    setEmail("");
+    setCampanha("");
+    setEmpreendimento("");
+    setTemperatura(null);
+    setContato({ data: "", hora: "" });
+    setMensagem(null);
+    setPerfil(null);
+    setDuplicado(null);
+    setErro(null);
+  }
+
+  if (repasse)
+    return (
+      <div className="grid max-w-[640px] gap-4">
+        <section className="card bar-brand grid gap-3" role="status">
+          <h2 className="titulo-card">✓ Lead cadastrado</h2>
+          <p className="text-ink-soft">
+            {repasse.nome} foi para {corretores.find((c) => c.id === repasse.dono_id)?.nome ?? "o corretor"}. Avise
+            no WhatsApp com a mensagem pronta.
+          </p>
+          <AvisarCorretor
+            corretorId={repasse.dono_id}
+            corretorNome={corretores.find((c) => c.id === repasse.dono_id)?.nome ?? "Corretor"}
+            lead={repasse}
+            horario={horario}
+            destaque
+          />
+        </section>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="btn btn-ghost btn-lg focus-ring flex-1 md:flex-none" onClick={novoCadastro}>
+            + Outro lead
+          </button>
+          <Link href="/leads/" className="btn btn-ghost btn-lg focus-ring flex-1 md:flex-none">
+            Ver leads
+          </Link>
+        </div>
+      </div>
+    );
 
   if (colando)
     return (

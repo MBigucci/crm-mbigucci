@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import clsx from "clsx";
+import { useEffect } from "react";
 import {
   formatarQuando,
-  formatarWhatsapp,
-  linkWhatsapp,
   paraCampos,
   temperatura,
   TEMPERATURAS,
@@ -14,6 +13,7 @@ import {
 } from "@/lib/leads";
 import { seloSemContato } from "@/lib/followup";
 import { prazoDoLead, seloPrazo, type HorarioAtendimento } from "@/lib/prazo";
+import { BotaoMensagem } from "./mensagem";
 
 /** Temperatura sempre com sinal + palavra + cor. */
 export function SeloTemperatura({ valor }: { valor: Temperatura | null }) {
@@ -62,20 +62,6 @@ export function EscolhaTemperatura({
         );
       })}
     </div>
-  );
-}
-
-export function BotaoWhatsapp({ numero, className }: { numero: string; className?: string }) {
-  return (
-    <a
-      href={linkWhatsapp(numero)}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={clsx("btn btn-ghost focus-ring", className)}
-      aria-label={`Abrir WhatsApp de ${formatarWhatsapp(numero)}`}
-    >
-      WhatsApp →
-    </a>
   );
 }
 
@@ -213,7 +199,7 @@ export function CardLead({
             <Link href={`/leads/ficha/?id=${lead.id}`} className="btn btn-ghost focus-ring">
               Abrir
             </Link>
-            <BotaoWhatsapp numero={lead.whatsapp} />
+            <BotaoMensagem lead={lead} />
           </div>
         </>
       ) : (
@@ -223,7 +209,7 @@ export function CardLead({
             <Link href={`/leads/ficha/?id=${lead.id}`} className="btn btn-ghost focus-ring">
               Abrir
             </Link>
-            <BotaoWhatsapp numero={lead.whatsapp} />
+            <BotaoMensagem lead={lead} />
           </div>
         </div>
       )}
@@ -326,6 +312,35 @@ export function RodapeAcao({ children }: { children: React.ReactNode }) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-paper px-5 py-3 md:static md:border-0 md:bg-transparent md:p-0">
       <div className="mx-auto flex max-w-content gap-2 [&>*]:flex-1 md:[&>*]:flex-none">{children}</div>
+    </div>
+  );
+}
+
+/** Quanto tempo o Desfazer fica na tela. */
+const SEGUNDOS_DESFAZER = 8;
+
+/**
+ * Aviso no rodapé com Desfazer, no lugar de pedir confirmação antes. Some
+ * sozinho depois de alguns segundos. Desfazer grava de novo o valor anterior,
+ * então o histórico mostra as duas mudanças.
+ */
+export function AvisoDesfazer({ texto, onDesfazer, onFim }: { texto: string; onDesfazer: () => void; onFim: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onFim, SEGUNDOS_DESFAZER * 1000);
+    return () => clearTimeout(t);
+  }, [texto, onFim]);
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-20 px-3 pb-3 md:px-5 md:pb-5" role="status">
+      <div className="mx-auto flex max-w-[560px] items-center justify-between gap-3 rounded-sm border border-ink bg-ink px-4 py-3 text-surface">
+        <span className="min-w-0 text-[14px] font-semibold">✓ {texto}</span>
+        <button
+          type="button"
+          className="focus-ring shrink-0 rounded-sm border border-surface px-3 py-2 text-[13px] font-semibold"
+          onClick={onDesfazer}
+        >
+          Desfazer
+        </button>
+      </div>
     </div>
   );
 }

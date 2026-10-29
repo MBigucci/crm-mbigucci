@@ -6,6 +6,7 @@ import { mensagemErro } from "./erros";
 import type { Etapa, Origem } from "./leads";
 import { sugerirProximaTentativa, TEXTO_SEM_RESPOSTA } from "./followup";
 import { HORARIO_PADRAO, type HorarioAtendimento } from "./prazo";
+import { COLUNAS_MODELO, type ModeloMensagem } from "./mensagens";
 
 export type Catalogos = { origens: Origem[]; etapas: Etapa[] };
 
@@ -103,3 +104,35 @@ export function useHorarioAtendimento(): HorarioAtendimento {
 export const esquecerHorarioAtendimento = () => {
   cacheHorario = null;
 };
+
+let cacheModelos: ModeloMensagem[] | null = null;
+
+/**
+ * Mensagens prontas (tabela mensagens_modelo), carregadas uma vez por sessão do
+ * navegador. Se a leitura falhar, a lista fica vazia e o diálogo abre sem modelo.
+ */
+export function useModelosMensagem(ativo = true): ModeloMensagem[] | null {
+  const [modelos, setModelos] = useState<ModeloMensagem[] | null>(cacheModelos);
+  useEffect(() => {
+    if (cacheModelos || !ativo) return;
+    db()
+      .from("mensagens_modelo")
+      .select(COLUNAS_MODELO)
+      .order("ordem")
+      .then(({ data, error }) => {
+        const lista = error ? [] : ((data ?? []) as ModeloMensagem[]);
+        if (!error) cacheModelos = lista;
+        setModelos(lista);
+      });
+  }, [ativo]);
+  return modelos;
+}
+
+/** Depois que o gerente geral salva um modelo, a próxima leitura busca de novo. */
+export const esquecerModelosMensagem = () => {
+  cacheModelos = null;
+};
+
+/** Origem do site publicado com o basePath, para links que vão por WhatsApp ("https://…/crm"). */
+export const enderecoDoCrm = () =>
+  typeof window === "undefined" ? "" : `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}`;

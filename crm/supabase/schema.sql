@@ -970,3 +970,147 @@ create policy "gerente geral altera horario" on public.horario_atendimento
   for update to authenticated
   using (public.is_gerente_geral())
   with check (public.is_gerente_geral());
+
+-- =====================================================================
+-- Mensagens prontas, duplicado entre corretores e repasse do lead da
+-- empresa (itens 4 a 6 de docs/referencia-crm-bruna.md). Regras em docs/leads.md.
+-- =====================================================================
+
+-- ---------- WhatsApp do usuário ----------
+-- Para o gerente avisar o corretor quando atribui um lead da empresa. Mesmo
+-- formato do lead: só dígitos, com o 55. Quem gerencia usuários altera em
+-- Usuários; cada um altera o próprio em Minha conta (função abaixo).
+alter table public.profiles add column if not exists whatsapp text;
+alter table public.profiles drop constraint if exists profiles_whatsapp_check;
+alter table public.profiles add constraint profiles_whatsapp_check
+  check (whatsapp is null or whatsapp ~ '^55[1-9]{2}[0-9]{8,9}$');
+
+grant update (whatsapp) on public.profiles to authenticated;
+
+-- Cada usuário ativo grava o próprio WhatsApp (vazio apaga). É a única coluna
+-- que ele altera no próprio perfil sem usuarios.gerenciar.
+create or replace function public.salvar_meu_whatsapp(p_whatsapp text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if auth.uid() is null or public.current_perfil() is null then
+    raise exception 'Só um usuário ativo altera o próprio WhatsApp.' using errcode = '42501';
+  end if;
+  update public.profiles set whatsapp = nullif(btrim(coalesce(p_whatsapp, '')), '') where id = auth.uid();
+end;
+$$;
+
+-- ---------- Duplicado entre corretores ----------
+-- O cadastro já avisa o duplicado entre os leads que a pessoa enxerga (com o
+-- nome). Esta função cobre os outros: diz só se existe lead ativo com o número
+-- numa carteira que a pessoa não vê. Não revela de quem é nem os dados.
+create or replace function public.whatsapp_em_outra_carteira(p_whatsapp text)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  if not (public.has_permission('leads.cadastrar') or public.has_permission('leads.atribuir')) then
+    raise exception 'Seu perfil não cadastra leads.' using errcode = '42501';
+  end if;
+  return exists (
+    select 1 from public.leads l
+    where l.whatsapp = p_whatsapp and l.status = 'ativo' and not public.pode_ver_dados_de(l.dono_id)
+  );
+end;
+$$;
+
+do $$
+declare
+  f text;
+begin
+  foreach f in array array['public.salvar_meu_whatsapp(text)', 'public.whatsapp_em_outra_carteira(text)'] loop
+    execute format('revoke all on function %s from public, anon', f);
+    execute format('grant execute on function %s to authenticated, service_role', f);
+  end loop;
+end;
+$$;
+
+-- ---------- Mensagens prontas do WhatsApp ----------
+-- Modelos com variáveis: {primeiro_nome}, {nome}, {empreendimento} e
+-- {corretor}. "etapas": etapas em que o modelo é sugerido. "sem_contato": é o
+-- sugerido quando o lead está há 2 dias ou mais sem contato. Todo usuário
+-- ativo lê; só o gerente geral cria, altera e desliga, em Configurações.
+-- Rodar o script de novo não sobrescreve o que foi ajustado.
+
+create table if not exists public.mensagens_modelo (
+  slug         text primary key default gen_random_uuid()::text,
+  titulo       text not null check (length(btrim(titulo)) > 0),
+  texto        text not null check (length(btrim(texto)) > 0),
+  etapas       text[] not null default '{}',
+  sem_contato  boolean not null default false,
+  ordem        integer not null default 0,
+  ativo        boolean not null default true,
+  updated_at   timestamptz not null default now(),
+  updated_by   uuid references public.profiles (id) on delete set null
+);
+
+insert into public.mensagens_modelo (slug, titulo, texto, etapas, sem_contato, ordem) values
+  ('primeiro_contato', 'Primeiro contato',
+   E'Oi, {primeiro_nome}, tudo bem?\n\nAqui é {corretor}, da MBigucci. Recebi seu contato sobre {empreendimento} e vou te ajudar a encontrar o imóvel certo.\n\nPrefere conversar por aqui ou por ligação? Qual o melhor horário para você?',
+   '{novo}', false, 1),
+  ('retomar_contato', 'Retomar contato',
+   E'Oi, {primeiro_nome}, tudo bem?\n\nPassando para saber se você conseguiu pensar sobre {empreendimento}. Tenho novidades que podem combinar com o que você procura. Posso te mandar?\n\nSe preferir, me diga um horário e eu te ligo.',
+   '{em_contato}', true, 2),
+  ('convite_visita', 'Convite para visita',
+   E'Oi, {primeiro_nome}, tudo bem?\n\nQue tal conhecer {empreendimento} de perto? Agendo a visita no dia e horário melhores para você.\n\nQual dia fica bom?',
+   '{}', false, 3),
+  ('confirmar_visita', 'Confirmar visita',
+   E'Oi, {primeiro_nome}, tudo bem?\n\nPassando para confirmar nossa visita a {empreendimento}. Se surgir qualquer imprevisto, é só me avisar por aqui.\n\nAté lá. {corretor}, da MBigucci.',
+   '{visita_agendada}', false, 4),
+  ('depois_da_visita', 'Depois da visita',
+   E'Oi, {primeiro_nome}, tudo bem?\n\nFoi um prazer receber você em {empreendimento}. Ficou alguma dúvida sobre a planta, os valores ou as condições de pagamento?\n\nEstou à disposição para o próximo passo.',
+   '{visita_realizada,proposta}', false, 5),
+  ('lancamento', 'Novidades do lançamento',
+   E'Oi, {primeiro_nome}, tudo bem?\n\nPassando para contar as novidades sobre {empreendimento}. Assim que tivermos a data do lançamento, você fica sabendo por aqui.\n\nQuer que eu te mande as informações que já temos?',
+   '{aguardando_lancamento}', false, 6)
+on conflict (slug) do nothing;
+
+create or replace function public.mensagens_modelo_carimbo()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.titulo := btrim(new.titulo);
+  new.texto := btrim(new.texto);
+  new.updated_at := now();
+  new.updated_by := coalesce(auth.uid(), new.updated_by);
+  return new;
+end;
+$$;
+
+drop trigger if exists mensagens_modelo_carimbo on public.mensagens_modelo;
+create trigger mensagens_modelo_carimbo before insert or update on public.mensagens_modelo
+  for each row execute function public.mensagens_modelo_carimbo();
+
+alter table public.mensagens_modelo enable row level security;
+revoke all on public.mensagens_modelo from anon, authenticated;
+grant select on public.mensagens_modelo to authenticated;
+grant insert (titulo, texto, etapas, sem_contato, ordem, ativo),
+      update (titulo, texto, etapas, sem_contato, ordem, ativo)
+  on public.mensagens_modelo to authenticated;
+
+drop policy if exists "ativos leem modelos" on public.mensagens_modelo;
+create policy "ativos leem modelos" on public.mensagens_modelo
+  for select to authenticated using (public.current_perfil() is not null);
+
+drop policy if exists "gerente geral cria modelo" on public.mensagens_modelo;
+create policy "gerente geral cria modelo" on public.mensagens_modelo
+  for insert to authenticated with check (public.is_gerente_geral());
+
+drop policy if exists "gerente geral altera modelo" on public.mensagens_modelo;
+create policy "gerente geral altera modelo" on public.mensagens_modelo
+  for update to authenticated
+  using (public.is_gerente_geral())
+  with check (public.is_gerente_geral());

@@ -142,7 +142,7 @@ Um **usuário desativado** perde todas as permissões na hora. Ele continua vend
 
 | Tabela | Ler | Alterar |
 | --- | --- | --- |
-| `profiles` | O próprio perfil, quem passa em `pode_ver_dados_de` ou quem tem `usuarios.gerenciar` | Quem tem `usuarios.gerenciar`, e só as colunas nome, perfil, equipe e ativo. O e-mail vem do Auth. Contas são criadas pela Edge Function e não há exclusão pelo app. |
+| `profiles` | O próprio perfil, quem passa em `pode_ver_dados_de` ou quem tem `usuarios.gerenciar` | Quem tem `usuarios.gerenciar`, e só as colunas nome, perfil, equipe, ativo e WhatsApp. Cada usuário ativo grava o próprio WhatsApp pela função `salvar_meu_whatsapp`. O e-mail vem do Auth. Contas são criadas pela Edge Function e não há exclusão pelo app. |
 | `teams` | Quem gerencia equipes ou usuários, quem vê todas as equipes, o gerente da equipe e os membros dela | Criar, editar e excluir: quem tem `equipes.gerenciar` |
 | `roles`, `permissions` | Qualquer usuário ativo, porque o app monta o menu com elas | Ninguém pelo app, só pelo SQL Editor |
 | `role_permissions` | Qualquer usuário ativo | Conceder e retirar: só o gerente geral |
@@ -152,6 +152,7 @@ Um **usuário desativado** perde todas as permissões na hora. Ele continua vend
 | `lead_interacoes` | Quem vê o lead | Registrar: o dono do lead; quem cadastrou um lead da empresa só guarda a mensagem original. Sem edição nem exclusão. |
 | `lead_eventos` | Quem vê o lead | Ninguém pelo app. Só o gatilho grava o histórico automático. |
 | `horario_atendimento` | Todo usuário ativo | Só o gerente geral, e só dias, abertura e fechamento. Cada mudança registra quem fez e quando. |
+| `mensagens_modelo` | Todo usuário ativo | Criar e alterar: só o gerente geral. Sem exclusão: a mensagem é desligada. Cada mudança registra quem fez e quando. |
 
 ### Gatilhos que completam as policies
 
@@ -162,6 +163,8 @@ Um **usuário desativado** perde todas as permissões na hora. Ele continua vend
 - **Lead:** carimba quem criou e quem atribuiu, deixa quem não é o dono só trocar o dono e protege a origem Empresa.
 - **Interação:** grava no lead a última interação e o próximo contato, conta as tentativas sem resposta e tira o lead de "novo" na primeira conversa.
 - **Histórico:** cada mudança de etapa, temperatura, status e dono do lead vira uma linha em `lead_eventos`.
+
+A função `whatsapp_em_outra_carteira(numero)` diz ao cadastro só se o número está num lead ativo que a pessoa não enxerga, sem dizer de quem é.
 
 ### Como o schema foi testado
 

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Casca } from "@/components/casca";
+import { ConfigMensagens } from "@/components/config-mensagens";
 import { db } from "@/lib/supabase";
 import { mensagemErro } from "@/lib/erros";
 import { PERFIS, type Configuracao, type Permissao } from "@/lib/tipos";
@@ -14,6 +15,7 @@ export default function ConfiguracoesPage() {
       <div className="grid gap-8">
         <Chaves />
         <Horario />
+        <ConfigMensagens />
         <Permissoes />
       </div>
     </Casca>
@@ -166,7 +168,7 @@ function Horario() {
       <span className="eyebrow">Horário de atendimento</span>
       <div className="card max-w-[720px]">
         <p className="text-ink-soft">
-          Todo lead novo tem 15 min para o primeiro contato, contados só neste horário. Fora dele, o prazo começa
+          Todo lead da empresa tem 15 min para o primeiro contato, contados só neste horário. Fora dele, o prazo começa
           na abertura seguinte.
         </p>
         {!dias && !erro && <p className="mt-3 text-concrete">Carregando…</p>}

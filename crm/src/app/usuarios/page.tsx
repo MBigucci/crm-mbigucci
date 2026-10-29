@@ -7,6 +7,7 @@ import { Casca } from "@/components/casca";
 import { db } from "@/lib/supabase";
 import { usePerfil } from "@/lib/sessao";
 import { mensagemErro } from "@/lib/erros";
+import { formatarWhatsapp, normalizarWhatsapp } from "@/lib/leads";
 import {
   COLUNAS_PROFILE,
   nomePerfil,
@@ -26,6 +27,7 @@ export default function UsuariosPage() {
 }
 
 type Aviso = { ok: boolean; texto: string } | null;
+type ProfileComWhatsapp = Profile & { whatsapp: string | null };
 
 /** Chama a Edge Function usuarios-admin e devolve a mensagem de erro, se houver. */
 async function usuariosAdmin(corpo: Record<string, unknown>): Promise<string | null> {
@@ -42,7 +44,7 @@ async function usuariosAdmin(corpo: Record<string, unknown>): Promise<string | n
 
 function Usuarios() {
   const eu = usePerfil();
-  const [lista, setLista] = useState<Profile[] | null>(null);
+  const [lista, setLista] = useState<ProfileComWhatsapp[] | null>(null);
   const [equipes, setEquipes] = useState<Team[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [busca, setBusca] = useState("");
@@ -53,11 +55,11 @@ function Usuarios() {
 
   const carregar = useCallback(async () => {
     const [p, t] = await Promise.all([
-      db().from("profiles").select(COLUNAS_PROFILE).order("nome"),
+      db().from("profiles").select(`${COLUNAS_PROFILE}, whatsapp`).order("nome"),
       db().from("teams").select("id, nome, gerente_id").order("nome"),
     ]);
     if (p.error || t.error) return setErro(mensagemErro(p.error ?? t.error));
-    setLista(p.data as Profile[]);
+    setLista(p.data as ProfileComWhatsapp[]);
     setEquipes(t.data as Team[]);
   }, []);
 
@@ -169,6 +171,7 @@ function Usuarios() {
                 <div className="min-w-0 flex-1">
                   <p className="titulo-card truncate">{u.nome || u.email}</p>
                   <p className="truncate text-ink-soft">{u.email}</p>
+                  {u.whatsapp && <p className="num truncate text-[13px] text-ink-soft">{formatarWhatsapp(u.whatsapp)}</p>}
                   <div className="mt-2 flex flex-wrap gap-2">
                     <span className="selo">{nomePerfil(u.perfil)}</span>
                     {u.equipe_id && <span className="selo">{nomeEquipe.get(u.equipe_id) ?? "Equipe"}</span>}
@@ -368,7 +371,7 @@ function EditarUsuario({
   onFechar,
   onSalvo,
 }: {
-  usuario: Profile;
+  usuario: ProfileComWhatsapp;
   perfis: typeof PERFIS;
   equipes: Team[];
   souEu: boolean;
@@ -379,6 +382,7 @@ function EditarUsuario({
   const [perfil, setPerfil] = useState<Perfil>(usuario.perfil);
   const [equipe, setEquipe] = useState(usuario.equipe_id ?? "");
   const [ativo, setAtivo] = useState(usuario.ativo);
+  const [whatsapp, setWhatsapp] = useState(usuario.whatsapp ? formatarWhatsapp(usuario.whatsapp) : "");
   const [novaSenha, setNovaSenha] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [okSenha, setOkSenha] = useState(false);
@@ -389,10 +393,12 @@ function EditarUsuario({
     e.preventDefault();
     if (!nome.trim()) return setErro("Informe o nome.");
     if (perfil === "corretor" && ativo && !equipe) return setErro("Corretor ativo precisa estar em uma equipe.");
+    const numero = whatsapp.trim() ? normalizarWhatsapp(whatsapp) : null;
+    if (whatsapp.trim() && !numero) return setErro("Confira o WhatsApp: DDD e número, como (11) 98765-4321.");
     setEnviando(true);
     const { data, error } = await db()
       .from("profiles")
-      .update({ nome: nome.trim(), perfil, equipe_id: temEquipe ? equipe || null : null, ativo })
+      .update({ nome: nome.trim(), perfil, equipe_id: temEquipe ? equipe || null : null, ativo, whatsapp: numero })
       .eq("id", usuario.id)
       .select("id");
     setEnviando(false);
@@ -435,6 +441,21 @@ function EditarUsuario({
         {temEquipe && (
           <CampoEquipe id={`equipe-${usuario.id}`} equipes={equipes} valor={equipe} onChange={setEquipe} />
         )}
+        <div>
+          <label className="field-label" htmlFor={`whatsapp-${usuario.id}`}>
+            WhatsApp (opcional)
+          </label>
+          <input
+            id={`whatsapp-${usuario.id}`}
+            className="input num"
+            type="tel"
+            inputMode="tel"
+            autoComplete="off"
+            placeholder="(11) 98765-4321"
+            value={whatsapp}
+            onChange={(e) => setWhatsapp(e.target.value)}
+          />
+        </div>
       </div>
       <label className="flex cursor-pointer items-center gap-3">
         <input

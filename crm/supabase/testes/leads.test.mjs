@@ -330,3 +330,73 @@ test("lead lê atribuido_em: o prazo conta da atribuição", async () => {
   const [l] = await como(GG, () => linhas(`select atribuido_em is not null as tem from public.leads where nome = 'Empresa 1'`));
   assert.equal(l.tem, true);
 });
+
+test("duplicado: a função diz só se o número está ativo numa carteira que a pessoa não vê", async () => {
+  const numero = "5511955550000";
+  await como(CB, () => db.exec(lead(CB, "Duplicado B").replace("'5511987654321'", `'${numero}'`)));
+  const emUso = async (n, w = numero) =>
+    (await como(n, () => linhas(`select public.whatsapp_em_outra_carteira($1) as r`, [w])))[0].r;
+  assert.equal(await emUso(CA), true); // outra equipe
+  assert.equal(await emUso(GA), true); // gerente de outra equipe
+  assert.equal(await emUso(CB), false); // é dele: o cadastro já mostra pelo RLS
+  assert.equal(await emUso(GB), false); // é da equipe dele: o cadastro já mostra
+  assert.equal(await emUso(GG), false); // vê tudo
+  assert.equal(await emUso(CA, "5511900000000"), false);
+  await falha(REC, `select public.whatsapp_em_outra_carteira('${numero}')`, "não cadastra");
+  await falha(DES, `select public.whatsapp_em_outra_carteira('${numero}')`, "não cadastra");
+  await falha(0, `select public.whatsapp_em_outra_carteira('${numero}')`, "permission denied");
+
+  await como(CB, () => db.exec(`update public.leads set status = 'descartado', motivo_descarte = 'duplicado' where nome = 'Duplicado B'`));
+  assert.equal(await emUso(CA), false); // descartado não conta
+});
+
+test("WhatsApp do usuário: cada um grava o próprio, quem gerencia usuários grava de todos", async () => {
+  const whatsDe = async (n) => (await linhas(`select whatsapp from public.profiles where id = $1`, [id(n)]))[0].whatsapp;
+  await como(CA, () => db.exec(`select public.salvar_meu_whatsapp('5511911112222')`));
+  assert.equal(await whatsDe(CA), "5511911112222");
+  await falha(CA, `select public.salvar_meu_whatsapp('11 91111-2222')`, "profiles_whatsapp_check");
+  const r = await como(CA, () => db.query(`update public.profiles set whatsapp = '5511933334444' where id = '${id(CA)}'`));
+  assert.equal(r.affectedRows, 0); // sem usuarios.gerenciar, só pela função
+  await como(CA, () => db.exec(`select public.salvar_meu_whatsapp('  ')`));
+  assert.equal(await whatsDe(CA), null);
+  await falha(DES, `select public.salvar_meu_whatsapp('5511911112222')`, "usuário ativo");
+  await falha(0, `select public.salvar_meu_whatsapp('5511911112222')`, "permission denied");
+
+  await como(GG, () => db.exec(`update public.profiles set whatsapp = '5511922223333' where id = '${id(CA)}'`));
+  assert.equal(await whatsDe(CA), "5511922223333");
+  await como(GG, () => db.exec(`select public.salvar_meu_whatsapp('5511900001111')`));
+  assert.equal(await whatsDe(GG), "5511900001111");
+  const ve = async (n) => (await como(n, () => linhas(`select whatsapp from public.profiles where id = '${id(CA)}'`)));
+  assert.deepEqual(await ve(GA), [{ whatsapp: "5511922223333" }]); // gerente da equipe
+  assert.deepEqual(await ve(CB), []);
+});
+
+test("mensagens prontas: todo usuário ativo lê, só o gerente geral cria e altera, e o ajuste sobrevive", async () => {
+  const modelos = `select slug from public.mensagens_modelo where ativo order by ordem`;
+  const padrao = ["primeiro_contato", "retomar_contato", "convite_visita", "confirmar_visita", "depois_da_visita", "lancamento"];
+  assert.deepEqual((await como(CA, () => linhas(modelos))).map((m) => m.slug), padrao);
+  assert.equal((await como(REC, () => linhas(modelos))).length, 6);
+  assert.equal((await como(DES, () => linhas(modelos))).length, 0);
+  await falha(0, modelos, "permission denied");
+
+  await falha(CA, `insert into public.mensagens_modelo (titulo, texto) values ('X', 'Y')`, "row-level security");
+  await falha(GA, `insert into public.mensagens_modelo (titulo, texto) values ('X', 'Y')`, "row-level security");
+  for (const n of [CA, GA]) {
+    const r = await como(n, () => db.query(`update public.mensagens_modelo set texto = 'Z' where slug = 'primeiro_contato'`));
+    assert.equal(r.affectedRows, 0);
+  }
+  await falha(GG, `delete from public.mensagens_modelo where slug = 'lancamento'`, "permission denied");
+  await falha(GG, `update public.mensagens_modelo set texto = '   ' where slug = 'lancamento'`, "mensagens_modelo_texto_check");
+
+  await como(GG, () => db.exec(`
+    update public.mensagens_modelo set texto = '  Oi, {primeiro_nome}.  ' where slug = 'primeiro_contato';
+    update public.mensagens_modelo set ativo = false where slug = 'lancamento';
+    insert into public.mensagens_modelo (titulo, texto, etapas, ordem) values ('Tabela nova', 'Oi, {primeiro_nome}.', '{proposta}', 9);
+  `));
+  const [m] = await linhas(`select texto, updated_by from public.mensagens_modelo where slug = 'primeiro_contato'`);
+  assert.deepEqual(m, { texto: "Oi, {primeiro_nome}.", updated_by: id(GG) });
+  await db.exec(schema);
+  const depois = await linhas(`select slug, texto from public.mensagens_modelo where ativo order by ordem`);
+  assert.equal(depois.length, 6); // 5 padrão ativos + o novo
+  assert.equal(depois[0].texto, "Oi, {primeiro_nome}.");
+});
