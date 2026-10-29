@@ -22,7 +22,7 @@ function erroPrograma(e: { message?: string } | null): string | null {
   return mensagemErro(e);
 }
 
-export type EstadoPrograma = { carregado: boolean; ativo: boolean; inicio: string | null };
+export type EstadoPrograma = { carregado: boolean; ativo: boolean };
 
 let cache: { usuario: string; estado: EstadoPrograma } | null = null;
 const ouvintes = new Set<(e: EstadoPrograma) => void>();
@@ -34,13 +34,13 @@ const ouvintes = new Set<(e: EstadoPrograma) => void>();
  */
 export function useEstadoPrograma(usuario: string | null): EstadoPrograma & { recarregar: () => void } {
   const [estado, setEstado] = useState<EstadoPrograma>(
-    cache && cache.usuario === usuario ? cache.estado : { carregado: false, ativo: false, inicio: null },
+    cache && cache.usuario === usuario ? cache.estado : { carregado: false, ativo: false },
   );
   const recarregar = useCallback(() => {
     if (!supabase || !usuario) return;
     supabase.rpc("programa_estado").then(({ data }) => {
-      const d = (data ?? {}) as { ativo?: boolean; inicio?: string | null };
-      const novo = { carregado: true, ativo: d.ativo === true, inicio: d.inicio ?? null };
+      const d = (data ?? {}) as { ativo?: boolean };
+      const novo = { carregado: true, ativo: d.ativo === true };
       cache = { usuario, estado: novo };
       ouvintes.forEach((f) => f(novo));
     });
@@ -182,11 +182,10 @@ export type Fechamento = {
   vgv: number;
   verba: number;
   premio: number;
-  primeiro_mes: boolean;
   fechado_por: string | null;
   fechado_em: string;
 };
-const COLUNAS_FECHAMENTO = "mes, corretor_id, pontos, pontos_validos, vendas, vgv, verba, premio, primeiro_mes, fechado_por, fechado_em";
+const COLUNAS_FECHAMENTO = "mes, corretor_id, pontos, pontos_validos, vendas, vgv, verba, premio, fechado_por, fechado_em";
 
 /** Fechamentos do mês (`mes` = "2026-11-01"); o corretor só recebe o dele. */
 export function useFechamentos(mes: string) {
@@ -209,9 +208,3 @@ export async function fecharMes(linhas: Omit<Fechamento, "fechado_por" | "fechad
   return erroPrograma(error);
 }
 
-/** O primeiro mês do programa ("2026-12", ou null para limpar). Só o gerente geral. */
-export async function salvarInicio(mes: string | null): Resultado {
-  const { data, error } = await db().from("app_settings").update({ valor: { mes } }).eq("chave", "programa_verba_inicio").select("chave");
-  if (error) return erroPrograma(error);
-  return data?.length ? null : "Rode o SQL do programa no Supabase antes.";
-}

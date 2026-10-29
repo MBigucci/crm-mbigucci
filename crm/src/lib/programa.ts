@@ -28,8 +28,6 @@ export const REGRAS = {
   tetoComVenda: 280,
   /** R$ extra por venda assinada e paga, só para quem atingiu o mínimo. */
   porVenda: 1000,
-  /** Primeiro mês do programa: R$ fixos para todos, sem pontuação. */
-  primeiroMes: 1000,
 };
 
 export type Turno = "manha" | "tarde";
@@ -83,7 +81,7 @@ export function pontosDoMes(contagens: Partial<Contagens>, criterios: Criterio[]
   return { linhas, total: linhas.reduce((s, l) => s + l.pontos, 0) };
 }
 
-export type SituacaoVerba = "primeiro_mes" | "abaixo_do_minimo" | "sem_venda" | "com_venda";
+export type SituacaoVerba = "abaixo_do_minimo" | "sem_venda" | "com_venda";
 export type Verba = {
   situacao: SituacaoVerba;
   /** Pontos que viram verba, depois do teto (0 abaixo do mínimo). */
@@ -101,11 +99,10 @@ export type Verba = {
  *   pontos < 130          → 0
  *   sem venda             → min(pontos, 200) × 10
  *   com venda             → min(pontos, 280) × 10 + vendas × 1.000
- * No primeiro mês do programa, R$ 1.000 fixos, sem pontuação.
+ * Não há regra de primeiro mês: o que o corretor faz nele já conta para o segundo.
  */
-export function calcularVerba(pontos: number, vendas: number, primeiroMes = false): Verba {
+export function calcularVerba(pontos: number, vendas: number): Verba {
   const faltamParaMinimo = Math.max(0, REGRAS.minimo - pontos);
-  if (primeiroMes) return { situacao: "primeiro_mes", pontosValidos: 0, daPontuacao: 0, dasVendas: 0, verba: REGRAS.primeiroMes, faltamParaMinimo };
   if (pontos < REGRAS.minimo) return { situacao: "abaixo_do_minimo", pontosValidos: 0, daPontuacao: 0, dasVendas: 0, verba: 0, faltamParaMinimo };
   const pontosValidos = Math.min(pontos, vendas > 0 ? REGRAS.tetoComVenda : REGRAS.tetoSemVenda);
   const daPontuacao = pontosValidos * REGRAS.valorPonto;
@@ -153,7 +150,6 @@ export function resumoDoMes(
   criterios: Criterio[],
   ano: number,
   mes: number,
-  primeiroMes = false,
 ): ResumoCorretor[] {
   const { ini, fim } = limitesDoMes(ano, mes);
   return corretores.map((c) => {
@@ -169,13 +165,11 @@ export function resumoDoMes(
       pontos,
       vendas: validas.length,
       vgv: validas.reduce((s, v) => s + Number(v.vgv), 0),
-      verba: calcularVerba(pontos, validas.length, primeiroMes),
+      verba: calcularVerba(pontos, validas.length),
     };
   });
 }
 
-/** O mês é o primeiro do programa? `inicio` = "2026-12" (ou null, ainda não definido). */
-export const ehPrimeiroMes = (inicio: string | null | undefined, ano: number, mes: number) => !!inicio && inicio === chaveMes(ano, mes);
 
 // ---------- Roleta do fim de semana ----------
 

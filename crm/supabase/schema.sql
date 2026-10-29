@@ -2076,17 +2076,12 @@ from (values ('recepcao', 'plantao.registrar'), ('operacional', 'plantao.registr
 join novas n on n.slug = v.permissao and n.nova
 on conflict do nothing;
 
--- ---------- Primeiro mês do programa ----------
--- No primeiro mês, R$ 1.000 fixos para todos, sem pontuação. valor = {"mes": "2026-12"}.
--- Não é booleana: não aparece nas chaves de Configurações; o gerente geral
--- ajusta na tela do programa.
-insert into public.app_settings (chave, valor, rotulo, descricao) values
-  ('programa_verba_inicio', '{"mes": null}'::jsonb, 'Primeiro mês do programa de verba',
-   'No primeiro mês, cada corretor recebe R$ 1.000 fixos, sem pontuação. A verba de um mês é liberada no mês seguinte.')
-on conflict (chave) do update set rotulo = excluded.rotulo, descricao = excluded.descricao;
+-- Sem regra de primeiro mês (decisão do Felipe): o que o corretor faz no
+-- primeiro mês já conta para a verba do segundo. Limpa a chave de uma versão
+-- anterior deste script.
+delete from public.app_settings where chave = 'programa_verba_inicio';
 
--- Estado do programa para o usuário logado (o app monta o menu com isso). Quem
--- não é gerente geral só fica sabendo que está desligado.
+-- Estado do programa para o usuário logado (o app monta o menu com isso).
 create or replace function public.programa_estado()
 returns jsonb
 language sql
@@ -2096,10 +2091,7 @@ set search_path = ''
 as $$
   select case
     when public.current_perfil() is null then null
-    when public.is_gerente_geral() or private.programa_verba_ativo() then jsonb_build_object(
-      'ativo', private.programa_verba_ativo(),
-      'inicio', (select s.valor ->> 'mes' from public.app_settings s where s.chave = 'programa_verba_inicio'))
-    else jsonb_build_object('ativo', false)
+    else jsonb_build_object('ativo', private.programa_verba_ativo())
   end;
 $$;
 
@@ -2349,11 +2341,11 @@ create table if not exists public.fechamentos_verba (
   vgv             numeric(14, 2) not null check (vgv >= 0),
   verba           numeric(12, 2) not null check (verba >= 0),
   premio          numeric(12, 2) not null check (premio >= 0),
-  primeiro_mes    boolean not null default false,
   fechado_por     uuid default auth.uid() references public.profiles (id) on delete set null,
   fechado_em      timestamptz not null default now(),
   primary key (mes, corretor_id)
 );
+alter table public.fechamentos_verba drop column if exists primeiro_mes;
 
 create or replace function public.fechamentos_verba_carimbo()
 returns trigger
@@ -2446,8 +2438,8 @@ grant insert (corretor_id, criterio, data, periodo, quantidade, comprovante, sai
 grant update (status, motivo_recusa) on public.lancamentos_pontos to authenticated;
 grant select on public.lancamentos_pontos_historico to authenticated;
 grant select on public.fechamentos_verba to authenticated;
-grant insert (mes, corretor_id, pontos, pontos_validos, vendas, vgv, verba, premio, primeiro_mes),
-      update (mes, corretor_id, pontos, pontos_validos, vendas, vgv, verba, premio, primeiro_mes) on public.fechamentos_verba to authenticated;
+grant insert (mes, corretor_id, pontos, pontos_validos, vendas, vgv, verba, premio),
+      update (mes, corretor_id, pontos, pontos_validos, vendas, vgv, verba, premio) on public.fechamentos_verba to authenticated;
 
 -- Critérios: o gerente geral sempre; os demais ativos só com a chave ligada.
 drop policy if exists "ver criterios" on public.criterios_pontos;

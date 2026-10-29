@@ -8,8 +8,8 @@ import { MESES, mesAtual, NavMes, type Mes } from "@/components/programa/partes"
 import { usePerfil } from "@/lib/sessao";
 import { formatarReais } from "@/lib/vendas";
 import { useVendas } from "@/lib/vendas-dados";
-import { ehPrimeiroMes, limitesDoMes, mesDeLiberacao, pontosDoMes, REGRAS, resumoDoMes } from "@/lib/programa";
-import { useCriterios, useEstadoPrograma, useFechamentos, useLancamentos } from "@/lib/programa-dados";
+import { limitesDoMes, mesDeLiberacao, pontosDoMes, REGRAS, resumoDoMes } from "@/lib/programa";
+import { useCriterios, useFechamentos, useLancamentos } from "@/lib/programa-dados";
 
 /**
  * Meus pontos: só com a chave do programa ligada (o banco não entrega nada
@@ -26,7 +26,6 @@ export default function MeusPontosPage() {
 
 function MeusPontos() {
   const eu = usePerfil();
-  const estado = useEstadoPrograma(eu.id);
   const [mes, setMes] = useState<Mes>(mesAtual());
   const { ini, fim } = limitesDoMes(mes.ano, mes.mes);
   const anterior = new Date(mes.ano, mes.mes - 1, 1);
@@ -41,8 +40,7 @@ function MeusPontos() {
   if (erro) return <p className="aviso-erro">! {erro}</p>;
   if (!criterios || !lancamentos || !vendas) return <p className="text-concrete">Carregando…</p>;
 
-  const primeiro = ehPrimeiroMes(estado.inicio, mes.ano, mes.mes);
-  const [r] = resumoDoMes([eu.id], lancamentos, vendas, criterios, mes.ano, mes.mes, primeiro);
+  const [r] = resumoDoMes([eu.id], lancamentos, vendas, criterios, mes.ano, mes.mes);
   const { linhas } = pontosDoMes(r.contagens, criterios);
   const liberadaAgora = fechamentos?.find((f) => f.corretor_id === eu.id);
   const pct = Math.min(100, Math.round((r.pontos / REGRAS.tetoComVenda) * 100));
@@ -57,9 +55,7 @@ function MeusPontos() {
         </p>
         <p className="num font-display text-[34px] font-extrabold leading-none">{formatarReais(r.verba.verba)}</p>
         <p className="text-ink-soft">
-          {primeiro
-            ? `Primeiro mês do programa: ${formatarReais(REGRAS.primeiroMes)} fixos para todos, sem pontuação.`
-            : r.verba.situacao === "abaixo_do_minimo"
+          {r.verba.situacao === "abaixo_do_minimo"
               ? `Faltam ${r.verba.faltamParaMinimo} pontos para o mínimo de ${REGRAS.minimo}. Abaixo dele, a verba é zero.`
               : r.verba.situacao === "sem_venda"
                 ? `✓ Mínimo atingido. Sem venda no mês, a verba vai até ${REGRAS.tetoSemVenda} pontos. A primeira venda assinada e paga libera até ${REGRAS.tetoComVenda} e soma ${formatarReais(REGRAS.porVenda)}.`
@@ -105,7 +101,7 @@ function MeusPontos() {
           </p>
           <p className="num font-display text-[24px] font-bold">{formatarReais(Number(liberadaAgora.verba))}</p>
           <p className="num text-[13px] text-ink-soft">
-            {liberadaAgora.primeiro_mes ? "Primeiro mês do programa" : `${liberadaAgora.pontos} pontos · ${liberadaAgora.vendas} venda${liberadaAgora.vendas === 1 ? "" : "s"}`}
+            {liberadaAgora.pontos} pontos · {liberadaAgora.vendas} venda{liberadaAgora.vendas === 1 ? "" : "s"}
           </p>
         </section>
       )}

@@ -122,7 +122,7 @@ test("chave desligada: só o gerente geral lança, e o banco não entrega nada a
   assert.equal(gg.fechamentos, 1);
   assert.equal(gg.ranking, 3);
   assert.equal(gg.plantao, 3);
-  assert.deepEqual(gg.estado, { ativo: false, inicio: null });
+  assert.deepEqual(gg.estado, { ativo: false });
 
   for (const n of NAO_GG) {
     const c = await contagens(n);
@@ -132,7 +132,7 @@ test("chave desligada: só o gerente geral lança, e o banco não entrega nada a
   await falha(0, `select * from public.lancamentos_pontos`, "permission denied");
   await falha(0, `select public.programa_estado()`, "permission denied");
   await falha(0, `select * from public.ranking_pontos(current_date)`, "permission denied");
-  // Ninguém além do gerente geral lê a data de início (app_settings).
+  // Ninguém além do gerente geral lê as chaves (app_settings).
   assert.equal((await como(CA, () => linhas(`select * from public.app_settings`))).length, 0);
 });
 
@@ -163,7 +163,7 @@ test("chave ligada: cada perfil vê só o que é dele", async () => {
   // Critérios, ranking e estado para todo ativo; auditoria só do gerente geral; fechamento só o próprio.
   const ca = await contagens(CA);
   assert.deepEqual([ca.criterios, ca.historico, ca.fechamentos, ca.ranking, ca.plantao], [3, 0, 1, 3, 0]);
-  assert.deepEqual(ca.estado, { ativo: true, inicio: null });
+  assert.deepEqual(ca.estado, { ativo: true });
   assert.equal((await contagens(CA2)).fechamentos, 0);
   assert.equal((await contagens(REC)).plantao, 3);
   assert.equal((await contagens(GA)).plantao, 2);
@@ -268,7 +268,7 @@ test("visita: a baixa vira lançamento pendente uma vez, a correção cancela e 
   assert.equal((await linhas(`select count(*)::int n from public.lancamentos_pontos where criterio = 'visita'`))[0].n, 2);
 });
 
-test("critérios, fechamento e data de início: só o gerente geral altera", async () => {
+test("critérios, fechamento e a chave: só o gerente geral altera", async () => {
   await chave(true);
   await como(CA, () => db.exec(`update public.criterios_pontos set pontos = 50`));
   assert.equal((await linhas(`select pontos from public.criterios_pontos where slug = 'video'`))[0].pontos, 5);
@@ -285,11 +285,9 @@ test("critérios, fechamento e data de início: só o gerente geral altera", asy
   const f = await como(CA2, () => linhas(`select verba, fechado_por from public.fechamentos_verba`));
   assert.deepEqual(f.map((x) => [Number(x.verba), x.fechado_por]), [[1400, id(GG)]]);
 
-  await como(GG, () => db.exec(`update public.app_settings set valor = '{"mes": "2026-12"}' where chave = 'programa_verba_inicio'`));
-  assert.deepEqual((await contagens(CA)).estado, { ativo: true, inicio: "2026-12" });
-  await como(CA, () => db.exec(`update public.app_settings set valor = '{"mes": "2020-01"}' where chave = 'programa_verba_inicio'`));
-  assert.deepEqual((await contagens(CA)).estado.inicio, "2026-12");
+  // Sem regra de primeiro mês: a chave da versão anterior não existe.
+  assert.equal((await linhas(`select count(*)::int n from public.app_settings where chave = 'programa_verba_inicio'`))[0].n, 0);
   // A chave em si, só o gerente geral liga.
   await como(GA, () => db.exec(`update public.app_settings set valor = 'false' where chave = 'programa_verba_ativo'`));
-  assert.deepEqual((await contagens(GA)).estado, { ativo: true, inicio: "2026-12" });
+  assert.deepEqual((await contagens(GA)).estado, { ativo: true });
 });

@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import {
   calcularVerba,
   CRITERIOS_PADRAO,
-  ehPrimeiroMes,
   filtrarLancamentos,
   mesDeLiberacao,
   periodoDoDia,
@@ -56,15 +55,6 @@ test("teto, mínimo e vendas", () => {
   assert.equal(calcularVerba(0, 0).faltamParaMinimo, 130);
 });
 
-test("primeiro mês: R$ 1.000 fixos, sem pontuação", () => {
-  assert.equal(calcularVerba(0, 0, true).verba, 1000);
-  assert.equal(calcularVerba(280, 2, true).verba, 1000);
-  assert.equal(calcularVerba(280, 2, true).situacao, "primeiro_mes");
-  assert.equal(ehPrimeiroMes("2026-12", 2026, 11), true);
-  assert.equal(ehPrimeiroMes("2026-12", 2027, 0), false);
-  assert.equal(ehPrimeiroMes(null, 2026, 11), false);
-});
-
 test("liberação no mês seguinte, com a virada do ano", () => {
   assert.deepEqual(mesDeLiberacao(2026, 10), { ano: 2026, mes: 11 });
   assert.deepEqual(mesDeLiberacao(2026, 11), { ano: 2027, mes: 0 });
@@ -109,7 +99,6 @@ test("resumo do mês: só aprovados do mês, vendas assinadas e pagas pelo mês 
   assert.deepEqual([a.pontos, a.pendentes, a.vendas, a.vgv, a.verba.verba], [130, 1, 1, 500000, 2300]);
   assert.deepEqual([b.pontos, b.verba.verba, b.verba.faltamParaMinimo], [10, 0, 120]);
   assert.deepEqual([c.pontos, c.verba.verba], [0, 0]);
-  assert.equal(resumoDoMes(["c"], [], [], CRITERIOS_PADRAO, 2026, 11, true)[0].verba.verba, 1000);
 });
 
 test("roleta: 6 períodos aprovados de segunda a sexta deixam apto", () => {

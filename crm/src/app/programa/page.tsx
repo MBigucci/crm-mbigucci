@@ -10,11 +10,10 @@ import { usePerfil } from "@/lib/sessao";
 import { COLUNAS_FAIXA, faixasDoMes, type Faixa } from "@/lib/faixas";
 import { formatarReais } from "@/lib/vendas";
 import { useVendas } from "@/lib/vendas-dados";
-import { chaveMes, ehPrimeiroMes, limitesDoMes, mesDeLiberacao, REGRAS, resumoDoMes, type Criterio } from "@/lib/programa";
+import { limitesDoMes, mesDeLiberacao, REGRAS, resumoDoMes, type Criterio } from "@/lib/programa";
 import {
   fecharMes,
   salvarCriterio,
-  salvarInicio,
   useCriterios,
   useEstadoPrograma,
   useFechamentos,
@@ -24,7 +23,7 @@ import {
 /**
  * Resumo do mês do programa, só do gerente geral (sempre, com a chave ligada
  * ou não): pontos, verba prevista, vendas e premiação por corretor, o
- * fechamento do mês, os critérios e o primeiro mês do programa.
+ * fechamento do mês e os critérios.
  */
 export default function ProgramaPage() {
   return (
@@ -63,7 +62,6 @@ function Programa() {
       .then(({ data }) => setFaixas((data ?? []) as Faixa[]));
   }, []);
 
-  const primeiro = ehPrimeiroMes(estado.inicio, mes.ano, mes.mes);
   const lib = mesDeLiberacao(mes.ano, mes.mes);
   const linhas = useMemo(() => {
     if (!criterios || !lancamentos || !vendas || !corretores) return null;
@@ -72,10 +70,10 @@ function Programa() {
       .filter((c) => c.ativo || lancamentos.some((l) => l.corretor_id === c.id) || vendas.some((v) => v.corretor_id === c.id))
       .map((c) => c.id);
     const premios = faixasDoMes(vendas, faixas, mes.ano, mes.mes);
-    return resumoDoMes(ids, lancamentos, vendas, criterios, mes.ano, mes.mes, primeiro)
+    return resumoDoMes(ids, lancamentos, vendas, criterios, mes.ano, mes.mes)
       .map((r) => ({ ...r, premio: Number(premios.get(r.corretor)?.faixa?.valor ?? 0) }))
       .sort((a, b) => b.verba.verba - a.verba.verba || b.pontos - a.pontos);
-  }, [criterios, lancamentos, vendas, corretores, faixas, mes.ano, mes.mes, primeiro]);
+  }, [criterios, lancamentos, vendas, corretores, faixas, mes.ano, mes.mes]);
   const nome = new Map((corretores ?? []).map((c) => [c.id, c.nome]));
   const pendentes = (lancamentos ?? []).filter((l) => l.status === "pendente").length;
   const totalVerba = (linhas ?? []).reduce((s, l) => s + l.verba.verba, 0);
@@ -104,7 +102,6 @@ function Programa() {
         vgv: l.vgv,
         verba: l.verba.verba,
         premio: l.premio,
-        primeiro_mes: primeiro,
       })),
     );
     setMsg(e ? { ok: false, texto: e } : { ok: true, texto: `Mês fechado. A verba e o prêmio são liberados em ${MESES[lib.mes].toLowerCase()} de ${lib.ano}.` });
@@ -146,7 +143,6 @@ function Programa() {
         <section aria-labelledby="t-resumo" className="grid min-w-0 gap-3">
           <h2 id="t-resumo" className="eyebrow">
             Por corretor · liberação em {MESES[lib.mes].toLowerCase()} de {lib.ano}
-            {primeiro && " · primeiro mês: R$ 1.000 fixos"}
           </h2>
           {linhas.length ? (
             <ul className="card lista-painel grid p-0">
@@ -161,7 +157,7 @@ function Programa() {
                     </p>
                   </div>
                   <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 md:justify-end md:text-right">
-                    <span className={clsx("num text-[14px]", l.pontos < REGRAS.minimo && !primeiro && "text-ink-soft")}>
+                    <span className={clsx("num text-[14px]", l.pontos < REGRAS.minimo && "text-ink-soft")}>
                       <span className="font-display text-[18px] font-bold text-ink">{l.pontos}</span> pontos
                       {l.verba.pontosValidos > 0 && l.verba.pontosValidos < l.pontos && ` (vale ${l.verba.pontosValidos})`}
                     </span>
@@ -213,43 +209,8 @@ function Programa() {
         </section>
       )}
 
-      <PrimeiroMes inicio={estado.inicio} onMudou={estado.recarregar} />
       {criterios && <EditarCriterios criterios={criterios} onMudou={recarregarCriterios} />}
     </div>
-  );
-}
-
-function PrimeiroMes({ inicio, onMudou }: { inicio: string | null; onMudou: () => void }) {
-  const [valor, setValor] = useState(inicio ?? "");
-  const [msg, setMsg] = useState<{ ok: boolean; texto: string } | null>(null);
-  useEffect(() => setValor(inicio ?? ""), [inicio]);
-  async function salvar() {
-    const v = valor.trim();
-    if (v && !/^\d{4}-\d{2}$/.test(v)) return setMsg({ ok: false, texto: "Escolha o mês." });
-    const e = await salvarInicio(v || null);
-    setMsg(e ? { ok: false, texto: e } : { ok: true, texto: "Salvo" });
-    if (!e) onMudou();
-  }
-  const hoje = mesAtual();
-  return (
-    <section className="card grid gap-3" aria-labelledby="t-inicio">
-      <h2 id="t-inicio" className="titulo-card">
-        Primeiro mês do programa
-      </h2>
-      <p className="text-[14px] text-ink-soft">No primeiro mês, cada corretor recebe {formatarReais(REGRAS.primeiroMes)} fixos, sem pontuação.</p>
-      <div className="flex flex-wrap items-end gap-3">
-        <div>
-          <label className="field-label" htmlFor="inicio-mes">
-            Mês
-          </label>
-          <input id="inicio-mes" type="month" className="input num" min={chaveMes(hoje.ano, hoje.mes)} value={valor} onChange={(e) => (setValor(e.target.value), setMsg(null))} />
-        </div>
-        <button type="button" className="btn btn-ghost btn-lg focus-ring" onClick={salvar}>
-          Salvar
-        </button>
-      </div>
-      {msg && <p className={msg.ok ? "aviso-ok" : "aviso-erro"}>{msg.ok ? "✓" : "!"} {msg.texto}</p>}
-    </section>
   );
 }
 
