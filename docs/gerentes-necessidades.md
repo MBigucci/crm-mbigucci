@@ -8,10 +8,10 @@
 
 | Pedido | Gerente 1 | Gerente 2 | No CRM hoje |
 | --- | --- | --- | --- |
-| Relatório por corretor: recebidos, descartados com motivo, perdidos, por período | ✓ | ✓ | ! Resumo em `/leads/` só com a foto do momento (ativos, prazo estourado, atrasados, sem contato) |
-| Separar lead da empresa do lead captado pelo próprio corretor | ✓ | | ! Filtro por origem em `/leads/` e no Quadro; sem conta separada no resumo |
-| Origem e empreendimento de cada lead | | ✓ | ! Filtro por origem e por empreendimento em `/leads/` e no Quadro; sem visão agrupada |
-| Relatório fácil de imprimir, para mostrar ao corretor | | ✓ | ✕ |
+| Relatório por corretor: recebidos, descartados com motivo, perdidos, por período | ✓ | ✓ | ✓ Painel da equipe por dia, semana e mês (`docs/painel.md`) |
+| Separar lead da empresa do lead captado pelo próprio corretor | ✓ | | ✓ Recebidos da empresa e cadastrados pelo corretor, por origem, no painel |
+| Origem e empreendimento de cada lead | | ✓ | ! Filtro por origem e por empreendimento em `/leads/` e no Quadro; origem agrupada no painel; empreendimento ainda sem visão agrupada |
+| Relatório fácil de imprimir, para mostrar ao corretor | | ✓ | ✓ Imprimir no painel e no relatório do corretor |
 | Ver como o corretor conversa com o cliente | | ✓ | ! As interações anotadas e a mensagem original |
 | Ver quem está "online" | | ✓ | ✕ Fica de fora |
 | Cadastro de parceiros por link e envio de material por região | ✓ | | ✕ Etapa futura |
@@ -36,11 +36,13 @@
 
 ## Onde entra
 
+Os itens 1 a 3 estão descritos em `docs/painel.md`.
+
 | # | O que | Etapa | Lista da Bruna |
 | --- | --- | --- | --- |
-| 1 | Lead perdido: botão do gerente no lead da empresa com prazo estourado, que reatribui e grava o motivo | leads | Complementa o item 9 (prazo, já feito). P |
-| 2 | Painel da equipe com dia, semana e mês: recebidos da empresa, perdidos, captados pelo corretor, descartados por motivo e funil até a venda, com clique para os leads | metas | Item 11, sobe de prioridade |
-| 3 | Imprimir o painel e o relatório de um corretor: letra grande, sem cor de fundo | metas | Junto do item 11. P |
+| 1 ✓ | **Feito.** Lead perdido: botão do gerente no lead da empresa com prazo estourado, que reatribui e grava o motivo | leads | Complementa o item 9 (prazo, já feito). P |
+| 2 ✓ | **Feito.** Painel da equipe com dia, semana e mês: recebidos da empresa, perdidos, captados pelo corretor, descartados por motivo e funil até a venda, com clique para os leads | metas | Item 11, sobe de prioridade |
+| 3 ✓ | **Feito.** Imprimir o painel e o relatório de um corretor: letra grande, sem cor de fundo | metas | Junto do item 11. P |
 | 4 ✓ | **Feito.** Filtro por origem e por empreendimento em `/leads/` (e no Quadro) | leads | Item 7 |
 | 5 ✓ | **Feito.** Mensagens prontas para padronizar o atendimento, editadas pelo gerente geral | leads | Item 4 |
 | 6 | Parceiros: cadastro por link, lista por região e exportação para envio | parceiros (futura) | Fora da lista |

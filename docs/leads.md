@@ -71,6 +71,7 @@ Adaptado do CRM da Bruna (`performance.ts` e `followup.ts`). Lá o prazo vale pa
 - **Horário de atendimento:** tabela `horario_atendimento`, uma linha só, com os dias (0 = domingo … 6 = sábado), a abertura e o fechamento. O padrão é o do plantão MBigucci (`docs/pontuacao-verba.md`): **9h às 19h, todos os dias**, porque há plantão no fim de semana. Todo usuário ativo lê; só o gerente geral altera, em Configurações > Horário de atendimento. Fica fora de `app_settings` porque essa tabela é só do gerente geral (sigilo). O app guarda o horário por sessão do navegador, então a mudança vale no próximo acesso de cada corretor. Se a leitura falhar, vale o padrão.
 - **Fuso:** a conta usa a hora do aparelho (São Paulo), como a lista do dia.
 - **Resumo do gerente:** a tabela "Por corretor" em Leads tem a coluna "Prazo estourado", e os corretores com mais prazos estourados vêm primeiro.
+- **Lead perdido:** com o prazo estourado, a ficha mostra ao gerente o botão "Lead perdido: passar para outro corretor", que reatribui dentro da equipe, recomeça o prazo e grava no histórico quem perdeu. Regras em `docs/painel.md`, seção 1.
 
 ## 5. Follow-up e tentativas
 
@@ -87,7 +88,8 @@ Adaptado da regra de ouro do CRM da Bruna (`followup.ts`). Lá, 2 dias sem inter
 - Quem grava é o gatilho do banco, nunca o app. O que o banco fez sozinho, como tirar o lead de "novo", sai marcado como automático.
 - Na ficha, o histórico junta interações e eventos, do mais novo ao mais antigo. Os eventos aparecem esmaecidos: "Etapa: Novo → Em contato · automático", "Descartado: Sem retorno", "Atribuído a Carla".
 - Os leads que existiam antes da tabela ganharam só o evento "Lead cadastrado". As mudanças anteriores não foram registradas.
-- É a base da conversão por origem e do funil por período (item 11 da lista da Bruna).
+- A troca de dono feita pelo botão Lead perdido sai com o motivo "perdido": "! Lead perdido por Carla. Passado para Diego".
+- É a base do painel da equipe, com o funil por período (`docs/painel.md`).
 
 ## 7. Cadastro Mágico
 
@@ -165,7 +167,8 @@ As regras ficam em `crm/src/lib/busca.ts`, com testes. A busca vem do `search-di
 | `/` | Lista do dia (corretor) ou painel com atalho para Leads (gerente e gerente geral) |
 | `/leads/` | Todos os leads visíveis, com busca, filtros (corretor, origem, empreendimento e situação), ordem e o resumo por corretor (ativos, prazo estourado, atrasados, sem contato) para o gerente |
 | `/leads/novo/` | Cadastro rápido, com o "+ Colar mensagem" do Cadastro Mágico. Para quem atribui, vira "Lead da empresa", com a escolha do corretor e, depois de cadastrar, o "Avisar no WhatsApp". |
-| `/leads/ficha/?id=` | Ficha: WhatsApp com mensagem pronta, Ligar, prazo do primeiro contato (lead da empresa em "novo"), Sem resposta, sugestão de descarte, interação por tipo, andamento e descarte com Desfazer, perfil do cliente (com e-mail), atribuição com o aviso ao corretor e histórico com os eventos |
+| `/leads/ficha/?id=` | Ficha: WhatsApp com mensagem pronta, Ligar, prazo do primeiro contato (lead da empresa em "novo"), Sem resposta, sugestão de descarte, interação por tipo, andamento e descarte com Desfazer, perfil do cliente (com e-mail), atribuição com o aviso ao corretor (e o Lead perdido, com o prazo estourado) e histórico com os eventos |
+| `/painel/` | Painel da equipe (gerente) ou Meu painel (corretor), por dia, semana ou mês, com o relatório do corretor e a versão para imprimir (`docs/painel.md`) |
 | `/leads/quadro/` | Quadro por etapas, com rolagem lateral no celular, filtros e o mais esquecido no topo |
 | `/conta/` | Minha conta: o próprio WhatsApp, troca de senha e instalação no celular |
 | `/configuracoes/` | Gerente geral: chaves, horário de atendimento, mensagens prontas e permissões |
@@ -185,5 +188,5 @@ A ficha usa `?id=` porque a exportação estática não tem rotas dinâmicas.
 ## 15. Testes
 
 - `npm test` (em `crm/`): ordenação da lista do dia (com o grupo do primeiro contato), prazo do primeiro contato (só lead da empresa, virada de dia, chegada fora do horário, fim de semana, reatribuição e rótulos), WhatsApp (com o 9º dígito), datas, follow-up, histórico e o parser do Cadastro Mágico (portal, tabela de e-mail, WhatsApp do iPhone e do Android, Facebook, RD Station, nome por assinatura e por e-mail, orçamento e dormitórios), mensagens prontas (variáveis, sugestão pela etapa e pelo tempo sem contato, links e o aviso de repasse) e busca (acento, termos, telefone em qualquer formato, ordem e filtro de empreendimento).
-- `npm run test:banco`: roda o `schema.sql` três vezes no PGlite e confere o RLS de leads, interações e eventos por perfil, as tentativas, o avanço de etapa, a mensagem original, o horário de atendimento (quem lê, quem altera e os checks), a função de duplicado por perfil, o WhatsApp do usuário e o RLS das mensagens prontas.
+- `npm run test:banco`: roda o `schema.sql` três vezes no PGlite e confere o RLS de leads, interações e eventos por perfil, o Lead perdido e os perdidos por perfil (`docs/painel.md`), as tentativas, o avanço de etapa, a mensagem original, o horário de atendimento (quem lê, quem altera e os checks), a função de duplicado por perfil, o WhatsApp do usuário e o RLS das mensagens prontas.
 - No Supabase real: `supabase/dados-teste.sql` cria 2 leads por corretor de teste, e `supabase/verificar-rls.sql` mostra o que cada perfil vê e a quem pode atribuir.
