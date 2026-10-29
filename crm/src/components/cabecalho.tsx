@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
+import { AvisoOffline } from "./aviso-offline";
 
 export type ItemMenu = { href: string; rotulo: string };
 
@@ -113,6 +114,7 @@ export function Cabecalho({ itens, onSair, nome }: { itens?: ItemMenu[]; onSair?
           )}
         </nav>
       )}
+      <AvisoOffline />
     </header>
   );
 }

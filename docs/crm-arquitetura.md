@@ -74,6 +74,16 @@ As regras de negócio estão em `docs/leads.md`. Aqui ficam só as decisões té
   - A ficha usa `/leads/ficha/?id=`, porque a exportação estática não gera rotas dinâmicas.
   - "Hoje" e "atrasado" usam o fuso do aparelho do corretor.
 
+## PWA (29/10/2026)
+
+- **Manifest estático:** `crm/public/manifest.webmanifest`, e não um `app/manifest.ts`. Todos os caminhos dentro dele são **relativos** (`./`, `icons/...`), então resolvem para `/crm/` a partir da URL do manifest, com qualquer `BASE_PATH`. Nome "CRM MBigucci", nome curto "CRM", `display: standalone`, fundo e tema `paper` #f7f6f2.
+- **Ícones:** `crm/public/icons/` (192, 512, maskable 512, apple-touch-icon 180, favicon 32 e SVG), "MB" branco no vermelho `brand`. Os PNG ficam no git e saem de `node scripts/gerar-icones.mjs` (sharp que vem com o Next). Não são o logo oficial.
+- **`layout.tsx`:** o Next não prefixa o `basePath` nos links de `metadata.manifest` e `metadata.icons`, então eles usam `NEXT_PUBLIC_BASE_PATH` à mão. Confira no `out/index.html` que saem como `/crm/...`, sem prefixo dobrado.
+- **Sem service worker:** o Chrome no Android já oferece "Instalar app" só com o manifest e HTTPS. Não há cache nem fila offline. O SW vem com as notificações push (item 15), com escopo `/crm/` e sem cache de dados do Supabase.
+- **Sem internet:** `components/aviso-offline.tsx`, dentro do cabeçalho fixo, mostra "! Sem internet. O que você fizer agora pode não ser salvo." pelos eventos `online`/`offline`. Não sincroniza nada.
+- **Instalação:** card "Instalar no celular" em `/conta/`, com o passo a passo de Android e iPhone.
+- **WordPress:** se o Apache servir `.webmanifest` com tipo errado, o Chrome ainda aceita. Se quiser o tipo certo: `AddType application/manifest+json .webmanifest` no `.htaccess`.
+
 ## Testes
 
 - **Schema e RLS da base:** testados no PGlite (Postgres em WASM), com uma simulação do `auth.users`, do `auth.uid()` e dos papéis `anon` e `authenticated`. Foram 44 verificações por perfil, e o script rodou três vezes para provar que é idempotente. Esse script continua fora do repositório, na pasta de notas da sessão da base (`sqltest/test.mjs`). Ele conta 2 permissões fixas, então acusa 1 falha desde que as de leads entraram.

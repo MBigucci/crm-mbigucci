@@ -75,6 +75,18 @@ function Conta() {
           {enviando ? "Salvando…" : "Trocar senha"}
         </button>
       </form>
+      <div className="card">
+        <h2 className="titulo-card">Instalar no celular</h2>
+        <p className="mt-2 text-ink-soft">O CRM abre como um app, em tela cheia, a partir de um ícone na tela inicial.</p>
+        <p className="mt-3">
+          <span className="font-semibold">Android:</span> abra o CRM no Chrome, toque no menu de três pontos e escolha{" "}
+          <span className="font-semibold">Instalar app</span> ou <span className="font-semibold">Adicionar à tela inicial</span>.
+        </p>
+        <p className="mt-2">
+          <span className="font-semibold">iPhone:</span> abra o CRM no Safari, toque em{" "}
+          <span className="font-semibold">Compartilhar &gt; Adicionar à Tela de Início</span>.
+        </p>
+      </div>
     </div>
   );
 }

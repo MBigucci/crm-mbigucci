@@ -113,7 +113,7 @@ Códigos da pesquisa:
 | Busca global (Ctrl+K) em leads e imóveis: sem acento, vários termos, telefone tolerante (+55 pela metade, 0, pontuação), ranking por início do nome (`components/search-dialog.tsx`) | ! Busca simples em `/leads/` | **Adaptar** a lógica (função pura, testável) para a busca de `/leads/`. Atalho de teclado e imóveis depois. | leads | T5 |
 | Painel do Dia: saudação, leads novos sem contato, follow-ups com ações em 1 toque, metas, métricas do mês, agenda de 7 dias, funil (`app/page.tsx`) | ! Lista do dia (corretor) e painel do gerente "em construção" | **Adaptar no painel do gerente** (por equipe): leads novos, atrasados e sem contato por corretor (já existe em `/leads/`), funil agora e novos no mês. A "comissão estimada" com 5% × 85% fixos **não vem**. | metas | N2, N4 |
 | Card de boas-vindas no banco vazio explicando o Cadastro Mágico | ✕ | **Trazer** com o Cadastro Mágico. | leads | |
-| PWA instalável: manifest, ícones, `display: standalone` (`app/manifest.ts`, `layout.tsx`) | ✕ | **Trazer.** É estático e funciona no WordPress. Os caminhos usam o `basePath`. | base | T6 |
+| PWA instalável: manifest, ícones, `display: standalone` (`app/manifest.ts`, `layout.tsx`) | ✓ `public/manifest.webmanifest` | **Feito** (item 8). É estático e funciona no WordPress. Os caminhos usam o `basePath`. | base | T6 |
 | Barra do celular com contador no Funil e atalhos | ! Casca própria | **Não trazer:** a navegação da MBigucci segue o DS. | | |
 
 ## 8. Visitas e agenda
@@ -159,7 +159,7 @@ Códigos da pesquisa:
 | Recurso | MBigucci | Recomendação | Etapa | Pesquisa |
 | --- | --- | --- | --- | --- |
 | `CloudSync`: estado inteiro em memória, grava por diferença, mescla de 3 vias por coluna, fila offline no `localStorage`, Realtime em todo o schema (`lib/cloud.ts`, `store.tsx`) | ! Grava direto a cada ação | **Não trazer.** Feito para 2 pessoas: baixa tudo, trata `42501` (RLS negada) como erro passageiro (repetiria para sempre com perfis), marca erro de dados como sincronizado, e a última gravação vence sem aviso. Com RLS por equipe, gravar direto e mostrar o erro é mais seguro. | | |
-| Aviso fixo "Sem internet · …" | ✕ | **Adaptar** só o aviso, e manter o formulário preenchido quando a gravação falhar, para tentar de novo. | base | T6 |
+| Aviso fixo "Sem internet · …" | ! Só o aviso (`aviso-offline.tsx`) | **Adaptar** só o aviso (feito no item 8), e manter o formulário preenchido quando a gravação falhar, para tentar de novo. | base | T6 |
 | Realtime: aviso "Novo lead: {nome}" e vibração quando chega um lead | ✕ | **Adaptar** só para o corretor que recebe um lead da empresa, filtrado por dono. | notificações | T9 |
 | `app_settings` com gravação otimista e controle por `updated_at` (`lib/app-settings.ts`) | ✓ Já existe, só o gerente geral grava | Nada a trazer. | | |
 | Conta: nome, sair, notificações deste aparelho, contato avisado por WhatsApp (`components/account-dialog.tsx`) | ! `/conta` | **Adaptar** quando houver push: a seção "Notificações neste aparelho" vai para `/conta`. | notificações | T6 |
@@ -187,7 +187,7 @@ Tamanho: **P** = até meia sessão, **M** = uma sessão, **G** = duas ou mais se
 | 5 | **Duplicado entre corretores** (RPC que só diz se existe). O 9º dígito no `normalizarWhatsapp` já entrou com o item 1 | leads | P | T2 |
 | 6 | **Repasse do lead da empresa**: WhatsApp do corretor em `profiles` e botão "Avisar no WhatsApp" ao atribuir | leads | P | T9 |
 | 7 | **Ajustes de lista e quadro**: "mais tempo sem contato" em `/leads/`, mais esquecido no topo do quadro, Desfazer em vez de confirmação, busca tolerante a acento e telefone | leads | P | N3, T3 |
-| 8 | **PWA instalável** (manifest e ícones com `basePath`) e aviso de sem internet | base | P | T6 |
+| 8 ✓ | **Feito.** **PWA instalável** (manifest e ícones com `basePath`) e aviso de sem internet | base | P | T6 |
 | 9 | **Prazo do lead da empresa** no horário do plantão, com "Prazo estourado" no resumo do gerente | leads | M | T9 |
 | 10 | **Visitas**: tabela, agendar, confirmar por WhatsApp, baixa auditável, agenda da semana, visitas no topo da lista do dia | visitas | G | T1, N2 |
 | 11 | **Conversão por origem e campanha**, motivos de descarte, funil do período, painel do gerente por equipe (depende do 3) | metas | M | N1, N2, N4 |
