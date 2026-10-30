@@ -185,6 +185,7 @@ export function ListaDoDia() {
                     modelo="parabens"
                     rotulo="Mandar parabéns →"
                     rotuloAcessivel={`Mandar parabéns para ${a.nome}`}
+                    destaque
                     className="flex-1 md:flex-none"
                   />
                   <Link href={`/leads/ficha/?id=${a.id}`} className="btn btn-ghost focus-ring flex-1 md:flex-none">
