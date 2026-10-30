@@ -70,6 +70,8 @@ export function Casca({
     itens.push({ href: "/vendas/", rotulo: "Vendas" });
     itens.push({ href: "/metas/", rotulo: "Metas" });
   }
+  // O catálogo é lido por todo usuário ativo.
+  itens.push({ href: "/empreendimentos/", rotulo: "Empreendimentos" });
   // Tela só do gerente geral, por regra fixa no banco (não é permissão do catálogo).
   if (ehGG) itens.push({ href: "/faixas/", rotulo: "Faixas de VGV" });
   // Programa sigiloso: o gerente geral sempre; os demais só com a chave ligada

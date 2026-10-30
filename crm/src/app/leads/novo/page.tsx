@@ -18,6 +18,9 @@ import {
   useHorarioAtendimento,
 } from "@/lib/leads-dados";
 import { AvisarCorretor } from "@/components/leads/repasse";
+import { ConferirNoCatalogo, ListaEmpreendimentos } from "@/components/empreendimentos/partes";
+import { bairrosDoCatalogo, listaDoMagico } from "@/lib/catalogo";
+import { useCatalogo } from "@/lib/catalogo-dados";
 import Link from "next/link";
 
 export default function NovoLeadPage() {
@@ -375,9 +378,13 @@ function NovoLead() {
             <input
               id="empreendimento"
               className="input"
+              list="empreendimentos-lista"
+              autoComplete="off"
               value={empreendimento}
               onChange={(e) => setEmpreendimento(e.target.value)}
             />
+            <ListaEmpreendimentos id="empreendimentos-lista" />
+            <ConferirNoCatalogo nome={empreendimento} />
           </div>
           <div>
             <label className="field-label" htmlFor="email">
@@ -429,7 +436,10 @@ function ColarMensagem({
   const [usarValor, setUsarValor] = useState(false);
   const [usarDorm, setUsarDorm] = useState(false);
   const [bairros, setBairros] = useState<string[]>([]);
-  const lido = useMemo(() => (texto.trim() ? lerMensagem(texto, ignorarNomes) : null), [texto, ignorarNomes]);
+  // Empreendimentos e bairros do catálogo; com ele vazio ou fora do ar, a lista fixa.
+  const { catalogo } = useCatalogo();
+  const listas = useMemo(() => ({ empreendimentos: listaDoMagico(catalogo), bairros: bairrosDoCatalogo(catalogo) }), [catalogo]);
+  const lido = useMemo(() => (texto.trim() ? lerMensagem(texto, ignorarNomes, listas) : null), [texto, ignorarNomes, listas]);
 
   // Texto novo: as sugestões voltam a valer só depois de tocadas.
   useEffect(() => {

@@ -150,7 +150,7 @@ Lido por inteiro em 29/10/2026: `ref/CRM Bruna/src/app/vendas/page.tsx`, `src/ap
 | Página de vendas: Este mês, 90 dias, Este ano, Tudo | Mês ou ano, com anterior e seguinte, no endereço | A venda conta no mês da assinatura; o mês fechado precisa ser navegável |
 | Excluir venda (`deleteSale`) e editar o status direto na lista | Cancelar e reativar com motivo; correção com motivo, só pelo gerente; tudo no histórico | Sem exclusão física; auditoria |
 | Venda avulsa, sem lead | Sempre de um lead | O histórico e o funil dependem do lead |
-| Imóvel do catálogo (código, preço) | Empreendimento (lista de sugestões) e unidade | A MBigucci vende os próprios empreendimentos; o catálogo é o item 13 |
+| Imóvel do catálogo (código, preço) | Empreendimento (sugestões do catálogo, com o aviso "! Não está no catálogo") e unidade | A MBigucci vende os próprios empreendimentos; o catálogo é o item 13 (`docs/empreendimentos.md`, seção 12) |
 | Funil: "Visita" é a visita agendada | Visita **realizada** | A baixa auditável é a que vale (`docs/visitas.md`) |
 | Conversão por origem com leads, vendas e taxa | Por origem e **campanha**, com cada etapa e os descartes por motivo; a campanha só com `painel.campanha` | Pedido dos gerentes e corretores; sigilo |
 | Coorte: leads criados no período | Leads que **entraram na carteira** do corretor no período (cadastro ou atribuição) | Leads da empresa trocam de dono |

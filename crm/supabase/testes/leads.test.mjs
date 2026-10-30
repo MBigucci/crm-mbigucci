@@ -373,9 +373,9 @@ test("WhatsApp do usuário: cada um grava o próprio, quem gerencia usuários gr
 
 test("mensagens prontas: todo usuário ativo lê, só o gerente geral cria e altera, e o ajuste sobrevive", async () => {
   const modelos = `select slug from public.mensagens_modelo where ativo order by ordem`;
-  const padrao = ["primeiro_contato", "retomar_contato", "convite_visita", "confirmar_visita", "depois_da_visita", "lancamento"];
+  const padrao = ["primeiro_contato", "retomar_contato", "convite_visita", "confirmar_visita", "depois_da_visita", "lancamento", "apresentar_empreendimento"];
   assert.deepEqual((await como(CA, () => linhas(modelos))).map((m) => m.slug), padrao);
-  assert.equal((await como(REC, () => linhas(modelos))).length, 6);
+  assert.equal((await como(REC, () => linhas(modelos))).length, 7);
   assert.equal((await como(DES, () => linhas(modelos))).length, 0);
   await falha(0, modelos, "permission denied");
 
@@ -397,7 +397,7 @@ test("mensagens prontas: todo usuário ativo lê, só o gerente geral cria e alt
   assert.deepEqual(m, { texto: "Oi, {primeiro_nome}.", updated_by: id(GG) });
   await db.exec(schema);
   const depois = await linhas(`select slug, texto from public.mensagens_modelo where ativo order by ordem`);
-  assert.equal(depois.length, 6); // 5 padrão ativos + o novo
+  assert.equal(depois.length, 7); // 6 padrão ativos + o novo
   assert.equal(depois[0].texto, "Oi, {primeiro_nome}.");
 });
 

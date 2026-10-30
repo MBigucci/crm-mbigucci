@@ -18,11 +18,13 @@
 13. Telas
 14. Como ajustar origens, etapas, motivos, empreendimentos, horário, mensagens e permissões
 15. Testes
+16. Radar de Match e catálogo na ficha
 
 ## 1. O que entrou e o que ficou de fora
 
 - **Entrou:** cadastro rápido, Cadastro Mágico, lista do dia, prazo de 15 min para o primeiro contato, ficha com interações e histórico automático, follow-up com tentativas, quadro por etapas, leads da equipe e atribuição de lead da empresa pelo gerente. Também mensagens prontas no WhatsApp, Ligar, aviso de duplicado entre carteiras, aviso ao corretor no WhatsApp, busca tolerante, filtros por origem e empreendimento, ordem por tempo sem contato e Desfazer.
-- **Ficou de fora:** registrar sozinho no histórico que o WhatsApp foi aberto, áudio, lembrete push, cruzar clientes com imóveis, links de apresentação, fila de leads da empresa sem corretor, pontuação e qualquer tema do programa sigiloso.
+- **Ficou de fora:** registrar sozinho no histórico que o WhatsApp foi aberto, áudio, lembrete push, fila de leads da empresa sem corretor, pontuação e qualquer tema do programa sigiloso.
+- **Depois (29/10/2026):** o catálogo de empreendimentos e o Radar de Match (itens 13 e 14) cruzam o perfil do lead com as tipologias e põem o endereço, a apresentação e o "a partir de" nas mensagens. Regras em `docs/empreendimentos.md`, seção 12, e o resumo na seção 16 abaixo.
 
 ## 2. Regras do lead
 
@@ -101,7 +103,7 @@ Adaptado da regra de ouro do CRM da Bruna (`followup.ts`). Lá, 2 dias sem inter
 - **Campos:** nome, WhatsApp (com o 9º dígito), e-mail e empreendimento, cada um com um selo: ✓ Detectado (veio de um rótulo ou de um padrão seguro), ! Conferir (palpite, como o nome salvo no contato ou tirado do e-mail) ou ✕ Não encontrado.
 - **Perfil:** orçamento, dormitórios e bairros aparecem como sugestões que só valem depois de tocadas.
 - **O que não é cliente:** o nome de quem usa o CRM (o corretor que aparece na conversa), e-mails de sistema e da própria MBigucci, e o código de anúncio de portal.
-- **Empreendimentos e bairros:** lista fixa em `crm/src/lib/empreendimentos.ts`, até existir a tabela de empreendimentos. Nome que também é palavra comum (Life, Alameda, Wish) só vale com contexto, como "Residencial Life" ou "Empreendimento: Life". Um nome parecido com vários, como "Marco Zero One", vem para conferir como foi escrito.
+- **Empreendimentos e bairros:** vêm do catálogo (tabela `empreendimentos`, `listaDoMagico` e `bairrosDoCatalogo` em `crm/src/lib/catalogo.ts`): cada torre, o condomínio quando a variação é de várias torres ("Mundi") e os bairros e cidades do catálogo. Com o catálogo vazio ou fora do ar, vale a lista fixa de `crm/src/lib/empreendimentos.ts`. Chave de uma palavra que também é palavra comum (Life, Alameda, Wish, Dom) só vale com contexto, como "Residencial Life" ou "Empreendimento: Dom"; "Life MBigucci" vale sozinho. Um nome com começo comum a vários, que não está na lista ("Marco Zero Plaza"), vem para conferir como foi escrito.
 - **Confirmação:** "Usar estes dados" volta ao cadastro rápido preenchido. O corretor confere, escolhe a origem e toca em Cadastrar. Os obrigatórios continuam nome, WhatsApp e origem.
 - **Mensagem original:** o texto colado vira a primeira interação do lead, sem próximo contato. O gerente que cadastra um lead da empresa também guarda a mensagem, mesmo não sendo o dono.
 
@@ -111,7 +113,8 @@ Adaptado de `templates.ts` e `message-dialog.tsx` da Bruna. As regras ficam em `
 
 - **Diálogo:** o botão WhatsApp (lista do dia, Leads e ficha) abre o diálogo com a mensagem sugerida já preenchida. O corretor troca o modelo em 1 toque, edita o texto e toca em "Abrir no WhatsApp", que abre `wa.me` com o texto. "Copiar" copia o texto. Sem modelos (tabela vazia ou fora do ar), o diálogo abre com o campo vazio.
 - **Modelos:** tabela `mensagens_modelo`. Os 6 iniciais são primeiro contato, retomar contato, convite para visita, confirmar visita, depois da visita e novidades do lançamento. Nenhum cita verba nem campanha paga.
-- **Variáveis:** `{primeiro_nome}` (do cliente, com a primeira letra maiúscula), `{nome}`, `{empreendimento}` (vazio vira "nossos empreendimentos") e `{corretor}` (o nome de quem envia, como está em Usuários). Variável desconhecida fica como está, e o editor avisa.
+- **Variáveis:** `{primeiro_nome}` (do cliente, com a primeira letra maiúscula), `{nome}`, `{empreendimento}` (vazio vira "nossos empreendimentos"), `{corretor}` (o nome de quem envia, como está em Usuários) e `{visita}` (na confirmação). Do catálogo, pelo empreendimento do lead: `{endereco}`, `{apresentacao}` (link da apresentação, do book ou da página) e `{a_partir_de}`. **A linha com uma variável do catálogo vazia sai da mensagem** (empreendimento fora do catálogo ou sem preço). Variável desconhecida fica como está, e o editor avisa.
+- **Apresentar empreendimento:** o 7º modelo, usado pelo "Mandar →" do Radar, dos clientes compatíveis e do catálogo. No catálogo não há cliente: "Oi, {primeiro_nome}, tudo bem?" vira "Oi, tudo bem?", e o WhatsApp abre para escolher o contato.
 - **Sugestão**, entre as mensagens ligadas, na ordem:
   1. lead em "novo": a marcada para a etapa Novo (primeiro contato);
   2. lead há 2 dias ou mais sem contato, ou com tentativa sem resposta: a marcada "sem contato" (retomar contato);
@@ -169,7 +172,8 @@ As regras ficam em `crm/src/lib/busca.ts`, com testes. A busca vem do `search-di
 | `/` | Lista do dia (corretor) ou painel com atalho para Leads (gerente e gerente geral) |
 | `/leads/` | Todos os leads visíveis, com busca, filtros (corretor, origem, empreendimento e situação), ordem e o resumo por corretor (ativos, prazo estourado, atrasados, sem contato) para o gerente |
 | `/leads/novo/` | Cadastro rápido, com o "+ Colar mensagem" do Cadastro Mágico. Para quem atribui, vira "Lead da empresa", com a escolha do corretor e, depois de cadastrar, o "Avisar no WhatsApp". |
-| `/leads/ficha/?id=` | Ficha: WhatsApp com mensagem pronta, Ligar, prazo do primeiro contato (lead da empresa em "novo"), Sem resposta, sugestão de descarte, interação por tipo, andamento e descarte com Desfazer, perfil do cliente (com e-mail), atribuição com o aviso ao corretor (e o Lead perdido, com o prazo estourado) e histórico com os eventos |
+| `/leads/ficha/?id=` | Ficha: WhatsApp com mensagem pronta, Ligar, prazo do primeiro contato (lead da empresa em "novo"), Sem resposta, sugestão de descarte, interação por tipo, andamento e descarte com Desfazer, perfil do cliente (com e-mail), atribuição com o aviso ao corretor (e o Lead perdido, com o prazo estourado), Radar de Match (empreendimentos que combinam) e histórico com os eventos |
+| `/empreendimentos/` | Catálogo de empreendimentos, com o detalhe em `/empreendimentos/ver/?slug=` (com os clientes compatíveis) e a edição em `/empreendimentos/editar/` (`docs/empreendimentos.md`, seção 12) |
 | `/painel/` | Painel da equipe (gerente) ou Meu painel (corretor), por dia, semana ou mês, com o relatório do corretor e a versão para imprimir (`docs/painel.md`) |
 | `/leads/quadro/` | Quadro por etapas, com rolagem lateral no celular, filtros e o mais esquecido no topo |
 | `/agenda/` | Agenda: as visitas da semana, as que aguardam baixa e, para o gerente, o filtro por corretor (`docs/visitas.md`) |
@@ -182,7 +186,7 @@ A ficha usa `?id=` porque a exportação estática não tem rotas dinâmicas.
 
 - **Origens e etapas:** ficam nas tabelas `lead_origens` e `lead_etapas`. Para renomear, reordenar, desligar (`ativo = false`) ou criar uma opção, edite as linhas no Table Editor do Supabase. O app lê as tabelas, e rodar o `schema.sql` de novo não sobrescreve o que foi ajustado.
 - **Motivos de descarte:** ficam no check `leads_motivo_descarte_check` da tabela `leads` e em `MOTIVOS_DESCARTE` (`crm/src/lib/leads.ts`). Para mudar, altere os dois.
-- **Empreendimentos e bairros do Cadastro Mágico:** em `crm/src/lib/empreendimentos.ts`. Para incluir um, some uma linha e publique de novo.
+- **Empreendimentos e bairros do Cadastro Mágico:** pela tela `/empreendimentos/` (quem tem `empreendimentos.gerenciar`): nome, condomínio, variações e "pede contexto". A lista fixa de `crm/src/lib/empreendimentos.ts` só vale com o catálogo vazio ou fora do ar.
 - **Dias do follow-up:** `DIAS_FOLLOW_UP`, `LIMITE_TENTATIVAS` e `DIAS_ENTRE_TENTATIVAS` em `crm/src/lib/followup.ts`.
 - **Horário de atendimento:** o gerente geral muda em Configurações. Rodar o `schema.sql` de novo não sobrescreve o horário salvo. Os 15 min são `PRAZO_MINUTOS` em `crm/src/lib/prazo.ts`.
 - **Mensagens prontas:** o gerente geral edita em Configurações. Rodar o `schema.sql` de novo não sobrescreve o que foi ajustado nem religa a mensagem desligada. Os 2 dias do "sem contato" são `DIAS_FOLLOW_UP` em `crm/src/lib/followup.ts`.
@@ -192,4 +196,14 @@ A ficha usa `?id=` porque a exportação estática não tem rotas dinâmicas.
 
 - `npm test` (em `crm/`): ordenação da lista do dia (com o grupo do primeiro contato), prazo do primeiro contato (só lead da empresa, virada de dia, chegada fora do horário, fim de semana, reatribuição e rótulos), WhatsApp (com o 9º dígito), datas, follow-up, histórico e o parser do Cadastro Mágico (portal, tabela de e-mail, WhatsApp do iPhone e do Android, Facebook, RD Station, nome por assinatura e por e-mail, orçamento e dormitórios), mensagens prontas (variáveis, sugestão pela etapa e pelo tempo sem contato, links e o aviso de repasse) e busca (acento, termos, telefone em qualquer formato, ordem e filtro de empreendimento).
 - `npm run test:banco`: roda o `schema.sql` três vezes no PGlite e confere o RLS de leads, interações e eventos por perfil, o Lead perdido e os perdidos por perfil (`docs/painel.md`), as tentativas, o avanço de etapa, a mensagem original, o horário de atendimento (quem lê, quem altera e os checks), a função de duplicado por perfil, o WhatsApp do usuário e o RLS das mensagens prontas.
+- Catálogo e Radar: `catalogo.test.ts` e `match.test.ts` no `npm test`, `empreendimentos.test.mjs` no `npm run test:banco` (`docs/empreendimentos.md`, seção 12).
+
+## 16. Radar de Match e catálogo na ficha
+
+Regras completas em `docs/empreendimentos.md`, seção 12.
+
+- **Perfil do lead:** valor (orçamento máximo), dormitórios, região (texto livre: "Rudge Ramos, Centro / SBC"; entende SBC, São Bernardo, São Caetano, SP e ABC) e finalidade. Sem nada preenchido, o Radar pede o perfil.
+- **Radar na ficha** (dono do lead ativo): os empreendimentos ativos com nota de 50% ou mais, com os motivos ✓ ✕ ! e o "Mandar →", que abre a mensagem "Apresentar empreendimento" daquele empreendimento. Sala e loja só para quem quer investir.
+- **Empreendimento do lead:** vira link para o catálogo quando é achado lá (pelo nome, pelas variações ou pelo condomínio). O campo do perfil sugere os nomes do catálogo e avisa quando o nome não está nele, mas continua texto livre.
+- **Aguardando lançamento:** na página do empreendimento em breve lançamento ou lançamento, os clientes nessa etapa que combinam (nota de 70% ou mais) vêm primeiro, com a barra vermelha. No catálogo, o card do lançamento mostra quantos são.
 - No Supabase real: `supabase/dados-teste.sql` cria 2 leads por corretor de teste, e `supabase/verificar-rls.sql` mostra o que cada perfil vê e a quem pode atribuir.

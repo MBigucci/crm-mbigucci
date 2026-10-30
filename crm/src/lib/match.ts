@@ -51,11 +51,18 @@ const casa = (termo: string, alvo: string) =>
 
 type Criterio = { peso: number; razao: number; motivo: Motivo };
 
+/** Cidades onde há empreendimento: quando o lead cita uma, o bairro só vale nela ("Centro, SBC" não é o Centro de São Vicente). */
+const CIDADES = new Set([
+  "sao bernardo do campo", "santo andre", "sao caetano do sul", "sao paulo", "diadema", "maua", "guarulhos", "sao vicente",
+]);
+
 function porRegiao(regioes: string[], e: Empreendimento): Criterio | null {
   if (!regioes.length) return null;
   const bairro = normalizarNome(e.bairro), cidade = normalizarNome(e.cidade);
   const onde = [e.bairro, e.cidade].filter(Boolean).join(", ") || "sem endereço";
-  if (regioes.some((r) => casa(r, bairro))) return { peso: PESOS.regiao, razao: 1, motivo: { sinal: "✓", texto: `Região: ${e.bairro}` } };
+  const cidades = regioes.filter((r) => CIDADES.has(r));
+  const naCidade = !cidades.length || cidades.some((r) => casa(r, cidade));
+  if (naCidade && regioes.some((r) => !CIDADES.has(r) && casa(r, bairro))) return { peso: PESOS.regiao, razao: 1, motivo: { sinal: "✓", texto: `Região: ${e.bairro}` } };
   if (regioes.some((r) => casa(r, cidade)))
     return { peso: PESOS.regiao, razao: 0.7, motivo: { sinal: "✓", texto: `Mesma cidade: ${e.cidade}` } };
   return { peso: PESOS.regiao, razao: 0.15, motivo: { sinal: "✕", texto: `Fora da região (${onde})` } };

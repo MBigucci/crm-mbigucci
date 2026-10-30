@@ -19,6 +19,8 @@ Esta versão tem o login, os usuários, as equipes, as permissões por perfil, a
 
 O script pode ser rodado de novo sempre que ele mudar. Ele não apaga dados e não desfaz as permissões que você ajustou no app.
 
+3. Depois, numa nova query, cole `supabase/empreendimentos-seed.sql` e clique em **Run**. É a carga inicial do catálogo de empreendimentos (46 itens, preços de novembro/2026). Também pode rodar de novo: o que já existe fica como está.
+
 ## 3. Publicar a função que cria usuários
 
 Para criar uma conta no Supabase é preciso a chave de serviço, que dá acesso total ao banco. Ela **nunca** pode ir para o site, porque o código do site é público. Por isso a criação de contas roda numa Edge Function, dentro do próprio Supabase.
@@ -160,6 +162,8 @@ Um **usuário desativado** perde todas as permissões na hora. Ele continua vend
 | `lancamentos_pontos` | O gerente geral, todos. Com a chave ligada: quem lançou (para outro), quem passa em `pode_ver_dados_de` (fora o próprio corretor), quem tem `plantao.registrar` (os períodos) e o corretor (os próprios aprovados) | Lançar: o gerente geral; com a chave ligada, `lancamentos.registrar` para quem a pessoa vê ou `plantao.registrar` para períodos. Aprovar, recusar e voltar para pendente: só o gerente geral. Quem lançou cancela o próprio pendente. Sem exclusão. |
 | `lancamentos_pontos_historico` | Só o gerente geral | Ninguém pelo app. Só o gatilho grava. |
 | `fechamentos_verba` | O gerente geral; o corretor, o dele, com a chave ligada | Só o gerente geral |
+| `empreendimentos` | Todo usuário ativo | Cadastrar e alterar: quem tem `empreendimentos.gerenciar` (no padrão, o operacional; o gerente geral sempre). Sem exclusão: `ativo = false`. O "a partir de" só o gatilho grava. |
+| `tipologias` | Todo usuário ativo | Cadastrar, alterar e retirar: quem tem `empreendimentos.gerenciar` |
 
 ### Gatilhos que completam as policies
 

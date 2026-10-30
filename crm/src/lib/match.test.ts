@@ -48,6 +48,11 @@ test("região: bairro vale tudo, cidade vale 70%, fora vale 15%", () => {
   assert.equal(nota("Rudge Ramos"), 100);
   assert.equal(nota("SBC"), 70);
   assert.equal(nota("Santo André"), 15);
+  // Com a cidade citada, o bairro só vale nela.
+  const centro = (e: string) => pontuarEmpreendimento(perfil({ regiao: "Centro, SBC" }), doSlug(e), AGORA)!.nota;
+  assert.equal(centro("life"), 100);
+  assert.equal(centro("easy-sao-vicente"), 15);
+  assert.equal(pontuarEmpreendimento(perfil({ regiao: "Centro" }), doSlug("easy-sao-vicente"), AGORA)!.nota, 100);
 });
 
 test("dormitórios: studio conta 1; um a menos vale 40%", () => {

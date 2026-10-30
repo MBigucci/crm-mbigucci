@@ -7,7 +7,7 @@ import { db } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
 import { mensagemErro } from "@/lib/erros";
 import { deCampos, formatarQuando, paraCampos } from "@/lib/leads";
-import { EMPREENDIMENTOS } from "@/lib/empreendimentos";
+import { ConferirNoCatalogo, ListaEmpreendimentos } from "@/components/empreendimentos/partes";
 import {
   COLUNAS_VISITA,
   comprovanteValido,
@@ -564,11 +564,8 @@ export function AgendarVisita({ lead, onAgendada }: { lead: LeadDaVisita; onAgen
           value={empreendimento}
           onChange={(e) => setEmpreendimento(e.target.value)}
         />
-        <datalist id="visita-emps">
-          {EMPREENDIMENTOS.map((x) => (
-            <option key={x.nome} value={x.nome} />
-          ))}
-        </datalist>
+        <ListaEmpreendimentos id="visita-emps" />
+        <ConferirNoCatalogo nome={empreendimento} />
       </div>
       <div>
         <label className="field-label" htmlFor="visita-local">

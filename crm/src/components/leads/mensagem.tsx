@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { usePerfil } from "@/lib/sessao";
 import { formatarWhatsapp, type Lead } from "@/lib/leads";
 import { useModelosMensagem } from "@/lib/leads-dados";
 import { linkLigar, linkWhatsappComTexto, preencherModelo, sugerirModelo } from "@/lib/mensagens";
+import { acharNoCatalogo, variaveisDoEmpreendimento } from "@/lib/catalogo";
+import { useCatalogo } from "@/lib/catalogo-dados";
 
 type LeadDaMensagem = Pick<
   Lead,
@@ -61,8 +63,12 @@ export function BotaoLigar({ numero, className }: { numero: string; className?: 
   );
 }
 
-/** Diálogo de mensagem: escolhe o modelo em 1 toque, edita o texto, copia ou abre o WhatsApp. */
-function DialogoMensagem({
+/**
+ * Diálogo de mensagem: escolhe o modelo em 1 toque, edita o texto, copia ou abre o WhatsApp.
+ * O endereço, a apresentação e o "a partir de" vêm do empreendimento do lead no catálogo.
+ * Sem WhatsApp (envio pelo card do catálogo), o WhatsApp abre para escolher o contato.
+ */
+export function DialogoMensagem({
   lead,
   modelo,
   visita,
@@ -75,6 +81,11 @@ function DialogoMensagem({
 }) {
   const eu = usePerfil();
   const modelos = useModelosMensagem();
+  const { catalogo } = useCatalogo();
+  const emp = useMemo(
+    () => (catalogo ? variaveisDoEmpreendimento(acharNoCatalogo(lead.empreendimento, catalogo)) : undefined),
+    [catalogo, lead.empreendimento],
+  );
   const ref = useRef<HTMLDialogElement>(null);
   const [slug, setSlug] = useState<string | null>(null);
   const [texto, setTexto] = useState("");
@@ -87,17 +98,17 @@ function DialogoMensagem({
 
   // Quando os modelos chegam, já vem o sugerido pela etapa.
   useEffect(() => {
-    if (!modelos || slug !== null) return;
+    if (!modelos || !catalogo || slug !== null) return;
     const m = modelos.find((x) => x.ativo && x.slug === modelo) ?? sugerirModelo(modelos, lead, new Date());
     setSlug(m?.slug ?? "");
-    setTexto(m ? preencherModelo(m.texto, lead, eu.nome, visita) : "");
-  }, [modelos, slug, lead, eu.nome, modelo, visita]);
+    setTexto(m ? preencherModelo(m.texto, lead, eu.nome, visita, emp) : "");
+  }, [modelos, catalogo, slug, lead, eu.nome, modelo, visita, emp]);
 
   function escolher(s: string) {
     const m = ativos.find((x) => x.slug === s);
     if (!m) return;
     setSlug(s);
-    setTexto(preencherModelo(m.texto, lead, eu.nome, visita));
+    setTexto(preencherModelo(m.texto, lead, eu.nome, visita, emp));
     setCopiado(false);
   }
 
@@ -121,16 +132,18 @@ function DialogoMensagem({
           <div className="min-w-0">
             <span className="eyebrow">Mensagem</span>
             <h2 id="mensagem-titulo" className="titulo-card mt-1 truncate">
-              {lead.nome}
+              {lead.nome || lead.empreendimento}
             </h2>
-            <p className="num text-[13px] text-ink-soft">{formatarWhatsapp(lead.whatsapp)}</p>
+            <p className="num text-[13px] text-ink-soft">
+              {lead.whatsapp ? formatarWhatsapp(lead.whatsapp) : "Escolha o contato no WhatsApp"}
+            </p>
           </div>
           <button type="button" className="focus-ring shrink-0 p-1 text-[13px] font-semibold text-ink-soft" onClick={() => ref.current?.close()}>
             Fechar
           </button>
         </div>
 
-        {modelos === null && <p className="text-concrete">Carregando…</p>}
+        {(modelos === null || catalogo === null) && <p className="text-concrete">Carregando…</p>}
         {modelos && ativos.length > 0 && (
           <fieldset>
             <legend className="field-label">Modelo</legend>

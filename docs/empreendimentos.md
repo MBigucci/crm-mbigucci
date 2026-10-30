@@ -1,6 +1,6 @@
 # Empreendimentos: dados coletados para o catálogo e o Radar de Match
 
-> Coleta feita em 29/10/2026 para os itens 13 (empreendimentos e tipologias) e 14 (Radar de Match) de `docs/referencia-crm-bruna.md`. Decisões do Felipe aplicadas no mesmo dia. Os dados estão em `docs/empreendimentos-dados.json`. Nada em `crm/` foi alterado: a lista fixa de `crm/src/lib/empreendimentos.ts` continua valendo até a tabela existir.
+> Coleta feita em 29/10/2026 para os itens 13 (empreendimentos e tipologias) e 14 (Radar de Match) de `docs/referencia-crm-bruna.md`. Decisões do Felipe aplicadas no mesmo dia. Os dados estão em `docs/empreendimentos-dados.json`. **O catálogo e o Radar foram construídos no mesmo dia: veja a seção 12, "Como ficou".** As seções 9 e 10 são a proposta original; onde a construção mudou algo, vale a seção 12.
 
 ## Sumário
 1. Resumo
@@ -14,6 +14,7 @@
 9. Proposta de esquema: `empreendimentos` e `tipologias`
 10. Como o Radar de Match usa esses dados
 11. Da Bruna: o que veio, o que foi adaptado e o que ficou de fora
+12. Como ficou (catálogo, Radar e integrações)
 
 ## 1. Resumo
 
@@ -321,3 +322,74 @@ Lido em 29/10/2026: `ref/CRM Bruna/src/lib/import-schema.ts`, `src/lib/import-ty
 | `developer` (construtora) | Não entra | Tudo é MBigucci; `marca` separa a linha Easy |
 | Tipo `usado`, casas, lotes e imóveis de terceiros | Não entram | Decisão do Felipe: só apartamentos e salas |
 | Importação "Ler aqui com IA" (rota de API) | Não entra | Exportação estática, sem servidor |
+
+## 12. Como ficou (catálogo, Radar e integrações)
+
+Construído em 29/10/2026. Commits locais; o SQL ainda precisa rodar no Supabase.
+
+### Banco
+- **Tabelas `empreendimentos` e `tipologias`**, no fim de `crm/supabase/schema.sql`, com o esquema da seção 9 e mais: `preco_a_partir_de` no empreendimento (o banco grava o menor preço das tipologias não esgotadas, por gatilho), `restricao_renda`, `avisos`, `ordem` e, na tipologia, `iptu_valor`. Tipos de tipologia: apartamento, studio, loft, cobertura, garden, duplex, sala comercial e loja (a coleta trouxe duplex e loja).
+- **Sem exclusão de empreendimento:** `ativo = false` tira das listas. A tipologia pode ser retirada (é linha da tabela de preços, não registro de auditoria).
+- **Checks:** slug em minúsculas com hífen, nome único sem diferença de maiúscula, links só `http(s)://`, `tabela_mes` no dia 1, vagas máx. ≥ mín.
+- **Permissão nova `empreendimentos.gerenciar`** (a seção 9 dizia `empreendimentos.editar`). Padrão: operacional, só na criação. O gerente geral sempre pode. Todo usuário ativo lê; o desativado e o anônimo não.
+- **Carga inicial:** `crm/supabase/empreendimentos-seed.sql`, gerado por `crm/scripts/gerar-seed-empreendimentos.mjs` a partir do JSON. São 46 empreendimentos e 115 tipologias (as 114 da tabela e a planta do site do Elleva, sem preço). Idempotente: o empreendimento que já existe (pelo slug ou pelo nome) fica como está, e as tipologias só entram no empreendimento sem nenhuma. Rodar de novo não desfaz o que foi editado no app. Pedem contexto no Cadastro Mágico: Life, Unique, Alameda, Infinite, Wish, Vert, Station, Alvorada, America, Dom e MBigucci Joy.
+- **Mensagem pronta nova** "Apresentar empreendimento" (`apresentar_empreendimento`), com `{endereco}`, `{a_partir_de}` e `{apresentacao}`.
+- **Sem `empreendimento_id`** em leads, visitas e vendas (a seção 9 propunha): o nome em texto continua, e o app acha o empreendimento no catálogo pelo nome, pelas variações ou pelo condomínio (`acharNoCatalogo`). Assim nenhum dado antigo precisa de migração.
+
+### Telas
+| Endereço | Tela |
+| --- | --- |
+| `/empreendimentos/` | Catálogo, no menu de todo usuário. Busca (nome, bairro, cidade, endereço), filtros de fase, cidade e bairro, dormitórios (studio e loft contam 1; "4 ou mais") e faixa de preço (pelas tipologias não esgotadas). Lançamentos primeiro. Card com fase, bairro e cidade, entrega, dormitórios e área, "a partir de" (com "! Tabela de out/2026" quando a tabela é de um mês anterior), restrição de renda e os botões Apresentação (ou Book, ou Página no site), Tabela, Como chegar e Mandar ao cliente. No lançamento, "! 2 clientes aguardando lançamento combinam", com a barra vermelha. Quem gerencia vê "Mostrar os fora de venda" e "+ Novo empreendimento". |
+| `/empreendimentos/ver/?slug=` | O empreendimento: endereço, entrega, preço, botões, **Clientes compatíveis**, tipologias com preço e nota da tabela, lazer e o material (página, book, tour, fotos, ficha, memorial). Os avisos da coleta só para quem gerencia. |
+| `/empreendimentos/editar/?slug=` (sem slug: novo) | Só com `empreendimentos.gerenciar`. Dados, endereço e entrega (mês), os 9 links, mês da tabela, restrição de renda, tipologias (criar, alterar, retirar, marcar esgotada), variações e "pede contexto" do Cadastro Mágico e observação interna. O slug sai do nome na criação e não muda depois. |
+
+- **Mandar ao cliente** (card e página): abre o diálogo de mensagem com o modelo "Apresentar empreendimento", sem cliente ("Oi, tudo bem?"); o WhatsApp abre para escolher o contato.
+- **Ficha do lead:** o empreendimento vira link para o catálogo; o campo do perfil sugere os nomes do catálogo e avisa "! Não está no catálogo"; o card **Radar** fica abaixo do perfil (só para o dono do lead ativo).
+
+### Integrações
+- **Cadastro Mágico:** lê a lista do catálogo (`listaDoMagico`). Cada torre ativa reconhece o nome e as variações só dela. A variação de várias torres do mesmo condomínio vira um item com o nome do condomínio ("Mundi", "Terra Nostra", "America", "Marco Zero Mix"); a do condomínio que é também nome de torre fica com a torre ("MBigucci Joy"). O nome sem a marca também vale ("Life MBigucci" → "life"). Só a chave de uma palavra pede contexto. Os bairros e cidades do catálogo viram sugestão de região, menos "Centro". **Catálogo vazio ou fora do ar: vale a lista fixa** de `empreendimentos.ts`, já atualizada (entram Marco Zero One, Elleva, Dom e a chave "modena"; saem Cortina D'Ampezzo e Village da Serra).
+- **Mensagens prontas:** variáveis `{endereco}`, `{apresentacao}` (apresentação, book ou página) e `{a_partir_de}`, do empreendimento do lead achado no catálogo. **A linha com uma delas vazia sai da mensagem.** Sem cliente, "Oi, {primeiro_nome}, tudo bem?" vira "Oi, tudo bem?".
+- **Visita, venda e lead:** os campos de empreendimento sugerem os ativos do catálogo (ou a lista fixa) e avisam quando o nome digitado não está nele. Continuam texto livre, para não travar o registro.
+
+### Radar de Match (`crm/src/lib/match.ts`)
+| Critério | Peso | Regra |
+| --- | --- | --- |
+| Orçamento | 40 | Preço da tipologia ≤ valor: tudo. Até 10% acima: 60% ("Um pouco acima"). Mais: nada. Sem preço: só o aviso "! Sem preço na tabela", fora da nota. |
+| Região | 25 | Bairro: tudo. Mesma cidade: 70%. Fora: 15%. A região do lead é separada por vírgula, barra, "e" e "ou", com apelidos (SBC, São Bernardo, São Caetano, SP, ABC). Se o lead cita uma cidade, o bairro só vale nela ("Centro, SBC" não é o Centro de São Vicente). |
+| Dormitórios | 20 | Igual ou mais: tudo. Um a menos: 40%. Studio e loft contam 1. |
+| Finalidade | 10 | Morar: tudo. Investir: studio, loft, 1 dorm, sala e loja valem tudo; o resto, metade. Sala e loja só entram para quem investe. |
+
+- A nota do empreendimento é a da melhor tipologia (no empate, a mais barata). Critério vazio não conta. Lead sem perfil não entra.
+- **Ficha:** a partir de 50%, da maior nota para a menor, os 4 primeiros e "Ver todos". Cada um com fase, bairro, a tipologia, os motivos ✓ ✕ ! e "Mandar →" (mensagem "Apresentar empreendimento" com esse empreendimento).
+- **Clientes compatíveis** (página do empreendimento): a partir de 70%, entre os leads que quem vê enxerga pelo RLS (o corretor, os dele; o gerente, os da equipe). Entram os ativos fora da etapa Venda e os descartados por "fora do perfil". **Os que estão em "aguardando lançamento" vêm primeiro, com a barra vermelha, quando o empreendimento é breve lançamento ou lançamento.**
+- Avisos que não mudam a nota: preço de tabela de mês anterior, restrição de renda, empreendimento sem tipologias.
+
+### Testes
+- `npm test`: `catalogo.test.ts` (normalização de nomes, `acharNoCatalogo`, lista do Cadastro Mágico com os dados reais, filtros, resumos e as variáveis das mensagens) e `match.test.ts` (pesos, tolerância, região com apelidos e cidade, studio, finalidade, sem preço, avisos, Radar e clientes compatíveis). Os dois usam o JSON real por `catalogo-teste.ts`.
+- `npm run test:banco`: `empreendimentos.test.mjs` roda o schema três vezes e a carga duas no PGlite e confere os 46 itens, o "a partir de" de cada um pelo gatilho, que a carga não desfaz edição, o padrão da permissão, a leitura por perfil, a escrita só de quem gerencia, a falta de exclusão, as colunas que o app não grava, os checks e o "a partir de" quando a tipologia muda, esgota ou sai.
+- Telas conferidas em 375px com o Supabase falso v8 (pasta de notas das sessões): catálogo, empreendimento com clientes compatíveis, diálogo de mensagem, ficha com o Radar, Cadastro Mágico e edição com salvamento.
+
+### Pendências de dados (com o Felipe)
+- **Elleva e Dom sem preço:** entram no catálogo e no Radar sem a nota de orçamento. O Dom não tem tipologia (o site não publica planta); o Elleva tem a planta de 67 m² do site.
+- **Cortina D'Ampezzo:** fora do catálogo e da lista fixa. Se voltar, cadastre pela tela.
+- **O asterisco do preço promocional:** continua só na nota da tipologia (`preco_nota`). Se for limite de renda, vale preencher a restrição de renda do empreendimento.
+- **Tabelas próprias dos 7 em obras:** o "a partir de" segue o da Tabela Promocional.
+
+### Ficou de fora
+- Importar a tabela mensal colando o JSON de outra IA (a "Resposta de outra IA" da Bruna). Por ora o preço muda pela tela de edição.
+- `empreendimento_id` em leads, visitas e vendas, e o filtro de Leads agrupado pelo catálogo ("Life" e "Life MBigucci" ainda são opções separadas).
+- Radar na ficha para o gerente (a página do empreendimento já mostra os clientes da equipe).
+- Vagas e área no perfil do lead (o lead não guarda).
+
+### Da Bruna (itens 13 e 14)
+| Recurso da Bruna | Como ficou | Por quê |
+| --- | --- | --- |
+| Catálogo de imóveis com filtros (`app/imoveis/page.tsx`) | Catálogo por torre, com busca e filtros de fase, cidade e bairro, dormitórios e faixa de preço | Um registro por torre, como lá; os filtros são os pedidos da etapa |
+| Plantas do mesmo condomínio agrupadas com "a partir de" | Um card por torre com o condomínio no topo, e o "a partir de" calculado pelo banco | O card por torre mostra a fase e a entrega certas (Mundi Thiago pronta, Lucca em lançamento) |
+| Importação "Resposta de outra IA" | Não veio; edição pela tela | Com a carga inicial pronta, a importação mensal fica para depois |
+| `scoreProperty` (`lib/match.ts`): pesos, 10% de tolerância, motivos ✓/✕, ≥ 50% | Mesma ideia, com pesos 40/25/20/10, sobre a melhor tipologia, com "!" para aviso | O lead não guarda vagas nem área; o tipo virou finalidade |
+| `regionMatches` por bairro ou cidade | Bairro, depois cidade (70%), com apelidos e a cidade citada mandando no bairro | "Centro" existe em várias cidades |
+| Leads compatíveis por imóvel (≥ 70) | Clientes compatíveis (≥ 70), com "aguardando lançamento" em destaque e os descartados por fora do perfil | É o pedido do lançamento (T8) |
+| Botão "Enviar" no Radar (`profile-tab.tsx`) | "Mandar →", com a mensagem pronta e o link da apresentação | Usa os modelos que o gerente geral edita |
+| Studio = 1 dorm | Igual no Radar e no filtro | |
+| `deleteProperty` | Não veio: `ativo = false` | A MBigucci não apaga |

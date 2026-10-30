@@ -3,7 +3,7 @@
 > Decisões tomadas na fundação do CRM (`crm/`), em 28/10/2026. O passo a passo de instalação está em `crm/README.md`. As regras de negócio estão em `docs/acessos-perfis.md`, `docs/leads.md` e `docs/pontuacao-verba.md`, e as regras visuais em `docs/design-system.md`.
 
 ## Sumário
-Deploy estático · Modelo de permissões · RLS · Sigilo do programa de verba · Módulo de leads · Visitas · Vendas e metas · Programa de pontuação · PWA · Testes
+Deploy estático · Modelo de permissões · RLS · Sigilo do programa de verba · Módulo de leads · Visitas · Vendas e metas · Programa de pontuação · Catálogo e Radar · PWA · Testes
 
 ## Deploy estático
 
@@ -111,6 +111,16 @@ As regras de negócio e a tabela por perfil estão em `docs/pontuacao-verba.md`,
 - **Gatilhos:** `lancamentos_pontos_guard` (antes: sempre pendente, data até hoje, corretor ativo, visita só pela baixa, identidade imutável, aprovação só do gerente geral, carimbo da decisão), `lancamentos_pontos_auditoria` (depois) e `visita_lanca_pontos` (depois, em `visitas`; usa `on conflict (visita_id)`). A escrita que vem do gatilho da visita passa pelo guard por `pg_trigger_depth() > 1`.
 - **Front:** `programa.ts` (puro, com testes: cálculo, limites, roleta, filtros, ranking), `programa-dados.ts` (leitura em páginas, escrita, RPCs e o estado da chave com cache por usuário), `components/programa/partes.tsx` e as páginas `/programa/`, `/programa/aprovacao/`, `/plantao/`, `/meus-pontos/` e `/ranking/`.
 
+## Catálogo de empreendimentos e Radar (29/10/2026)
+
+As regras de negócio estão em `docs/empreendimentos.md`, seção 12.
+
+- **Tabelas:** `empreendimentos` (sem exclusão; `ativo = false`) e `tipologias` (com exclusão). Todo ativo lê; escreve quem tem `empreendimentos.gerenciar`. Escrita por coluna: `preco_a_partir_de` do empreendimento só o gatilho `tipologias_atualiza_preco` grava (`security definer`, menor preço das não esgotadas); o slug só vai no insert. Carimbos por `empreendimentos_carimbo` e `tipologias_carimbo`.
+- **Carga:** `supabase/empreendimentos-seed.sql`, gerado por `scripts/gerar-seed-empreendimentos.mjs` a partir de `docs/empreendimentos-dados.json`. `on conflict do nothing` (slug e nome) e tipologias só para o empreendimento sem nenhuma. Roda depois do `schema.sql`.
+- **Sem `empreendimento_id`:** leads, visitas e vendas seguem com o nome; `acharNoCatalogo` resolve no navegador.
+- **Front:** `catalogo.ts` (puro: tipos, normalização, lista do Cadastro Mágico, filtros, variáveis das mensagens), `match.ts` (puro: Radar e clientes compatíveis), `catalogo-dados.ts` (leitura com `tipologias(...)` embutido e cache por sessão, escrita, leads do Radar em páginas de 1.000) e `components/empreendimentos/partes.tsx`. O `lerMensagem` recebe as listas (`Listas`) e cai na lista fixa sem elas. O `DialogoMensagem` lê o catálogo para as variáveis novas. Se a leitura do catálogo falhar (SQL não rodou), as telas seguem com a lista fixa.
+- **Permissão nova:** `empreendimentos.gerenciar` (operacional), com o padrão só na criação.
+
 ## PWA (29/10/2026)
 
 - **Manifest estático:** `crm/public/manifest.webmanifest`, e não um `app/manifest.ts`. Todos os caminhos dentro dele são **relativos** (`./`, `icons/...`), então resolvem para `/crm/` a partir da URL do manifest, com qualquer `BASE_PATH`. Nome "CRM MBigucci", nome curto "CRM", `display: standalone`, fundo e tema `paper` #f7f6f2.
@@ -128,7 +138,8 @@ As regras de negócio e a tabela por perfil estão em `docs/pontuacao-verba.md`,
 - **RLS e gatilhos das visitas:** `crm/supabase/testes/visitas.test.mjs`, também no `npm run test:banco`, com 13 testes (`docs/visitas.md`, seção 9).
 - **RLS e gatilhos de vendas e metas:** `crm/supabase/testes/vendas.test.mjs`, também no `npm run test:banco`, com 12 testes (`docs/vendas-metas.md`, seção 10).
 - **RLS e gatilhos do programa de pontuação:** `crm/supabase/testes/programa.test.mjs`, também no `npm run test:banco`, com 9 testes perfil a perfil, chave desligada e ligada (`docs/pontuacao-verba.md`, seção "Testes").
-- **Regras puras:** `npm test` roda `programa.test.ts` (os 7 exemplos da verba, limites e roleta) e também `leads.test.ts` (lista do dia, WhatsApp), `followup.test.ts` (follow-up e histórico), `cadastro-magico.test.ts` (parser), `prazo.test.ts`, `mensagens.test.ts` (modelos e repasse), `busca.test.ts` (busca, ordem e filtros), `painel.test.ts` (com a conversão por origem e campanha), `visitas.test.ts` e `vendas.test.ts` (vendas, meta anual, metas próprias e faixas).
+- **Catálogo:** `crm/supabase/testes/empreendimentos.test.mjs`, também no `npm run test:banco`, com 8 testes (schema três vezes, carga duas, RLS por perfil, gatilho do preço, checks).
+- **Regras puras:** `npm test` roda `catalogo.test.ts` e `match.test.ts` (com o JSON real dos empreendimentos) e `programa.test.ts` (os 7 exemplos da verba, limites e roleta) e também `leads.test.ts` (lista do dia, WhatsApp), `followup.test.ts` (follow-up e histórico), `cadastro-magico.test.ts` (parser), `prazo.test.ts`, `mensagens.test.ts` (modelos e repasse), `busca.test.ts` (busca, ordem e filtros), `painel.test.ts` (com a conversão por origem e campanha), `visitas.test.ts` e `vendas.test.ts` (vendas, meta anual, metas próprias e faixas).
 - **Scripts do SQL Editor:** `schema.sql`, `dados-teste.sql`, `verificar-rls.sql` e `limpar-dados-teste.sql` rodaram em sequência no PGlite em 29/10/2026, com o resultado esperado por perfil.
 - **Telas:** conferidas em 375px com um Supabase falso (`sqltest/fake-supabase-leads.mjs`, na pasta de notas), que imita o RLS por perfil. A versão `fake-supabase-leads-v2.mjs` imita também eventos, tentativas e o avanço de etapa.
 - **Ainda não validado:** o módulo de leads num Supabase real e a Edge Function pela tela.

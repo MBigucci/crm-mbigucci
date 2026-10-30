@@ -44,6 +44,7 @@ import { COLUNAS_VISITA, estaAberta, type Visita } from "@/lib/visitas";
 import { AgendarVisita, ListaVisitas } from "@/components/visitas/visitas";
 import { CardVenda, RegistrarVenda } from "@/components/vendas/vendas";
 import { COLUNAS_VENDA, type Venda } from "@/lib/vendas";
+import { ConferirNoCatalogo, ListaEmpreendimentos, NomeEmpreendimento, RadarDoLead } from "@/components/empreendimentos/partes";
 
 export default function FichaPage() {
   return (
@@ -234,7 +235,11 @@ function Ficha({ id }: { id: string }) {
             {origem?.nome ?? lead.origem}
             {lead.campanha && ` · ${lead.campanha}`}
           </Linha>
-          {lead.empreendimento && <Linha rotulo="Empreendimento">{lead.empreendimento}</Linha>}
+          {lead.empreendimento && (
+            <Linha rotulo="Empreendimento">
+              <NomeEmpreendimento nome={lead.empreendimento} />
+            </Linha>
+          )}
           {lead.email && <Linha rotulo="E-mail">{lead.email}</Linha>}
           {!ehDono && <Linha rotulo="Corretor">{nomes.get(lead.dono_id) ?? "–"}</Linha>}
           <Linha rotulo="Cadastrado">
@@ -380,6 +385,7 @@ function Ficha({ id }: { id: string }) {
           </section>
 
           <PerfilCliente lead={lead} onSalvar={alterar} />
+          <RadarDoLead lead={lead} />
           <Descartar key={lead.status} onDescartar={descartar} />
         </>
       )}
@@ -655,7 +661,9 @@ function PerfilCliente({ lead, onSalvar }: { lead: Lead; onSalvar: (c: Partial<L
           <label className="field-label" htmlFor="p-emp">
             Empreendimento
           </label>
-          <input id="p-emp" className="input" {...campo("empreendimento")} />
+          <input id="p-emp" className="input" list="p-emps" autoComplete="off" {...campo("empreendimento")} />
+          <ListaEmpreendimentos id="p-emps" />
+          <ConferirNoCatalogo nome={f.empreendimento} />
         </div>
         <div>
           <label className="field-label" htmlFor="p-camp">

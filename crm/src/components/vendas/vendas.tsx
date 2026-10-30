@@ -5,7 +5,7 @@ import clsx from "clsx";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
-import { EMPREENDIMENTOS } from "@/lib/empreendimentos";
+import { ConferirNoCatalogo, ListaEmpreendimentos } from "@/components/empreendimentos/partes";
 import {
   diaIso,
   formatarDia,
@@ -45,17 +45,6 @@ function CampoReais({ id, valor, onChange }: { id: string; valor: string; onChan
         onChange={(e) => onChange(e.target.value)}
       />
     </div>
-  );
-}
-
-/** Lista de sugestões de empreendimento (texto livre, como no lead). */
-function ListaEmpreendimentos({ id }: { id: string }) {
-  return (
-    <datalist id={id}>
-      {EMPREENDIMENTOS.map((e) => (
-        <option key={e.nome} value={e.nome} />
-      ))}
-    </datalist>
   );
 }
 
@@ -130,6 +119,7 @@ export function RegistrarVenda({
           </label>
           <input id="v-emp" className="input" list="v-emps" autoComplete="off" {...campo("empreendimento")} />
           <ListaEmpreendimentos id="v-emps" />
+          <ConferirNoCatalogo nome={f.empreendimento} />
         </div>
         <div>
           <label className="field-label" htmlFor="v-uni">
@@ -444,6 +434,7 @@ function Corrigir({
           </label>
           <input id={`c-emp-${v.id}`} className="input" list={`c-emps-${v.id}`} {...campo("empreendimento")} />
           <ListaEmpreendimentos id={`c-emps-${v.id}`} />
+          <ConferirNoCatalogo nome={f.empreendimento} />
         </div>
         <div>
           <label className="field-label" htmlFor={`c-uni-${v.id}`}>

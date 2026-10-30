@@ -35,7 +35,7 @@ As regras puras ficam em `crm/src/lib/visitas.ts`, com testes. As regras que val
 
 ## 3. Agendar, confirmar, remarcar e cancelar
 
-- **Agendar:** na ficha, card Visitas, "+ Agendar visita". Dia e hora com os atalhos do próximo contato (padrão amanhã, 10h), empreendimento (vem o do lead, com a lista de `empreendimentos.ts` como sugestão), local e observação opcionais. Só o dono do lead agenda, só para lead ativo e só de agora em diante (o banco aceita 10 min de folga).
+- **Agendar:** na ficha, card Visitas, "+ Agendar visita". Dia e hora com os atalhos do próximo contato (padrão amanhã, 10h), empreendimento (vem o do lead, com os nomes do catálogo como sugestão e o aviso "! Não está no catálogo", `docs/empreendimentos.md`, seção 12), local e observação opcionais. Só o dono do lead agenda, só para lead ativo e só de agora em diante (o banco aceita 10 min de folga).
 - **Confirmar:** "Confirmar no WhatsApp" abre o diálogo de mensagem com o modelo "Confirmar visita" já marcado. A variável nova `{visita}` vira "amanhã, às 10h, em Stand de vendas" ("hoje, às 18h", "na quinta-feira, 05/11, às 10h"). Fora da confirmação, vira "no dia combinado". O `{empreendimento}` é o da visita. Quando o cliente responde, o corretor toca em "✓ Cliente confirmou".
 - **Texto do modelo:** o `schema.sql` troca o texto de "Confirmar visita" para incluir `{visita}` só se ele ainda for o original. Se o gerente geral já ajustou, nada muda; ele pode incluir `{visita}` em Configurações.
 - **Remarcar:** novo dia e hora, de agora em diante. A visita confirmada volta para agendada, porque a confirmação era do horário antigo. O histórico guarda o horário antigo e o novo.
