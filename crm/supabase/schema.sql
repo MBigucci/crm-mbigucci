@@ -754,16 +754,23 @@ drop trigger if exists leads_set_updated_at on public.leads;
 create trigger leads_set_updated_at before update on public.leads
   for each row execute function public.set_updated_at();
 
+-- Duas interações no mesmo lead ao mesmo tempo (celular e computador): a
+-- segunda espera a primeira terminar (trava a linha do lead) e só então pega a
+-- hora. Assim a ordem do histórico é a ordem em que o lead foi atualizado, e o
+-- "último contato" e as tentativas batem com as interações. security definer
+-- para travar o lead mesmo sem permissão de alterá-lo (quem decide é o RLS do insert).
 create or replace function public.lead_interacao_carimbo()
 returns trigger
 language plpgsql
+security definer
 set search_path = ''
 as $$
 begin
   new.texto := btrim(new.texto);
   if auth.uid() is not null then
+    perform 1 from public.leads where id = new.lead_id for no key update;
     new.autor_id := auth.uid();
-    new.criado_em := now();
+    new.criado_em := clock_timestamp();
   end if;
   return new;
 end;
@@ -871,13 +878,17 @@ $$;
 
 -- Escritas permitidas, coluna a coluna. Não há exclusão pelo app. Em
 -- lead_eventos ninguém escreve: só o gatilho lead_registra_eventos.
-grant insert (dono_id, nome, whatsapp, email, origem, campanha, empreendimento, temperatura, etapa, proximo_contato,
+-- O id entra no insert para o reenvio não duplicar: o app gera o id no aparelho
+-- e, se a resposta se perder e o corretor tocar de novo, o segundo insert bate
+-- na chave (leads_pkey) e o app entende que já estava salvo. Vale também para
+-- interações, visitas e vendas.
+grant insert (id, dono_id, nome, whatsapp, email, origem, campanha, empreendimento, temperatura, etapa, proximo_contato,
               status, motivo_descarte, valor, dormitorios, regiao, finalidade)
   on public.leads to authenticated;
 grant update (dono_id, nome, whatsapp, email, origem, campanha, empreendimento, temperatura, etapa, proximo_contato,
               status, motivo_descarte, valor, dormitorios, regiao, finalidade)
   on public.leads to authenticated;
-grant insert (lead_id, tipo, texto, proximo_contato) on public.lead_interacoes to authenticated;
+grant insert (id, lead_id, tipo, texto, proximo_contato) on public.lead_interacoes to authenticated;
 
 drop policy if exists "ativos leem origens" on public.lead_origens;
 create policy "ativos leem origens" on public.lead_origens
@@ -1521,7 +1532,7 @@ grant execute on function public.corrigir_visita(uuid, text, text) to authentica
 alter table public.visitas enable row level security;
 revoke all on public.visitas from anon, authenticated;
 grant select on public.visitas to authenticated;
-grant insert (lead_id, empreendimento, inicio, local, observacao) on public.visitas to authenticated;
+grant insert (id, lead_id, empreendimento, inicio, local, observacao) on public.visitas to authenticated;
 grant update (empreendimento, inicio, local, status, observacao, comprovante) on public.visitas to authenticated;
 
 -- O corretor vê as dele, o gerente as da equipe, quem vê tudo vê todas.
@@ -1870,7 +1881,7 @@ create trigger leads_venda_guard before update on public.leads
 alter table public.vendas enable row level security;
 revoke all on public.vendas from anon, authenticated;
 grant select on public.vendas to authenticated;
-grant insert (lead_id, empreendimento, unidade, vgv, assinada_em, pagamento, pago_em, observacao) on public.vendas to authenticated;
+grant insert (id, lead_id, empreendimento, unidade, vgv, assinada_em, pagamento, pago_em, observacao) on public.vendas to authenticated;
 grant update (empreendimento, unidade, vgv, assinada_em, pagamento, pago_em, observacao, status) on public.vendas to authenticated;
 
 -- O corretor vê as dele, o gerente as da equipe, quem vê tudo vê todas.

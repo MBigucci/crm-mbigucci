@@ -498,3 +498,35 @@ test("pode_ver_dados_de numa consulta só dá a mesma resposta que a regra compo
   await db.exec(`delete from public.role_permissions where perfil = 'recepcao' and permissao = 'dados.ver_todos';
                  insert into public.role_permissions values ('gerente', 'dados.ver_equipe') on conflict do nothing;`);
 });
+
+test("reenvio com o id gerado no aparelho: o segundo insert bate na chave e nada duplica", async () => {
+  const L = "11111111-1111-4111-8111-111111111111", I = "22222222-2222-4222-8222-222222222222";
+  const V = "33333333-3333-4333-8333-333333333333", S = "44444444-4444-4444-8444-444444444444";
+  const inserts = [
+    [`insert into public.leads (id, dono_id, nome, whatsapp, origem) values ('${L}', '${id(CA)}', 'Reenvio', '5511900001111', 'plantao')`, "leads_pkey"],
+    [`insert into public.lead_interacoes (id, lead_id, tipo, texto, proximo_contato) values ('${I}', '${L}', 'nota', 'Oi', now() + interval '1 day')`, "lead_interacoes_pkey"],
+    [`insert into public.visitas (id, lead_id, empreendimento, inicio) values ('${V}', '${L}', 'Elleva', now() + interval '1 day')`, "visitas_pkey"],
+    [`insert into public.vendas (id, lead_id, empreendimento, vgv, assinada_em) values ('${S}', '${L}', 'Elleva', 450000, (now() at time zone 'America/Sao_Paulo')::date)`, "vendas_pkey"],
+  ];
+  for (const [sql, chave] of inserts) {
+    await como(CA, () => db.exec(sql));
+    await falha(CA, sql, chave);
+  }
+  const [n] = await linhas(`select (select count(*) from public.leads where id = '${L}')::int l, (select count(*) from public.lead_interacoes where id = '${I}')::int i,
+                                   (select count(*) from public.visitas where id = '${V}')::int v, (select count(*) from public.vendas where id = '${S}')::int s`);
+  assert.deepEqual(n, { l: 1, i: 1, v: 1, s: 1 });
+  // O id de outro lead não vaza nada além do conflito, e quem não é dono não grava interação.
+  await falha(CB, `insert into public.lead_interacoes (lead_id, tipo, texto, proximo_contato) values ('${L}', 'nota', 'x', now())`, "row-level security");
+});
+
+test("interações seguidas no mesmo lead: a hora segue a ordem de gravação", async () => {
+  const [l] = await como(CA, () => linhas(`insert into public.leads (dono_id, nome, whatsapp, origem) values ('${id(CA)}', 'Ordem', '5511900002222', 'plantao') returning id`));
+  await como(CA, () => db.exec(`
+    insert into public.lead_interacoes (lead_id, tipo, texto, proximo_contato) values ('${l.id}', 'tentativa', 'Sem resposta', now() + interval '1 day');
+    insert into public.lead_interacoes (lead_id, tipo, texto, proximo_contato) values ('${l.id}', 'whatsapp', 'Respondeu', now() + interval '1 day');`));
+  const xs = await linhas(`select tipo, criado_em from public.lead_interacoes where lead_id = '${l.id}' order by criado_em`);
+  assert.deepEqual(xs.map((x) => x.tipo), ["tentativa", "whatsapp"]);
+  const [lead] = await linhas(`select tentativas, ultima_interacao_em from public.leads where id = '${l.id}'`);
+  assert.equal(lead.tentativas, 0);
+  assert.equal(+lead.ultima_interacao_em, +xs[1].criado_em);
+});
