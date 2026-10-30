@@ -75,7 +75,7 @@ function Conta() {
             {msg.ok ? "✓" : "!"} {msg.texto}
           </p>
         )}
-        <button type="submit" className="btn btn-red focus-ring mt-4" disabled={enviando}>
+        <button type="submit" className="btn btn-ghost focus-ring mt-4" disabled={enviando}>
           {enviando ? "Salvando…" : "Trocar senha"}
         </button>
       </form>
@@ -124,7 +124,7 @@ function MeuWhatsapp() {
   }
 
   return (
-    <form className="card" onSubmit={salvar} noValidate>
+    <form className="card bar-brand" onSubmit={salvar} noValidate>
       <h2 className="titulo-card">Seu WhatsApp</h2>
       <p className="mt-2 text-ink-soft">Seu gerente usa este número para avisar quando você recebe um lead.</p>
       <label className="field-label mt-4" htmlFor="meu-whatsapp">
@@ -149,7 +149,7 @@ function MeuWhatsapp() {
           {msg.ok ? "✓" : "!"} {msg.texto}
         </p>
       )}
-      <button type="submit" className="btn btn-ghost focus-ring mt-4" disabled={enviando || numero === null}>
+      <button type="submit" className="btn btn-red focus-ring mt-4" disabled={enviando || numero === null}>
         {enviando ? "Salvando…" : "Salvar WhatsApp"}
       </button>
     </form>
