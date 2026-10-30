@@ -9,6 +9,7 @@ import {
   cifrar,
   comDestino,
   deBase64Url,
+  ehAniversarioHoje,
   emSP,
   enderecoDePush,
   horaSP,
@@ -26,6 +27,7 @@ import {
   type VisitaAviso,
 } from "../../supabase/functions/avisos/index.ts";
 import { TIPOS_AVISO } from "./avisos.ts";
+import { fazAniversarioHoje } from "./perfil.ts";
 
 const CORRETOR = "c1";
 const GERENTE = "g1";
@@ -217,6 +219,32 @@ test("resumo do dia: dia sem pendências não manda nada, e dia sem atendimento 
   });
   assert.equal(montarAvisos(comAtraso, sp("2026-11-08T09:00")).length, 0); // domingo
   assert.equal(montarAvisos(comAtraso, sp("2026-11-09T09:00")).length, 1); // segunda
+});
+
+test("resumo do dia: aniversários de hoje, sem o ano, inclusive o 29/02 no dia 28", () => {
+  const niver = (lead_id: string, nome: string, dia_mes: string, dono_id = CORRETOR) => ({ lead_id, nome, dia_mes, dono_id });
+  const d = dados({
+    leads: [lead({ id: "a", proximo_contato: iso("2026-11-02T15:00") })],
+    aniversarios: [niver("x", "Bruno Lima", "11-03"), niver("y", "Ana Souza", "11-03"), niver("z", "Caio", "11-04")],
+  });
+  const [r] = montarAvisos(d, sp("2026-11-03T09:00")).filter((a) => a.tipo === "resumo");
+  assert.equal(r.corpo, "1 atrasado · aniversários de Ana e Bruno");
+  assert.doesNotMatch(r.corpo, /d{4}/);
+  // Só o aniversário já manda o resumo, para dar tempo de mandar os parabéns.
+  const so = dados({ leads: [], aniversarios: [niver("y", "Ana Souza", "02-29")] });
+  assert.equal(montarAvisos(so, sp("2027-02-28T09:00")).find((a) => a.tipo === "resumo")?.corpo, "aniversário de Ana Souza");
+  assert.equal(montarAvisos(so, sp("2028-02-28T09:00")).filter((a) => a.tipo === "resumo").length, 0);
+  assert.equal(montarAvisos(so, sp("2028-02-29T09:00")).find((a) => a.tipo === "resumo")?.corpo, "aniversário de Ana Souza");
+  // Sem o SQL do item 16, o resumo continua como antes.
+  assert.equal(montarAvisos(dados({ leads: [lead({ proximo_contato: iso("2026-11-02T15:00") })] }), sp("2026-11-03T09:00"))[0].corpo, "1 atrasado");
+});
+
+test("aniversário: a função e a ficha dão a mesma resposta, inclusive na virada do ano e no 29/02", () => {
+  for (const [nasc, hoje] of [["1990-02-29", "2027-02-28"], ["1990-02-29", "2028-02-28"], ["1990-02-29", "2028-02-29"], ["1990-02-29", "2100-02-28"],
+                              ["1990-12-31", "2026-12-31"], ["1990-01-01", "2027-01-01"], ["1990-01-01", "2026-12-31"], ["1990-03-01", "2027-02-28"]]) {
+    const [a, m, d] = hoje.split("-").map(Number);
+    assert.equal(ehAniversarioHoje(nasc.slice(5), hoje), fazAniversarioHoje(nasc, new Date(a, m - 1, d, 12)), `${nasc} em ${hoje}`);
+  }
 });
 
 test("não repetir: só sai o que o banco acabou de registrar", () => {

@@ -50,6 +50,9 @@ export type VisitaAviso = {
   local: string | null;
 };
 
+/** Aniversário de hoje (item 16): só o dia e o mês, nunca o ano. */
+export type AniversarioAviso = { lead_id: string; dono_id: string; nome: string; dia_mes: string };
+
 export type Assinatura = { endpoint: string; usuario_id: string; p256dh: string; auth: string; tipos: string[] };
 
 /** O que avisos_dados() devolve. */
@@ -58,6 +61,8 @@ export type DadosAvisos = {
   assinaturas: Assinatura[];
   leads: LeadAviso[];
   visitas: VisitaAviso[];
+  /** Vem do SQL do item 16; sem ele, o resumo sai sem os aniversários. */
+  aniversarios?: AniversarioAviso[];
 };
 
 export type Aviso = {
@@ -144,6 +149,18 @@ export function listaDeNomes(nomes: string[], max = 3): string {
   if (n.length <= 1) return n.join("");
   if (n.length <= max) return `${n.slice(0, -1).join(", ")} e ${n[n.length - 1]}`;
   return `${n.slice(0, max).join(", ")} e mais ${n.length - max}`;
+}
+
+/**
+ * O aniversário ("MM-DD") cai na data de São Paulo ("2027-02-28")? Quem nasceu
+ * em 29/02 comemora em 28/02 nos anos que não são bissextos, como na ficha
+ * (diasParaAniversario, em crm/src/lib/perfil.ts).
+ */
+export function ehAniversarioHoje(diaMes: string, dataSP: string): boolean {
+  const ano = Number(dataSP.slice(0, 4));
+  const hoje = dataSP.slice(5);
+  const bissexto = (ano % 4 === 0 && ano % 100 !== 0) || ano % 400 === 0;
+  return diaMes === hoje || (diaMes === "02-29" && hoje === "02-28" && !bissexto);
 }
 
 const aguardaPrimeiroContato = (l: LeadAviso) => l.origem === ORIGEM_COM_PRAZO && l.etapa === "novo" && !!l.fim_prazo;
@@ -274,7 +291,8 @@ export function montarAvisos(d: DadosAvisos, agora: Date): Aviso[] {
   // Resumo do dia: na abertura, nos dias de atendimento.
   const abre = minutosDoDia(horario.inicio);
   if (horario.dias.includes(sp.dia) && sp.minutos >= abre && sp.minutos < abre + JANELA_DIA_MIN) {
-    const pessoas = new Set([...d.leads.map((l) => l.dono_id), ...d.visitas.map((v) => v.corretor_id)]);
+    const aniversarios = (d.aniversarios ?? []).filter((a) => ehAniversarioHoje(a.dia_mes, sp.data));
+    const pessoas = new Set([...d.leads.map((l) => l.dono_id), ...d.visitas.map((v) => v.corretor_id), ...aniversarios.map((a) => a.dono_id)]);
     for (const p of pessoas) {
       const leads = d.leads.filter((l) => l.dono_id === p);
       const aguardando = leads.filter(aguardaPrimeiroContato).length;
@@ -287,6 +305,7 @@ export function montarAvisos(d: DadosAvisos, agora: Date): Aviso[] {
       const visitas = d.visitas
         .filter((v) => v.corretor_id === p && new Date(v.inicio).getTime() >= t && emSP(new Date(v.inicio)).data === sp.data)
         .sort((a, b) => new Date(a.inicio).getTime() - new Date(b.inicio).getTime());
+      const niver = aniversarios.filter((a) => a.dono_id === p).map((a) => a.nome).sort((a, b) => a.localeCompare(b, "pt-BR"));
       const partes = [
         aguardando ? `${aguardando} aguardando primeiro contato` : "",
         atrasados ? plural(atrasados, "atrasado", "atrasados") : "",
@@ -294,6 +313,7 @@ export function montarAvisos(d: DadosAvisos, agora: Date): Aviso[] {
         visitas.length
           ? `${plural(visitas.length, "visita", "visitas")} (${visitas.map((v) => horaSP(v.inicio)).join(", ")})`
           : "",
+        niver.length === 1 ? `aniversário de ${niver[0]}` : niver.length ? `aniversários de ${listaDeNomes(niver)}` : "",
       ].filter(Boolean);
       if (!partes.length) continue; // dia sem pendências: não manda nada
       avisos.push({

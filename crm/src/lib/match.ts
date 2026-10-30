@@ -5,10 +5,15 @@
 
 import { dormitoriosDe, ehComercial, ehLancamento, mesAno, normalizarNome, tabelaAntiga, type Empreendimento, type Tipologia } from "./catalogo.ts";
 import type { Lead } from "./leads.ts";
+import { limiteDeRenda, rendaNoLimite, rotuloCurtoRenda, type PerfilAmpliado } from "./perfil.ts";
 import { formatarReais } from "./vendas.ts";
 
-/** Pesos (a Bruna usa orçamento 35, tipo 20, região 20, dorms 15, vagas 5 e área 5; o lead não guarda vagas nem área). */
-export const PESOS = { orcamento: 40, regiao: 25, dormitorios: 20, finalidade: 10 } as const;
+/**
+ * Pesos (a Bruna usa orçamento 35, tipo 20, região 20, dorms 15, vagas 5 e área
+ * 5; o lead não guarda vagas nem área). Renda e fase (item 16) só contam quando
+ * o lead e o empreendimento têm o dado, então a nota de quem não preencheu não muda.
+ */
+export const PESOS = { orcamento: 40, regiao: 25, dormitorios: 20, finalidade: 10, renda: 20, fase: 10 } as const;
 /** Até 10% acima do orçamento ainda conta em parte, como na Bruna. */
 export const TOLERANCIA_ORCAMENTO = 0.1;
 /** Na ficha do lead aparecem os empreendimentos a partir desta nota. */
@@ -16,13 +21,15 @@ export const NOTA_MINIMA = 50;
 /** Na página do empreendimento aparecem os clientes a partir desta nota. */
 export const NOTA_CLIENTE = 70;
 
-export type PerfilDoLead = Pick<Lead, "valor" | "dormitorios" | "regiao" | "finalidade">;
+export type PerfilDoLead = Pick<Lead, "valor" | "dormitorios" | "regiao" | "finalidade"> &
+  Partial<Pick<PerfilAmpliado, "renda_faixa" | "pronto_planta" | "usa_fgts">>;
 /** ✓ conta a favor, ✕ contra, ! é só um aviso (não entra na nota). */
 export type Motivo = { sinal: "✓" | "✕" | "!"; texto: string };
 export type Resultado = { empreendimento: Empreendimento; tipologia: Tipologia | null; nota: number; motivos: Motivo[] };
 
 /** O lead tem ao menos um critério do perfil preenchido. */
-export const temPerfil = (p: PerfilDoLead) => !!(p.valor || p.dormitorios || p.regiao?.trim() || p.finalidade);
+export const temPerfil = (p: PerfilDoLead) =>
+  !!(p.valor || p.dormitorios || p.regiao?.trim() || p.finalidade || p.renda_faixa || (p.pronto_planta && p.pronto_planta !== "tanto_faz"));
 
 /** Apelidos comuns de cidade e região. "ABC" vale para as cidades do ABC. */
 const APELIDOS: Record<string, string[]> = {
@@ -98,12 +105,43 @@ function porFinalidade(finalidade: PerfilDoLead["finalidade"], t: Tipologia | nu
     : { peso: PESOS.finalidade, razao: 0.5, motivo: { sinal: "!", texto: "Para investir, a unidade é maior" } };
 }
 
+/**
+ * Renda × restrição de renda do empreendimento (em salários mínimos). A
+ * restrição que vale só para parte das unidades ("Do 1º ao 12º andar") e a
+ * faixa que cruza o limite viram aviso, fora da nota. Sem renda no lead ou sem
+ * número na restrição, a restrição continua só como aviso.
+ */
+function porRenda(faixa: PerfilDoLead["renda_faixa"], e: Empreendimento): Criterio | Motivo | null {
+  if (!e.restricao_renda) return null;
+  const r = limiteDeRenda(e.restricao_renda);
+  if (!faixa || !r) return { sinal: "!", texto: e.restricao_renda };
+  const cabe = rendaNoLimite(faixa, r.limite);
+  const lim = `até ${r.limite} SM`;
+  if (cabe === "dentro") return { peso: PESOS.renda, razao: 1, motivo: { sinal: "✓", texto: `Renda dentro do limite (${lim})` } };
+  if (cabe === "talvez" || r.parcial)
+    return { sinal: "!", texto: r.parcial ? `Renda ${rotuloCurtoRenda(faixa)}: confira as unidades (${e.restricao_renda.replace(/\.$/, "")})` : `Renda ${rotuloCurtoRenda(faixa)}: confira o limite (${lim})` };
+  return { peso: PESOS.renda, razao: 0, motivo: { sinal: "✕", texto: `Renda acima do limite (${lim})` } };
+}
+
+/** Pronto ou na planta × fase do empreendimento. "Tanto faz" não conta. */
+function porFase(quer: PerfilDoLead["pronto_planta"], e: Empreendimento): Criterio | null {
+  if (!quer || quer === "tanto_faz") return null;
+  if (quer === "pronto") {
+    if (e.status === "pronto") return { peso: PESOS.fase, razao: 1, motivo: { sinal: "✓", texto: "Pronto para morar" } };
+    if (e.status === "em_obras") return { peso: PESOS.fase, razao: 0.4, motivo: { sinal: "✕", texto: "Ainda em obras" } };
+    return { peso: PESOS.fase, razao: 0, motivo: { sinal: "✕", texto: "Na planta, e o cliente quer pronto" } };
+  }
+  if (e.status === "pronto") return { peso: PESOS.fase, razao: 0.5, motivo: { sinal: "✕", texto: "Já pronto, e o cliente quer na planta" } };
+  return { peso: PESOS.fase, razao: 1, motivo: { sinal: "✓", texto: "Na planta" } };
+}
+
 /** A nota de uma tipologia (ou do empreendimento sem tipologia) para o perfil. */
 function pontuar(p: PerfilDoLead, e: Empreendimento, t: Tipologia | null, regioes: string[], agora: Date): Resultado {
   const motivos: Motivo[] = [];
   let total = 0, obtido = 0;
   const orc = porOrcamento(p.valor, t);
-  for (const c of [orc, porRegiao(regioes, e), porDormitorios(p.dormitorios || null, t), porFinalidade(p.finalidade, t)]) {
+  const criterios = [orc, porRegiao(regioes, e), porDormitorios(p.dormitorios || null, t), porFinalidade(p.finalidade, t), porRenda(p.renda_faixa, e), porFase(p.pronto_planta, e)];
+  for (const c of criterios) {
     if (!c) continue;
     if ("sinal" in c) {
       motivos.push(c);
@@ -116,7 +154,7 @@ function pontuar(p: PerfilDoLead, e: Empreendimento, t: Tipologia | null, regioe
   if (!t && !e.tipologias.length) motivos.push({ sinal: "!", texto: "Sem tipologias no catálogo" });
   if (t?.preco_a_partir_de && tabelaAntiga(e, agora) && e.tabela_mes)
     motivos.push({ sinal: "!", texto: `Preço da tabela de ${mesAno(e.tabela_mes)}` });
-  if (e.restricao_renda) motivos.push({ sinal: "!", texto: e.restricao_renda });
+  if (p.usa_fgts && t && ehComercial(t)) motivos.push({ sinal: "!", texto: "O FGTS não vale para imóvel comercial" });
   return { empreendimento: e, tipologia: t, nota: total ? Math.round((obtido / total) * 100) : 0, motivos };
 }
 

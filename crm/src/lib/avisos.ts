@@ -12,6 +12,6 @@ export const TIPOS_AVISO: { slug: TipoAviso; nome: string; explica: string }[] =
   {
     slug: "resumo",
     nome: "Resumo do dia",
-    explica: "Na abertura do atendimento (9h): atrasados, contatos de hoje, visitas e quem aguarda o primeiro contato.",
+    explica: "Na abertura do atendimento (9h): atrasados, contatos de hoje, visitas, quem aguarda o primeiro contato e os aniversários de clientes.",
   },
 ];

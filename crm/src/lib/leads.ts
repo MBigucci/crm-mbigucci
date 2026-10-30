@@ -92,7 +92,9 @@ export type Evento = {
     | "visita_comprovante"
     | "venda"
     | "venda_pagamento"
-    | "venda_correcao";
+    | "venda_correcao"
+    | "documento"
+    | "documento_removido";
   de: string | null;
   para: string | null;
   detalhe: string | null;

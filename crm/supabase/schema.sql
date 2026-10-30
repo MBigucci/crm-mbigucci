@@ -1294,7 +1294,7 @@ alter table public.lead_eventos drop constraint if exists lead_eventos_tipo_chec
 -- novo recria este check com eventos de venda já gravados.
 alter table public.lead_eventos add constraint lead_eventos_tipo_check check (tipo in
   ('criado', 'etapa', 'temperatura', 'status', 'dono', 'visita', 'visita_horario', 'visita_comprovante',
-   'venda', 'venda_pagamento', 'venda_correcao'));
+   'venda', 'venda_pagamento', 'venda_correcao', 'documento', 'documento_removido'));
 
 -- Regras da visita que as policies sozinhas não expressam. Pelo SQL Editor
 -- (sem usuário logado) só valem os checks, para permitir correções.
@@ -1610,7 +1610,7 @@ alter table public.lead_eventos add column if not exists venda_id uuid reference
 alter table public.lead_eventos drop constraint if exists lead_eventos_tipo_check;
 alter table public.lead_eventos add constraint lead_eventos_tipo_check check (tipo in
   ('criado', 'etapa', 'temperatura', 'status', 'dono', 'visita', 'visita_horario', 'visita_comprovante',
-   'venda', 'venda_pagamento', 'venda_correcao'));
+   'venda', 'venda_pagamento', 'venda_correcao', 'documento', 'documento_removido'));
 
 -- Regras da venda que as policies sozinhas não expressam. Pelo SQL Editor (sem
 -- usuário logado) só valem os checks, para permitir correções.
@@ -2980,3 +2980,271 @@ revoke all on function public.push_esquecer(text[]) from public, anon, authentic
 revoke all on function public.avisos_limpar() from public, anon, authenticated;
 grant execute on function public.avisos_segredo_ok(text), public.avisos_dados(), public.avisos_registrar(jsonb),
   public.avisos_desmarcar(jsonb), public.push_esquecer(text[]), public.avisos_limpar() to service_role;
+
+-- =====================================================================
+-- Perfil ampliado do cliente (item 16). Regras em docs/leads.md, seção 17.
+-- Tudo opcional: o lead continua cadastrado só com nome, WhatsApp e origem.
+-- Os arquivos dos documentos ficam no bucket privado "lead-documentos", cujas
+-- policies estão em supabase/storage-documentos.sql (rode depois deste).
+-- =====================================================================
+
+-- ---------- Perfil de compra e dados pessoais ----------
+-- renda_faixa em salários mínimos, porque a restrição de renda dos
+-- empreendimentos (empreendimentos.restricao_renda) vem nessa unidade.
+-- O lead já guarda o e-mail (coluna email).
+alter table public.leads add column if not exists prazo_compra text;
+alter table public.leads add column if not exists forma_pagamento text;
+alter table public.leads add column if not exists usa_fgts boolean;
+alter table public.leads add column if not exists renda_faixa text;
+alter table public.leads add column if not exists entrada numeric(14, 2);
+alter table public.leads add column if not exists pronto_planta text;
+alter table public.leads add column if not exists motivo_compra text;
+alter table public.leads add column if not exists nascimento date;
+alter table public.leads add column if not exists profissao text;
+alter table public.leads add column if not exists estado_civil text;
+alter table public.leads add column if not exists cidade_mora text;
+alter table public.leads add column if not exists bairro_mora text;
+alter table public.leads add column if not exists telefone2 text;
+
+alter table public.leads drop constraint if exists leads_perfil_ampliado_check;
+alter table public.leads add constraint leads_perfil_ampliado_check check (
+  (prazo_compra is null or prazo_compra in ('imediato', '3_meses', '6_meses', '12_meses', 'sem_pressa'))
+  and (forma_pagamento is null or forma_pagamento in ('a_vista', 'financiamento', 'consorcio'))
+  and (renda_faixa is null or renda_faixa in ('ate_3', '3_a_6', '6_a_10', '10_a_20', 'acima_20'))
+  and (entrada is null or entrada >= 0)
+  and (pronto_planta is null or pronto_planta in ('pronto', 'planta', 'tanto_faz'))
+  and (motivo_compra is null or motivo_compra in
+        ('primeiro_imovel', 'sair_do_aluguel', 'mais_espaco', 'mudar_de_regiao', 'investimento', 'outro'))
+  and (nascimento is null or nascimento >= date '1900-01-01')
+  and (estado_civil is null or estado_civil in ('solteiro', 'casado', 'uniao_estavel', 'divorciado', 'viuvo'))
+  and (profissao is null or length(profissao) <= 120)
+  and (cidade_mora is null or length(cidade_mora) <= 120)
+  and (bairro_mora is null or length(bairro_mora) <= 120)
+  and (telefone2 is null or telefone2 ~ '^55[0-9]{10,11}$')
+);
+
+-- Limpa os textos e recusa nascimento no futuro (o check não pode usar a data de hoje).
+create or replace function public.leads_perfil_guard()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.profissao := nullif(btrim(coalesce(new.profissao, '')), '');
+  new.cidade_mora := nullif(btrim(coalesce(new.cidade_mora, '')), '');
+  new.bairro_mora := nullif(btrim(coalesce(new.bairro_mora, '')), '');
+  if new.nascimento > current_date then
+    raise exception 'A data de nascimento não pode ser no futuro.' using errcode = '23514';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists leads_perfil_guard on public.leads;
+create trigger leads_perfil_guard before insert or update on public.leads
+  for each row execute function public.leads_perfil_guard();
+
+-- Mesmas regras das outras colunas de dados: quem vê o lead lê, só o dono
+-- altera (o leads_guard recusa qualquer outra coluna para quem não é o dono).
+grant insert (prazo_compra, forma_pagamento, usa_fgts, renda_faixa, entrada, pronto_planta, motivo_compra,
+              nascimento, profissao, estado_civil, cidade_mora, bairro_mora, telefone2),
+      update (prazo_compra, forma_pagamento, usa_fgts, renda_faixa, entrada, pronto_planta, motivo_compra,
+              nascimento, profissao, estado_civil, cidade_mora, bairro_mora, telefone2)
+  on public.leads to authenticated;
+
+-- ---------- Documentos do lead ----------
+-- Uma linha por arquivo no bucket "lead-documentos". O caminho é
+-- <lead_id>/<id aleatório>.<extensão>: nunca leva o nome do cliente nem o do
+-- arquivo, porque aparece na URL assinada. Sem edição: remover apaga o
+-- arquivo e a linha, e o histórico (lead_eventos) guarda o anexo e a remoção,
+-- só com a categoria.
+create table if not exists public.lead_documentos (
+  id           uuid primary key default gen_random_uuid(),
+  lead_id      uuid not null references public.leads (id) on delete restrict,
+  categoria    text not null check (categoria in
+                 ('identidade', 'cpf', 'residencia', 'renda', 'imposto_renda', 'estado_civil', 'outro')),
+  nome         text not null check (length(btrim(nome)) between 1 and 120),
+  caminho      text not null unique,
+  tipo         text not null check (tipo in
+                 ('application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif')),
+  tamanho      integer not null check (tamanho > 0 and tamanho <= 10485760),
+  enviado_por  uuid default auth.uid() references public.profiles (id) on delete set null,
+  enviado_em   timestamptz not null default now(),
+  constraint lead_documentos_caminho_check check (
+    caminho ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(pdf|jpg|png|webp|heic|heif)$'
+    and split_part(caminho, '/', 1) = lead_id::text)
+);
+
+create index if not exists lead_documentos_lead_idx on public.lead_documentos (lead_id, enviado_em desc);
+
+create or replace function public.lead_documentos_carimbo()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.nome := btrim(new.nome);
+  if auth.uid() is not null then
+    new.enviado_por := auth.uid();
+    new.enviado_em := now();
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists lead_documentos_carimbo on public.lead_documentos;
+create trigger lead_documentos_carimbo before insert on public.lead_documentos
+  for each row execute function public.lead_documentos_carimbo();
+
+-- Histórico: "Documento anexado: RG ou CNH" e "Documento removido: RG ou CNH".
+create or replace function public.lead_documentos_eventos()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if tg_op = 'INSERT' then
+    insert into public.lead_eventos (lead_id, tipo, para, autor_id)
+    values (new.lead_id, 'documento', new.categoria, auth.uid());
+    return new;
+  end if;
+  insert into public.lead_eventos (lead_id, tipo, de, autor_id)
+  values (old.lead_id, 'documento_removido', old.categoria, auth.uid());
+  return old;
+end;
+$$;
+
+drop trigger if exists lead_documentos_eventos on public.lead_documentos;
+create trigger lead_documentos_eventos after insert or delete on public.lead_documentos
+  for each row execute function public.lead_documentos_eventos();
+
+-- ---------- Quem vê, envia e remove (tabela e Storage) ----------
+-- As policies do Storage usam estas funções com o caminho do arquivo, para
+-- valer a mesma regra da tabela: lê quem vê o lead (pode_ver_dados_de do dono),
+-- envia o dono do lead ativo e remove o dono.
+
+-- O lead do caminho "<lead_id>/...", ou null se o caminho não começar por um id.
+create or replace function public.lead_do_caminho(p_caminho text)
+returns uuid
+language sql
+immutable
+set search_path = ''
+as $$
+  select case when p_caminho ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/'
+              then split_part(p_caminho, '/', 1)::uuid end;
+$$;
+
+create or replace function public.pode_ver_documento(p_caminho text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (select 1 from public.leads l
+                 where l.id = public.lead_do_caminho(p_caminho) and public.pode_ver_dados_de(l.dono_id));
+$$;
+
+create or replace function public.pode_enviar_documento(p_caminho text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select public.has_permission('leads.cadastrar')
+     and exists (select 1 from public.leads l
+                 where l.id = public.lead_do_caminho(p_caminho) and l.dono_id = auth.uid() and l.status = 'ativo');
+$$;
+
+create or replace function public.pode_remover_documento(p_caminho text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select public.has_permission('leads.cadastrar')
+     and exists (select 1 from public.leads l
+                 where l.id = public.lead_do_caminho(p_caminho) and l.dono_id = auth.uid());
+$$;
+
+revoke all on function public.lead_do_caminho(text), public.pode_ver_documento(text),
+  public.pode_enviar_documento(text), public.pode_remover_documento(text) from public, anon;
+grant execute on function public.lead_do_caminho(text), public.pode_ver_documento(text),
+  public.pode_enviar_documento(text), public.pode_remover_documento(text) to authenticated, service_role;
+
+alter table public.lead_documentos enable row level security;
+revoke all on public.lead_documentos from anon, authenticated;
+grant select, delete on public.lead_documentos to authenticated;
+grant insert (lead_id, categoria, nome, caminho, tipo, tamanho) on public.lead_documentos to authenticated;
+
+drop policy if exists "ver documentos" on public.lead_documentos;
+create policy "ver documentos" on public.lead_documentos
+  for select to authenticated using (public.pode_ver_documento(caminho));
+
+drop policy if exists "anexar documento" on public.lead_documentos;
+create policy "anexar documento" on public.lead_documentos
+  for insert to authenticated with check (enviado_por = auth.uid() and public.pode_enviar_documento(caminho));
+
+drop policy if exists "remover documento" on public.lead_documentos;
+create policy "remover documento" on public.lead_documentos
+  for delete to authenticated using (public.pode_remover_documento(caminho));
+
+-- ---------- Mensagem "Parabéns" ----------
+insert into public.mensagens_modelo (slug, titulo, texto, etapas, sem_contato, ordem) values
+  ('parabens', 'Parabéns',
+   E'Oi, {primeiro_nome}, tudo bem?\n\nPassando para desejar um feliz aniversário. Que o novo ano venha com muita saúde e boas conquistas.\n\nUm abraço, {corretor}, da MBigucci.',
+   '{}', false, 8)
+on conflict (slug) do nothing;
+
+-- ---------- Avisos: aniversários no resumo do dia ----------
+-- Nova versão de avisos_dados (item 15), com os aniversários: só o dia e o mês
+-- (nunca o ano), de hoje em São Paulo e o 29/02, que a função mostra no dia 28
+-- nos anos que não são bissextos. Os privilégios do item 15 continuam valendo.
+create or replace function public.avisos_dados()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  with quem as (
+    select distinct a.usuario_id
+    from public.push_assinaturas a
+    join public.profiles p on p.id = a.usuario_id and p.ativo
+  )
+  select jsonb_build_object(
+    'agora', now(),
+    'horario', (select jsonb_build_object('dias', h.dias, 'inicio', to_char(h.inicio, 'HH24:MI'), 'fim', to_char(h.fim, 'HH24:MI'))
+                from public.horario_atendimento h where h.id),
+    'assinaturas', (select coalesce(jsonb_agg(jsonb_build_object(
+                      'endpoint', a.endpoint, 'usuario_id', a.usuario_id, 'p256dh', a.p256dh, 'auth', a.auth, 'tipos', a.tipos)), '[]')
+                    from public.push_assinaturas a where a.usuario_id in (select usuario_id from quem)),
+    'leads', (select coalesce(jsonb_agg(jsonb_build_object(
+                'id', l.id, 'dono_id', l.dono_id, 'nome', l.nome, 'origem', l.origem, 'etapa', l.etapa,
+                'empreendimento', l.empreendimento, 'proximo_contato', l.proximo_contato,
+                'atribuido_em', l.atribuido_em, 'atribuido_por', l.atribuido_por,
+                'fim_prazo', case when l.origem = 'empresa' and l.etapa = 'novo'
+                                  then private.fim_do_prazo(greatest(l.created_at, coalesce(l.atribuido_em, l.created_at))) end)), '[]')
+              from public.leads l
+              where l.status = 'ativo'
+                and l.dono_id in (select usuario_id from quem)
+                and (l.proximo_contato <= now() + interval '1 day' or (l.origem = 'empresa' and l.etapa = 'novo'))),
+    'visitas', (select coalesce(jsonb_agg(jsonb_build_object(
+                  'id', v.id, 'corretor_id', v.corretor_id, 'lead_id', v.lead_id, 'lead_nome', l.nome,
+                  'empreendimento', v.empreendimento, 'inicio', v.inicio, 'local', v.local)), '[]')
+                from public.visitas v
+                join public.leads l on l.id = v.lead_id
+                where v.status in ('agendada', 'confirmada')
+                  and v.corretor_id in (select usuario_id from quem)
+                  and v.inicio between now() - interval '30 days' and now() + interval '1 day'),
+    'aniversarios', (select coalesce(jsonb_agg(jsonb_build_object(
+                       'lead_id', l.id, 'dono_id', l.dono_id, 'nome', l.nome, 'dia_mes', to_char(l.nascimento, 'MM-DD'))), '[]')
+                     from public.leads l
+                     where l.status = 'ativo'
+                       and l.dono_id in (select usuario_id from quem)
+                       and to_char(l.nascimento, 'MM-DD') in (to_char(now() at time zone 'America/Sao_Paulo', 'MM-DD'), '02-29'))
+  );
+$$;

@@ -120,3 +120,46 @@ test("clientes compatíveis: nota ≥ 70, aguardando lançamento em destaque, de
   const pronto = clientesCompativeis(doSlug("mundi-thiago"), [lead("Bia", { valor: 500000, regiao: "Pauliceia", etapa: "aguardando_lancamento" })], AGORA);
   assert.deepEqual(pronto.map((x) => x.destaque), [false]);
 });
+
+test("renda (item 16): casa com a restrição do empreendimento, em salários mínimos", () => {
+  const r = (renda_faixa: LeadDoRadar["renda_faixa"], slug = "america-california") =>
+    pontuarEmpreendimento(perfil({ renda_faixa }), doSlug(slug), AGORA)!;
+  // America California: "Somente clientes com renda até 6 salários mínimos."
+  assert.equal(r("3_a_6").nota, 100);
+  assert.ok(r("3_a_6").motivos.some((m) => m.sinal === "✓" && m.texto === "Renda dentro do limite (até 6 SM)"));
+  assert.equal(r("6_a_10").nota, 0);
+  assert.ok(r("6_a_10").motivos.some((m) => m.sinal === "✕" && /Renda acima do limite/.test(m.texto)));
+  // Alvorada: a restrição vale só do 1º ao 12º andar → aviso, fora da nota.
+  const alv = pontuarEmpreendimento(perfil({ renda_faixa: "10_a_20", regiao: "SBC" }), doSlug("alvorada"), AGORA)!;
+  assert.ok(alv.motivos.some((m) => m.sinal === "!" && /confira as unidades \(Do 1º ao 12º andar/.test(m.texto)));
+  assert.ok(!alv.motivos.some((m) => /Renda acima/.test(m.texto)));
+  // Sem renda no lead, a restrição continua como aviso; sem restrição, a renda não conta.
+  assert.ok(pontuarEmpreendimento(perfil({ valor: 450000 }), doSlug("station"), AGORA)!.motivos.some((m) => m.sinal === "!" && /10 salários/.test(m.texto)));
+  const semRestricao = pontuarEmpreendimento(perfil({ valor: 360000, renda_faixa: "acima_20" }), doSlug("mundi-lucca"), AGORA)!;
+  assert.equal(semRestricao.nota, 100);
+  assert.ok(!semRestricao.motivos.some((m) => /Renda/.test(m.texto)));
+  // Só a renda preenchida já põe o lead no Radar; quem passa do limite sai (nota abaixo de 50).
+  assert.equal(temPerfil(perfil({ renda_faixa: "ate_3" })), true);
+  const rad = radar(perfil({ renda_faixa: "10_a_20", regiao: "Santo André" }), CATALOGO, AGORA).map((x) => x.empreendimento.slug);
+  assert.ok(!rad.includes("america-california") && !rad.includes("piemonte"));
+});
+
+test("pronto ou na planta (item 16): casa com a fase; tanto faz não conta", () => {
+  const nota = (pronto_planta: LeadDoRadar["pronto_planta"], slug: string) =>
+    pontuarEmpreendimento(perfil({ pronto_planta, regiao: "Pauliceia" }), doSlug(slug), AGORA)!.nota;
+  // Mundi Lucca é lançamento na Pauliceia; Mundi Thiago, pronto no mesmo bairro.
+  assert.equal(nota("planta", "mundi-lucca"), 100);
+  assert.equal(nota("pronto", "mundi-thiago"), 100);
+  assert.equal(nota("pronto", "mundi-lucca"), Math.round((25 / 35) * 100));
+  assert.equal(nota("planta", "mundi-thiago"), Math.round((30 / 35) * 100));
+  assert.equal(nota("tanto_faz", "mundi-lucca"), 100);
+  assert.equal(temPerfil(perfil({ pronto_planta: "tanto_faz" })), false);
+});
+
+test("FGTS em sala comercial vira aviso", () => {
+  const r = pontuarEmpreendimento(perfil({ finalidade: "investir", usa_fgts: true }), doSlug("marco-zero-mix-work"), AGORA)!;
+  assert.ok(r.tipologia && ["sala_comercial", "loja"].includes(r.tipologia.tipo));
+    assert.ok(r.motivos.some((m) => m.sinal === "!" && /FGTS não vale/.test(m.texto)));
+  const casa = pontuarEmpreendimento(perfil({ finalidade: "morar", usa_fgts: true }), doSlug("mundi-lucca"), AGORA)!;
+  assert.ok(!casa.motivos.some((m) => /FGTS/.test(m.texto)));
+});

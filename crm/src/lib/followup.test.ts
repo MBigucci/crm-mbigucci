@@ -89,4 +89,6 @@ test("texto dos eventos", () => {
   assert.equal(t(ev("dono", "u1", "u2", "x")), "Atribuído a Carla");
   assert.equal(t(ev("dono", "u1", "u9", "x")), "Atribuído a outro corretor");
   assert.equal(t(ev("dono", "u2", "u1", "x", { detalhe: "perdido" })), "! Lead perdido por Carla. Passado para Ana");
+  assert.equal(t(ev("documento", null, "identidade", "x")), "Documento anexado: RG ou CNH");
+  assert.equal(t(ev("documento_removido", "renda", null, "x")), "Documento removido: Comprovante de renda");
 });

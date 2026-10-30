@@ -5,6 +5,7 @@
 import { MOTIVOS_DESCARTE, temperatura, type Evento, type Interacao } from "./leads.ts";
 import { descreverEventoVisita, type Visita } from "./visitas.ts";
 import { descreverEventoVenda, type Venda } from "./vendas.ts";
+import { nomeCategoria } from "./perfil.ts";
 
 export type ItemHistorico =
   | { tipo: "interacao"; quando: string; interacao: Interacao }
@@ -43,6 +44,10 @@ export function descreverEvento(
     case "visita_horario":
     case "visita_comprovante":
       return descreverEventoVisita(e, e.visita_id ? visita(e.visita_id) : undefined);
+    case "documento":
+      return `Documento anexado: ${nomeCategoria(e.para)}`;
+    case "documento_removido":
+      return `Documento removido: ${nomeCategoria(e.de)}`;
     case "criado": {
       const dono = e.para && e.para !== e.autor_id ? pessoa(e.para) : undefined;
       return dono ? `Lead cadastrado para ${dono}` : "Lead cadastrado";
