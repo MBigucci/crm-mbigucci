@@ -44,7 +44,7 @@ export function APartirDe({ e, agora }: { e: Empreendimento; agora: Date }) {
   if (!e.preco_a_partir_de) return <p className="text-[13px] text-ink-soft">! Sem preço na tabela do mês</p>;
   return (
     <p className="text-[13px] text-ink-soft">
-      A partir de <strong className="num font-display text-[17px] font-bold text-ink">{formatarReais(e.preco_a_partir_de)}</strong>
+      A partir de <strong className="num font-display text-[24px] font-extrabold text-ink">{formatarReais(e.preco_a_partir_de)}</strong>
       {e.tabela_mes && tabelaAntiga(e, agora) && (
         <span className="ml-2 font-semibold text-brand">! Tabela de {mesAno(e.tabela_mes)}</span>
       )}
@@ -101,7 +101,7 @@ export function BotaoMandar({ e, className }: { e: Empreendimento; className?: s
     <>
       <button
         type="button"
-        className={clsx("btn btn-ghost focus-ring", className)}
+        className={clsx("btn btn-red focus-ring", className)}
         aria-label={`Mandar o ${e.nome} ao cliente`}
         onClick={() => setAberto(true)}
       >
