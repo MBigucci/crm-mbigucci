@@ -20,3 +20,6 @@ export function db(): SupabaseClient {
   if (!supabase) throw new Error("Supabase não configurado.");
   return supabase;
 }
+
+/** Id gerado no aparelho, para o reenvio não duplicar (veja jaEstavaSalvo em erros.ts). */
+export const novoId = () => crypto.randomUUID();

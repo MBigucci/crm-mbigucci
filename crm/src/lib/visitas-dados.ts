@@ -5,7 +5,7 @@
 // banco: aqui só se grava e se traduz o erro. Regras em docs/visitas.md.
 
 import { db } from "./supabase";
-import { mensagemErro } from "./erros";
+import { jaEstavaSalvo, mensagemErro } from "./erros";
 import type { Lead } from "./leads";
 import { COLUNAS_VISITA, type StatusVisita, type Visita } from "./visitas";
 
@@ -22,15 +22,19 @@ export const COLUNAS_VISITA_COM_LEAD = `${COLUNAS_VISITA}, lead:leads(id, nome, 
 type Resultado = Promise<string | null>;
 const erro = (e: { message?: string } | null) => (e ? mensagemErro(e) : null);
 
-export async function agendarVisita(d: {
-  lead_id: string;
-  empreendimento: string;
-  inicio: string;
-  local: string | null;
-  observacao: string | null;
-}): Resultado {
-  const { error } = await db().from("visitas").insert(d);
-  return erro(error);
+/** `id` gerado no aparelho: no reenvio, a visita que já estava salva conta como agendada. */
+export async function agendarVisita(
+  id: string,
+  d: {
+    lead_id: string;
+    empreendimento: string;
+    inicio: string;
+    local: string | null;
+    observacao: string | null;
+  },
+): Resultado {
+  const { error } = await db().from("visitas").insert({ id, ...d });
+  return jaEstavaSalvo(error) ? null : erro(error);
 }
 
 /** Remarcar, confirmar, cancelar, dar baixa e anotar. O banco confere cada regra. */

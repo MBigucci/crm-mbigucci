@@ -16,9 +16,9 @@ import {
 } from "@/components/leads/partes";
 import { BotaoLigar, BotaoMensagem } from "@/components/leads/mensagem";
 import { AvisarCorretor } from "@/components/leads/repasse";
-import { db } from "@/lib/supabase";
+import { db, novoId } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
-import { mensagemErro } from "@/lib/erros";
+import { jaEstavaSalvo, mensagemErro } from "@/lib/erros";
 import {
   COLUNAS_EVENTO,
   COLUNAS_INTERACAO,
@@ -38,7 +38,7 @@ import {
 } from "@/lib/leads";
 import { LIMITE_TENTATIVAS, seloSemContato, sugereDescarte } from "@/lib/followup";
 import { descreverEvento, montarHistorico } from "@/lib/historico";
-import { registrarSemResposta, useCatalogos, useCorretores, useHorarioAtendimento } from "@/lib/leads-dados";
+import { alterarLead, registrarSemResposta, useCatalogos, useCorretores, useHorarioAtendimento } from "@/lib/leads-dados";
 import { aguardaPrimeiroContato, prazoDoLead, type HorarioAtendimento } from "@/lib/prazo";
 import { COLUNAS_VISITA, estaAberta, type Visita } from "@/lib/visitas";
 import { AgendarVisita, ListaVisitas } from "@/components/visitas/visitas";
@@ -83,7 +83,7 @@ function Ficha({ id }: { id: string }) {
   const [erro, setErro] = useState<string | null>(null);
   const [tentativa, setTentativa] = useState<{ n: number; proximo: string } | null>(null);
   const [agora, setAgora] = useState(() => new Date());
-  const [desfazer, setDesfazer] = useState<{ texto: string; anterior: Partial<Lead> } | null>(null);
+  const [desfazer, setDesfazer] = useState<{ texto: string; anterior: Partial<Lead>; novo: Partial<Lead> } | null>(null);
   const fecharDesfazer = useCallback(() => setDesfazer(null), []);
   const { perfil, erro: erroPerfil, recarregar: recarregarPerfil } = usePerfilDoLead(id);
   const [perfilAberto, setPerfilAberto] = useState(false);
@@ -150,18 +150,29 @@ function Ficha({ id }: { id: string }) {
   const origem = catalogos?.origens.find((o) => o.slug === lead.origem);
   const etapa = catalogos?.etapas.find((e) => e.slug === lead.etapa);
 
-  async function alterar(campos: Partial<Lead>) {
+  /** Grava só as colunas passadas e confere que gravou. Com `seAinda`, só se o lead ainda tiver esses valores. */
+  async function alterar(campos: Partial<Lead>, seAinda?: Partial<Lead>): Promise<string | null> {
     setErro(null);
-    const { error } = await db().from("leads").update(campos).eq("id", id);
-    if (error) return setErro(mensagemErro(error));
+    const e = await alterarLead(id, campos, seAinda);
+    if (e) {
+      setErro(e);
+      return e;
+    }
     await carregar();
+    return null;
   }
 
-  /** Muda e mostra o Desfazer, que grava de volta os valores de antes. */
-  /** Salva o perfil (o de antes e o ampliado) e devolve o erro, se houver. */
+  /**
+   * Salva o perfil (o de antes e o ampliado) e devolve o erro, se houver. Vão só
+   * os campos que mudaram em relação ao que a ficha mostra, para não passar por
+   * cima do que foi salvo em outro aparelho.
+   */
   async function salvarPerfil(campos: Partial<Lead & PerfilAmpliado>): Promise<string | null> {
-    const { error } = await db().from("leads").update(campos).eq("id", id);
-    if (error) return mensagemErro(error);
+    const atual = leadCompleto as Record<string, unknown>;
+    const mudou = Object.fromEntries(Object.entries(campos).filter(([k, v]) => (v ?? null) !== (atual[k] ?? null)));
+    if (!Object.keys(mudou).length) return null;
+    const e = await alterarLead(id, mudou);
+    if (e) return e;
     await Promise.all([carregar(), recarregarPerfil()]);
     return null;
   }
@@ -175,11 +186,8 @@ function Ficha({ id }: { id: string }) {
     if (!lead) return;
     const anterior = Object.fromEntries(Object.keys(campos).map((k) => [k, lead[k as keyof Lead]])) as Partial<Lead>;
     setDesfazer(null);
-    setErro(null);
-    const { error } = await db().from("leads").update(campos).eq("id", id);
-    if (error) return setErro(mensagemErro(error));
-    await carregar();
-    setDesfazer({ texto, anterior });
+    if (await alterar(campos)) return;
+    setDesfazer({ texto, anterior, novo: campos });
   }
 
   const descartar = (motivo: MotivoDescarte) =>
@@ -512,9 +520,9 @@ function Ficha({ id }: { id: string }) {
           texto={desfazer.texto}
           onFim={fecharDesfazer}
           onDesfazer={() => {
-            const anterior = desfazer.anterior;
+            const { anterior, novo } = desfazer;
             setDesfazer(null);
-            alterar(anterior);
+            alterar(anterior, novo);
           }}
         />
       )}
@@ -541,7 +549,7 @@ function MudarProximoContato({
   n: number;
   proximo: string;
   agora: Date;
-  onSalvar: (iso: string) => Promise<void>;
+  onSalvar: (iso: string) => Promise<string | null>;
 }) {
   const [aberto, setAberto] = useState(false);
   const [campos, setCampos] = useState(() => paraCampos(new Date(proximo)));
@@ -552,7 +560,8 @@ function MudarProximoContato({
     const iso = deCampos(campos.data, campos.hora);
     if (!iso) return setErro("Confira o dia e a hora do próximo contato.");
     setErro(null);
-    await onSalvar(iso);
+    const e = await onSalvar(iso);
+    if (e) return setErro(e);
     setSalvo(iso);
     setAberto(false);
   }
@@ -586,6 +595,8 @@ function RegistrarInteracao({ leadId, onSalvo }: { leadId: string; onSalvo: () =
   const [contato, setContato] = useState({ data: "", hora: "" });
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+  // Mesmo id até gravar: se a resposta se perder e a pessoa tocar de novo, não duplica.
+  const idEnvio = useRef<string | null>(null);
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
@@ -595,11 +606,13 @@ function RegistrarInteracao({ leadId, onSalvo }: { leadId: string; onSalvo: () =
     const proximo = deCampos(contato.data, contato.hora);
     if (!proximo) return setErro("Confira o dia e a hora do próximo contato.");
     setSalvando(true);
+    idEnvio.current ??= novoId();
     const { error } = await db()
       .from("lead_interacoes")
-      .insert({ lead_id: leadId, tipo, texto: texto.trim(), proximo_contato: proximo });
+      .insert({ id: idEnvio.current, lead_id: leadId, tipo, texto: texto.trim(), proximo_contato: proximo });
     setSalvando(false);
-    if (error) return setErro(mensagemErro(error));
+    if (error && !jaEstavaSalvo(error)) return setErro(mensagemErro(error));
+    idEnvio.current = null;
     setTexto("");
     setContato({ data: "", hora: "" });
     await onSalvo();
@@ -707,7 +720,7 @@ function Atribuir({
   horario: HorarioAtendimento;
   agora: Date;
   nomeDe: (id: string) => string | undefined;
-  onAtribuir: (dono: string) => Promise<void>;
+  onAtribuir: (dono: string) => Promise<string | null>;
   onPerdido: (dono: string) => Promise<string | null>;
 }) {
   const corretores = useCorretores(true);
@@ -717,7 +730,7 @@ function Atribuir({
   const estourado = prazoDoLead(lead, agora, horario)?.estado === "estourado";
   const escolhido = dono !== lead.dono_id;
   const atribuir = async () => {
-    await onAtribuir(dono);
+    if (await onAtribuir(dono)) return;
     setAtribuido({ id: dono, perdido: false });
   };
 

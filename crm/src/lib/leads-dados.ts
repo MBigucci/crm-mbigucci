@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { db } from "./supabase";
-import { mensagemErro } from "./erros";
+import { mensagemErro, NAO_SALVOU } from "./erros";
 import type { Etapa, Origem } from "./leads";
 import { sugerirProximaTentativa, TEXTO_SEM_RESPOSTA } from "./followup";
 import { HORARIO_PADRAO, type HorarioAtendimento } from "./prazo";
@@ -71,10 +71,37 @@ export function gravarUltimaOrigem(usuario: string, origem: string) {
  */
 export async function registrarSemResposta(leadId: string): Promise<{ proximo: string; erro: string | null }> {
   const proximo = sugerirProximaTentativa(new Date()).toISOString();
-  const { error } = await db()
-    .from("lead_interacoes")
-    .insert({ lead_id: leadId, tipo: "tentativa", texto: TEXTO_SEM_RESPOSTA, proximo_contato: proximo });
-  return { proximo, erro: error ? mensagemErro(error) : null };
+  // Toque duplo: o segundo toque, com o primeiro ainda gravando, não conta outra tentativa.
+  if (semRespostaGravando.has(leadId)) return { proximo, erro: null };
+  semRespostaGravando.add(leadId);
+  try {
+    const { error } = await db()
+      .from("lead_interacoes")
+      .insert({ lead_id: leadId, tipo: "tentativa", texto: TEXTO_SEM_RESPOSTA, proximo_contato: proximo });
+    return { proximo, erro: error ? mensagemErro(error) : null };
+  } finally {
+    semRespostaGravando.delete(leadId);
+  }
+}
+const semRespostaGravando = new Set<string>();
+
+/**
+ * Altera só as colunas passadas e confere que o banco gravou: o RLS não dá
+ * erro quando a linha não pode ser alterada (o gerente reatribuiu o lead, por
+ * exemplo), só não altera nada. Com `seAinda`, só grava se o lead ainda tiver
+ * esses valores (o Desfazer não passa por cima do que mudou depois).
+ */
+export async function alterarLead(
+  id: string,
+  campos: Record<string, unknown>,
+  seAinda?: Record<string, unknown>,
+): Promise<string | null> {
+  let q = db().from("leads").update(campos).eq("id", id);
+  for (const [k, v] of Object.entries(seAinda ?? {})) q = v === null ? q.is(k, null) : q.eq(k, v);
+  const { data, error } = await q.select("id");
+  if (error) return mensagemErro(error);
+  if (data?.length) return null;
+  return seAinda ? "Não deu para desfazer: o lead mudou depois. Confira a ficha." : NAO_SALVOU;
 }
 
 let cacheHorario: HorarioAtendimento | null = null;

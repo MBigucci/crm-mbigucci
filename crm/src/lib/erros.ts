@@ -20,5 +20,17 @@ export function mensagemErro(e: { message?: string } | null | undefined): string
   if (/does not exist|schema cache|bucket not found/i.test(m)) return "Esta parte do CRM ainda não foi ativada. Avise o gerente geral.";
   if (m.includes("row-level security") || m.includes("permission denied")) return "Você não tem permissão para isso.";
   if (/failed to fetch|network|load failed/i.test(m)) return "Sem conexão com o servidor. Tente de novo.";
+  if (/jwt expired|invalid jwt|jwserror/i.test(m)) return "Sua sessão expirou. Entre de novo em outra aba; o que você digitou continua aqui.";
   return m;
+}
+
+/** O update não alterou nenhuma linha: o RLS não dá erro, só não grava (o lead mudou de dono, por exemplo). */
+export const NAO_SALVOU = "Não foi salvo: este lead mudou de dono ou você não tem mais acesso a ele. Recarregue a página.";
+
+/**
+ * O insert com o id gerado no aparelho bateu na chave primária: a linha já
+ * estava salva (a resposta se perdeu e a pessoa tocou de novo). Conta como salvo.
+ */
+export function jaEstavaSalvo(e: { code?: string; message?: string } | null | undefined): boolean {
+  return e?.code === "23505" && /_pkey\b/.test(e.message ?? "");
 }

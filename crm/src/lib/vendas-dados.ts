@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { db } from "./supabase";
-import { mensagemErro } from "./erros";
+import { jaEstavaSalvo, mensagemErro } from "./erros";
 import { COLUNAS_VENDA, diaIso, type Venda } from "./vendas";
 import { COLUNAS_META, COLUNAS_META_VGV, inicioDosDados, type DadosMetas, type Meta, type MetaVgv } from "./metas";
 
@@ -54,18 +54,22 @@ export function useVendas(ini: string, fim: string, corretor?: string | null) {
 
 export const useVendasDoAno = (ano: number, corretor?: string | null) => useVendas(`${ano}-01-01`, `${ano + 1}-01-01`, corretor);
 
-export async function registrarVenda(d: {
-  lead_id: string;
-  empreendimento: string;
-  unidade: string | null;
-  vgv: number;
-  assinada_em: string;
-  pagamento: Venda["pagamento"];
-  pago_em: string | null;
-  observacao: string | null;
-}): Resultado {
-  const { error } = await db().from("vendas").insert(d);
-  return erro(error);
+/** `id` gerado no aparelho: no reenvio, a venda que já estava salva conta como registrada. */
+export async function registrarVenda(
+  id: string,
+  d: {
+    lead_id: string;
+    empreendimento: string;
+    unidade: string | null;
+    vgv: number;
+    assinada_em: string;
+    pagamento: Venda["pagamento"];
+    pago_em: string | null;
+    observacao: string | null;
+  },
+): Resultado {
+  const { error } = await db().from("vendas").insert({ id, ...d });
+  return jaEstavaSalvo(error) ? null : erro(error);
 }
 
 /** Pendente → pago: o andamento normal, sem motivo. */

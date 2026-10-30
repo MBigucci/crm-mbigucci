@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { Casca } from "@/components/casca";
 import { CampoProximoContato, EscolhaTemperatura, RodapeAcao, SeloCampo } from "@/components/leads/partes";
-import { db } from "@/lib/supabase";
+import { db, novoId } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
-import { mensagemErro } from "@/lib/erros";
+import { jaEstavaSalvo, mensagemErro } from "@/lib/erros";
 import { COLUNAS_LEAD, deCampos, formatarWhatsapp, normalizarWhatsapp, type Lead, type Temperatura } from "@/lib/leads";
 import { camposEncontrados, lerMensagem, type LeadLido } from "@/lib/cadastro-magico";
 import {
@@ -72,6 +72,7 @@ function NovoLead() {
   const [duplicado, setDuplicado] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [repasse, setRepasse] = useState<Lead | null>(null);
+  const ids = useRef<{ lead: string; mensagem: string } | null>(null);
   const horario = useHorarioAtendimento();
 
   const origens = useMemo(
@@ -113,7 +114,8 @@ function NovoLead() {
     if (contato.data && !proximo) return setErro("Confira o dia e a hora do próximo contato.");
 
     setSalvando(true);
-    if (duplicado !== numero) {
+    // Num novo toque depois de uma tentativa enviada, o lead "duplicado" pode ser o próprio.
+    if (duplicado !== numero && !ids.current) {
       // Aviso de duplicado; não impede o cadastro. Entre os leads que a pessoa
       // enxerga, mostra o nome (e o corretor, para o gerente). Nos outros, a
       // função do banco só diz que o número está em outra carteira.
@@ -125,9 +127,14 @@ function NovoLead() {
       }
     }
 
-    const { data, error } = await db()
+    // O id nasce no aparelho e fica até o cadastro terminar: se a resposta se
+    // perder e a pessoa tocar de novo em Cadastrar, o banco recusa a cópia.
+    ids.current ??= { lead: novoId(), mensagem: novoId() };
+    const { lead: idLead, mensagem: idMensagem } = ids.current;
+    const inserido = await db()
       .from("leads")
       .insert({
+        id: idLead,
         dono_id: atribui ? dono : eu.id,
         nome: nome.trim(),
         whatsapp: numero,
@@ -141,6 +148,9 @@ function NovoLead() {
       })
       .select(COLUNAS_LEAD)
       .single<Lead>();
+    const { data, error } = jaEstavaSalvo(inserido.error)
+      ? await db().from("leads").select(COLUNAS_LEAD).eq("id", idLead).single<Lead>()
+      : inserido;
     if (error) {
       setSalvando(false);
       return setErro(mensagemErro(error));
@@ -150,12 +160,13 @@ function NovoLead() {
       // A mensagem colada vira a primeira interação ("Mensagem original").
       const { error: e2 } = await db()
         .from("lead_interacoes")
-        .insert({ lead_id: data.id, tipo: "mensagem", texto: mensagem.slice(0, 4000) });
-      if (e2) {
+        .insert({ id: idMensagem, lead_id: data.id, tipo: "mensagem", texto: mensagem.slice(0, 4000) });
+      if (e2 && !jaEstavaSalvo(e2)) {
         setSalvando(false);
-        return setErro(`O lead foi cadastrado, mas a mensagem original não foi guardada: ${mensagemErro(e2)}`);
+        return setErro(`O lead foi cadastrado, mas a mensagem original não foi guardada: ${mensagemErro(e2)} Toque em Cadastrar de novo para tentar só a mensagem.`);
       }
     }
+    ids.current = null;
     setSalvando(false);
     if (atribui) setRepasse(data);
     else router.push(`/leads/ficha/?id=${data.id}`);

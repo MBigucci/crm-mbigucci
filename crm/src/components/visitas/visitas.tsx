@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import clsx from "clsx";
-import { useCallback, useEffect, useState } from "react";
-import { db } from "@/lib/supabase";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { db, novoId } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
 import { mensagemErro } from "@/lib/erros";
 import { deCampos, formatarQuando, paraCampos } from "@/lib/leads";
@@ -511,6 +511,8 @@ export function AgendarVisita({ lead, onAgendada }: { lead: LeadDaVisita; onAgen
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [agendada, setAgendada] = useState<Pick<Visita, "inicio" | "empreendimento"> | null>(null);
+  // Mesmo id até agendar: o reenvio (resposta perdida) não cria outra visita.
+  const idEnvio = useRef<string | null>(null);
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
@@ -520,9 +522,11 @@ export function AgendarVisita({ lead, onAgendada }: { lead: LeadDaVisita; onAgen
     setErro(null);
     setSalvando(true);
     const d = { lead_id: lead.id, empreendimento: empreendimento.trim(), inicio: inicio!, local: local.trim() || null, observacao: observacao.trim() || null };
-    const r = await agendarVisita(d);
+    idEnvio.current ??= novoId();
+    const r = await agendarVisita(idEnvio.current, d);
     setSalvando(false);
     if (r) return setErro(r);
+    idEnvio.current = null;
     setAgendada(d);
     setAberto(false);
     setLocal("");

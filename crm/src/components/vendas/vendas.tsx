@@ -3,7 +3,7 @@
 import Link from "next/link";
 import clsx from "clsx";
 import { useEffect, useState } from "react";
-import { db } from "@/lib/supabase";
+import { db, novoId } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
 import { ConferirNoCatalogo, ListaEmpreendimentos } from "@/components/empreendimentos/partes";
 import {
@@ -75,6 +75,8 @@ export function RegistrarVenda({
   });
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+  // Um id por formulário aberto: o reenvio (resposta perdida) não registra a venda duas vezes.
+  const [idVenda] = useState(novoId);
   const campo = (k: "empreendimento" | "unidade" | "assinada_em" | "pago_em" | "observacao") => ({
     value: f[k],
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setF((x) => ({ ...x, [k]: e.target.value })),
@@ -89,7 +91,7 @@ export function RegistrarVenda({
     if (f.paga && (!f.pago_em || f.pago_em > hoje)) return setErro("Confira a data do pagamento: até hoje.");
     setErro(null);
     setSalvando(true);
-    const r = await registrarVenda({
+    const r = await registrarVenda(idVenda, {
       lead_id: lead.id,
       empreendimento: f.empreendimento.trim(),
       unidade: f.unidade.trim() || null,
