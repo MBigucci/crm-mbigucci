@@ -7,6 +7,7 @@ import { usePerfil } from "@/lib/sessao";
 import { mensagemErro } from "@/lib/erros";
 import { nomePerfil } from "@/lib/tipos";
 import { formatarWhatsapp, normalizarWhatsapp } from "@/lib/leads";
+import { AvisosNesteAparelho } from "@/components/avisos-aparelho";
 
 export default function ContaPage() {
   return (
@@ -44,6 +45,7 @@ function Conta() {
         <p className="mt-1 text-ink-soft">{perfil.email}</p>
       </div>
       <MeuWhatsapp />
+      <AvisosNesteAparelho />
       <form className="card" onSubmit={trocar} noValidate>
         <h2 className="titulo-card">Trocar senha</h2>
         <label className="field-label mt-4" htmlFor="nova">

@@ -2738,3 +2738,245 @@ insert into public.mensagens_modelo (slug, titulo, texto, etapas, sem_contato, o
    E'Oi, {primeiro_nome}, tudo bem?\n\nSeparei uma opção para você: {empreendimento}.\nEndereço: {endereco}\nA partir de {a_partir_de}\nApresentação: {apresentacao}\n\nQuer agendar uma visita? Escolho o melhor horário com você.',
    '{}', false, 7)
 on conflict (slug) do nothing;
+
+-- =====================================================================
+-- Avisos no celular (Web Push, item 15). Regras em docs/notificacoes.md.
+-- O envio é da Edge Function "avisos" (supabase/functions/avisos/), chamada
+-- a cada 5 min pelo pg_cron e na hora pelo gatilho de atribuição, os dois em
+-- supabase/agendar-avisos.sql. As funções avisos_* só a chave de serviço
+-- (a função) chama; o app só assina, ajusta os tipos e desliga.
+-- =====================================================================
+
+-- ---------- Assinaturas: uma por aparelho ----------
+-- tipos: os avisos que este aparelho recebe. contato (próximo contato),
+-- visita (1 h antes e aguardando baixa no fim do dia), atribuido (lead da
+-- empresa), prazo (15 min do primeiro contato) e resumo (abertura do dia).
+-- visto_em: a última vez que o app abriu neste aparelho; sem abrir há 60 dias, sai.
+create table if not exists public.push_assinaturas (
+  endpoint    text primary key,
+  usuario_id  uuid not null references public.profiles (id) on delete cascade,
+  p256dh      text not null,
+  auth        text not null,
+  tipos       text[] not null default '{contato,visita,atribuido,prazo,resumo}',
+  aparelho    text,
+  criado_em   timestamptz not null default now(),
+  visto_em    timestamptz not null default now(),
+  constraint push_assinaturas_tipos
+    check (tipos <@ '{contato,visita,atribuido,prazo,resumo}'::text[])
+);
+
+create index if not exists push_assinaturas_usuario_idx on public.push_assinaturas (usuario_id);
+
+-- ---------- Avisos já enviados ----------
+-- Uma linha por aviso e pessoa: a chave diz o quê e de quando (por exemplo
+-- "contato:<lead>:<hora marcada>"). Se o horário muda, a chave muda e o aviso
+-- volta a valer. Linhas com mais de 30 dias saem em avisos_limpar.
+create table if not exists public.push_log (
+  usuario_id  uuid not null references public.profiles (id) on delete cascade,
+  chave       text not null check (length(chave) between 1 and 200),
+  enviado_em  timestamptz not null default now(),
+  primary key (usuario_id, chave)
+);
+
+alter table public.push_assinaturas enable row level security;
+alter table public.push_log enable row level security;
+revoke all on public.push_assinaturas from anon, authenticated;
+revoke all on public.push_log from anon, authenticated;
+grant select, delete on public.push_assinaturas to authenticated;
+
+-- Cada um vê e remove só os próprios aparelhos. Gravar e mudar os tipos é
+-- pela função push_assinar, porque o aparelho pode trocar de dono (sair e
+-- entrar com outra conta) e a linha antiga não é visível para quem entrou.
+drop policy if exists "cada um ve os proprios aparelhos" on public.push_assinaturas;
+create policy "cada um ve os proprios aparelhos" on public.push_assinaturas
+  for select to authenticated using (usuario_id = auth.uid());
+
+drop policy if exists "cada um remove os proprios aparelhos" on public.push_assinaturas;
+create policy "cada um remove os proprios aparelhos" on public.push_assinaturas
+  for delete to authenticated using (usuario_id = auth.uid());
+
+-- Só endereços dos serviços de push de verdade (Chrome e Android, Firefox,
+-- Safari e iPhone, Edge). A função não manda nada para outro endereço.
+create or replace function public.push_endereco_ok(p_endpoint text)
+returns boolean
+language sql
+immutable
+set search_path = ''
+as $$
+  select coalesce(length(p_endpoint) <= 1024 and p_endpoint ~ (
+    '^https://(fcm\.googleapis\.com|android\.googleapis\.com|updates\.push\.services\.mozilla\.com|'
+    || '([a-z0-9-]+\.)*push\.apple\.com|([a-z0-9-]+\.)*notify\.windows\.com)/'), false);
+$$;
+
+-- Liga os avisos neste aparelho, ou atualiza. p_tipos null mantém os tipos
+-- (é o que o app usa ao abrir, só para renovar o visto_em).
+create or replace function public.push_assinar(
+  p_endpoint text, p_p256dh text, p_auth text, p_tipos text[] default null, p_aparelho text default null)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_todos constant text[] := '{contato,visita,atribuido,prazo,resumo}';
+begin
+  if public.current_perfil() is null then
+    raise exception 'Entre com uma conta ativa para ligar os avisos.' using errcode = '42501';
+  end if;
+  if not public.push_endereco_ok(p_endpoint)
+     or coalesce(length(p_p256dh), 0) not between 1 and 200
+     or coalesce(length(p_auth), 0) not between 1 and 64
+     or length(coalesce(p_aparelho, '')) > 100 then
+    raise exception 'Assinatura de aviso inválida.';
+  end if;
+  if p_tipos is not null and not (p_tipos <@ v_todos) then
+    raise exception 'Tipo de aviso inválido.';
+  end if;
+  insert into public.push_assinaturas (endpoint, usuario_id, p256dh, auth, tipos, aparelho)
+  values (p_endpoint, auth.uid(), p_p256dh, p_auth, coalesce(p_tipos, v_todos), p_aparelho)
+  on conflict (endpoint) do update set
+    tipos = case when public.push_assinaturas.usuario_id = auth.uid()
+                 then coalesce(p_tipos, public.push_assinaturas.tipos)
+                 else coalesce(p_tipos, v_todos) end,
+    usuario_id = auth.uid(),
+    p256dh = excluded.p256dh,
+    auth = excluded.auth,
+    aparelho = coalesce(excluded.aparelho, public.push_assinaturas.aparelho),
+    visto_em = now();
+end;
+$$;
+revoke all on function public.push_assinar(text, text, text, text[], text) from public, anon;
+grant execute on function public.push_assinar(text, text, text, text[], text) to authenticated;
+
+-- ---------- Funções da Edge Function (só a chave de serviço) ----------
+
+-- Confere o segredo do agendador, guardado no Vault por agendar-avisos.sql.
+create or replace function public.avisos_segredo_ok(p_segredo text)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  return coalesce(length(p_segredo), 0) >= 32 and exists (
+    select 1 from vault.decrypted_secrets where name = 'avisos_segredo' and decrypted_secret = p_segredo);
+exception when undefined_table or invalid_schema_name then
+  return false;
+end;
+$$;
+
+-- Tudo o que a função precisa para montar os avisos de agora, só de quem tem
+-- aparelho com aviso e conta ativa. O fim do prazo vem de private.fim_do_prazo,
+-- a mesma conta do painel. Horários em ISO (UTC); a função converte para São Paulo.
+create or replace function public.avisos_dados()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  with quem as (
+    select distinct a.usuario_id
+    from public.push_assinaturas a
+    join public.profiles p on p.id = a.usuario_id and p.ativo
+  )
+  select jsonb_build_object(
+    'agora', now(),
+    'horario', (select jsonb_build_object('dias', h.dias, 'inicio', to_char(h.inicio, 'HH24:MI'), 'fim', to_char(h.fim, 'HH24:MI'))
+                from public.horario_atendimento h where h.id),
+    'assinaturas', (select coalesce(jsonb_agg(jsonb_build_object(
+                      'endpoint', a.endpoint, 'usuario_id', a.usuario_id, 'p256dh', a.p256dh, 'auth', a.auth, 'tipos', a.tipos)), '[]')
+                    from public.push_assinaturas a where a.usuario_id in (select usuario_id from quem)),
+    'leads', (select coalesce(jsonb_agg(jsonb_build_object(
+                'id', l.id, 'dono_id', l.dono_id, 'nome', l.nome, 'origem', l.origem, 'etapa', l.etapa,
+                'empreendimento', l.empreendimento, 'proximo_contato', l.proximo_contato,
+                'atribuido_em', l.atribuido_em, 'atribuido_por', l.atribuido_por,
+                'fim_prazo', case when l.origem = 'empresa' and l.etapa = 'novo'
+                                  then private.fim_do_prazo(greatest(l.created_at, coalesce(l.atribuido_em, l.created_at))) end)), '[]')
+              from public.leads l
+              where l.status = 'ativo'
+                and l.dono_id in (select usuario_id from quem)
+                and (l.proximo_contato <= now() + interval '1 day' or (l.origem = 'empresa' and l.etapa = 'novo'))),
+    'visitas', (select coalesce(jsonb_agg(jsonb_build_object(
+                  'id', v.id, 'corretor_id', v.corretor_id, 'lead_id', v.lead_id, 'lead_nome', l.nome,
+                  'empreendimento', v.empreendimento, 'inicio', v.inicio, 'local', v.local)), '[]')
+                from public.visitas v
+                join public.leads l on l.id = v.lead_id
+                where v.status in ('agendada', 'confirmada')
+                  and v.corretor_id in (select usuario_id from quem)
+                  and v.inicio between now() - interval '30 days' and now() + interval '1 day')
+  );
+$$;
+
+-- Marca os avisos como enviados e devolve só os que ainda não estavam: é o
+-- que impede repetir, inclusive com duas chamadas ao mesmo tempo (o gatilho
+-- de atribuição e o agendador). p_itens: [{"usuario_id": "...", "chave": "..."}].
+create or replace function public.avisos_registrar(p_itens jsonb)
+returns jsonb
+language sql
+volatile
+security definer
+set search_path = ''
+as $$
+  with novos as (
+    insert into public.push_log (usuario_id, chave)
+    select (i ->> 'usuario_id')::uuid, i ->> 'chave'
+    from jsonb_array_elements(coalesce(p_itens, '[]')) i
+    on conflict do nothing
+    returning usuario_id, chave
+  )
+  select coalesce(jsonb_agg(jsonb_build_object('usuario_id', usuario_id, 'chave', chave)), '[]') from novos;
+$$;
+
+-- O envio falhou em todos os aparelhos (serviço fora do ar): libera o aviso
+-- para a próxima rodada.
+create or replace function public.avisos_desmarcar(p_itens jsonb)
+returns void
+language sql
+volatile
+security definer
+set search_path = ''
+as $$
+  delete from public.push_log g
+  using jsonb_array_elements(coalesce(p_itens, '[]')) i
+  where g.usuario_id = (i ->> 'usuario_id')::uuid and g.chave = i ->> 'chave';
+$$;
+
+-- Esquece os aparelhos que o serviço de push disse que não existem mais (404 ou 410).
+create or replace function public.push_esquecer(p_endpoints text[])
+returns integer
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  v_n integer;
+begin
+  delete from public.push_assinaturas where endpoint = any (coalesce(p_endpoints, '{}'));
+  get diagnostics v_n = row_count;
+  return v_n;
+end;
+$$;
+
+-- Limpeza de cada rodada: log com mais de 30 dias e aparelhos sem abrir o app há 60.
+create or replace function public.avisos_limpar()
+returns void
+language sql
+volatile
+security definer
+set search_path = ''
+as $$
+  delete from public.push_log where enviado_em < now() - interval '30 days';
+  delete from public.push_assinaturas where visto_em < now() - interval '60 days';
+$$;
+
+revoke all on function public.avisos_segredo_ok(text) from public, anon, authenticated;
+revoke all on function public.avisos_dados() from public, anon, authenticated;
+revoke all on function public.avisos_registrar(jsonb) from public, anon, authenticated;
+revoke all on function public.avisos_desmarcar(jsonb) from public, anon, authenticated;
+revoke all on function public.push_esquecer(text[]) from public, anon, authenticated;
+revoke all on function public.avisos_limpar() from public, anon, authenticated;
+grant execute on function public.avisos_segredo_ok(text), public.avisos_dados(), public.avisos_registrar(jsonb),
+  public.avisos_desmarcar(jsonb), public.push_esquecer(text[]), public.avisos_limpar() to service_role;

@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
+import { esquecerEsteAparelho, sincronizarAvisos } from "./push";
 import { COLUNAS_PROFILE, type Profile } from "./tipos";
 
 export type EstadoSessao =
@@ -64,6 +65,12 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
     return () => data.subscription.unsubscribe();
   }, []);
 
+  // Ao abrir o CRM logado, renova a assinatura de avisos deste aparelho.
+  const pronto = estado.fase === "pronto";
+  useEffect(() => {
+    if (pronto) void sincronizarAvisos();
+  }, [pronto]);
+
   const valor = useMemo<Contexto>(
     () => ({
       estado,
@@ -72,6 +79,8 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
         (estado.perfil.perfil === "gerente_geral" || estado.permissoes.includes(permissao)),
       recarregar,
       sair: async () => {
+        // Antes do signOut: apagar a assinatura precisa do login.
+        await esquecerEsteAparelho();
         await supabase?.auth.signOut();
         setEstado({ fase: "deslogado" });
       },

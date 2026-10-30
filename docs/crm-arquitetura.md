@@ -3,7 +3,7 @@
 > Decisões tomadas na fundação do CRM (`crm/`), em 28/10/2026. O passo a passo de instalação está em `crm/README.md`. As regras de negócio estão em `docs/acessos-perfis.md`, `docs/leads.md` e `docs/pontuacao-verba.md`, e as regras visuais em `docs/design-system.md`.
 
 ## Sumário
-Deploy estático · Modelo de permissões · RLS · Sigilo do programa de verba · Módulo de leads · Visitas · Vendas e metas · Programa de pontuação · Catálogo e Radar · PWA · Testes
+Deploy estático · Modelo de permissões · RLS · Sigilo do programa de verba · Módulo de leads · Visitas · Vendas e metas · Programa de pontuação · Catálogo e Radar · PWA · Avisos no celular · Testes
 
 ## Deploy estático
 
@@ -126,10 +126,18 @@ As regras de negócio estão em `docs/empreendimentos.md`, seção 12.
 - **Manifest estático:** `crm/public/manifest.webmanifest`, e não um `app/manifest.ts`. Todos os caminhos dentro dele são **relativos** (`./`, `icons/...`), então resolvem para `/crm/` a partir da URL do manifest, com qualquer `BASE_PATH`. Nome "CRM MBigucci", nome curto "CRM", `display: standalone`, fundo e tema `paper` #f7f6f2.
 - **Ícones:** `crm/public/icons/` (192, 512, maskable 512, apple-touch-icon 180, favicon 32 e SVG), "MB" branco no vermelho `brand`. Os PNG ficam no git e saem de `node scripts/gerar-icones.mjs` (sharp que vem com o Next). Não são o logo oficial.
 - **`layout.tsx`:** o Next não prefixa o `basePath` nos links de `metadata.manifest` e `metadata.icons`, então eles usam `NEXT_PUBLIC_BASE_PATH` à mão. Confira no `out/index.html` que saem como `/crm/...`, sem prefixo dobrado.
-- **Sem service worker:** o Chrome no Android já oferece "Instalar app" só com o manifest e HTTPS. Não há cache nem fila offline. O SW vem com as notificações push (item 15), com escopo `/crm/` e sem cache de dados do Supabase.
+- **Service worker só de avisos:** `crm/public/sw.js` (item 15), com escopo `/crm/`, sem handler de `fetch`, sem cache e sem fila offline. O Chrome no Android oferece "Instalar app" só com o manifest e HTTPS.
 - **Sem internet:** `components/aviso-offline.tsx`, dentro do cabeçalho fixo, mostra "! Sem internet. O que você fizer agora pode não ser salvo." pelos eventos `online`/`offline`. Não sincroniza nada.
 - **Instalação:** card "Instalar no celular" em `/conta/`, com o passo a passo de Android e iPhone.
 - **WordPress:** se o Apache servir `.webmanifest` com tipo errado, o Chrome ainda aceita. Se quiser o tipo certo: `AddType application/manifest+json .webmanifest` no `.htaccess`.
+
+## Avisos no celular (29/10/2026)
+
+- **Regras:** `docs/notificacoes.md`. Passo a passo de instalação: `crm/README.md`, seção 8.
+- **Envio:** Edge Function `avisos` (`crm/supabase/functions/avisos/index.ts`), um arquivo sem dependências: regras puras, Web Push em WebCrypto (aes128gcm e VAPID) e o `Deno.serve` no fim. Fala com o banco pelo REST, com a chave de serviço.
+- **Agendamento:** `crm/supabase/agendar-avisos.sql`, com `pg_cron` a cada 5 min e `pg_net`, mais o gatilho de lead da empresa atribuído. O endereço e o segredo ficam no Vault.
+- **Banco:** `push_assinaturas` (uma por aparelho, RLS só do dono, grava pela `push_assinar`), `push_log` e as funções `avisos_*` e `push_esquecer`, só para `service_role`.
+- **Segredos:** a chave privada VAPID só nos Secrets da função; só a pública vai para `NEXT_PUBLIC_VAPID_PUBLIC_KEY`. "Verify JWT" desligado na função, que confere o segredo do agendador ou o login de quem pede o teste.
 
 ## Testes
 
@@ -138,6 +146,7 @@ As regras de negócio estão em `docs/empreendimentos.md`, seção 12.
 - **RLS e gatilhos das visitas:** `crm/supabase/testes/visitas.test.mjs`, também no `npm run test:banco`, com 13 testes (`docs/visitas.md`, seção 9).
 - **RLS e gatilhos de vendas e metas:** `crm/supabase/testes/vendas.test.mjs`, também no `npm run test:banco`, com 12 testes (`docs/vendas-metas.md`, seção 10).
 - **RLS e gatilhos do programa de pontuação:** `crm/supabase/testes/programa.test.mjs`, também no `npm run test:banco`, com 9 testes perfil a perfil, chave desligada e ligada (`docs/pontuacao-verba.md`, seção "Testes").
+- **Avisos no celular:** `crm/supabase/testes/avisos.test.mjs`, também no `npm run test:banco`, com 12 testes (RLS das assinaturas, funções fechadas, não repetir, gatilho de atribuição com `pg_net` falso), e `crm/src/lib/avisos.test.ts` no `npm test`, com 22 (`docs/notificacoes.md`, seção 10).
 - **Catálogo:** `crm/supabase/testes/empreendimentos.test.mjs`, também no `npm run test:banco`, com 8 testes (schema três vezes, carga duas, RLS por perfil, gatilho do preço, checks).
 - **Regras puras:** `npm test` roda `catalogo.test.ts` e `match.test.ts` (com o JSON real dos empreendimentos) e `programa.test.ts` (os 7 exemplos da verba, limites e roleta) e também `leads.test.ts` (lista do dia, WhatsApp), `followup.test.ts` (follow-up e histórico), `cadastro-magico.test.ts` (parser), `prazo.test.ts`, `mensagens.test.ts` (modelos e repasse), `busca.test.ts` (busca, ordem e filtros), `painel.test.ts` (com a conversão por origem e campanha), `visitas.test.ts` e `vendas.test.ts` (vendas, meta anual, metas próprias e faixas).
 - **Scripts do SQL Editor:** `schema.sql`, `dados-teste.sql`, `verificar-rls.sql` e `limpar-dados-teste.sql` rodaram em sequência no PGlite em 29/10/2026, com o resultado esperado por perfil.

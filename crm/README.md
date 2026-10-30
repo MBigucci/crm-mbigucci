@@ -87,6 +87,51 @@ Se alguém esquecer a senha, abra a pessoa em **Usuários > Editar** e use **Red
 
 Quando alguém sair da empresa, **desative** a conta em vez de excluí-la. Quem está desativado não entra no CRM nem vê dados, e o histórico continua no banco.
 
+## 8. Ligar os avisos no celular
+
+O CRM avisa no celular a hora de cada contato, a visita 1 hora antes, o lead da empresa que o gerente passou, o prazo de 15 min e o resumo do dia (regras em `docs/notificacoes.md`). Faça uma vez, nesta ordem.
+
+**1. Atualizar o banco.** Em **SQL Editor > New query**, cole de novo todo o `supabase/schema.sql` e clique em **Run**. Ele cria as tabelas dos avisos e não mexe no resto.
+
+**2. Gerar as chaves VAPID.** No terminal do seu computador (precisa do Node), rode:
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+Ele mostra uma **Public Key** e uma **Private Key**. Deixe a janela aberta: você usa as duas nos passos 3 e 6. Não mande a Private Key para ninguém nem a coloque no site.
+
+**3. Guardar as chaves na função.** No Supabase, abra **Edge Functions > Secrets** e, em **Add new secret**, crie:
+
+| Name | Value |
+| --- | --- |
+| `VAPID_PUBLIC_KEY` | a Public Key |
+| `VAPID_PRIVATE_KEY` | a Private Key |
+| `VAPID_SUBJECT` | `mailto:` seguido do seu e-mail (opcional; sem ele vale `https://mbigucci.com.br/crm/`) |
+
+Clique em **Save**. A `SUPABASE_SERVICE_ROLE_KEY` você não cria: o Supabase já põe sozinho.
+
+**4. Publicar a função `avisos`.**
+1. Abra **Edge Functions > Deploy a new function > Via Editor**.
+2. Dê o nome `avisos`, exatamente assim.
+3. Apague o exemplo, cole todo o `supabase/functions/avisos/index.ts` e clique em **Deploy**.
+4. Abra a função em **Details**, desligue **Verify JWT with legacy secret** e salve. O agendador chama sem login; a própria função confere o segredo.
+
+**5. Ligar o agendador.**
+1. Abra `supabase/agendar-avisos.sql` e troque `https://SEU-PROJETO.supabase.co` pela sua **Project URL** (em **Project Settings > API Keys**).
+2. Em **SQL Editor > New query**, cole o arquivo inteiro e clique em **Run**. Se der erro nas duas primeiras linhas, abra **Database > Extensions**, ative **pg_cron** e **pg_net** e rode de novo.
+3. O resultado mostra `crm-avisos` com `active = true`. Uns 10 segundos depois, rode só a última linha do arquivo (sem os `--`): o esperado é `status_code` 200 e `{"ok":true,...}` em `content`.
+
+**6. Pôr a chave pública no site.** No `.env.local`, acrescente a linha abaixo com a **Public Key** do passo 2. Depois gere o build e suba no WordPress de novo (seções 5 e 6). O `out/` agora tem o `sw.js`, que precisa ir junto.
+
+```
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=<Public Key>
+```
+
+**7. Conferir no celular.** Abra o CRM no celular, entre em **Menu > Minha conta > Avisos neste aparelho**, toque em **Ligar avisos**, permita as notificações e toque em **Enviar teste**. No iPhone, instale antes o CRM na Tela de Início (Safari > Compartilhar > Adicionar à Tela de Início) e abra pelo ícone.
+
+Se trocar as chaves um dia, refaça os passos 3 e 6: os aparelhos assinados com a chave antiga param de receber e cada pessoa liga de novo em Minha conta.
+
 ## Perfis e permissões
 
 Os perfis são: gerente geral, operacional, gerente, corretor, recepção e especialista. O que cada perfil pode fazer fica na tabela `role_permissions`, e você ajusta isso em **Configurações > Permissões por perfil**, sem mexer no código. Por isso o operacional e o especialista podem ser definidos depois.

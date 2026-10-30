@@ -50,6 +50,7 @@ O CRM de corretores da MBigucci (construtora em São Bernardo do Campo). O usuá
 - `docs/vendas-metas.md`: abra ao mexer em vendas, correção ou cancelamento de venda, meta anual de VGV, metas próprias do corretor, conversão por origem e campanha ou na tela Faixas de VGV (sigilosa, só do gerente geral).
 - `docs/visitas.md`: abra ao mexer em visitas, agenda, baixa de visita, confirmação de visita ou nas visitas da lista do dia e do painel.
 - `docs/empreendimentos.md`: abra ao mexer no catálogo de empreendimentos e tipologias, no Radar de Match ou na lista do Cadastro Mágico. Tem o cruzamento com a lista atual, as dúvidas, o esquema e, na seção 12, como ficou. Os dados coletados estão em `docs/empreendimentos-dados.json`.
+- `docs/notificacoes.md`: abra ao mexer nos avisos no celular (push), no `sw.js`, na Edge Function `avisos`, no `agendar-avisos.sql` ou em Avisos neste aparelho. Tem quando cada aviso sai, o não repetir e a tabela "Da Bruna".
 - `docs/referencia-crm-bruna.md`: abra antes de planejar uma etapa nova ou ajustar um fluxo. Diz o que vem do CRM da Bruna, como adaptar e em que ordem.
 - `docs/fontes/regras-comerciais-2026-10.md`: o documento original do Felipe. Abra só para conferir o texto exato de uma regra.
 - `docs/candidatos-automacao.md`: abra ao criar testes, hooks ou skills, ou quando um hook bloquear algo e você precisar entender por quê.
