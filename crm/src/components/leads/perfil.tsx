@@ -383,7 +383,7 @@ export function DadosDoCliente({ lead }: { lead: LeadDaFicha }) {
       <dl className="mt-3 grid gap-1 text-[13px]">
         {dados.map((d) => (
           <div key={d.rotulo} className="flex gap-2">
-            <dt className="w-[120px] shrink-0 text-concrete">{d.rotulo}</dt>
+            <dt className="w-[110px] shrink-0 text-ink-soft sm:w-[120px]">{d.rotulo}</dt>
             <dd className={clsx("min-w-0 break-words", /telefone|Anivers/.test(d.rotulo) && "num")}>{d.valor}</dd>
           </div>
         ))}
@@ -551,7 +551,7 @@ function ItemDocumento({
     <li className="rounded-sm border border-line p-3">
       <p className="text-[13px] font-semibold">{nomeCategoria(doc.categoria)}</p>
       <p className="break-all text-[13px] text-ink-soft">{doc.nome}</p>
-      <p className="num text-[12px] text-concrete">
+      <p className="num text-[12px] text-ink-soft">
         {formatarTamanho(doc.tamanho)} · {dataCurta(doc.enviado_em)}
       </p>
       {!confirmando ? (

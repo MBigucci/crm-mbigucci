@@ -228,8 +228,8 @@ function Ficha({ id }: { id: string }) {
       <section className="card bar-brand">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <span className="eyebrow">{etapa?.nome ?? lead.etapa}</span>
-            <h2 className="titulo-card mt-1 break-words text-[20px]">{lead.nome}</h2>
+            <span className="eyebrow text-[12px] text-ink-soft">{etapa?.nome ?? lead.etapa}</span>
+            <h2 className="titulo-card mt-1 break-words text-[24px]">{lead.nome}</h2>
             <p className="num mt-1 text-ink-soft">{formatarWhatsapp(lead.whatsapp)}</p>
           </div>
           <SeloTemperatura valor={lead.temperatura} />
@@ -288,7 +288,7 @@ function Ficha({ id }: { id: string }) {
           </p>
         )}
         <div className="mt-4 flex flex-wrap gap-2">
-          <BotaoMensagem lead={lead} className="btn-lg flex-1 md:flex-none" />
+          <BotaoMensagem lead={lead} destaque className="btn-lg flex-1 md:flex-none" />
           <BotaoLigar numero={lead.whatsapp} className="btn-lg flex-1 md:flex-none" />
           {ehDono && lead.status === "ativo" && (
             <button type="button" className="btn btn-ghost btn-lg focus-ring flex-1 md:flex-none" onClick={semResposta}>
@@ -307,6 +307,8 @@ function Ficha({ id }: { id: string }) {
         )}
       </section>
 
+      {ehDono && lead.status === "ativo" && <RegistrarInteracao leadId={id} onSalvo={carregar} />}
+
       {ehDono && sugereDescarte(lead) && (
         <section className="card" aria-labelledby="sugere-descarte">
           <h2 id="sugere-descarte" className="titulo-card">
@@ -317,7 +319,7 @@ function Ficha({ id }: { id: string }) {
           </p>
           <button
             type="button"
-            className="btn btn-red focus-ring mt-3"
+            className="btn btn-ghost focus-ring mt-3"
             onClick={() => descartar("sem_retorno")}
           >
             ✕ Descartar: sem retorno
@@ -385,8 +387,6 @@ function Ficha({ id }: { id: string }) {
 
       {ehDono && lead.status === "ativo" && (
         <>
-          <RegistrarInteracao leadId={id} onSalvo={carregar} />
-
           <section className="card">
             <span className="eyebrow">Andamento</span>
             <div className="mt-3 grid gap-4">
@@ -476,7 +476,7 @@ function Ficha({ id }: { id: string }) {
                 const e = item.evento;
                 return (
                   <li key={`e-${e.id}`} className="border-t border-line pt-3 text-[13px] first:border-0 first:pt-0">
-                    <p className="num text-[12px] text-concrete">
+                    <p className="num text-[12px] text-ink-soft">
                       {formatarQuando(e.criado_em, agora)}
                       {e.automatico ? " · automático" : autor(e.autor_id)}
                     </p>
@@ -495,7 +495,7 @@ function Ficha({ id }: { id: string }) {
               const h = item.interacao;
               return (
                 <li key={`i-${h.id}`} className="border-t border-line pt-3 first:border-0 first:pt-0">
-                  <p className="num text-[12px] text-concrete">
+                  <p className="num text-[12px] text-ink-soft">
                     <span className="font-semibold text-ink-soft">{nomeTipoInteracao(h.tipo)}</span> ·{" "}
                     {formatarQuando(h.criado_em, agora)}
                     {autor(h.autor_id)}
@@ -533,7 +533,7 @@ function Ficha({ id }: { id: string }) {
 function Linha({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
   return (
     <div className="flex gap-2">
-      <dt className="w-[120px] shrink-0 text-concrete">{rotulo}</dt>
+      <dt className="w-[110px] shrink-0 text-ink-soft sm:w-[120px]">{rotulo}</dt>
       <dd className="min-w-0 break-words">{children}</dd>
     </div>
   );
@@ -620,7 +620,7 @@ function RegistrarInteracao({ leadId, onSalvo }: { leadId: string; onSalvo: () =
 
   return (
     <form onSubmit={salvar} className="card grid gap-3" noValidate>
-      <span className="eyebrow">Registrar interação</span>
+      <h2 className="titulo-secao">Registrar interação</h2>
       <fieldset>
         <legend className="field-label">Como foi</legend>
         <div className="grid grid-cols-3 gap-2 md:grid-cols-5">

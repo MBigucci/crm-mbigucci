@@ -20,7 +20,7 @@ export function SeloTemperatura({ valor }: { valor: Temperatura | null }) {
   const t = temperatura(valor);
   if (!t) return <span className="selo">Sem temperatura</span>;
   return (
-    <span className={clsx("selo border-current", t.cor)}>
+    <span className={clsx("selo", t.cor === "text-wa" ? "border-wa text-ink-soft" : `border-current ${t.cor}`)}>
       <span aria-hidden>{t.sinal}</span> {t.nome}
     </span>
   );
@@ -53,7 +53,7 @@ export function EscolhaTemperatura({
             className={clsx(
               "focus-ring rounded-sm border px-2 py-3 text-[14px] font-semibold transition-colors disabled:opacity-45",
               marcado
-                ? clsx("border-current bg-surface", t.cor)
+                ? clsx("bg-surface", t.cor === "text-wa" ? "border-wa text-ink-soft" : `border-current ${t.cor}`)
                 : "border-line bg-surface text-ink-soft hover:border-ink",
             )}
           >
@@ -92,7 +92,7 @@ export function SemContato({
   const s = seloSemContato(lead, agora, comTentativas);
   if (!s) return null;
   return (
-    <span className={clsx("num font-semibold", s.nivel === "alerta" ? "text-brand" : "text-wa", className)}>
+    <span className={clsx("num font-semibold", s.nivel === "alerta" ? "text-brand" : "text-ink-soft", className)}>
       <span aria-hidden>! </span>
       {s.texto}
     </span>
@@ -121,7 +121,7 @@ export function PrazoPrimeiroContato({
     <span
       className={clsx(
         "num font-semibold",
-        s.nivel === "estourado" ? "text-[15px] font-bold text-brand" : s.nivel === "correndo" ? "text-wa" : "text-ink",
+        s.nivel === "estourado" ? "text-[15px] font-bold text-brand" : "text-ink",
         className,
       )}
     >
@@ -223,11 +223,11 @@ export function CardLead({
 export function SeloCampo({ selo }: { selo: "detectado" | "conferir" | "faltando" }) {
   const s = {
     detectado: { sinal: "✓", texto: "Detectado", cor: "text-ok" },
-    conferir: { sinal: "!", texto: "Conferir", cor: "text-wa" },
+    conferir: { sinal: "!", texto: "Conferir", cor: "border-wa text-ink-soft" },
     faltando: { sinal: "✕", texto: "Não encontrado", cor: "text-ink-soft" },
   }[selo];
   return (
-    <span className={clsx("selo shrink-0 border-current", s.cor)}>
+    <span className={clsx("selo shrink-0", selo !== "conferir" && "border-current", s.cor)}>
       <span aria-hidden>{s.sinal}</span> {s.texto}
     </span>
   );
