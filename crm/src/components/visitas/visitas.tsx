@@ -35,7 +35,7 @@ const MODELO_CONFIRMAR = "confirmar_visita";
 export function SeloVisita({ visita, agora }: { visita: Pick<Visita, "status" | "inicio">; agora: Date }) {
   const s = SELOS_VISITA[estadoDaVisita(visita, agora)];
   return (
-    <span className={clsx("selo shrink-0 border-current", s.cor)}>
+    <span className={clsx("selo shrink-0", s.cor === "text-wa" ? "border-wa text-ink-soft" : `border-current ${s.cor}`)}>
       <span aria-hidden>{s.sinal}</span> {s.texto}
     </span>
   );
@@ -144,10 +144,10 @@ function CardVisita({
   }
 
   return (
-    <li className="card">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className={clsx("num font-display font-bold leading-tight", comDia ? "text-[17px]" : "text-[20px]")}>
+    <li className={clsx("card", estado === "aguardando_baixa" && "bg-tint-brand")}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1 basis-[180px]">
+          <p className={clsx("num font-display font-extrabold leading-tight", comDia ? "text-[20px]" : "text-[24px]")}>
             {comDia ? dataHoraVisita(v.inicio) : dataHoraVisita(v.inicio).slice(-5)}
           </p>
           {mostrarLead && lead && (
@@ -209,6 +209,7 @@ function CardVisita({
               rotulo="Confirmar no WhatsApp"
               rotuloAcessivel={`Confirmar visita pelo WhatsApp: ${quem}`}
               className="whitespace-nowrap"
+              destaque
             />
           )}
           {v.status === "agendada" && estado !== "aguardando_baixa" && (
@@ -317,7 +318,7 @@ function BaixaDada({ visita, agora }: { visita: Visita; agora: Date }) {
   }, [visita.baixa_por, eu.id]);
   const quem = visita.baixa_por === eu.id ? "você" : (nome ?? "outro usuário");
   return (
-    <p className="num mt-2 text-[12px] text-concrete">
+    <p className="num mt-2 text-[12px] text-ink-soft">
       Baixa por {quem} · {formatarQuando(visita.baixa_em!, agora)}
     </p>
   );

@@ -159,7 +159,7 @@ function Agenda() {
 
       {semBaixa.length > 0 && (
         <section aria-labelledby="sem-baixa">
-          <h2 id="sem-baixa" className="eyebrow mb-2">
+          <h2 id="sem-baixa" className="titulo-secao mb-3">
             Aguardando baixa · <span className="num">{semBaixa.length}</span>
           </h2>
           <ListaVisitas visitas={semBaixa} agora={hoje} nomeDe={nomeDe} comDia onMudou={carregar} />
@@ -167,7 +167,7 @@ function Agenda() {
       )}
 
       <section aria-labelledby="dias" className="grid gap-3">
-        <h2 id="dias" className="eyebrow">
+        <h2 id="dias" className="titulo-secao">
           {semana ? (total ? `${total} ${total === 1 ? "visita" : "visitas"} na semana` : "Nenhuma visita na semana") : "Carregando…"}
         </h2>
         <div role="group" aria-label="Dias da semana" className="grid grid-cols-7 gap-1">
@@ -190,14 +190,14 @@ function Agenda() {
               >
                 <span
                   className={clsx(
-                    "text-[11px] font-semibold uppercase leading-none",
+                    "text-[12px] font-semibold uppercase leading-none",
                     ehHoje ? (ativo ? "text-surface" : "text-brand") : ativo ? "text-surface" : "text-ink-soft",
                   )}
                 >
                   {DIAS_CURTOS[d.dia.getDay()]}
                 </span>
                 <span className="num font-display text-[20px] font-bold leading-none">{d.dia.getDate()}</span>
-                <span className="num h-3 text-[11px] font-semibold leading-none">{d.total > 0 ? d.total : ""}</span>
+                <span className="num h-3 text-[12px] font-semibold leading-none">{d.total > 0 ? d.total : ""}</span>
               </button>
             );
           })}
