@@ -370,7 +370,7 @@ Construído em 29/10/2026. Commits locais; o SQL ainda precisa rodar no Supabase
 - Telas conferidas em 375px com o Supabase falso v8 (pasta de notas das sessões): catálogo, empreendimento com clientes compatíveis, diálogo de mensagem, ficha com o Radar, Cadastro Mágico e edição com salvamento.
 
 ### Pendências de dados (com o Felipe)
-- **Elleva e Dom sem preço:** entram no catálogo e no Radar sem a nota de orçamento. O Dom não tem tipologia (o site não publica planta); o Elleva tem a planta de 67 m² do site.
+- **Elleva e Dom sem preço:** ainda não têm tabela (Felipe, 29/10/2026). Entram no catálogo e no Radar sem a nota de orçamento, e os leads deles ficam em "aguardando lançamento", que é justamente o destaque dos clientes compatíveis. Quando a tabela sair, o preço entra pela tela de edição. O Dom não tem tipologia (o site não publica planta); o Elleva tem a planta de 67 m² do site.
 - **Cortina D'Ampezzo:** fora do catálogo e da lista fixa. Se voltar, cadastre pela tela.
 - **O asterisco do preço promocional:** continua só na nota da tipologia (`preco_nota`). Se for limite de renda, vale preencher a restrição de renda do empreendimento.
 - **Tabelas próprias dos 7 em obras:** o "a partir de" segue o da Tabela Promocional.
