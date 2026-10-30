@@ -77,7 +77,7 @@ function Vendas() {
   const t = somarVendas(vendas ?? []);
 
   return (
-    <div className="grid gap-5">
+    <div className="grid gap-5 pb-24 md:pb-0">
       <section className="grid gap-3" aria-label="Período">
         <div className="flex flex-wrap items-end gap-3">
           <fieldset>

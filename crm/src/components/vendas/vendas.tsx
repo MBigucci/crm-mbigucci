@@ -17,12 +17,13 @@ import {
   type Venda,
 } from "@/lib/vendas";
 import { corrigirVenda, marcarPaga, registrarVenda } from "@/lib/vendas-dados";
+import { RodapeAcao } from "@/components/leads/partes";
 
 /** Estado da venda sempre com sinal + palavra + cor. */
 export function SeloVenda({ venda }: { venda: Pick<Venda, "status" | "pagamento" | "pago_em"> }) {
   const s = seloVenda(venda);
   return (
-    <span className={clsx("selo shrink-0 border-current", s.cor)}>
+    <span className={clsx("selo shrink-0", s.cor === "text-wa" ? "border-wa text-ink-soft" : `border-current ${s.cor}`)}>
       <span aria-hidden>{s.sinal}</span> {s.texto}
     </span>
   );
@@ -507,15 +508,15 @@ export function ResumoVendas({ t }: { t: Totais }) {
   return (
     <section aria-label="Totais do período" className="grid gap-3 md:grid-cols-3">
       {blocos.map((b) => (
-        <div key={b.rotulo} className={clsx("card", b.destaque && "bar-brand")}>
-          <span className="eyebrow">{b.rotulo}</span>
-          <span className="num mt-1 block font-display text-[26px] font-extrabold leading-none">{formatarReais(b.vgv)}</span>
+        <div key={b.rotulo} className={b.destaque ? "veredito" : "min-w-0 border-b border-line p-4"}>
+          <span className={clsx("block text-[13px] font-semibold", b.destaque ? "text-on-dark-soft" : "text-ink-soft")}>{b.rotulo}</span>
+          <span className={clsx("num mt-2 block font-extrabold leading-none", b.destaque ? "text-[32px]" : "text-[24px]")}>{formatarReais(b.vgv)}</span>
           {b.pago && t.vgvAssinado > 0 && (
             <div aria-hidden className="mt-2 h-[4px] overflow-hidden rounded-sm bg-line">
               <div className="h-full bg-ink" style={{ width: `${Math.round((t.vgvValido / t.vgvAssinado) * 100)}%` }} />
             </div>
           )}
-          <span className="num mt-1 block text-[13px] text-ink-soft">
+          <span className={clsx("num mt-2 block text-[13px]", b.destaque ? "text-on-dark-soft" : "text-ink-soft")}>
             {b.n} {b.n === 1 ? "venda" : "vendas"}
             {b.pago && t.vgvAssinado > 0 && ` · ${formatarReais(t.vgvValido)} já pago`}
           </span>
@@ -551,9 +552,11 @@ export function NovaVenda({ corretor, onRegistrada }: { corretor: string; onRegi
 
   if (!aberto)
     return (
-      <button type="button" className="btn btn-ghost btn-lg focus-ring justify-self-start" onClick={() => setAberto(true)}>
-        + Registrar venda
-      </button>
+      <RodapeAcao>
+        <button type="button" className="btn btn-red btn-lg focus-ring" onClick={() => setAberto(true)}>
+          + Registrar venda
+        </button>
+      </RodapeAcao>
     );
   return (
     <section className="card grid gap-4" aria-label="Registrar venda">
