@@ -76,13 +76,21 @@ export function CartaoMetaAnual({
   );
   return (
     <section className={clsx("card", destaque && "bar-brand")} aria-labelledby={`meta-anual-${corretor}`}>
-      <h2 id={`meta-anual-${corretor}`} className="eyebrow">
-        Meta anual de VGV · <span className="num">{ano}</span>
-      </h2>
-      <p className="mt-2 flex flex-wrap items-baseline gap-x-2">
-        <span className="num font-display text-[30px] font-extrabold leading-none">{formatarReais(Math.floor(p.acumulado))}</span>
-        <span className="num text-ink-soft">de {formatarReais(p.meta)}</span>
-      </p>
+      <div className="rounded-sm bg-ink p-4 text-on-dark">
+        <h2 id={`meta-anual-${corretor}`} className="text-[14px] font-semibold text-on-dark-soft">
+          Meta anual de VGV · <span className="num">{ano}</span>
+        </h2>
+        <dl className="mt-3 grid gap-4 sm:grid-cols-2">
+          <div>
+            <dt className="text-[13px] text-on-dark-soft">Assinado e pago</dt>
+            <dd className="num mt-1 text-[32px] font-extrabold leading-tight">{formatarReais(Math.floor(p.acumulado))}</dd>
+          </div>
+          <div>
+            <dt className="text-[13px] text-on-dark-soft">Meta do ano</dt>
+            <dd className="num mt-1 text-[24px] font-bold leading-tight">{formatarReais(p.meta)}</dd>
+          </div>
+        </dl>
+      </div>
       <div className="mt-3">
         <Barra razao={p.razao} batida={p.batida} rotulo={`Meta anual de VGV: ${formatarPct(p.razao)}`} />
       </div>
@@ -105,7 +113,7 @@ export function CartaoMetaAnual({
           nota={p.projecao === null ? (p.acumulado > 0 ? "Aparece a partir de abril" : "Depois da primeira venda paga") : p.encerrado ? "Ano encerrado" : `Fecha ${ano} com isso`}
         />
       </dl>
-      <p className="mt-3 text-[12px] text-concrete">
+      <p className="mt-3 text-[12px] text-ink-soft">
         {proprio ? ORIGEM_META[meta.origem] : ORIGEM_META[meta.origem].replace(" para você", "")}. Conta o VGV das vendas
         assinadas e pagas, no mês da assinatura.
       </p>
@@ -119,7 +127,7 @@ const textoMeses = (p: ProgressoAnual) =>
 function Dado({ rotulo, valor, nota }: { rotulo: string; valor: string; nota?: string }) {
   return (
     <div className="min-w-0">
-      <dt className="text-concrete">{rotulo}</dt>
+      <dt className="text-ink-soft">{rotulo}</dt>
       <dd className="num mt-1 font-display text-[16px] font-bold">{valor}</dd>
       {nota && <dd className="text-[12px] text-ink-soft">{nota}</dd>}
     </div>
@@ -166,13 +174,13 @@ export function TabelaMetaAnual({
   );
   return (
     <section aria-labelledby="t-meta-anual" className="min-w-0">
-      <h2 id="t-meta-anual" className="eyebrow mb-2">
+      <h2 id="t-meta-anual" className="titulo-secao mb-3">
         Meta anual de VGV · <span className="num">{ano}</span> · assinado e pago, no mês da assinatura
       </h2>
       <div className="card tabela-painel overflow-x-auto p-0">
         <table className="w-full text-left text-[14px]">
           <thead>
-            <tr className="border-b border-line text-concrete">
+            <tr className="border-b border-line text-ink-soft">
               <th className="px-4 py-2 align-bottom font-semibold">Corretor</th>
               <th className={th}>Meta</th>
               <th className={th}>Assinado e pago</th>
@@ -188,7 +196,7 @@ export function TabelaMetaAnual({
               <tr key={c} className="border-b border-line">
                 <td className="px-4 py-2">
                   {abrir ? (
-                    <button type="button" className="link-acao focus-ring text-left" onClick={() => abrir(c)}>
+                    <button type="button" className="focus-ring text-left font-semibold text-ink underline decoration-line underline-offset-4 hover:decoration-ink" onClick={() => abrir(c)}>
                       {nomes.get(c) ?? "Corretor"}
                     </button>
                   ) : (
@@ -263,7 +271,7 @@ export function MetasDoCorretor({
     <section className="grid gap-3" aria-labelledby={`metas-${corretor}`}>
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h2 id={`metas-${corretor}`} className="eyebrow">
+          <h2 id={`metas-${corretor}`} className="titulo-secao">
             {titulo ?? (editavel ? "Metas próprias" : "Metas do corretor")}
           </h2>
           {editavel && <p className="mt-1 text-[13px] text-ink-soft">Você define os alvos; o progresso vem do que já está registrado.</p>}
@@ -289,7 +297,7 @@ export function MetasDoCorretor({
           }}
         />
       )}
-      {!metas && !erro && <p className="text-concrete">Carregando metas…</p>}
+      {!metas && !erro && <p className="text-ink-soft">Carregando metas…</p>}
       {metas && !visiveis.length && !form && (
         <div className="card">
           {editavel ? (
@@ -312,7 +320,7 @@ export function MetasDoCorretor({
           )}
         </div>
       )}
-      {metas && !dados && visiveis.length > 0 && <p className="text-concrete">Carregando…</p>}
+      {metas && !dados && visiveis.length > 0 && <p className="text-ink-soft">Carregando…</p>}
       {dados && visiveis.length > 0 && (
         <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {visiveis.map((m) => (
@@ -372,7 +380,7 @@ function CardMeta({
   return (
     <li className="card flex flex-col">
       <div className="flex items-start justify-between gap-3">
-        <p className="eyebrow min-w-0">{nome}</p>
+        <p className="min-w-0 text-[14px] font-semibold text-ink-soft">{nome}</p>
         {p.batida && (
           <span className="selo shrink-0 border-current text-ok">
             <span aria-hidden>✓</span> Meta batida
@@ -396,7 +404,7 @@ function CardMeta({
         {t.detalhe && <span className="text-ink-soft"> {t.detalhe}</span>}
       </p>
       {p.assinado !== undefined && p.assinado > p.valor && (
-        <p className="num mt-1 text-[12px] text-concrete">Assinado, com pendentes: {numeroDaMetrica(m.metrica, p.assinado)}</p>
+        <p className="num mt-1 text-[12px] text-ink-soft">Assinado, com pendentes: {numeroDaMetrica(m.metrica, p.assinado)}</p>
       )}
       {editavel && (
         <div className="mt-auto pt-3">
@@ -504,7 +512,7 @@ function FormMeta({
   return (
     <form onSubmit={salvar} className="card grid gap-4" noValidate>
       <div>
-        <span className="eyebrow">{meta ? "Editar meta" : "Nova meta"}</span>
+        <span className="titulo-secao">{meta ? "Editar meta" : "Nova meta"}</span>
         <p className="mt-1 text-[13px] text-ink-soft">Você escolhe o alvo; o progresso é calculado com o que já está registrado no CRM.</p>
       </div>
       <div>
