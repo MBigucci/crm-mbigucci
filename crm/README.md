@@ -261,6 +261,22 @@ npm run dev
 
 Abra `http://localhost:3000/crm`. Sem o `.env.local`, as telas avisam que o Supabase não está configurado.
 
+### Revisão visual sem login
+
+Para ver os componentes com situações fictícias, prepare uma cópia isolada de QA. Ela não copia `.env.local`, não consulta o Supabase e bloqueia gravações. O app normal mantém sua autenticação. Comandos a partir de `crm/`:
+
+```bash
+node scripts/visual-preview.mjs
+npm --prefix .visual-preview run build
+node scripts/visual-preview.mjs --serve
+```
+
+Abra `http://127.0.0.1:4173/crm/`. A cópia usa corretor nas telas pessoais, gerente em Leads/Painel e gerente geral em Configurações. Os dados estão em `scripts/visual-fixtures.ts`; os horários acompanham o dia atual. Para refletir uma alteração de código, prepare e gere a cópia novamente. Encerre o servidor com Ctrl+C. Não publique o conteúdo de `.visual-preview/`.
+
+Relatório e capturas em [`docs/revisao-visual.md`](../docs/revisao-visual.md). Não rode build com `npm run dev` ativo no mesmo app.
+
+### Verificações
+
 ```bash
 npm run typecheck
 ```
