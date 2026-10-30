@@ -55,6 +55,7 @@ O CRM de corretores da MBigucci (construtora em São Bernardo do Campo). O usuá
 - `docs/referencia-crm-bruna.md`: abra antes de planejar uma etapa nova ou ajustar um fluxo. Diz o que vem do CRM da Bruna, como adaptar e em que ordem.
 - `docs/fontes/regras-comerciais-2026-10.md`: o documento original do Felipe. Abra só para conferir o texto exato de uma regra.
 - `docs/candidatos-automacao.md`: abra ao criar testes, hooks ou skills, ou quando um hook bloquear algo e você precisar entender por quê.
+- `docs/teste-carga.md`: abra ao mexer em RLS, gatilhos, gravações do app (salvar, cadastrar, Desfazer) ou no plano do Supabase. Tem o teste de carga (`npm run test:carga`), o id gerado no aparelho contra duplicados e o que ficou pendente.
 
 ## Automação ativa
 - O hook `.claude/hooks/guard.js` bloqueia quatro coisas: edição em `ref/`, segredo em `crm/src` ou `discovery/src`, `@import` no CLAUDE.md e `.env` em `out/` ou em pacotes de publicação. Para testar, rode `node .claude/hooks/guard.test.js`.
