@@ -25,6 +25,7 @@ export function BotaoMensagem({
   rotuloAcessivel,
   modelo,
   visita,
+  destaque = false,
 }: {
   lead: LeadDaMensagem;
   className?: string;
@@ -34,13 +35,15 @@ export function BotaoMensagem({
   modelo?: string;
   /** O texto de {visita} (textoDaVisita), na confirmação de uma visita. */
   visita?: string;
+  /** Uma ação principal por grupo; as demais continuam secundárias. */
+  destaque?: boolean;
 }) {
   const [aberto, setAberto] = useState(false);
   return (
     <>
       <button
         type="button"
-        className={clsx("btn btn-ghost focus-ring", className)}
+        className={clsx("btn focus-ring", destaque ? "btn-red" : "btn-ghost", className)}
         aria-label={rotuloAcessivel ?? `WhatsApp de ${lead.nome}, ${formatarWhatsapp(lead.whatsapp)}`}
         onClick={() => setAberto(true)}
       >

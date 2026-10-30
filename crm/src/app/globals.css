@@ -49,7 +49,18 @@
     @apply font-display text-[17px] font-bold leading-[1.15];
   }
   .num {
+    @apply font-display;
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Título de seção que orienta uma decisão; eyebrow fica só como apoio. */
+  .titulo-secao {
+    @apply font-display text-[18px] font-bold leading-tight text-ink;
+  }
+
+  /* Faixa de síntese do DS (Veredito), com uma única barra de destaque. */
+  .veredito {
+    @apply rounded-md border border-ink border-l-bar border-l-brand bg-ink p-4 text-on-dark;
   }
 
   /* Card: branco, borda fina, barra de 4px à esquerda (ink; brand em destaque) */
@@ -91,10 +102,10 @@
 
   /* Campos */
   .field-label {
-    @apply mb-[5px] block text-[11px] font-semibold uppercase leading-[1.3] tracking-eyebrow text-concrete;
+    @apply mb-[5px] block text-[12px] font-semibold uppercase leading-[1.3] tracking-eyebrow text-ink-soft;
   }
   .input {
-    @apply w-full min-w-0 rounded-sm border border-line bg-paper text-ink outline-none transition-colors placeholder:text-concrete focus:border-brand;
+    @apply w-full min-w-0 rounded-sm border border-line bg-paper text-ink outline-none transition-colors placeholder:text-ink-soft focus:border-brand;
     padding: 12px 12px;
     font-size: 16px; /* 16px evita o zoom do iOS ao focar */
     line-height: 1.3;
@@ -117,7 +128,7 @@
   }
   /* Selo de situação/perfil: texto com glifo, sem cor de fundo */
   .selo {
-    @apply inline-flex items-center gap-1 whitespace-nowrap rounded-sm border border-line px-[6px] py-[2px] text-[11px] font-semibold uppercase leading-[1.3] tracking-eyebrow text-ink-soft;
+    @apply inline-flex items-center gap-1 whitespace-nowrap rounded-sm border border-line px-[6px] py-[2px] text-[12px] font-semibold uppercase leading-[1.3] tracking-eyebrow text-ink-soft;
   }
 
   /* Link de ação com → */

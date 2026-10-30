@@ -51,18 +51,18 @@ export function Cabecalho({ itens, onSair, nome }: { itens?: ItemMenu[]; onSair?
 
   return (
     <header className="sem-impressao sticky top-0 z-20 border-b border-line bg-header-glass backdrop-blur-[12px]">
-      <div className="mx-auto flex h-header max-w-content items-center justify-between gap-3 px-5">
+      <div className="mx-auto flex min-h-[58px] max-w-content items-center justify-between gap-5 px-5 py-2">
         <Marca />
         {itens && (
           <>
-            <nav className="hidden items-center gap-5 md:flex" aria-label="Menu principal">
+            <nav className="hidden min-w-0 flex-1 flex-wrap items-center justify-end gap-x-5 gap-y-2 md:flex" aria-label="Menu principal">
               {itens.map((i) => (
                 <Link
                   key={i.href}
                   href={i.href}
                   aria-current={ativo(i.href) ? "page" : undefined}
                   className={clsx(
-                    "focus-ring text-[13px] font-semibold transition-colors",
+                    "focus-ring whitespace-nowrap text-[13px] font-semibold transition-colors",
                     ativo(i.href) ? "text-brand" : "text-ink-soft hover:text-ink",
                   )}
                 >
