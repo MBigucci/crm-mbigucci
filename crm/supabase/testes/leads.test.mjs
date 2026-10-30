@@ -477,3 +477,24 @@ test("leads perdidos no período: cada um vê os que ele perdeu, o gerente os da
   assert.deepEqual(await lista(CA, "now() + interval '1 hour'"), []);
   await falha(0, `select * from public.leads_perdidos(now() - interval '1 day', now())`, "permission denied");
 });
+
+test("pode_ver_dados_de numa consulta só dá a mesma resposta que a regra composta", async () => {
+  const todos = [GG, GA, GB, CA, CA2, CB, DES, REC];
+  const ids = `array[${todos.map((n) => `'${id(n)}'`).join(", ")}]::uuid[]`;
+  const comparar = async () => {
+    for (const eu of todos) {
+      const r = await como(eu, () => linhas(`select p, public.pode_ver_dados_de(p) nova,
+        ((p = auth.uid() and public.current_perfil() is not null) or public.has_permission('dados.ver_todos')
+         or (public.has_permission('dados.ver_equipe') and public.is_my_team_member(p))) antiga
+        from unnest(${ids}) p`));
+      for (const x of r) assert.equal(x.nova, x.antiga, `${eu} vendo ${x.p}`);
+    }
+  };
+  await comparar();
+  // Com permissões mexidas pelo gerente geral: recepção vê tudo, gerente sem ver a equipe.
+  await db.exec(`insert into public.role_permissions values ('recepcao', 'dados.ver_todos') on conflict do nothing;
+                 delete from public.role_permissions where perfil = 'gerente' and permissao = 'dados.ver_equipe';`);
+  await comparar();
+  await db.exec(`delete from public.role_permissions where perfil = 'recepcao' and permissao = 'dados.ver_todos';
+                 insert into public.role_permissions values ('gerente', 'dados.ver_equipe') on conflict do nothing;`);
+});

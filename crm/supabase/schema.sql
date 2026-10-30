@@ -189,6 +189,9 @@ $$;
 
 -- Regra geral de visibilidade dos dados de um corretor (leads, agenda etc.):
 -- o próprio, o gerente da equipe dele ou quem vê todas as equipes.
+-- É a mesma regra de current_perfil, has_permission e is_my_team_member, numa
+-- consulta só: o RLS chama esta função linha a linha, e as chamadas aninhadas
+-- custavam ~3 ms por linha (2 s na lista do gerente; teste de carga, docs/teste-carga.md).
 create or replace function public.pode_ver_dados_de(p_user uuid)
 returns boolean
 language sql
@@ -196,9 +199,17 @@ stable
 security definer
 set search_path = ''
 as $$
-  select (p_user = auth.uid() and public.current_perfil() is not null)
-      or public.has_permission('dados.ver_todos')
-      or (public.has_permission('dados.ver_equipe') and public.is_my_team_member(p_user));
+  select exists (
+    select 1 from public.profiles eu
+    where eu.id = auth.uid() and eu.ativo
+      and (p_user = eu.id
+           or eu.perfil = 'gerente_geral'
+           or exists (select 1 from public.role_permissions rp where rp.perfil = eu.perfil and rp.permissao = 'dados.ver_todos')
+           or (eu.perfil = 'gerente'
+               and exists (select 1 from public.role_permissions rp where rp.perfil = eu.perfil and rp.permissao = 'dados.ver_equipe')
+               and exists (select 1 from public.profiles m join public.teams t on t.id = m.equipe_id
+                           where m.id = p_user and t.gerente_id = eu.id)))
+  );
 $$;
 
 create or replace function private.programa_verba_ativo()
