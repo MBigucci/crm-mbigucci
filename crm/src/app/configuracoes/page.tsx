@@ -62,9 +62,9 @@ function Chaves() {
 
   return (
     <section className="grid gap-3">
-      <span className="eyebrow">Chaves</span>
+      <h2 className="titulo-secao">Chaves</h2>
       {erro && <p className="aviso-erro">! {erro}</p>}
-      {!chaves && !erro && <p className="text-concrete">Carregando…</p>}
+      {!chaves && !erro && <p className="text-ink-soft">Carregando…</p>}
       {chaves?.map((c) => {
         const ligada = c.valor === true;
         return (
@@ -73,9 +73,9 @@ function Chaves() {
               <div className="min-w-0 flex-1">
                 <p className="titulo-card">{c.rotulo}</p>
                 <p className="mt-1 text-ink-soft">{c.descricao}</p>
-                <p className={`mt-2 text-[13px] font-semibold ${ligada ? "text-brand" : "text-concrete"}`}>
+                <p className={`mt-2 text-[13px] font-semibold ${ligada ? "text-brand" : "text-ink-soft"}`}>
                   {ligada ? "✓ Ligada" : "– Desligada"}
-                  <span className="font-normal text-concrete">
+                  <span className="font-normal text-ink-soft">
                     {" "}
                     · alterada em {new Date(c.updated_at).toLocaleString("pt-BR")}
                   </span>
@@ -166,13 +166,13 @@ function Horario() {
 
   return (
     <section className="grid gap-3">
-      <span className="eyebrow">Horário de atendimento</span>
+      <h2 className="titulo-secao">Horário de atendimento</h2>
       <div className="card max-w-[720px]">
         <p className="text-ink-soft">
           Todo lead da empresa tem 15 min para o primeiro contato, contados só neste horário. Fora dele, o prazo começa
           na abertura seguinte.
         </p>
-        {!dias && !erro && <p className="mt-3 text-concrete">Carregando…</p>}
+        {!dias && !erro && <p className="mt-3 text-ink-soft">Carregando…</p>}
         {dias && (
           <div className="mt-4 grid gap-4">
             <fieldset>
@@ -239,7 +239,7 @@ function Horario() {
                 Salvar horário
               </button>
               {alterado && (
-                <span className="text-[13px] text-concrete">
+                <span className="text-[13px] text-ink-soft">
                   Alterado em {new Date(alterado).toLocaleString("pt-BR")}
                 </span>
               )}
@@ -287,13 +287,13 @@ function Permissoes() {
 
   return (
     <section className="grid gap-3">
-      <span className="eyebrow">Permissões por perfil</span>
+      <h2 className="titulo-secao">Permissões por perfil</h2>
       <p className="max-w-[640px] text-ink-soft">
         O gerente geral tem todas as permissões. Qualquer usuário ativo sempre vê os próprios dados. As
         mudanças valem no próximo acesso de cada pessoa.
       </p>
       {erro && <p className="aviso-erro">! {erro}</p>}
-      {!concedidas && !erro && <p className="text-concrete">Carregando…</p>}
+      {!concedidas && !erro && <p className="text-ink-soft">Carregando…</p>}
       {concedidas && (
         <div className="grid gap-3 md:grid-cols-2">
           {PERFIS.filter((p) => p.slug !== "gerente_geral").map((perfil) => (

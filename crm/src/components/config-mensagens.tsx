@@ -41,7 +41,7 @@ export function ConfigMensagens() {
 
   return (
     <section className="grid gap-3">
-      <span className="eyebrow">Mensagens prontas do WhatsApp</span>
+      <h2 className="titulo-secao">Mensagens prontas do WhatsApp</h2>
       <p className="max-w-[640px] text-ink-soft">
         Corretores e gerentes escolhem a mensagem e ajustam o texto antes de enviar. A sugerida segue a etapa do lead.
         Desligue a que não quiser mais.
@@ -272,7 +272,7 @@ function EditarModelo({
         />
         <span>
           Sugerir quando o lead está há 2 dias ou mais sem contato
-          <span className="block text-[12px] text-concrete">Vale em qualquer etapa depois de Novo.</span>
+          <span className="block text-[12px] text-ink-soft">Vale em qualquer etapa depois de Novo.</span>
         </span>
       </label>
       <label className="flex cursor-pointer items-center gap-3">
