@@ -20,6 +20,8 @@ export function mensagemErro(e: { message?: string } | null | undefined): string
   if (/does not exist|schema cache|bucket not found/i.test(m)) return "Esta parte do CRM ainda não foi ativada. Avise o gerente geral.";
   if (m.includes("row-level security") || m.includes("permission denied")) return "Você não tem permissão para isso.";
   if (/failed to fetch|network|load failed/i.test(m)) return "Sem conexão com o servidor. Tente de novo.";
+  // Auth: 150 entradas por 5 min por IP (rajada de 30). Com todo o plantão no mesmo Wi-Fi, pode acontecer às 9h.
+  if (/rate limit|too many requests/i.test(m)) return "Muita gente entrando ao mesmo tempo. Espere um minuto e tente de novo.";
   if (/jwt expired|invalid jwt|jwserror/i.test(m)) return "Sua sessão expirou. Entre de novo em outra aba; o que você digitou continua aqui.";
   return m;
 }

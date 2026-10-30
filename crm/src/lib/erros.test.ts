@@ -14,4 +14,5 @@ test("reenvio: só a chave primária repetida conta como já salvo", () => {
 test("sessão expirada e sem conexão viram frases para a tela", () => {
   assert.match(mensagemErro({ message: "JWT expired" }), /sessão expirou/);
   assert.match(mensagemErro({ message: "TypeError: Failed to fetch" }), /Sem conexão/);
+  assert.match(mensagemErro({ message: "Request rate limit reached" }), /Espere um minuto/);
 });
