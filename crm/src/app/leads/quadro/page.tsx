@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Casca } from "@/components/casca";
-import { ProximoContato, SeloTemperatura, SemContato } from "@/components/leads/partes";
+import { PrazoPrimeiroContato, ProximoContato, SeloTemperatura, SemContato } from "@/components/leads/partes";
 import { Filtros, useLeadsVisiveis } from "@/components/leads/filtros";
-import { useCatalogos } from "@/lib/leads-dados";
+import { useCatalogos, useHorarioAtendimento } from "@/lib/leads-dados";
+import { prazoDoLead, type HorarioAtendimento } from "@/lib/prazo";
 import type { Lead } from "@/lib/leads";
 import { ordenarLeads } from "@/lib/busca";
 
@@ -21,6 +22,7 @@ export default function QuadroPage() {
 function Quadro() {
   const { catalogos, erro: erroCatalogo } = useCatalogos();
   const f = useLeadsVisiveis();
+  const horario = useHorarioAtendimento();
   const [agora] = useState(() => new Date());
 
   const etapas = catalogos?.etapas.filter((e) => e.ativo || f.leads?.some((l) => l.etapa === e.slug)) ?? [];
@@ -38,15 +40,16 @@ function Quadro() {
           <div className="flex gap-3">
             {etapas.map((e) => {
               const leads = daEtapa(e.slug);
+              const primeiroUrgente = leads.find((l) => prazoDoLead(l, agora, horario)?.estado === "estourado" || (l.proximo_contato && new Date(l.proximo_contato) < agora));
               return (
                 <section
                   key={e.slug}
                   aria-labelledby={`etapa-${e.slug}`}
                   className="w-[78vw] max-w-[280px] shrink-0 [scroll-snap-align:start]"
                 >
-                  <h2 id={`etapa-${e.slug}`} className="eyebrow mb-2 flex justify-between">
+                  <h2 id={`etapa-${e.slug}`} className="titulo-secao mb-3 flex items-baseline justify-between">
                     <span>{e.nome}</span>
-                    <span className="num">{leads.length}</span>
+                    <span className="num text-[24px]">{leads.length}</span>
                   </h2>
                   <ul className="grid gap-2">
                     {leads.map((l) => (
@@ -54,6 +57,8 @@ function Quadro() {
                         key={l.id}
                         lead={l}
                         agora={agora}
+                        horario={horario}
+                        destaque={l.id === primeiroUrgente?.id}
                         dono={f.veOutros ? f.nomeDono.get(l.dono_id) : undefined}
                       />
                     ))}
@@ -73,21 +78,22 @@ function Quadro() {
   );
 }
 
-function CartaoQuadro({ lead, agora, dono }: { lead: Lead; agora: Date; dono?: string }) {
+function CartaoQuadro({ lead, agora, horario, destaque, dono }: { lead: Lead; agora: Date; horario: HorarioAtendimento; destaque: boolean; dono?: string }) {
+  const prazo = prazoDoLead(lead, agora, horario);
   return (
     <li>
       <Link
         href={`/leads/ficha/?id=${lead.id}`}
-        className="card focus-ring block py-3 transition-colors hover:border-ink"
+        className={`card focus-ring block py-3 transition-colors hover:border-ink ${destaque ? "bar-brand" : ""}`}
       >
         <span className="block truncate font-semibold">{lead.nome}</span>
-        <span className="mt-1 block text-[12px]">
-          <ProximoContato iso={lead.proximo_contato} agora={agora} />
+        <span className="mt-2 block text-[14px]">
+          {prazo ? <PrazoPrimeiroContato lead={lead} agora={agora} horario={horario} /> : <ProximoContato iso={lead.proximo_contato} agora={agora} />}
         </span>
         <SemContato lead={lead} agora={agora} comTentativas={false} className="mt-1 block text-[12px]" />
         <span className="mt-2 flex items-center justify-between gap-2">
           <SeloTemperatura valor={lead.temperatura} />
-          {dono && <span className="truncate text-[12px] text-concrete">{dono}</span>}
+          {dono && <span className="truncate text-[12px] text-ink-soft">{dono}</span>}
         </span>
       </Link>
     </li>
