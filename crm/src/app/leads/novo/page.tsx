@@ -357,7 +357,7 @@ function NovoLead() {
 
       {perfil && (
         <div className="card">
-          <span className="eyebrow">Perfil da mensagem</span>
+          <span className="field-label">Perfil da mensagem</span>
           <p className="num mt-1">
             {[
               perfil.valor && `Até ${reais(perfil.valor)}`,
@@ -492,7 +492,7 @@ function ColarMensagem({
 
       {lido && (
         <section className="card" aria-live="polite">
-          <span className="eyebrow">
+          <span className="field-label">
             <span className="num">{camposEncontrados(lido)}</span> de <span className="num">4</span> campos
             encontrados
           </span>
@@ -500,15 +500,15 @@ function ColarMensagem({
             {campos.map((c) => (
               <div key={c.rotulo} className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <dt className="text-[12px] text-concrete">{c.rotulo}</dt>
-                  <dd className={clsx("break-words", c.valor ? "num" : "text-ink-soft")}>{c.valor ?? "–"}</dd>
+                  <dt className="text-[12px] text-ink-soft">{c.rotulo}</dt>
+                  <dd className={clsx("break-words", c.valor ? "num font-semibold" : "text-ink-soft")}>{c.valor ?? "–"}</dd>
                 </div>
                 <SeloCampo selo={c.campo.selo} />
               </div>
             ))}
           </dl>
           {!lido.nome.valor || !lido.whatsapp.valor ? (
-            <p className="mt-3 text-[13px] text-ink-soft">
+            <p className="mt-3 border-l-bar border-brand bg-tint-brand p-3 text-[14px] font-semibold text-ink">
               ! Nome e WhatsApp são obrigatórios. Você completa no cadastro.
             </p>
           ) : null}
@@ -517,7 +517,7 @@ function ColarMensagem({
 
       {temSugestao && s && (
         <section className="card">
-          <span className="eyebrow">Perfil: toque no que quiser usar</span>
+          <span className="field-label">Perfil: toque no que quiser usar</span>
           <div className="mt-3 flex flex-wrap gap-2">
             {s.valor && (
               <Sugestao marcada={usarValor} onClick={() => setUsarValor((x) => !x)}>
