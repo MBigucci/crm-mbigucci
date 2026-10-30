@@ -70,7 +70,7 @@ export function ProximoContato({ iso, agora }: { iso: string | null; agora: Date
   if (!iso) return <span className="text-ink-soft">Sem próximo contato</span>;
   const atrasado = new Date(iso).getTime() < agora.getTime();
   return (
-    <span className={clsx("num", atrasado ? "font-semibold text-brand" : "text-ink")}>
+    <span className={clsx("num", atrasado ? "text-[15px] font-bold text-brand" : "text-ink")}>
       {atrasado && "! Atrasado · "}
       {formatarQuando(iso, agora)}
     </span>
@@ -121,7 +121,7 @@ export function PrazoPrimeiroContato({
     <span
       className={clsx(
         "num font-semibold",
-        s.nivel === "estourado" ? "text-brand" : s.nivel === "correndo" ? "text-wa" : "text-ink",
+        s.nivel === "estourado" ? "text-[15px] font-bold text-brand" : s.nivel === "correndo" ? "text-wa" : "text-ink",
         className,
       )}
     >
@@ -143,6 +143,7 @@ export function CardLead({
   dono,
   etapa,
   onSemResposta,
+  destaque = false,
 }: {
   lead: Lead;
   agora: Date;
@@ -150,10 +151,11 @@ export function CardLead({
   dono?: string;
   etapa?: string;
   onSemResposta?: () => void;
+  destaque?: boolean;
 }) {
   const prazo = prazoDoLead(lead, agora, horario);
   return (
-    <li className={clsx("card", prazo?.estado === "estourado" && "bar-brand")}>
+    <li className={clsx("card", destaque && "bar-brand")}>
       <div className="flex items-start justify-between gap-3">
         <Link href={`/leads/ficha/?id=${lead.id}`} className="focus-ring min-w-0 flex-1">
           <span className="titulo-card block truncate">{lead.nome}</span>
@@ -181,7 +183,7 @@ export function CardLead({
       <p className="mt-2 line-clamp-2 text-[13px] text-ink-soft">
         {lead.ultima_interacao_texto ? (
           <>
-            <span className="num text-concrete">{formatarQuando(lead.ultima_interacao_em!, agora)} · </span>
+            <span className="num text-ink-soft">{formatarQuando(lead.ultima_interacao_em!, agora)} · </span>
             {lead.ultima_interacao_texto}
           </>
         ) : (
@@ -191,7 +193,7 @@ export function CardLead({
       {lead.status === "descartado" && <p className="mt-2 text-[13px] font-semibold text-ink-soft">✕ Descartado</p>}
       {onSemResposta ? (
         <>
-          <span className="mt-2 block truncate text-[12px] text-concrete">{etapa}</span>
+          <span className="mt-2 block truncate text-[12px] text-ink-soft">{etapa}</span>
           <div className="mt-2 flex flex-wrap gap-2 [&>*]:flex-1">
             <button type="button" className="btn btn-ghost focus-ring whitespace-nowrap" onClick={onSemResposta}>
               Sem resposta (+1)
@@ -199,12 +201,12 @@ export function CardLead({
             <Link href={`/leads/ficha/?id=${lead.id}`} className="btn btn-ghost focus-ring">
               Abrir
             </Link>
-            <BotaoMensagem lead={lead} />
+            <BotaoMensagem lead={lead} destaque={destaque} />
           </div>
         </>
       ) : (
         <div className="mt-3 flex items-center justify-between gap-3">
-          <span className="min-w-0 truncate text-[12px] text-concrete">{etapa}</span>
+          <span className="min-w-0 truncate text-[12px] text-ink-soft">{etapa}</span>
           <div className="flex shrink-0 gap-2">
             <Link href={`/leads/ficha/?id=${lead.id}`} className="btn btn-ghost focus-ring">
               Abrir

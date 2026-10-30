@@ -84,13 +84,29 @@ export function ListaDoDia() {
   const depois = (leads ?? []).filter((l) => grupoDoLead(l, agora) === null).length;
   const nomeEtapa = (slug: string) => catalogos?.etapas.find((e) => e.slug === slug)?.nome ?? slug;
   const hoje = `${diaDaSemana.format(agora)}, ${agora.toLocaleDateString("pt-BR")}`;
+  const urgentes = grupos.filter((g) => g.grupo === "primeiro_contato" || g.grupo === "atrasados");
+  const demais = grupos.filter((g) => g.grupo !== "primeiro_contato" && g.grupo !== "atrasados");
+
+  const mostrarGrupo = (g: (typeof grupos)[number]) => (
+    <section key={g.grupo} id={`grupo-${g.grupo}`} aria-labelledby={`titulo-${g.grupo}`} className="scroll-mt-24">
+      <h2 id={`titulo-${g.grupo}`} className="titulo-secao mb-3">
+        {TITULOS_GRUPO[g.grupo]} · <span className="num">{g.leads.length}</span>
+      </h2>
+      <ul className="grid gap-3 md:grid-cols-2">
+        {g.leads.map((l, i) => (
+          <CardLead key={l.id} lead={l} agora={agora} horario={horario} etapa={nomeEtapa(l.etapa)}
+            destaque={i === 0} onSemResposta={() => semResposta(l)} />
+        ))}
+      </ul>
+    </section>
+  );
 
   return (
     <div className="grid gap-5 pb-20 md:pb-0">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <p className="num text-ink-soft first-letter:uppercase">{hoje}</p>
         <RodapeAcao>
-          <Link href="/leads/novo/" className="btn btn-red btn-lg focus-ring">
+          <Link href="/leads/novo/" className={`btn btn-lg focus-ring ${leads?.length ? "btn-ghost" : "btn-red"}`}>
             + Novo lead
           </Link>
         </RodapeAcao>
@@ -120,6 +136,22 @@ export function ListaDoDia() {
         </div>
       )}
 
+      {urgentes.length > 0 && (
+        <section className="veredito" aria-label="Prioridades do dia">
+          <h2 className="font-display text-[18px] font-bold">Contatos que precisam de atenção</h2>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {urgentes.map((g) => (
+              <a key={g.grupo} href={`#grupo-${g.grupo}`} className="focus-ring flex items-baseline gap-3 text-on-dark">
+                <span className="num text-[32px] font-extrabold leading-none">{g.leads.length}</span>
+                <span className="text-[14px] underline underline-offset-4">{TITULOS_GRUPO[g.grupo]} →</span>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {urgentes.map(mostrarGrupo)}
+
       {leads &&
         (
           [
@@ -130,7 +162,7 @@ export function ListaDoDia() {
           ([chave, titulo, lista, comDia]) =>
             lista.length > 0 && (
               <section key={chave} aria-labelledby={`visitas-${chave}`}>
-                <h2 id={`visitas-${chave}`} className="eyebrow mb-2">
+                <h2 id={`visitas-${chave}`} className="titulo-secao mb-3">
                   {titulo} · <span className="num">{lista.length}</span>
                 </h2>
                 <ListaVisitas visitas={lista} agora={agora} comDia={comDia} />
@@ -140,7 +172,7 @@ export function ListaDoDia() {
 
       {aniversarios.length > 0 && (
         <section aria-labelledby="aniversarios">
-          <h2 id="aniversarios" className="eyebrow mb-2">
+          <h2 id="aniversarios" className="titulo-secao mb-3">
             Aniversários de hoje · <span className="num">{aniversarios.length}</span>
           </h2>
           <ul className="grid gap-3 md:grid-cols-2">
@@ -174,25 +206,7 @@ export function ListaDoDia() {
         </div>
       )}
 
-      {grupos.map((g) => (
-        <section key={g.grupo} aria-labelledby={`grupo-${g.grupo}`}>
-          <h2 id={`grupo-${g.grupo}`} className="eyebrow mb-2">
-            {TITULOS_GRUPO[g.grupo]} · <span className="num">{g.leads.length}</span>
-          </h2>
-          <ul className="grid gap-3 md:grid-cols-2">
-            {g.leads.map((l) => (
-              <CardLead
-                key={l.id}
-                lead={l}
-                agora={agora}
-                horario={horario}
-                etapa={nomeEtapa(l.etapa)}
-                onSemResposta={() => semResposta(l)}
-              />
-            ))}
-          </ul>
-        </section>
-      ))}
+      {demais.map(mostrarGrupo)}
 
       {leads && depois > 0 && grupos.length > 0 && (
         <p className="text-[13px] text-ink-soft">
