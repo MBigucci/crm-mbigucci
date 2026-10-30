@@ -27,7 +27,7 @@ function Marca() {
           ref={img}
           src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/mbigucci-logo.png`}
           alt="MBigucci Construtora"
-          className="h-logo w-auto"
+          className="marca-selo h-logo w-auto"
           onError={() => setSemLogo(true)}
         />
       )}

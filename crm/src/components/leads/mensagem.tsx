@@ -128,7 +128,7 @@ export function DialogoMensagem({
       onClose={onFechar}
       onClick={(e) => e.target === ref.current && ref.current?.close()}
       aria-labelledby="mensagem-titulo"
-      className="m-0 mt-auto max-h-[92dvh] w-full max-w-none overflow-y-auto rounded-t-md border border-line bg-surface p-0 text-ink backdrop:bg-ink/50 md:m-auto md:max-w-[560px] md:rounded-md"
+      className="m-0 mt-auto max-h-[92dvh] w-full max-w-none overflow-y-auto rounded-t-md border border-line bg-surface p-0 text-ink backdrop:bg-overlay/50 md:m-auto md:max-w-[560px] md:rounded-md"
     >
       <div className="grid gap-4 p-5">
         <div className="flex items-start justify-between gap-3">

@@ -33,7 +33,7 @@ import { profiles } from './visual-fixtures';
 const Context = createContext({estado: {fase:'carregando'} as any, pode: (_:string) => false, sair:async()=>{}, recarregar:async()=>{}});
 export function SessaoProvider({children}:{children:React.ReactNode}) {
  const [estado,setEstado]=useState<any>({fase:'carregando'});
- useEffect(()=>{const path=location.pathname; const gerente=path==='/crm/leads/' || path==='/crm/painel/'; const geral=path==='/crm/configuracoes/';
+ useEffect(()=>{const path=location.pathname; if(path==='/crm/entrar/') {setEstado({fase:'deslogado'}); return;} const gerente=path==='/crm/leads/' || path==='/crm/painel/'; const geral=new URLSearchParams(location.search).get('qa')==='geral' || ['/crm/configuracoes/','/crm/equipes/','/crm/usuarios/','/crm/empreendimentos/editar/','/crm/empreendimentos/importar/','/crm/faixas/','/crm/programa/','/crm/programa/aprovacao/'].includes(path);
  const perfil=geral?{...profiles[0],perfil:'gerente_geral'}:gerente?{...profiles[0],id:'gerente',perfil:'gerente'}:profiles[0];
  const permissoes=gerente?['dados.ver_equipe','leads.atribuir']:['leads.cadastrar'];
  setEstado({fase:'pronto',perfil,permissoes});},[]);

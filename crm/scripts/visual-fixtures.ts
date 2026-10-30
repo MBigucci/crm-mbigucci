@@ -69,6 +69,10 @@ export const client = {
  from:(name:string)=>new Query(name),
  rpc:async(name:string)=> name==='programa_estado'
    ? {data:{ativo:false},error:null}
+   : name==='ranking_pontos'
+     ? {data:profiles.map((p,i)=>({corretor_id:p.id,nome:p.nome,pontos:150-i*70})),error:null}
+     : name==='plantao_corretores'
+       ? {data:profiles.map(p=>({id:p.id,nome:p.nome,equipe:'Equipe Exemplo'})),error:null}
    : name==='leads_perdidos'
      ? {data:[],error:null}
      : {data:null,error:{message:'Prévia visual: operação desativada.'}},

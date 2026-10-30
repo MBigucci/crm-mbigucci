@@ -22,6 +22,7 @@ Revisão de 30/10/2026. Escopo: hierarquia, destaque, legibilidade e repetição
 14. [Configurações](#configurações)
 15. [Pendências de média e baixa](#pendências-de-média-e-baixa)
 16. [Validação e reprodução](#validação-e-reprodução)
+17. [Modo escuro (item 18)](#modo-escuro-item-18)
 
 ## Método e critérios
 
@@ -380,3 +381,78 @@ As capturas `antes/` preservam a interface anterior. As de `depois/` mostram os 
 | `df615d8` | Lista do dia: ação de aniversário. |
 
 O commit da documentação acompanha este relatório, as capturas e os scripts de QA. Alterações paralelas de outra frente foram preservadas; os commits acima contêm somente os ajustes visuais descritos. `ref/` e textos do programa sigiloso não foram alterados por esta revisão. Não houve push.
+
+## Modo escuro (item 18)
+
+Concluído em 30/10/2026. Os tokens, limites de uso e **84 pares de contraste aprovados** estão em [Design System](design-system.md#temas-do-crm--item-18). Esta seção atualiza o contraste histórico da revisão anterior: `concrete` e `wa` agora também atingem 4,5:1 nos fundos de leitura. A borda `line` continua decorativa; campos, seletores e botões usam `control` (mínimo 3:1).
+
+### Resultado da conferência
+
+- **134 capturas JPEG**: 130 de interface, incluindo todas as 24 rotas, relatório por corretor, estados restritos, colagem completa/incompleta, diálogo, foco e menu; mais 4 de impressão. Medidas: **375 × 812** e **1440 × 900**, em claro e escuro.
+- Auditoria dos textos renderizados: **zero pares abaixo do limite** nos cenários capturados. Texto normal ≥ 4,5:1; grande ≥ 3:1. Verifica cor calculada e composição dos fundos; controles desabilitados são isentos. Não representa todos os dados possíveis nem uma certificação integral de acessibilidade.
+- **Zero páginas com largura maior que o viewport.** Quadro e tabelas largas mantêm a rolagem interna já existente.
+- Conferidos visualmente: faixas escuras, barra brand, estados ✓ ! ✕ com palavra e cor, números, campos nativos, foco de 2px, menu e rodapés. O diálogo usa overlay escuro nos dois temas. O logo ausente usa “MBigucci” em brand; o componente mantém o PNG original sobre selo branco quando disponível.
+- Minha conta: escolha Automático / Claro / Escuro, persistência após recarga, navegação, sincronização em outra aba, reação à mudança do sistema e respeito à escolha explícita.
+- Inicialização: com os bundles de hidratação bloqueados, o tema salvo e a meta `theme-color` já correspondem à escolha antes de a aplicação carregar. Valor inválido volta ao automático; bloqueio de leitura/escrita do `localStorage` não quebra a página nem a troca.
+- Sem JavaScript, o CSS acompanha o sistema. A impressão força o esquema claro inclusive nesse caso. Em claro e escuro, relatório com fundo branco, texto/bordas pretos e sem menu/ações. PDFs de conferência: [partindo do claro](revisao-visual/temas/claro/relatorio.pdf) e [partindo do escuro](revisao-visual/temas/escuro/relatorio.pdf).
+- A cópia isolada continua sem credenciais e com escritas bloqueadas. A chave fictícia do programa permanece desligada. As três capturas adicionais `*-geral` usam o acesso já previsto do gerente geral, escolhido **somente pelo adaptador de QA**, para conferir o conteúdo restrito. Os estados de acesso negado do corretor também foram mantidos. Nenhum texto do programa, regra, permissão ou arquivo de `ref/` foi alterado.
+- Relógio de QA em 30/10/2026, 12h, no fuso de São Paulo, para manter os mesmos exemplos nos dois temas. O tempo continua avançando durante cada captura.
+
+### Capturas
+
+| Tela / estado | Claro 375 | Claro desktop | Escuro 375 | Escuro desktop |
+| --- | --- | --- | --- | --- |
+| Lista do dia | [captura](revisao-visual/temas/claro/lista-do-dia-375.jpg) | [captura](revisao-visual/temas/claro/lista-do-dia-1440.jpg) | [captura](revisao-visual/temas/escuro/lista-do-dia-375.jpg) | [captura](revisao-visual/temas/escuro/lista-do-dia-1440.jpg) |
+| Ficha do lead | [captura](revisao-visual/temas/claro/ficha-375.jpg) | [captura](revisao-visual/temas/claro/ficha-1440.jpg) | [captura](revisao-visual/temas/escuro/ficha-375.jpg) | [captura](revisao-visual/temas/escuro/ficha-1440.jpg) |
+| Cadastro | [captura](revisao-visual/temas/claro/cadastro-375.jpg) | [captura](revisao-visual/temas/claro/cadastro-1440.jpg) | [captura](revisao-visual/temas/escuro/cadastro-375.jpg) | [captura](revisao-visual/temas/escuro/cadastro-1440.jpg) |
+| Colar mensagem | [captura](revisao-visual/temas/claro/colar-mensagem-375.jpg) | [captura](revisao-visual/temas/claro/colar-mensagem-1440.jpg) | [captura](revisao-visual/temas/escuro/colar-mensagem-375.jpg) | [captura](revisao-visual/temas/escuro/colar-mensagem-1440.jpg) |
+| Colagem incompleta | [captura](revisao-visual/temas/claro/colar-incompleta-375.jpg) | [captura](revisao-visual/temas/claro/colar-incompleta-1440.jpg) | [captura](revisao-visual/temas/escuro/colar-incompleta-375.jpg) | [captura](revisao-visual/temas/escuro/colar-incompleta-1440.jpg) |
+| Quadro | [captura](revisao-visual/temas/claro/quadro-375.jpg) | [captura](revisao-visual/temas/claro/quadro-1440.jpg) | [captura](revisao-visual/temas/escuro/quadro-375.jpg) | [captura](revisao-visual/temas/escuro/quadro-1440.jpg) |
+| Leads da equipe | [captura](revisao-visual/temas/claro/leads-equipe-375.jpg) | [captura](revisao-visual/temas/claro/leads-equipe-1440.jpg) | [captura](revisao-visual/temas/escuro/leads-equipe-375.jpg) | [captura](revisao-visual/temas/escuro/leads-equipe-1440.jpg) |
+| Painel | [captura](revisao-visual/temas/claro/painel-375.jpg) | [captura](revisao-visual/temas/claro/painel-1440.jpg) | [captura](revisao-visual/temas/escuro/painel-375.jpg) | [captura](revisao-visual/temas/escuro/painel-1440.jpg) |
+| Relatório do corretor | [captura](revisao-visual/temas/claro/relatorio-375.jpg) | [captura](revisao-visual/temas/claro/relatorio-1440.jpg) | [captura](revisao-visual/temas/escuro/relatorio-375.jpg) | [captura](revisao-visual/temas/escuro/relatorio-1440.jpg) |
+| Agenda | [captura](revisao-visual/temas/claro/agenda-375.jpg) | [captura](revisao-visual/temas/claro/agenda-1440.jpg) | [captura](revisao-visual/temas/escuro/agenda-375.jpg) | [captura](revisao-visual/temas/escuro/agenda-1440.jpg) |
+| Vendas | [captura](revisao-visual/temas/claro/vendas-375.jpg) | [captura](revisao-visual/temas/claro/vendas-1440.jpg) | [captura](revisao-visual/temas/escuro/vendas-375.jpg) | [captura](revisao-visual/temas/escuro/vendas-1440.jpg) |
+| Metas | [captura](revisao-visual/temas/claro/metas-375.jpg) | [captura](revisao-visual/temas/claro/metas-1440.jpg) | [captura](revisao-visual/temas/escuro/metas-375.jpg) | [captura](revisao-visual/temas/escuro/metas-1440.jpg) |
+| Empreendimentos | [captura](revisao-visual/temas/claro/empreendimentos-375.jpg) | [captura](revisao-visual/temas/claro/empreendimentos-1440.jpg) | [captura](revisao-visual/temas/escuro/empreendimentos-375.jpg) | [captura](revisao-visual/temas/escuro/empreendimentos-1440.jpg) |
+| Detalhe do empreendimento | [captura](revisao-visual/temas/claro/empreendimento-375.jpg) | [captura](revisao-visual/temas/claro/empreendimento-1440.jpg) | [captura](revisao-visual/temas/escuro/empreendimento-375.jpg) | [captura](revisao-visual/temas/escuro/empreendimento-1440.jpg) |
+| Editar empreendimento | [captura](revisao-visual/temas/claro/editar-empreendimento-375.jpg) | [captura](revisao-visual/temas/claro/editar-empreendimento-1440.jpg) | [captura](revisao-visual/temas/escuro/editar-empreendimento-375.jpg) | [captura](revisao-visual/temas/escuro/editar-empreendimento-1440.jpg) |
+| Importar tabela | [captura](revisao-visual/temas/claro/importar-tabela-375.jpg) | [captura](revisao-visual/temas/claro/importar-tabela-1440.jpg) | [captura](revisao-visual/temas/escuro/importar-tabela-375.jpg) | [captura](revisao-visual/temas/escuro/importar-tabela-1440.jpg) |
+| Minha conta | [captura](revisao-visual/temas/claro/minha-conta-375.jpg) | [captura](revisao-visual/temas/claro/minha-conta-1440.jpg) | [captura](revisao-visual/temas/escuro/minha-conta-375.jpg) | [captura](revisao-visual/temas/escuro/minha-conta-1440.jpg) |
+| Aparência com foco | [captura](revisao-visual/temas/claro/aparencia-foco-375.jpg) | [captura](revisao-visual/temas/claro/aparencia-foco-1440.jpg) | [captura](revisao-visual/temas/escuro/aparencia-foco-375.jpg) | [captura](revisao-visual/temas/escuro/aparencia-foco-1440.jpg) |
+| Configurações | [captura](revisao-visual/temas/claro/configuracoes-375.jpg) | [captura](revisao-visual/temas/claro/configuracoes-1440.jpg) | [captura](revisao-visual/temas/escuro/configuracoes-375.jpg) | [captura](revisao-visual/temas/escuro/configuracoes-1440.jpg) |
+| Entrar | [captura](revisao-visual/temas/claro/entrar-375.jpg) | [captura](revisao-visual/temas/claro/entrar-1440.jpg) | [captura](revisao-visual/temas/escuro/entrar-375.jpg) | [captura](revisao-visual/temas/escuro/entrar-1440.jpg) |
+| Equipes | [captura](revisao-visual/temas/claro/equipes-375.jpg) | [captura](revisao-visual/temas/claro/equipes-1440.jpg) | [captura](revisao-visual/temas/escuro/equipes-375.jpg) | [captura](revisao-visual/temas/escuro/equipes-1440.jpg) |
+| Usuários | [captura](revisao-visual/temas/claro/usuarios-375.jpg) | [captura](revisao-visual/temas/claro/usuarios-1440.jpg) | [captura](revisao-visual/temas/escuro/usuarios-375.jpg) | [captura](revisao-visual/temas/escuro/usuarios-1440.jpg) |
+| Faixas | [captura](revisao-visual/temas/claro/faixas-375.jpg) | [captura](revisao-visual/temas/claro/faixas-1440.jpg) | [captura](revisao-visual/temas/escuro/faixas-375.jpg) | [captura](revisao-visual/temas/escuro/faixas-1440.jpg) |
+| Programa (gerente geral) | [captura](revisao-visual/temas/claro/programa-375.jpg) | [captura](revisao-visual/temas/claro/programa-1440.jpg) | [captura](revisao-visual/temas/escuro/programa-375.jpg) | [captura](revisao-visual/temas/escuro/programa-1440.jpg) |
+| Aprovação (gerente geral) | [captura](revisao-visual/temas/claro/aprovacao-375.jpg) | [captura](revisao-visual/temas/claro/aprovacao-1440.jpg) | [captura](revisao-visual/temas/escuro/aprovacao-375.jpg) | [captura](revisao-visual/temas/escuro/aprovacao-1440.jpg) |
+| Meus pontos (gerente geral fictício) | [captura](revisao-visual/temas/claro/meus-pontos-geral-375.jpg) | [captura](revisao-visual/temas/claro/meus-pontos-geral-1440.jpg) | [captura](revisao-visual/temas/escuro/meus-pontos-geral-375.jpg) | [captura](revisao-visual/temas/escuro/meus-pontos-geral-1440.jpg) |
+| Ranking (gerente geral fictício) | [captura](revisao-visual/temas/claro/ranking-geral-375.jpg) | [captura](revisao-visual/temas/claro/ranking-geral-1440.jpg) | [captura](revisao-visual/temas/escuro/ranking-geral-375.jpg) | [captura](revisao-visual/temas/escuro/ranking-geral-1440.jpg) |
+| Plantão (gerente geral fictício) | [captura](revisao-visual/temas/claro/plantao-geral-375.jpg) | [captura](revisao-visual/temas/claro/plantao-geral-1440.jpg) | [captura](revisao-visual/temas/escuro/plantao-geral-375.jpg) | [captura](revisao-visual/temas/escuro/plantao-geral-1440.jpg) |
+| Meus pontos (acesso negado) | [captura](revisao-visual/temas/claro/meus-pontos-375.jpg) | [captura](revisao-visual/temas/claro/meus-pontos-1440.jpg) | [captura](revisao-visual/temas/escuro/meus-pontos-375.jpg) | [captura](revisao-visual/temas/escuro/meus-pontos-1440.jpg) |
+| Ranking (acesso negado) | [captura](revisao-visual/temas/claro/ranking-375.jpg) | [captura](revisao-visual/temas/claro/ranking-1440.jpg) | [captura](revisao-visual/temas/escuro/ranking-375.jpg) | [captura](revisao-visual/temas/escuro/ranking-1440.jpg) |
+| Plantão (acesso negado) | [captura](revisao-visual/temas/claro/plantao-375.jpg) | [captura](revisao-visual/temas/claro/plantao-1440.jpg) | [captura](revisao-visual/temas/escuro/plantao-375.jpg) | [captura](revisao-visual/temas/escuro/plantao-1440.jpg) |
+| Diálogo de mensagem | [captura](revisao-visual/temas/claro/dialogo-mensagem-375.jpg) | [captura](revisao-visual/temas/claro/dialogo-mensagem-1440.jpg) | [captura](revisao-visual/temas/escuro/dialogo-mensagem-375.jpg) | [captura](revisao-visual/temas/escuro/dialogo-mensagem-1440.jpg) |
+| Impressão | [captura](revisao-visual/temas/claro/impressao-375.jpg) | [captura](revisao-visual/temas/claro/impressao-1440.jpg) | [captura](revisao-visual/temas/escuro/impressao-375.jpg) | [captura](revisao-visual/temas/escuro/impressao-1440.jpg) |
+
+Menu móvel: [claro](revisao-visual/temas/claro/menu-375.jpg) · [escuro](revisao-visual/temas/escuro/menu-375.jpg).
+
+### Reprodução dos temas
+
+Em `crm/`, sem servidor de desenvolvimento:
+
+```bash
+node scripts/contraste-temas.mjs
+node scripts/visual-preview.mjs
+npm --prefix .visual-preview run build
+node scripts/visual-preview.mjs --serve
+```
+
+Em outro terminal, executar `node scripts/visual-temas.mjs`. O script usa Playwright disponível no ambiente de QA; `PLAYWRIGHT_MODULE` aceita o caminho do pacote e `CHROME_PATH` o executável do Chrome já instalado. Não adiciona dependências ao app. No Windows com isolamento de rede, navegador e servidor local precisam de acesso ao mesmo loopback.
+
+O arquivo [auditoria.json](revisao-visual/temas/auditoria.json) registra os pares, cada captura, larguras, falhas de contraste e erros de execução. O script falha quando encontra regressão. O parâmetro `?qa=geral` existe apenas na cópia isolada; não é reconhecido pela sessão do app.
+
+### Verificações desta entrega
+
+Antes do commit local: `npm run typecheck`, `npm test` (**171 aprovados**) e `npm run build` em `crm/`. Exportação estática concluída, sem servidor de desenvolvimento ligado. Validações adicionais de contraste e navegador concluídas. Item 18 marcado em `docs/referencia-crm-bruna.md`. Sem push.

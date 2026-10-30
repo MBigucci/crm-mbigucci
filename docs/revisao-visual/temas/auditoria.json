@@ -1,0 +1,1259 @@
+{
+  "data": "2026-10-30",
+  "viewports": [
+    375,
+    1440
+  ],
+  "contrastes": [
+    {
+      "frente": "ink",
+      "fundo": "paper",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 17.848252011760827,
+      "escuro": 16.3055294229058
+    },
+    {
+      "frente": "ink-soft",
+      "fundo": "paper",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 8.026363684329917,
+      "escuro": 10.066599797534383
+    },
+    {
+      "frente": "concrete",
+      "fundo": "paper",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 4.9049162693197434,
+      "escuro": 7.458876218223643
+    },
+    {
+      "frente": "brand",
+      "fundo": "paper",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 4.520608042538362,
+      "escuro": 6.538410399319106
+    },
+    {
+      "frente": "brand-dark",
+      "fundo": "paper",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 6.203201603953062,
+      "escuro": 8.446682693013777
+    },
+    {
+      "frente": "ok",
+      "fundo": "paper",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 4.943802206685412,
+      "escuro": 9.332574389281518
+    },
+    {
+      "frente": "wa",
+      "fundo": "paper",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 5.465123561474455,
+      "escuro": 9.948675114016329
+    },
+    {
+      "frente": "neutral-mark",
+      "fundo": "paper",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 6.264145225544474,
+      "escuro": 9.159063020151585
+    },
+    {
+      "frente": "control",
+      "fundo": "paper",
+      "minimo": 3,
+      "uso": "controle/foco",
+      "claro": 4.37455764340545,
+      "escuro": 5.2059067506458865
+    },
+    {
+      "frente": "brand",
+      "fundo": "paper",
+      "minimo": 3,
+      "uso": "controle/foco",
+      "claro": 4.520608042538362,
+      "escuro": 6.538410399319106
+    },
+    {
+      "frente": "ink",
+      "fundo": "surface",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 19.30107198613134,
+      "escuro": 14.480795746013824
+    },
+    {
+      "frente": "ink-soft",
+      "fundo": "surface",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 8.679697213824731,
+      "escuro": 8.940057801507526
+    },
+    {
+      "frente": "concrete",
+      "fundo": "surface",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 5.3041688305222126,
+      "escuro": 6.624161669915782
+    },
+    {
+      "frente": "brand",
+      "fundo": "surface",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 4.8885785113647815,
+      "escuro": 5.806704157863495
+    },
+    {
+      "frente": "brand-dark",
+      "fundo": "surface",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 6.708132573626272,
+      "escuro": 7.501423819891207
+    },
+    {
+      "frente": "ok",
+      "fundo": "surface",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 5.346220022753721,
+      "escuro": 8.288176360947721
+    },
+    {
+      "frente": "wa",
+      "fundo": "surface",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 5.909976125595645,
+      "escuro": 8.83532993826873
+    },
+    {
+      "frente": "neutral-mark",
+      "fundo": "surface",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 6.7740369112979,
+      "escuro": 8.134082456308713
+    },
+    {
+      "frente": "control",
+      "fundo": "surface",
+      "minimo": 3,
+      "uso": "controle/foco",
+      "claro": 4.730639836730982,
+      "escuro": 4.623319511661901
+    },
+    {
+      "frente": "brand",
+      "fundo": "surface",
+      "minimo": 3,
+      "uso": "controle/foco",
+      "claro": 4.8885785113647815,
+      "escuro": 5.806704157863495
+    },
+    {
+      "frente": "ink",
+      "fundo": "tint-brand",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 18.166050456395865,
+      "escuro": 13.785729480137766
+    },
+    {
+      "frente": "ink-soft",
+      "fundo": "tint-brand",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 8.169277729541427,
+      "escuro": 8.51094239225797
+    },
+    {
+      "frente": "concrete",
+      "fundo": "tint-brand",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 4.992251138887238,
+      "escuro": 6.306207367042952
+    },
+    {
+      "frente": "brand",
+      "fundo": "tint-brand",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 4.601100081970385,
+      "escuro": 5.52798714211081
+    },
+    {
+      "frente": "brand-dark",
+      "fundo": "tint-brand",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 6.3136531944054415,
+      "escuro": 7.141361656547679
+    },
+    {
+      "frente": "ok",
+      "fundo": "tint-brand",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 5.031829462846554,
+      "escuro": 7.890350723795706
+    },
+    {
+      "frente": "wa",
+      "fundo": "tint-brand",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 5.562433245718628,
+      "escuro": 8.411241380175099
+    },
+    {
+      "frente": "neutral-mark",
+      "fundo": "tint-brand",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 6.375681952409058,
+      "escuro": 7.743653199629862
+    },
+    {
+      "frente": "control",
+      "fundo": "tint-brand",
+      "minimo": 3,
+      "uso": "controle/foco",
+      "claro": 4.45244917105334,
+      "escuro": 4.401403984001251
+    },
+    {
+      "frente": "brand",
+      "fundo": "tint-brand",
+      "minimo": 3,
+      "uso": "controle/foco",
+      "claro": 4.601100081970385,
+      "escuro": 5.52798714211081
+    },
+    {
+      "frente": "ink",
+      "fundo": "surface-disabled",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 16.47552530527946,
+      "escuro": 11.667315705980638
+    },
+    {
+      "frente": "ink-soft",
+      "fundo": "surface-disabled",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 7.409048118741103,
+      "escuro": 7.203090122213504
+    },
+    {
+      "frente": "concrete",
+      "fundo": "surface-disabled",
+      "minimo": 4.5,
+      "uso": "texto",
+      "claro": 4.5276743101904415,
+      "escuro": 5.337150447111179
+    },
+    {
+      "frente": "on-brand",
+      "fundo": "brand",
+      "minimo": 4.5,
+      "uso": "botão principal",
+      "claro": 4.8885785113647815,
+      "escuro": 6.538410399319106
+    },
+    {
+      "frente": "on-brand",
+      "fundo": "brand-dark",
+      "minimo": 4.5,
+      "uso": "botão principal",
+      "claro": 6.708132573626272,
+      "escuro": 8.446682693013777
+    },
+    {
+      "frente": "on-dark",
+      "fundo": "band",
+      "minimo": 4.5,
+      "uso": "faixa escura",
+      "claro": 19.30107198613134,
+      "escuro": 19.30107198613134
+    },
+    {
+      "frente": "on-dark-soft",
+      "fundo": "band",
+      "minimo": 4.5,
+      "uso": "faixa escura",
+      "claro": 13.299328701123947,
+      "escuro": 13.299328701123947
+    },
+    {
+      "frente": "on-dark-muted",
+      "fundo": "band",
+      "minimo": 4.5,
+      "uso": "faixa escura",
+      "claro": 9.243565806937722,
+      "escuro": 9.243565806937722
+    },
+    {
+      "frente": "brand",
+      "fundo": "band",
+      "minimo": 3,
+      "uso": "barra/foco",
+      "claro": 3.9481971990960036,
+      "escuro": 6.975084295994401
+    },
+    {
+      "frente": "surface",
+      "fundo": "ink",
+      "minimo": 4.5,
+      "uso": "seleção",
+      "claro": 19.30107198613134,
+      "escuro": 14.480795746013824
+    },
+    {
+      "frente": "ok",
+      "fundo": "line",
+      "minimo": 3,
+      "uso": "progresso",
+      "claro": 4.165807306105792,
+      "escuro": 5.0082763853969485
+    },
+    {
+      "frente": "ink",
+      "fundo": "line",
+      "minimo": 3,
+      "uso": "progresso",
+      "claro": 15.039513217431173,
+      "escuro": 8.75027559961632
+    }
+  ],
+  "capturas": [
+    {
+      "arquivo": "claro/lista-do-dia-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/ficha-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/cadastro-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/quadro-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/leads-equipe-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/painel-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/relatorio-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/agenda-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/vendas-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/metas-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/empreendimentos-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/minha-conta-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/configuracoes-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/entrar-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/equipes-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/usuarios-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/empreendimento-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/editar-empreendimento-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/importar-tabela-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/faixas-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/meus-pontos-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/programa-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/aprovacao-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/ranking-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/plantao-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/meus-pontos-geral-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/ranking-geral-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/plantao-geral-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/colar-mensagem-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/colar-incompleta-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/dialogo-mensagem-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/aparencia-foco-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/menu-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/lista-do-dia-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/ficha-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/cadastro-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/quadro-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/leads-equipe-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/painel-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/relatorio-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/agenda-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/vendas-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/metas-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/empreendimentos-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/minha-conta-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/configuracoes-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/entrar-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/equipes-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/usuarios-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/empreendimento-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/editar-empreendimento-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/importar-tabela-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/faixas-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/meus-pontos-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/programa-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/aprovacao-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/ranking-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/plantao-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/meus-pontos-geral-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/ranking-geral-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/plantao-geral-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/colar-mensagem-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/colar-incompleta-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/dialogo-mensagem-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "claro/aparencia-foco-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "claro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/lista-do-dia-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/ficha-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/cadastro-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/quadro-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/leads-equipe-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/painel-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/relatorio-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/agenda-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/vendas-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/metas-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/empreendimentos-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/minha-conta-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/configuracoes-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/entrar-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/equipes-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/usuarios-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/empreendimento-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/editar-empreendimento-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/importar-tabela-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/faixas-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/meus-pontos-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/programa-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/aprovacao-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/ranking-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/plantao-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/meus-pontos-geral-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/ranking-geral-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/plantao-geral-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/colar-mensagem-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/colar-incompleta-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/dialogo-mensagem-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/aparencia-foco-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/menu-375.jpg",
+      "largura": 375,
+      "conteudo": 375,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/lista-do-dia-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/ficha-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/cadastro-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/quadro-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/leads-equipe-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/painel-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/relatorio-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/agenda-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/vendas-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/metas-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/empreendimentos-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/minha-conta-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/configuracoes-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/entrar-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/equipes-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/usuarios-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/empreendimento-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/editar-empreendimento-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/importar-tabela-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/faixas-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/meus-pontos-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/programa-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/aprovacao-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/ranking-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/plantao-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/meus-pontos-geral-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/ranking-geral-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/plantao-geral-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/colar-mensagem-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/colar-incompleta-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/dialogo-mensagem-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    },
+    {
+      "arquivo": "escuro/aparencia-foco-1440.jpg",
+      "largura": 1440,
+      "conteudo": 1440,
+      "tema": "escuro",
+      "falhas": []
+    }
+  ],
+  "erros": [],
+  "comportamentos": "Automático, preferência explícita, recarga, navegação, outra aba, sem hidratação, armazenamento bloqueado, valor inválido, sem JS e impressão clara: aprovados."
+}

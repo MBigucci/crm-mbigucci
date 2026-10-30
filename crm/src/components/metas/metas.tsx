@@ -76,7 +76,7 @@ export function CartaoMetaAnual({
   );
   return (
     <section className={clsx("card", destaque && "bar-brand")} aria-labelledby={`meta-anual-${corretor}`}>
-      <div className="rounded-sm bg-ink p-4 text-on-dark">
+      <div className="rounded-sm bg-band p-4 text-on-dark">
         <h2 id={`meta-anual-${corretor}`} className="text-[14px] font-semibold text-on-dark-soft">
           Meta anual de VGV · <span className="num">{ano}</span>
         </h2>
