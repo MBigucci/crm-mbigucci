@@ -155,7 +155,7 @@ Entre os documentos do Linktree, vale a tabela do mês, que é o mais recente. A
 
 | Campo | Faltam (de 46) | Quais |
 | --- | --- | --- |
-| Preço e tipologias | 2 | Elleva e Dom: não estão na Tabela Promocional e não têm tabela própria no Linktree. |
+| Preço e tipologias | 2 | Elleva e Dom: ainda não têm tabela. |
 | Previsão de entrega (dos 12 em lançamento ou obras) | 2 | Elleva e Dom. |
 | Taxa de condomínio | 10 (+ Elleva e Dom) | Os em obras e o Marco Zero One: a tabela não traz. |
 | Tour virtual | 19 | Normal: nem todos têm decorado virtual. |
@@ -167,7 +167,7 @@ As tipologias da tabela trazem dormitórios, suítes, vagas, área, preço, cond
 
 ## 7. Pendências
 
-- **Elleva e Dom sem preço.** Não estão nas tabelas de novembro. Dúvida para o Felipe.
+- **Elleva e Dom sem preço.** Ainda não têm tabela (Felipe, 29/10/2026). Entram no catálogo como breve lançamento, sem preço e sem tipologias, e os leads ficam em "aguardando lançamento". Quando a tabela sair no Linktree, a importação mensal preenche.
 - **Cortina D'Ampezzo está na Tabela Promocional** (cobertura 152, 230 m², R$ 2.644.400, locada até maio/2027). Ficou de fora por decisão do Felipe. Confirmar.
 - **O que quer dizer o \* no preço promocional?** Aparece em Olimpic, Piemonte, Station, Alvorada, Terra Nostra Parma, America, Sonata e Impactus. Em quatro deles a tabela diz que há limite de renda; nos outros, não diz. Ficou registrado na `preco_nota`.
 - **Tabelas próprias dos em obras.** Mundi, Modena, MBigucci Joy, Easy Jaçanã, Infinite, Palatium e Terrazzo têm tabela própria, com preço por unidade. Não foram lidas: o "a partir de" deles veio da Tabela Promocional. A etapa do catálogo pode ler as próprias.
