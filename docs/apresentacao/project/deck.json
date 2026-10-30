@@ -1,0 +1,23 @@
+{
+  "v": 4,
+  "createdOnFiles": {"v": 1, "at": "2026-10-30T15:00:00Z"},
+  "lists": "css",
+  "title": "CRM MBigucci — reunião de novembro",
+  "cover": "capa",
+  "order": ["capa", "por-que", "pesquisa", "pedidos", "tour-lista", "tour-ficha", "tour-metas", "pontos", "verba", "exemplos", "premiacao", "roleta", "gerentes", "conciliacao", "comecar", "proximos"],
+  "sections": {
+    "abertura": {"description": "Capa da reunião.", "start": "capa"},
+    "motivo": {"description": "Por que mudar e o que os corretores pediram na pesquisa.", "start": "por-que"},
+    "tour": {"description": "Tour pelas telas do CRM.", "start": "tour-lista"},
+    "programa": {"description": "Pontos, verba, exemplos, premiação por VGV e roleta.", "start": "pontos"},
+    "gestao": {"description": "O que muda para os gerentes e a conciliação das campanhas.", "start": "gerentes"},
+    "inicio": {"description": "Como começar e próximos passos.", "start": "comecar"}
+  },
+  "faces": {
+    "bricolage-grotesque": {"family": "Bricolage Grotesque", "href": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap"},
+    "inter": {"family": "Inter", "href": "https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap"}
+  },
+  "designSystems": [
+    {"title": "MBigucci", "namespace": "mbigucci", "artifact": "https://claude.ai/artifact/QesJh8EPBkLqV5jjbpNFEi", "version": "1793234991-4798", "copiedAt": "2026-10-30T15:00:00Z"}
+  ]
+}
