@@ -76,13 +76,13 @@ function Leads() {
 
       {f.veOutros && f.status === "ativo" && !f.corretor && !f.origem && !f.empreendimento && resumo.length > 0 && (
         <section aria-labelledby="resumo" className="min-w-0">
-          <h2 id="resumo" className="eyebrow mb-2">
+          <h2 id="resumo" className="titulo-secao mb-3">
             Por corretor
           </h2>
-          <div className="card overflow-x-auto p-0">
+          <div className="card bar-brand overflow-x-auto p-0">
             <table className="w-full text-left text-[13px]">
               <thead>
-                <tr className="border-b border-line text-concrete">
+                <tr className="border-b border-line text-ink-soft">
                   <th className="px-4 py-2 font-semibold">Corretor</th>
                   <th className="px-2 py-2 text-right font-semibold">Ativos</th>
                   <th className="px-2 py-2 text-right font-semibold">Prazo estourado</th>
@@ -92,7 +92,7 @@ function Leads() {
               </thead>
               <tbody>
                 {resumo.map((r) => (
-                  <tr key={r.id} className="border-b border-line last:border-0">
+                  <tr key={r.id} className={`border-b border-line last:border-0 ${r.estourados ? "bg-tint-brand" : ""}`}>
                     <td className="px-4 py-2">
                       <button
                         type="button"
@@ -103,10 +103,10 @@ function Leads() {
                       </button>
                     </td>
                     <td className="num px-2 py-2 text-right">{r.ativos}</td>
-                    <td className={`num px-2 py-2 text-right ${r.estourados ? "font-semibold text-brand" : ""}`}>
+                    <td className={`num whitespace-nowrap px-2 py-2 text-right ${r.estourados ? "text-[18px] font-bold text-brand" : ""}`}>
                       {r.estourados ? `! ${r.estourados}` : "0"}
                     </td>
-                    <td className={`num px-2 py-2 text-right ${r.atrasados ? "font-semibold text-brand" : ""}`}>
+                    <td className={`num whitespace-nowrap px-2 py-2 text-right ${r.atrasados ? "text-[18px] font-bold text-brand" : ""}`}>
                       {r.atrasados ? `! ${r.atrasados}` : "0"}
                     </td>
                     <td className="num px-4 py-2 text-right">{r.semData}</td>
