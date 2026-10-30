@@ -1,6 +1,7 @@
-// Empreendimentos e bairros que o Cadastro Mágico reconhece. Lista fixa até
-// existir a tabela de empreendimentos (etapa de imóveis); os nomes vêm do
-// tabelão MBigucci de set/2026. Para incluir um, some uma linha aqui.
+// Empreendimentos e bairros que o Cadastro Mágico reconhece quando o catálogo
+// (tabela empreendimentos) está vazio ou não carregou. Com o catálogo, a lista
+// sai dele (listaDoMagico, em catalogo.ts). Atualizada pela coleta de out/2026
+// (docs/empreendimentos.md, seção 5).
 
 export type EmpreendimentoConhecido = {
   nome: string;
@@ -14,6 +15,7 @@ export type EmpreendimentoConhecido = {
 };
 
 export const EMPREENDIMENTOS: EmpreendimentoConhecido[] = [
+  { nome: "Marco Zero One" },
   { nome: "Marco Zero Prime" },
   { nome: "Marco Zero Premier" },
   { nome: "Marco Zero Home" },
@@ -35,7 +37,6 @@ export const EMPREENDIMENTOS: EmpreendimentoConhecido[] = [
   { nome: "Infinite", pedeContexto: true },
   { nome: "Olimpic", chaves: ["olimpic athenas", "olimpic rio de janeiro", "olimpic londres"] },
   { nome: "Wish", pedeContexto: true },
-  { nome: "Cortina D'Ampezzo", chaves: ["cortina d ampezzo", "cortina dampezzo"] },
   { nome: "Royal Palace" },
   { nome: "Imperium" },
   { nome: "New Park" },
@@ -44,13 +45,14 @@ export const EMPREENDIMENTOS: EmpreendimentoConhecido[] = [
   { nome: "Piemonte" },
   { nome: "Station", pedeContexto: true },
   { nome: "Alvorada", pedeContexto: true },
-  { nome: "Terra Nostra", chaves: ["terra nostra parma", "terra nostra modena"] },
+  { nome: "Terra Nostra", chaves: ["terra nostra parma", "terra nostra modena", "modena"] },
   { nome: "Palatium" },
   { nome: "Terrazzo" },
   { nome: "MBigucci Joy" },
   { nome: "Easy São Vicente" },
   { nome: "Easy Jaçanã" },
-  { nome: "Village da Serra" },
+  { nome: "Elleva" },
+  { nome: "Dom", pedeContexto: true },
 ];
 
 /**

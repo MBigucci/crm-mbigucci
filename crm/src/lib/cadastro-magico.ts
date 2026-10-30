@@ -4,7 +4,11 @@
 // parser do CRM da Bruna (ref/CRM Bruna/src/lib/parser.ts). Regras em docs/leads.md.
 
 import { normalizarWhatsapp } from "./leads.ts";
-import { BAIRROS, EMPREENDIMENTOS } from "./empreendimentos.ts";
+import { BAIRROS, EMPREENDIMENTOS, type EmpreendimentoConhecido } from "./empreendimentos.ts";
+
+/** Empreendimentos e bairros que o parser reconhece (do catálogo, ou a lista fixa). */
+export type Listas = { empreendimentos: EmpreendimentoConhecido[]; bairros: string[] };
+const LISTAS_FIXAS: Listas = { empreendimentos: EMPREENDIMENTOS, bairros: BAIRROS };
 
 /** detectado: veio de um rótulo ou de um padrão seguro; conferir: palpite; faltando: não achou. */
 export type Selo = "detectado" | "conferir" | "faltando";
@@ -196,14 +200,14 @@ function limparNome(valor: string, ignorar: Set<string>): string | null {
 }
 
 /** Linha que é nome de empreendimento ou bairro não é assinatura de cliente. */
-const ehLugar = (s: string) => {
+const ehLugar = (s: string, l: Listas) => {
   const p = palavras(s);
   return (
-    EMPREENDIMENTOS.some((e) => p.includes(palavras(e.nome))) || BAIRROS.some((b) => p.includes(palavras(b)))
+    l.empreendimentos.some((e) => p.includes(palavras(e.nome))) || l.bairros.some((b) => p.includes(palavras(b)))
   );
 };
 
-function lerNome(linhas: Linha[], texto: string, email: string | null, ignorar: Set<string>): CampoLido {
+function lerNome(linhas: Linha[], texto: string, email: string | null, ignorar: Set<string>, listas: Listas): CampoLido {
   const rotulado = acharRotulado(linhas, "nome");
   const n1 = rotulado && limparNome(rotulado, ignorar);
   if (n1) return { valor: n1, selo: "detectado" };
@@ -224,7 +228,7 @@ function lerNome(linhas: Linha[], texto: string, email: string | null, ignorar: 
   // Linha que é só um nome (2 a 5 palavras), como uma assinatura.
   for (const l of [...linhas].reverse()) {
     const c = l.limpa.replace(/^[-–—\s]+/, "");
-    if (/^[A-ZÀ-Ý][a-zà-ÿ']+(?:\s+(?:d[aeo]s?|e|[A-ZÀ-Ý][a-zà-ÿ']+)){1,4}$/.test(c) && !ehLugar(c)) {
+    if (/^[A-ZÀ-Ý][a-zà-ÿ']+(?:\s+(?:d[aeo]s?|e|[A-ZÀ-Ý][a-zà-ÿ']+)){1,4}$/.test(c) && !ehLugar(c, listas)) {
       const n = limparNome(c, ignorar);
       if (n && n.split(" ").length >= 2) return { valor: n, selo: "conferir" };
     }
@@ -234,7 +238,7 @@ function lerNome(linhas: Linha[], texto: string, email: string | null, ignorar: 
   for (const l of linhas) {
     const m = l.limpa.match(/^([A-ZÀ-Ý][A-Za-zÀ-ÿ' ]{3,50}?)\s*[-–,]?\s*\(?\+?\d{2}/);
     const n = m && limparNome(m[1], ignorar);
-    if (n && n.split(" ").length >= 2 && !ehLugar(n)) return { valor: n, selo: "conferir" };
+    if (n && n.split(" ").length >= 2 && !ehLugar(n, listas)) return { valor: n, selo: "conferir" };
   }
 
   if (email) {
@@ -251,14 +255,15 @@ function lerNome(linhas: Linha[], texto: string, email: string | null, ignorar: 
 
 const CONTEXTO = "(?:residencial|empreendimento|edificio|condominio|predio|lancamento|mbigucci)";
 
-function lerEmpreendimento(texto: string, rotulado: string | null): CampoLido {
+function lerEmpreendimento(texto: string, rotulado: string | null, lista: EmpreendimentoConhecido[]): CampoLido {
   const t = palavras(texto);
   const r = rotulado ? palavras(rotulado) : "";
   let melhor: { nome: string; tamanho: number } | null = null;
-  for (const e of EMPREENDIMENTOS) {
+  for (const e of lista) {
     for (const chave of [palavras(e.nome), ...(e.chaves ?? []).map(palavras)]) {
       const chaveSemEspaco = chave.trim();
-      const achou = e.pedeContexto
+      // Só a chave de uma palavra pede contexto: "Life MBigucci" vale sozinho, "Life" não.
+      const achou = e.pedeContexto && !chaveSemEspaco.includes(" ")
         ? r.includes(chave) || new RegExp(` ${CONTEXTO}${chave}`).test(t)
         : t.includes(chave);
       if (achou && (!melhor || chaveSemEspaco.length > melhor.tamanho))
@@ -272,7 +277,7 @@ function lerEmpreendimento(texto: string, rotulado: string | null): CampoLido {
   // Cita o começo comum a vários empreendimentos ("Marco Zero One"): usa o nome como veio,
   // com até 2 palavras seguintes em maiúscula.
   const contagem = new Map<string, number>();
-  for (const e of EMPREENDIMENTOS) {
+  for (const e of lista) {
     const p = e.nome.split(" ");
     if (p.length >= 3) contagem.set(p.slice(0, 2).join(" "), (contagem.get(p.slice(0, 2).join(" ")) ?? 0) + 1);
   }
@@ -325,17 +330,19 @@ function lerDormitorios(texto: string): number | null {
 }
 
 /** Bairros e cidades citados; "São Bernardo" sai quando "São Bernardo do Campo" também foi citado. */
-function lerBairros(texto: string): string[] {
+function lerBairros(texto: string, bairros: string[]): string[] {
   const t = palavras(texto);
-  const achados = BAIRROS.filter((b) => t.includes(palavras(b)));
+  const achados = bairros.filter((b) => t.includes(palavras(b)));
   return achados.filter((b) => !achados.some((o) => o !== b && palavras(o).includes(palavras(b))));
 }
 
 /**
  * Lê a mensagem colada. `ignorarNomes` são os nomes de quem usa o CRM (o
  * próprio corretor aparece como remetente ou assinatura e não é o cliente).
+ * `listas`: empreendimentos e bairros do catálogo (listaDoMagico e
+ * bairrosDoCatalogo, em catalogo.ts); sem elas, vale a lista fixa.
  */
-export function lerMensagem(texto: string, ignorarNomes: string[] = []): LeadLido {
+export function lerMensagem(texto: string, ignorarNomes: string[] = [], listas: Listas = LISTAS_FIXAS): LeadLido {
   const ignorar = new Set(
     ignorarNomes.flatMap((n) => semAcento(n).split(/\s+/).filter((p) => p.length > 2 && !CONECTOR.test(p))),
   );
@@ -345,11 +352,11 @@ export function lerMensagem(texto: string, ignorarNomes: string[] = []): LeadLid
 
   const email = lerEmail(junto, acharRotulado(linhas, "email"));
   return {
-    nome: lerNome(linhas, junto, email.valor, ignorar),
+    nome: lerNome(linhas, junto, email.valor, ignorar, listas),
     whatsapp: lerWhatsapp(junto, acharRotulado(linhas, "telefone"), remetentes),
     email,
-    empreendimento: lerEmpreendimento(junto, acharRotulado(linhas, "empreendimento")),
-    sugestoes: { valor: lerValor(junto), dormitorios: lerDormitorios(junto), bairros: lerBairros(junto) },
+    empreendimento: lerEmpreendimento(junto, acharRotulado(linhas, "empreendimento"), listas.empreendimentos),
+    sugestoes: { valor: lerValor(junto), dormitorios: lerDormitorios(junto), bairros: lerBairros(junto, listas.bairros) },
   };
 }
 

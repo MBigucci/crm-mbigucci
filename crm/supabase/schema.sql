@@ -2505,3 +2505,236 @@ create policy "gerente geral fecha o mes" on public.fechamentos_verba
 drop policy if exists "gerente geral refaz o fechamento" on public.fechamentos_verba;
 create policy "gerente geral refaz o fechamento" on public.fechamentos_verba
   for update to authenticated using (public.is_gerente_geral()) with check (public.is_gerente_geral());
+
+-- =====================================================================
+-- Catálogo de empreendimentos e Radar de Match (itens 13 e 14).
+-- Regras em docs/empreendimentos.md. Um registro por torre ou fase com nome
+-- próprio (como no CRM da Bruna), com as tipologias da tabela do mês. A carga
+-- inicial está em supabase/empreendimentos-seed.sql (rode depois deste script).
+-- =====================================================================
+
+-- ---------- Permissão do módulo ----------
+-- Todo usuário ativo lê o catálogo. Quem tem esta permissão (no padrão, o
+-- operacional) cadastra e edita; o gerente geral sempre pode.
+with novas as (
+  insert into public.permissions (slug, descricao, ordem) values
+    ('empreendimentos.gerenciar', 'Cadastrar e editar empreendimentos, tipologias e preços', 13)
+  on conflict (slug) do update set descricao = excluded.descricao, ordem = excluded.ordem
+  returning slug, (xmax = 0) as nova
+)
+insert into public.role_permissions (perfil, permissao)
+select v.perfil, v.permissao
+from (values ('operacional', 'empreendimentos.gerenciar')) as v (perfil, permissao)
+join novas n on n.slug = v.permissao and n.nova
+on conflict do nothing;
+
+-- ---------- Empreendimentos ----------
+-- Sem exclusão: o que sai de venda fica com ativo = false, e leads, visitas e
+-- vendas antigos continuam com o nome. preco_a_partir_de é o menor preço das
+-- tipologias não esgotadas, gravado pelo gatilho das tipologias.
+create table if not exists public.empreendimentos (
+  id                 uuid primary key default gen_random_uuid(),
+  slug               text not null unique check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
+  nome               text not null check (length(btrim(nome)) > 0),
+  condominio         text,
+  variacoes          text[] not null default '{}',
+  pede_contexto      boolean not null default false,
+  marca              text not null default 'MBigucci',
+  tipo               text not null default 'residencial' check (tipo in ('residencial', 'comercial')),
+  status             text not null check (status in ('breve_lancamento', 'lancamento', 'em_obras', 'pronto')),
+  ativo              boolean not null default true,
+  endereco           text,
+  bairro             text,
+  cidade             text,
+  uf                 text not null default 'SP',
+  entrega_prevista   date,
+  entrega_texto      text,
+  chamada            text,
+  lazer              text[] not null default '{}',
+  link_pagina        text,
+  link_apresentacao  text,
+  link_book          text,
+  link_tour          text,
+  link_maps          text,
+  link_ficha         text,
+  link_memorial      text,
+  link_fotos         text,
+  link_tabela        text,
+  tabela_mes         date check (tabela_mes is null or extract(day from tabela_mes) = 1),
+  preco_a_partir_de  numeric(14, 2),
+  restricao_renda    text,
+  observacao         text,
+  avisos             text[] not null default '{}',
+  ordem              integer not null default 0,
+  atualizado_em      timestamptz not null default now(),
+  atualizado_por     uuid references public.profiles (id) on delete set null,
+  created_at         timestamptz not null default now(),
+  constraint empreendimentos_links_check check (
+    coalesce(link_pagina, 'https://') ~ '^https?://' and coalesce(link_apresentacao, 'https://') ~ '^https?://'
+    and coalesce(link_book, 'https://') ~ '^https?://' and coalesce(link_tour, 'https://') ~ '^https?://'
+    and coalesce(link_maps, 'https://') ~ '^https?://' and coalesce(link_ficha, 'https://') ~ '^https?://'
+    and coalesce(link_memorial, 'https://') ~ '^https?://' and coalesce(link_fotos, 'https://') ~ '^https?://'
+    and coalesce(link_tabela, 'https://') ~ '^https?://')
+);
+
+create unique index if not exists empreendimentos_nome_unico on public.empreendimentos (lower(nome));
+
+-- ---------- Tipologias ----------
+-- Uma linha por combinação de dormitórios e metragem, com o menor preço da
+-- tabela do mês. Studio e loft ficam com dormitórios nulo (o Radar conta 1).
+-- Preço nulo: a tabela ainda não foi lida (o Radar ignora o orçamento).
+create table if not exists public.tipologias (
+  id                 uuid primary key default gen_random_uuid(),
+  empreendimento_id  uuid not null references public.empreendimentos (id) on delete cascade,
+  rotulo             text not null check (length(btrim(rotulo)) > 0),
+  tipo               text not null default 'apartamento' check (tipo in
+                       ('apartamento', 'studio', 'loft', 'cobertura', 'garden', 'duplex', 'sala_comercial', 'loja')),
+  dormitorios        smallint check (dormitorios is null or dormitorios between 0 and 9),
+  suites             smallint check (suites is null or suites between 0 and 9),
+  vagas_min          smallint check (vagas_min is null or vagas_min between 0 and 20),
+  vagas_max          smallint check (vagas_max is null or vagas_max between 0 and 20),
+  area_m2            numeric(8, 2) check (area_m2 is null or area_m2 > 0),
+  deposito           boolean,
+  preco_a_partir_de  numeric(14, 2) check (preco_a_partir_de is null or preco_a_partir_de > 0),
+  preco_nota         text,
+  condominio_valor   numeric(10, 2) check (condominio_valor is null or condominio_valor >= 0),
+  iptu_valor         numeric(10, 2) check (iptu_valor is null or iptu_valor >= 0),
+  esgotada           boolean not null default false,
+  ordem              integer not null default 0,
+  atualizado_em      timestamptz not null default now(),
+  atualizado_por     uuid references public.profiles (id) on delete set null
+);
+
+create index if not exists tipologias_empreendimento_idx on public.tipologias (empreendimento_id, ordem);
+
+-- ---------- Gatilhos do catálogo ----------
+create or replace function public.empreendimentos_carimbo()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.nome := btrim(new.nome);
+  new.condominio := nullif(btrim(coalesce(new.condominio, '')), '');
+  new.atualizado_em := now();
+  new.atualizado_por := coalesce(auth.uid(), new.atualizado_por);
+  return new;
+end;
+$$;
+
+drop trigger if exists empreendimentos_carimbo on public.empreendimentos;
+create trigger empreendimentos_carimbo before insert or update on public.empreendimentos
+  for each row execute function public.empreendimentos_carimbo();
+
+create or replace function public.tipologias_carimbo()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.rotulo := btrim(new.rotulo);
+  if new.vagas_min is not null and new.vagas_max is not null and new.vagas_max < new.vagas_min then
+    raise exception 'O máximo de vagas não pode ser menor que o mínimo.' using errcode = '23514';
+  end if;
+  new.atualizado_em := now();
+  new.atualizado_por := coalesce(auth.uid(), new.atualizado_por);
+  return new;
+end;
+$$;
+
+drop trigger if exists tipologias_carimbo on public.tipologias;
+create trigger tipologias_carimbo before insert or update on public.tipologias
+  for each row execute function public.tipologias_carimbo();
+
+-- O "a partir de" do empreendimento acompanha as tipologias. security definer:
+-- a coluna não tem GRANT de escrita para o app.
+create or replace function public.tipologias_atualiza_preco()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  alvo uuid;
+  menor numeric;
+begin
+  foreach alvo in array array[
+    case when tg_op <> 'INSERT' then old.empreendimento_id end,
+    case when tg_op <> 'DELETE' then new.empreendimento_id end
+  ] loop
+    continue when alvo is null;
+    select min(t.preco_a_partir_de) into menor
+      from public.tipologias t where t.empreendimento_id = alvo and not t.esgotada;
+    update public.empreendimentos e set preco_a_partir_de = menor
+     where e.id = alvo and e.preco_a_partir_de is distinct from menor;
+  end loop;
+  return null;
+end;
+$$;
+
+drop trigger if exists tipologias_atualiza_preco on public.tipologias;
+create trigger tipologias_atualiza_preco after insert or update or delete on public.tipologias
+  for each row execute function public.tipologias_atualiza_preco();
+
+-- ---------- RLS do catálogo ----------
+alter table public.empreendimentos enable row level security;
+alter table public.tipologias enable row level security;
+revoke all on public.empreendimentos from anon, authenticated;
+revoke all on public.tipologias from anon, authenticated;
+grant select on public.empreendimentos, public.tipologias to authenticated;
+grant insert (slug, nome, condominio, variacoes, pede_contexto, marca, tipo, status, ativo, endereco, bairro, cidade, uf,
+              entrega_prevista, entrega_texto, chamada, lazer, link_pagina, link_apresentacao, link_book, link_tour,
+              link_maps, link_ficha, link_memorial, link_fotos, link_tabela, tabela_mes, restricao_renda, observacao,
+              avisos, ordem),
+      update (nome, condominio, variacoes, pede_contexto, marca, tipo, status, ativo, endereco, bairro, cidade, uf,
+              entrega_prevista, entrega_texto, chamada, lazer, link_pagina, link_apresentacao, link_book, link_tour,
+              link_maps, link_ficha, link_memorial, link_fotos, link_tabela, tabela_mes, restricao_renda, observacao,
+              avisos, ordem)
+  on public.empreendimentos to authenticated;
+grant insert (empreendimento_id, rotulo, tipo, dormitorios, suites, vagas_min, vagas_max, area_m2, deposito,
+              preco_a_partir_de, preco_nota, condominio_valor, iptu_valor, esgotada, ordem),
+      update (rotulo, tipo, dormitorios, suites, vagas_min, vagas_max, area_m2, deposito,
+              preco_a_partir_de, preco_nota, condominio_valor, iptu_valor, esgotada, ordem),
+      delete
+  on public.tipologias to authenticated;
+
+drop policy if exists "ativos leem empreendimentos" on public.empreendimentos;
+create policy "ativos leem empreendimentos" on public.empreendimentos
+  for select to authenticated using (public.current_perfil() is not null);
+
+drop policy if exists "quem gerencia cadastra empreendimento" on public.empreendimentos;
+create policy "quem gerencia cadastra empreendimento" on public.empreendimentos
+  for insert to authenticated with check (public.has_permission('empreendimentos.gerenciar'));
+
+drop policy if exists "quem gerencia altera empreendimento" on public.empreendimentos;
+create policy "quem gerencia altera empreendimento" on public.empreendimentos
+  for update to authenticated
+  using (public.has_permission('empreendimentos.gerenciar'))
+  with check (public.has_permission('empreendimentos.gerenciar'));
+
+drop policy if exists "ativos leem tipologias" on public.tipologias;
+create policy "ativos leem tipologias" on public.tipologias
+  for select to authenticated using (public.current_perfil() is not null);
+
+drop policy if exists "quem gerencia cadastra tipologia" on public.tipologias;
+create policy "quem gerencia cadastra tipologia" on public.tipologias
+  for insert to authenticated with check (public.has_permission('empreendimentos.gerenciar'));
+
+drop policy if exists "quem gerencia altera tipologia" on public.tipologias;
+create policy "quem gerencia altera tipologia" on public.tipologias
+  for update to authenticated
+  using (public.has_permission('empreendimentos.gerenciar'))
+  with check (public.has_permission('empreendimentos.gerenciar'));
+
+drop policy if exists "quem gerencia retira tipologia" on public.tipologias;
+create policy "quem gerencia retira tipologia" on public.tipologias
+  for delete to authenticated using (public.has_permission('empreendimentos.gerenciar'));
+
+-- ---------- Mensagem "Apresentar empreendimento" ----------
+-- Variáveis novas: {endereco}, {apresentacao} e {a_partir_de}, do empreendimento
+-- do lead no catálogo. A linha com uma delas vazia some da mensagem.
+insert into public.mensagens_modelo (slug, titulo, texto, etapas, sem_contato, ordem) values
+  ('apresentar_empreendimento', 'Apresentar empreendimento',
+   E'Oi, {primeiro_nome}, tudo bem?\n\nSeparei uma opção para você: {empreendimento}.\nEndereço: {endereco}\nA partir de {a_partir_de}\nApresentação: {apresentacao}\n\nQuer agendar uma visita? Escolho o melhor horário com você.',
+   '{}', false, 7)
+on conflict (slug) do nothing;

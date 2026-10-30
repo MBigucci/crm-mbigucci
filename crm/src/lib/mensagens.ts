@@ -26,7 +26,13 @@ export const VARIAVEIS: { chave: string; descricao: string }[] = [
   { chave: "empreendimento", descricao: "Empreendimento do lead" },
   { chave: "corretor", descricao: "Seu nome" },
   { chave: "visita", descricao: "Dia, hora e local da visita (na confirmação)" },
+  { chave: "endereco", descricao: "Endereço do empreendimento (do catálogo)" },
+  { chave: "apresentacao", descricao: "Link da apresentação do empreendimento" },
+  { chave: "a_partir_de", descricao: "Preço \"a partir de\" do empreendimento, da tabela do mês" },
 ];
+/** Variáveis do catálogo: sem o dado, a linha em que aparecem sai da mensagem. */
+export type VariaveisEmpreendimento = { endereco: string; apresentacao: string; a_partir_de: string };
+const DO_CATALOGO = ["endereco", "apresentacao", "a_partir_de"] as const;
 /** Sem empreendimento no lead, o texto continua fazendo sentido. */
 export const EMPREENDIMENTO_PADRAO = "nossos empreendimentos";
 /** Fora da confirmação de uma visita, {visita} continua fazendo sentido. */
@@ -43,16 +49,31 @@ type LeadDaMensagem = Pick<Lead, "nome" | "empreendimento">;
 /**
  * Troca as variáveis {assim}. Variável desconhecida fica como está, para o
  * gerente geral ver o erro. `visita`: o texto de textoDaVisita (visitas.ts).
+ * `emp`: endereço, apresentação e "a partir de" (variaveisDoEmpreendimento, em
+ * catalogo.ts); a linha com uma delas vazia sai. Sem nome do cliente (envio
+ * pelo catálogo), "Oi, {primeiro_nome}, tudo bem?" vira "Oi, tudo bem?".
  */
-export function preencherModelo(texto: string, lead: LeadDaMensagem, corretor: string, visita?: string): string {
+export function preencherModelo(
+  texto: string,
+  lead: LeadDaMensagem,
+  corretor: string,
+  visita?: string,
+  emp?: VariaveisEmpreendimento,
+): string {
+  const vazias = DO_CATALOGO.filter((k) => !emp?.[k]?.trim());
+  const linhas = texto.split("\n").filter((l) => !vazias.some((k) => l.includes(`{${k}}`)));
   const valores: Record<string, string> = {
+    endereco: emp?.endereco.trim() ?? "",
+    apresentacao: emp?.apresentacao.trim() ?? "",
+    a_partir_de: emp?.a_partir_de.trim() ?? "",
     primeiro_nome: primeiroNome(lead.nome),
     nome: lead.nome.trim(),
     empreendimento: lead.empreendimento?.trim() || EMPREENDIMENTO_PADRAO,
     corretor: corretor.trim(),
     visita: visita?.trim() || VISITA_PADRAO,
   };
-  return texto.replace(/\{(\w+)\}/g, (m, chave: string) => valores[chave] ?? m);
+  const pronto = linhas.join("\n").replace(/\{(\w+)\}/g, (m, chave: string) => valores[chave] ?? m);
+  return valores.primeiro_nome ? pronto : pronto.replace(/ *, *,/g, ",");
 }
 
 /** Variáveis do texto que não existem (para avisar quem edita o modelo). */

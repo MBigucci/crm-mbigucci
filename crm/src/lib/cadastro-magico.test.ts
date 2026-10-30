@@ -91,6 +91,11 @@ test("empreendimento: vence o nome mais completo, e o parecido fica para conferi
   ]);
   assert.deepEqual(resumo(lerMensagem("Quero informações do Marco Zero One em São Bernardo")).empreendimento, [
     "Marco Zero One",
+    "detectado",
+  ]);
+  // Começo comum a vários, mas o nome inteiro não está na lista: vem como foi escrito.
+  assert.deepEqual(resumo(lerMensagem("Quero informações do Marco Zero Plaza em São Bernardo")).empreendimento, [
+    "Marco Zero Plaza",
     "conferir",
   ]);
   // Nome que é palavra comum só vale com contexto.
