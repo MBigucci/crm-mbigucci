@@ -9,6 +9,7 @@ import { mensagemErro } from "./erros";
 import { COLUNAS_EMPREENDIMENTO, type Empreendimento, type Tipologia } from "./catalogo";
 import type { LeadDoRadar } from "./match";
 import type { Lead } from "./leads";
+import type { ItemPlano } from "./importar-tabela";
 
 type Resultado = Promise<{ erro: string | null }>;
 
@@ -117,6 +118,58 @@ export async function salvarTipologias(empreendimentoId: string, tipologias: (Ca
   return { erro: null };
 }
 
+/**
+ * Aplica a prévia da importação da tabela de preços, um empreendimento por
+ * vez: o que der erro num não para os outros. Devolve o que foi feito e os
+ * erros, por nome. A tipologia nova entra no fim da lista do empreendimento.
+ */
+export async function aplicarImportacao(plano: ItemPlano[]): Promise<{ feitos: string[]; erros: string[] }> {
+  const feitos: string[] = [];
+  const erros: string[] = [];
+  for (const i of plano) {
+    if (i.acao === "igual" || i.acao === "erro") continue;
+    let empId: string;
+    let ordem: number;
+    if (i.acao === "novo") {
+      const { data, error } = await db().from("empreendimentos").insert(i.campos).select("id").single();
+      if (error) {
+        erros.push(`${i.nome}: ${erroCatalogo(error)}`);
+        continue;
+      }
+      empId = (data as { id: string }).id;
+      ordem = 0;
+    } else {
+      empId = i.empreendimento.id;
+      ordem = Math.max(0, ...i.empreendimento.tipologias.map((t) => t.ordem));
+      if (Object.keys(i.campos).length) {
+        const { error } = await db().from("empreendimentos").update(i.campos).eq("id", empId);
+        if (error) {
+          erros.push(`${i.nome}: ${erroCatalogo(error)}`);
+          continue;
+        }
+      }
+    }
+    let falhou = false;
+    for (const t of i.acao === "atualiza" ? i.alteradas : []) {
+      const { error } = await db().from("tipologias").update(t.campos).eq("id", t.id);
+      if (error) {
+        erros.push(`${i.nome} (${t.rotulo}): ${erroCatalogo(error)}`);
+        falhou = true;
+      }
+    }
+    for (const t of i.novas) {
+      const { error } = await db().from("tipologias").insert({ ...t, empreendimento_id: empId, ordem: ++ordem });
+      if (error) {
+        erros.push(`${i.nome} (${t.rotulo}): ${erroCatalogo(error)}`);
+        falhou = true;
+      }
+    }
+    if (!falhou) feitos.push(i.nome);
+  }
+  esquecerCatalogo();
+  return { feitos, erros };
+}
+
 function erroCatalogo(e: { message?: string }): string {
   const m = e.message ?? "";
   if (m.includes("empreendimentos_nome_unico") || m.includes("empreendimentos_slug_key")) return "Já existe um empreendimento com esse nome.";
@@ -127,6 +180,7 @@ function erroCatalogo(e: { message?: string }): string {
 
 export const COLUNAS_LEAD_RADAR =
   "id, nome, whatsapp, empreendimento, etapa, status, motivo_descarte, dono_id, valor, dormitorios, regiao, finalidade, ultima_interacao_em, created_at, tentativas";
+const COLUNAS_RADAR_AMPLIADO = "renda_faixa, pronto_planta, usa_fgts";
 export type LeadRadar = LeadDoRadar & Pick<Lead, "whatsapp" | "empreendimento" | "ultima_interacao_em" | "created_at" | "tentativas">;
 
 /**
@@ -141,15 +195,25 @@ export function useLeadsDoRadar(ativo: boolean): LeadRadar[] | null {
     let vivo = true;
     (async () => {
       const todos: LeadRadar[] = [];
+      // Com o SQL do item 16, a renda e o pronto ou na planta também contam; sem ele, vale o perfil de antes.
+      let ampliado = true;
       for (let de = 0; ; de += 1000) {
         const { data, error } = await db()
           .from("leads")
-          .select(COLUNAS_LEAD_RADAR)
-          .or("valor.not.is.null,dormitorios.not.is.null,regiao.not.is.null,finalidade.not.is.null")
+          .select(ampliado ? `${COLUNAS_LEAD_RADAR}, ${COLUNAS_RADAR_AMPLIADO}` : COLUNAS_LEAD_RADAR)
+          .or(
+            "valor.not.is.null,dormitorios.not.is.null,regiao.not.is.null,finalidade.not.is.null" +
+              (ampliado ? ",renda_faixa.not.is.null,pronto_planta.in.(pronto,planta)" : ""),
+          )
           .order("created_at")
           .range(de, de + 999);
+        if (error && ampliado && de === 0) {
+          ampliado = false;
+          de -= 1000;
+          continue;
+        }
         if (error) break;
-        todos.push(...((data ?? []) as LeadRadar[]).map((l) => ({ ...l, valor: l.valor == null ? null : Number(l.valor) })));
+        todos.push(...((data ?? []) as unknown as LeadRadar[]).map((l) => ({ ...l, valor: l.valor == null ? null : Number(l.valor) })));
         if ((data ?? []).length < 1000) break;
       }
       if (vivo) setLeads(todos);

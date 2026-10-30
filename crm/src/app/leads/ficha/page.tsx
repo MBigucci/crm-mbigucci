@@ -44,7 +44,10 @@ import { COLUNAS_VISITA, estaAberta, type Visita } from "@/lib/visitas";
 import { AgendarVisita, ListaVisitas } from "@/components/visitas/visitas";
 import { CardVenda, RegistrarVenda } from "@/components/vendas/vendas";
 import { COLUNAS_VENDA, type Venda } from "@/lib/vendas";
-import { ConferirNoCatalogo, ListaEmpreendimentos, NomeEmpreendimento, RadarDoLead } from "@/components/empreendimentos/partes";
+import { NomeEmpreendimento, RadarDoLead } from "@/components/empreendimentos/partes";
+import { DadosDoCliente, DocumentosDoLead, PerfilCliente, ResumoDoPerfil } from "@/components/leads/perfil";
+import { usePerfilDoLead } from "@/lib/perfil-dados";
+import type { PerfilAmpliado } from "@/lib/perfil";
 
 export default function FichaPage() {
   return (
@@ -82,6 +85,8 @@ function Ficha({ id }: { id: string }) {
   const [agora, setAgora] = useState(() => new Date());
   const [desfazer, setDesfazer] = useState<{ texto: string; anterior: Partial<Lead> } | null>(null);
   const fecharDesfazer = useCallback(() => setDesfazer(null), []);
+  const { perfil, erro: erroPerfil, recarregar: recarregarPerfil } = usePerfilDoLead(id);
+  const [perfilAberto, setPerfilAberto] = useState(false);
 
   const carregar = useCallback(async () => {
     const [l, h, e, v, s] = await Promise.all([
@@ -140,6 +145,8 @@ function Ficha({ id }: { id: string }) {
     );
 
   const ehDono = lead.dono_id === eu.id && pode("leads.cadastrar");
+  // O lead com o perfil ampliado (item 16), quando o SQL já rodou.
+  const leadCompleto: Lead & Partial<PerfilAmpliado> = { ...lead, ...(perfil ?? {}) };
   const origem = catalogos?.origens.find((o) => o.slug === lead.origem);
   const etapa = catalogos?.etapas.find((e) => e.slug === lead.etapa);
 
@@ -151,6 +158,19 @@ function Ficha({ id }: { id: string }) {
   }
 
   /** Muda e mostra o Desfazer, que grava de volta os valores de antes. */
+  /** Salva o perfil (o de antes e o ampliado) e devolve o erro, se houver. */
+  async function salvarPerfil(campos: Partial<Lead & PerfilAmpliado>): Promise<string | null> {
+    const { error } = await db().from("leads").update(campos).eq("id", id);
+    if (error) return mensagemErro(error);
+    await Promise.all([carregar(), recarregarPerfil()]);
+    return null;
+  }
+
+  function editarPerfil() {
+    setPerfilAberto(true);
+    setTimeout(() => document.getElementById("perfil")?.scrollIntoView({ block: "start" }), 0);
+  }
+
   async function alterarComDesfazer(campos: Partial<Lead>, texto: string) {
     if (!lead) return;
     const anterior = Object.fromEntries(Object.keys(campos).map((k) => [k, lead[k as keyof Lead]])) as Partial<Lead>;
@@ -241,11 +261,19 @@ function Ficha({ id }: { id: string }) {
             </Linha>
           )}
           {lead.email && <Linha rotulo="E-mail">{lead.email}</Linha>}
+          {perfil?.telefone2 && (
+            <Linha rotulo="Outro telefone">
+              <a className="num underline-offset-2 hover:underline" href={`tel:+${perfil.telefone2}`}>
+                {formatarWhatsapp(perfil.telefone2)}
+              </a>
+            </Linha>
+          )}
           {!ehDono && <Linha rotulo="Corretor">{nomes.get(lead.dono_id) ?? "–"}</Linha>}
           <Linha rotulo="Cadastrado">
             <span className="num">{formatarQuando(lead.created_at, agora)}</span>
           </Linha>
         </dl>
+        <ResumoDoPerfil lead={leadCompleto} agora={agora} podeEditar={ehDono && lead.status === "ativo"} onEditar={editarPerfil} />
         {lead.status === "descartado" && (
           <p className="mt-3 font-semibold text-ink-soft">
             ✕ Descartado · {MOTIVOS_DESCARTE.find((m) => m.slug === lead.motivo_descarte)?.nome}
@@ -384,10 +412,26 @@ function Ficha({ id }: { id: string }) {
             </div>
           </section>
 
-          <PerfilCliente lead={lead} onSalvar={alterar} />
-          <RadarDoLead lead={lead} />
+          {(perfil || erroPerfil) && (
+            <PerfilCliente
+              key={perfil ? "ampliado" : "basico"}
+              lead={lead}
+              perfil={perfil}
+              erroPerfil={erroPerfil}
+              aberto={perfilAberto}
+              onAlternar={setPerfilAberto}
+              onSalvar={salvarPerfil}
+            />
+          )}
+          <RadarDoLead lead={leadCompleto} />
+          <DocumentosDoLead leadId={id} podeEnviar podeRemover onMudou={carregar} />
           <Descartar key={lead.status} onDescartar={descartar} />
         </>
+      )}
+
+      {!ehDono && <DadosDoCliente lead={leadCompleto} />}
+      {!(ehDono && lead.status === "ativo") && (
+        <DocumentosDoLead leadId={id} podeEnviar={false} podeRemover={ehDono} onMudou={carregar} />
       )}
 
       {ehDono && lead.status === "descartado" && (
@@ -607,113 +651,6 @@ function RegistrarInteracao({ leadId, onSalvo }: { leadId: string; onSalvo: () =
         {salvando ? "Salvando…" : "Registrar"}
       </button>
     </form>
-  );
-}
-
-/** Perfil do cliente: tudo opcional, preenchido quando der. */
-function PerfilCliente({ lead, onSalvar }: { lead: Lead; onSalvar: (c: Partial<Lead>) => Promise<void> }) {
-  const [f, setF] = useState({
-    email: lead.email ?? "",
-    empreendimento: lead.empreendimento ?? "",
-    campanha: lead.campanha ?? "",
-    valor: lead.valor?.toString() ?? "",
-    dormitorios: lead.dormitorios?.toString() ?? "",
-    regiao: lead.regiao ?? "",
-    finalidade: lead.finalidade ?? "",
-  });
-  const [salvo, setSalvo] = useState(false);
-  const campo = (k: keyof typeof f) => ({
-    value: f[k],
-    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-      setF((x) => ({ ...x, [k]: e.target.value }));
-      setSalvo(false);
-    },
-  });
-
-  async function salvar(e: React.FormEvent) {
-    e.preventDefault();
-    const valor = f.valor ? Number(f.valor.replace(/\./g, "").replace(",", ".")) : null;
-    await onSalvar({
-      email: f.email.trim() || null,
-      empreendimento: f.empreendimento.trim() || null,
-      campanha: f.campanha.trim() || null,
-      valor: valor !== null && Number.isFinite(valor) ? valor : null,
-      dormitorios: f.dormitorios ? Number(f.dormitorios) : null,
-      regiao: f.regiao.trim() || null,
-      finalidade: (f.finalidade || null) as Lead["finalidade"],
-    });
-    setSalvo(true);
-  }
-
-  return (
-    <details className="card">
-      <summary className="focus-ring cursor-pointer list-none font-semibold">
-        <span aria-hidden>+ </span>Perfil do cliente (opcional)
-      </summary>
-      <form onSubmit={salvar} className="mt-4 grid gap-4 md:grid-cols-2" noValidate>
-        <div className="md:col-span-2">
-          <label className="field-label" htmlFor="p-email">
-            E-mail
-          </label>
-          <input id="p-email" className="input" type="email" inputMode="email" autoComplete="off" {...campo("email")} />
-        </div>
-        <div>
-          <label className="field-label" htmlFor="p-emp">
-            Empreendimento
-          </label>
-          <input id="p-emp" className="input" list="p-emps" autoComplete="off" {...campo("empreendimento")} />
-          <ListaEmpreendimentos id="p-emps" />
-          <ConferirNoCatalogo nome={f.empreendimento} />
-        </div>
-        <div>
-          <label className="field-label" htmlFor="p-camp">
-            Campanha
-          </label>
-          <input id="p-camp" className="input" {...campo("campanha")} />
-        </div>
-        <div>
-          <label className="field-label" htmlFor="p-valor">
-            Valor (R$)
-          </label>
-          <input id="p-valor" className="input num" inputMode="decimal" placeholder="450.000" {...campo("valor")} />
-        </div>
-        <div>
-          <label className="field-label" htmlFor="p-dorm">
-            Dormitórios
-          </label>
-          <select id="p-dorm" className="input" {...campo("dormitorios")}>
-            <option value="">–</option>
-            {[1, 2, 3, 4].map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="field-label" htmlFor="p-reg">
-            Região
-          </label>
-          <input id="p-reg" className="input" {...campo("regiao")} />
-        </div>
-        <div>
-          <label className="field-label" htmlFor="p-fin">
-            Finalidade
-          </label>
-          <select id="p-fin" className="input" {...campo("finalidade")}>
-            <option value="">–</option>
-            <option value="morar">Morar</option>
-            <option value="investir">Investir</option>
-          </select>
-        </div>
-        <div className="flex items-center gap-3 md:col-span-2">
-          <button type="submit" className="btn btn-ghost focus-ring">
-            Salvar perfil
-          </button>
-          {salvo && <span className="aviso-ok">✓ Salvo</span>}
-        </div>
-      </form>
-    </details>
   );
 }
 

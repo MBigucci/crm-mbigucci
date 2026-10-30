@@ -132,6 +132,20 @@ NEXT_PUBLIC_VAPID_PUBLIC_KEY=<Public Key>
 
 Se trocar as chaves um dia, refaça os passos 3 e 6: os aparelhos assinados com a chave antiga param de receber e cada pessoa liga de novo em Minha conta.
 
+## 9. Perfil ampliado, documentos e importação da tabela (item 16)
+
+Regras em `docs/leads.md` (seção 17) e `docs/empreendimentos.md` (seção 13). Faça uma vez, nesta ordem.
+
+**1. Atualizar o banco.** Em **SQL Editor > New query**, cole de novo todo o `supabase/schema.sql` e clique em **Run**. Ele cria as colunas novas do lead, a tabela `lead_documentos`, a mensagem "Parabéns" e a versão nova de `avisos_dados` (com os aniversários).
+
+**2. Criar o bucket dos documentos.** Numa nova query, cole todo o `supabase/storage-documentos.sql` e clique em **Run**. Ele cria o bucket privado `lead-documentos` (10 MB por arquivo, só PDF e foto) e as 3 policies do Storage. Para conferir: **Storage > lead-documentos** aparece sem a etiqueta "Public", e em **Storage > Policies** há "quem ve o lead le", "o dono envia" e "o dono remove". Não crie o bucket pela tela: o script já cria com as regras certas.
+
+**3. Republicar a função `avisos`** (se os avisos já estão ligados). Em **Edge Functions > avisos > Code**, apague tudo, cole o `supabase/functions/avisos/index.ts` novo e clique em **Deploy**. Sem isso, o resumo das 9h continua sem os aniversários; o resto funciona igual.
+
+**4. Gerar o build e subir no WordPress** (seções 5 e 6).
+
+**5. Conferir.** Como corretor, abra a ficha de um lead de teste, preencha a data de nascimento com o dia de hoje e salve: a lista do dia mostra "Aniversário de … hoje". Anexe uma foto de teste em Documentos, toque em Abrir e depois em Remover. Como gerente da equipe, a mesma ficha mostra o documento só com Abrir. Como gerente de outra equipe, a ficha não abre.
+
 ## Perfis e permissões
 
 Os perfis são: gerente geral, operacional, gerente, corretor, recepção e especialista. O que cada perfil pode fazer fica na tabela `role_permissions`, e você ajusta isso em **Configurações > Permissões por perfil**, sem mexer no código. Por isso o operacional e o especialista podem ser definidos depois.

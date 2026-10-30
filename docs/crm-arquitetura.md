@@ -3,7 +3,7 @@
 > Decisões tomadas na fundação do CRM (`crm/`), em 28/10/2026. O passo a passo de instalação está em `crm/README.md`. As regras de negócio estão em `docs/acessos-perfis.md`, `docs/leads.md` e `docs/pontuacao-verba.md`, e as regras visuais em `docs/design-system.md`.
 
 ## Sumário
-Deploy estático · Modelo de permissões · RLS · Sigilo do programa de verba · Módulo de leads · Visitas · Vendas e metas · Programa de pontuação · Catálogo e Radar · PWA · Avisos no celular · Testes
+Deploy estático · Modelo de permissões · RLS · Sigilo do programa de verba · Módulo de leads · Visitas · Vendas e metas · Programa de pontuação · Catálogo e Radar · PWA · Avisos no celular · Perfil ampliado e documentos · Testes
 
 ## Deploy estático
 
@@ -139,6 +139,17 @@ As regras de negócio estão em `docs/empreendimentos.md`, seção 12.
 - **Banco:** `push_assinaturas` (uma por aparelho, RLS só do dono, grava pela `push_assinar`), `push_log` e as funções `avisos_*` e `push_esquecer`, só para `service_role`.
 - **Segredos:** a chave privada VAPID só nos Secrets da função; só a pública vai para `NEXT_PUBLIC_VAPID_PUBLIC_KEY`. "Verify JWT" desligado na função, que confere o segredo do agendador ou o login de quem pede o teste.
 
+## Perfil ampliado e documentos (29/10/2026, item 16)
+
+As regras de negócio estão em `docs/leads.md`, seção 17, e a importação da tabela de preços em `docs/empreendimentos.md`, seção 13.
+
+- **Colunas novas em `leads`:** perfil de compra e dados pessoais, um check só (`leads_perfil_ampliado_check`) e o gatilho `leads_perfil_guard`. GRANT de coluna como as outras. O front lê as colunas novas à parte (`COLUNAS_PERFIL`, `usePerfilDoLead`), fora de `COLUNAS_LEAD`, para a ficha e as listas não dependerem do SQL do item 16; a lista do dia e os clientes compatíveis fazem o mesmo, com fallback.
+- **`lead_documentos`:** uma linha por arquivo, sem update; insert por coluna e delete pelo dono. Gatilhos `lead_documentos_carimbo` (antes) e `lead_documentos_eventos` (depois: `lead_eventos` tipos `documento` e `documento_removido`, que entraram na lista completa do check nas seções das visitas e das vendas).
+- **Storage:** bucket privado `lead-documentos` e 3 policies em `storage.objects`, num arquivo à parte (`supabase/storage-documentos.sql`), porque o PGlite dos outros testes não tem o schema `storage`. A tabela e o Storage usam as mesmas funções `security definer` sobre o caminho: `lead_do_caminho`, `pode_ver_documento`, `pode_enviar_documento` e `pode_remover_documento`.
+- **Avisos:** `avisos_dados` foi redefinida no fim do schema com `aniversarios` (o corpo depende das colunas novas, então não pode ficar na seção do item 15). A Edge Function ganhou `ehAniversarioHoje` e o campo opcional `aniversarios`.
+- **Importação:** `importar-tabela.ts` (puro, com zod) e `aplicarImportacao` em `catalogo-dados.ts`. É o primeiro uso de zod fora das telas de login e usuários.
+- **Front:** `perfil.ts` (puro), `perfil-dados.ts` (leitura, upload, link assinado de 60 s, remoção), `components/leads/perfil.tsx` (resumo, formulário, dados do cliente, documentos) e a página `/empreendimentos/importar/`.
+
 ## Testes
 
 - **Schema e RLS da base:** testados no PGlite (Postgres em WASM), com uma simulação do `auth.users`, do `auth.uid()` e dos papéis `anon` e `authenticated`. Foram 44 verificações por perfil, e o script rodou três vezes para provar que é idempotente. Esse script continua fora do repositório, na pasta de notas da sessão da base (`sqltest/test.mjs`). Ele conta 2 permissões fixas, então acusa 1 falha desde que as de leads entraram.
@@ -146,6 +157,7 @@ As regras de negócio estão em `docs/empreendimentos.md`, seção 12.
 - **RLS e gatilhos das visitas:** `crm/supabase/testes/visitas.test.mjs`, também no `npm run test:banco`, com 13 testes (`docs/visitas.md`, seção 9).
 - **RLS e gatilhos de vendas e metas:** `crm/supabase/testes/vendas.test.mjs`, também no `npm run test:banco`, com 12 testes (`docs/vendas-metas.md`, seção 10).
 - **RLS e gatilhos do programa de pontuação:** `crm/supabase/testes/programa.test.mjs`, também no `npm run test:banco`, com 9 testes perfil a perfil, chave desligada e ligada (`docs/pontuacao-verba.md`, seção "Testes").
+- **Perfil ampliado e documentos:** `crm/supabase/testes/perfil.test.mjs`, também no `npm run test:banco`, com 10 testes (colunas novas por perfil, documentos e as policies do Storage sobre uma imitação de `storage.objects`), e `perfil.test.ts` e `importar-tabela.test.ts` no `npm test` (`docs/leads.md`, seção 17, e `docs/empreendimentos.md`, seção 13).
 - **Avisos no celular:** `crm/supabase/testes/avisos.test.mjs`, também no `npm run test:banco`, com 12 testes (RLS das assinaturas, funções fechadas, não repetir, gatilho de atribuição com `pg_net` falso), e `crm/src/lib/avisos.test.ts` no `npm test`, com 22 (`docs/notificacoes.md`, seção 10).
 - **Catálogo:** `crm/supabase/testes/empreendimentos.test.mjs`, também no `npm run test:banco`, com 8 testes (schema três vezes, carga duas, RLS por perfil, gatilho do preço, checks).
 - **Regras puras:** `npm test` roda `catalogo.test.ts` e `match.test.ts` (com o JSON real dos empreendimentos) e `programa.test.ts` (os 7 exemplos da verba, limites e roleta) e também `leads.test.ts` (lista do dia, WhatsApp), `followup.test.ts` (follow-up e histórico), `cadastro-magico.test.ts` (parser), `prazo.test.ts`, `mensagens.test.ts` (modelos e repasse), `busca.test.ts` (busca, ordem e filtros), `painel.test.ts` (com a conversão por origem e campanha), `visitas.test.ts` e `vendas.test.ts` (vendas, meta anual, metas próprias e faixas).

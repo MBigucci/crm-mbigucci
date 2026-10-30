@@ -12,6 +12,14 @@ import { visitasDoDia } from "@/lib/visitas";
 import { COLUNAS_VISITA_COM_LEAD, type VisitaComLead } from "@/lib/visitas-dados";
 import { ListaVisitas } from "@/components/visitas/visitas";
 import { MetasNoInicio } from "@/components/metas/metas";
+import { BotaoMensagem } from "./mensagem";
+import { aniversariantesDeHoje } from "@/lib/perfil";
+
+/** O que a lista do dia lê para os aniversários (só o necessário para o card e a mensagem). */
+const COLUNAS_ANIVERSARIO = "id, nome, whatsapp, empreendimento, etapa, status, ultima_interacao_em, created_at, tentativas, nascimento";
+type Aniversariante = Pick<Lead, "id" | "nome" | "whatsapp" | "empreendimento" | "etapa" | "status" | "ultima_interacao_em" | "created_at" | "tentativas"> & {
+  nascimento: string | null;
+};
 
 const diaDaSemana = new Intl.DateTimeFormat("pt-BR", { weekday: "long" });
 
@@ -22,13 +30,14 @@ export function ListaDoDia() {
   const horario = useHorarioAtendimento();
   const [leads, setLeads] = useState<Lead[] | null>(null);
   const [visitas, setVisitas] = useState<VisitaComLead[]>([]);
+  const [comNascimento, setComNascimento] = useState<Aniversariante[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<{ id: string; texto: string } | null>(null);
   const [agora, setAgora] = useState(() => new Date());
 
   const carregar = useCallback(async () => {
     const agoraLeitura = new Date();
-    const [l, v] = await Promise.all([
+    const [l, v, n] = await Promise.all([
       db().from("leads").select(COLUNAS_LEAD).eq("dono_id", eu.id).eq("status", "ativo"),
       // Visitas abertas até o fim de hoje: as de hoje e as que passaram sem baixa.
       db()
@@ -38,11 +47,14 @@ export function ListaDoDia() {
         .in("status", ["agendada", "confirmada"])
         .lte("inicio", fimDoDia(agoraLeitura).toISOString())
         .order("inicio"),
+      // Aniversários: lidos à parte, para a lista não depender do SQL do item 16.
+      db().from("leads").select(COLUNAS_ANIVERSARIO).eq("dono_id", eu.id).eq("status", "ativo").not("nascimento", "is", null),
     ]);
     if (l.error) return setErro(mensagemErro(l.error));
     setLeads(l.data as unknown as Lead[]);
     // A lista do dia continua de pé se as visitas falharem (o SQL das visitas ainda não rodou, por exemplo).
     setVisitas(v.error ? [] : (v.data as unknown as VisitaComLead[]));
+    setComNascimento(n.error ? [] : (n.data as unknown as Aniversariante[]));
     setAgora(agoraLeitura);
   }, [eu.id]);
 
@@ -67,6 +79,7 @@ export function ListaDoDia() {
 
   const grupos = useMemo(() => montarListaDoDia(leads ?? [], agora, horario), [leads, agora, horario]);
   const doDia = useMemo(() => visitasDoDia(visitas, agora), [visitas, agora]);
+  const aniversarios = useMemo(() => aniversariantesDeHoje(comNascimento, agora), [comNascimento, agora]);
   const comVisitas = doDia.hoje.length + doDia.aguardandoBaixa.length > 0;
   const depois = (leads ?? []).filter((l) => grupoDoLead(l, agora) === null).length;
   const nomeEtapa = (slug: string) => catalogos?.etapas.find((e) => e.slug === slug)?.nome ?? slug;
@@ -124,6 +137,33 @@ export function ListaDoDia() {
               </section>
             ),
         )}
+
+      {aniversarios.length > 0 && (
+        <section aria-labelledby="aniversarios">
+          <h2 id="aniversarios" className="eyebrow mb-2">
+            Aniversários de hoje · <span className="num">{aniversarios.length}</span>
+          </h2>
+          <ul className="grid gap-3 md:grid-cols-2">
+            {aniversarios.map((a) => (
+              <li key={a.id} className="card">
+                <p className="titulo-card break-words">→ Aniversário de {a.nome} hoje</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <BotaoMensagem
+                    lead={a}
+                    modelo="parabens"
+                    rotulo="Mandar parabéns →"
+                    rotuloAcessivel={`Mandar parabéns para ${a.nome}`}
+                    className="flex-1 md:flex-none"
+                  />
+                  <Link href={`/leads/ficha/?id=${a.id}`} className="btn btn-ghost focus-ring flex-1 md:flex-none">
+                    Abrir
+                  </Link>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {leads && leads.length > 0 && !grupos.length && !comVisitas && (
         <div className="card">

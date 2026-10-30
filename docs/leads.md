@@ -1,6 +1,6 @@
 # Módulo de leads
 
-> Primeiro corte, construído em 29/10/2026 a partir das decisões aprovadas em `docs/pesquisa-resultados.md` (seção 3). No mesmo dia entraram o histórico automático, o follow-up com tentativas, o Cadastro Mágico e o prazo do primeiro contato (itens 1 a 3 e 9 de `docs/referencia-crm-bruna.md`, seção 14). Depois vieram as mensagens prontas, o duplicado entre corretores, o repasse do lead da empresa e os ajustes de lista e quadro (itens 4 a 7). As regras de perfis e de origem dos leads estão em `docs/acessos-perfis.md`, e a estrutura técnica em `docs/crm-arquitetura.md`.
+> Primeiro corte, construído em 29/10/2026 a partir das decisões aprovadas em `docs/pesquisa-resultados.md` (seção 3). No mesmo dia entraram o histórico automático, o follow-up com tentativas, o Cadastro Mágico e o prazo do primeiro contato (itens 1 a 3 e 9 de `docs/referencia-crm-bruna.md`, seção 14). Depois vieram as mensagens prontas, o duplicado entre corretores, o repasse do lead da empresa e os ajustes de lista e quadro (itens 4 a 7), e o perfil ampliado com aniversário e documentos (item 16, seção 17). As regras de perfis e de origem dos leads estão em `docs/acessos-perfis.md`, e a estrutura técnica em `docs/crm-arquitetura.md`.
 
 ## Sumário
 1. O que entrou e o que ficou de fora
@@ -19,6 +19,7 @@
 14. Como ajustar origens, etapas, motivos, empreendimentos, horário, mensagens e permissões
 15. Testes
 16. Radar de Match e catálogo na ficha
+17. Perfil ampliado, dados pessoais, aniversário e documentos (item 16)
 
 ## 1. O que entrou e o que ficou de fora
 
@@ -28,7 +29,7 @@
 
 ## 2. Regras do lead
 
-- **Obrigatórios no cadastro:** só nome, WhatsApp e origem. Temperatura, empreendimento e próximo contato são opcionais na hora. Sem dia marcado, o lead fica sem próximo contato. O lead da empresa, atribuído pelo gerente, vai para o topo da lista do dia de quem recebe pelo prazo do primeiro contato (seção 4). O lead que o corretor cadastra ele mesmo não tem prazo: sem dia marcado, cai em "Sem próximo contato". O perfil (valor, dormitórios, região, finalidade) fica para a ficha.
+- **Obrigatórios no cadastro:** só nome, WhatsApp e origem. Temperatura, empreendimento e próximo contato são opcionais na hora. Sem dia marcado, o lead fica sem próximo contato. O lead da empresa, atribuído pelo gerente, vai para o topo da lista do dia de quem recebe pelo prazo do primeiro contato (seção 4). O lead que o corretor cadastra ele mesmo não tem prazo: sem dia marcado, cai em "Sem próximo contato". O perfil (valor, dormitórios, região, finalidade e o perfil ampliado da seção 17) fica para a ficha.
 - **WhatsApp:** é guardado só com dígitos e com o 55 na frente (`5511987654321`). Celular antigo de 8 dígitos (começa com 6 a 9) ganha o 9º dígito; fixo (começa com 2 a 5) fica como está. O botão abre o diálogo de mensagem (seção 8). O cadastro avisa quando o número já está num lead ativo, mas deixa cadastrar (seção 9).
 - **Origem:** plantão, indicação, carteira, empresa (gerente), redes sociais próprias, anúncio próprio e outros. A origem é 1 toque e já vem com a última usada naquele aparelho.
   - **Anúncio próprio** mostra o campo campanha. A campanha é só um dado de origem.
@@ -46,7 +47,7 @@
 
 É a tela inicial de quem tem `leads.cadastrar` e não tem `leads.atribuir` (o corretor, no padrão). A regra fica em `crm/src/lib/leads.ts`, com testes.
 
-Acima dos grupos ficam as **Visitas de hoje** e as que estão **Aguardando baixa** (`docs/visitas.md`, seção 6).
+Acima dos grupos ficam as **Visitas de hoje**, as que estão **Aguardando baixa** (`docs/visitas.md`, seção 6) e os **Aniversários de hoje** (seção 17).
 
 1. **Aguardando primeiro contato:** lead da empresa ativo em "novo", com ou sem dia marcado, pelo fim do prazo (seção 4). Os estourados vêm primeiro.
 2. **Atrasados:** o próximo contato já passou, inclusive hoje mais cedo.
@@ -172,7 +173,7 @@ As regras ficam em `crm/src/lib/busca.ts`, com testes. A busca vem do `search-di
 | `/` | Lista do dia (corretor) ou painel com atalho para Leads (gerente e gerente geral) |
 | `/leads/` | Todos os leads visíveis, com busca, filtros (corretor, origem, empreendimento e situação), ordem e o resumo por corretor (ativos, prazo estourado, atrasados, sem contato) para o gerente |
 | `/leads/novo/` | Cadastro rápido, com o "+ Colar mensagem" do Cadastro Mágico. Para quem atribui, vira "Lead da empresa", com a escolha do corretor e, depois de cadastrar, o "Avisar no WhatsApp". |
-| `/leads/ficha/?id=` | Ficha: WhatsApp com mensagem pronta, Ligar, prazo do primeiro contato (lead da empresa em "novo"), Sem resposta, sugestão de descarte, interação por tipo, andamento e descarte com Desfazer, perfil do cliente (com e-mail), atribuição com o aviso ao corretor (e o Lead perdido, com o prazo estourado), Radar de Match (empreendimentos que combinam) e histórico com os eventos |
+| `/leads/ficha/?id=` | Ficha: WhatsApp com mensagem pronta, Ligar, prazo do primeiro contato (lead da empresa em "novo"), Sem resposta, resumo do perfil e aviso de aniversário no topo, sugestão de descarte, interação por tipo, andamento e descarte com Desfazer, Perfil do cliente (compra e dados pessoais), atribuição com o aviso ao corretor (e o Lead perdido, com o prazo estourado), Radar de Match (empreendimentos que combinam), Documentos e histórico com os eventos |
 | `/empreendimentos/` | Catálogo de empreendimentos, com o detalhe em `/empreendimentos/ver/?slug=` (com os clientes compatíveis) e a edição em `/empreendimentos/editar/` (`docs/empreendimentos.md`, seção 12) |
 | `/painel/` | Painel da equipe (gerente) ou Meu painel (corretor), por dia, semana ou mês, com o relatório do corretor e a versão para imprimir (`docs/painel.md`) |
 | `/leads/quadro/` | Quadro por etapas, com rolagem lateral no celular, filtros e o mais esquecido no topo |
@@ -197,13 +198,87 @@ A ficha usa `?id=` porque a exportação estática não tem rotas dinâmicas.
 - `npm test` (em `crm/`): ordenação da lista do dia (com o grupo do primeiro contato), prazo do primeiro contato (só lead da empresa, virada de dia, chegada fora do horário, fim de semana, reatribuição e rótulos), WhatsApp (com o 9º dígito), datas, follow-up, histórico e o parser do Cadastro Mágico (portal, tabela de e-mail, WhatsApp do iPhone e do Android, Facebook, RD Station, nome por assinatura e por e-mail, orçamento e dormitórios), mensagens prontas (variáveis, sugestão pela etapa e pelo tempo sem contato, links e o aviso de repasse) e busca (acento, termos, telefone em qualquer formato, ordem e filtro de empreendimento).
 - `npm run test:banco`: roda o `schema.sql` três vezes no PGlite e confere o RLS de leads, interações e eventos por perfil, o Lead perdido e os perdidos por perfil (`docs/painel.md`), as tentativas, o avanço de etapa, a mensagem original, o horário de atendimento (quem lê, quem altera e os checks), a função de duplicado por perfil, o WhatsApp do usuário e o RLS das mensagens prontas.
 - Catálogo e Radar: `catalogo.test.ts` e `match.test.ts` no `npm test`, `empreendimentos.test.mjs` no `npm run test:banco` (`docs/empreendimentos.md`, seção 12).
+- Perfil ampliado, aniversário e documentos: `perfil.test.ts` no `npm test` e `perfil.test.mjs` no `npm run test:banco` (seção 17).
 
 ## 16. Radar de Match e catálogo na ficha
 
 Regras completas em `docs/empreendimentos.md`, seção 12.
 
-- **Perfil do lead:** valor (orçamento máximo), dormitórios, região (texto livre: "Rudge Ramos, Centro / SBC"; entende SBC, São Bernardo, São Caetano, SP e ABC) e finalidade. Sem nada preenchido, o Radar pede o perfil.
+- **Perfil do lead:** valor (orçamento máximo), dormitórios, região (texto livre: "Rudge Ramos, Centro / SBC"; entende SBC, São Bernardo, São Caetano, SP e ABC) e finalidade. Desde o item 16, também a renda (casa com a restrição de renda do empreendimento) e pronto ou na planta (casa com a fase). Sem nada preenchido, o Radar pede o perfil.
 - **Radar na ficha** (dono do lead ativo): os empreendimentos ativos com nota de 50% ou mais, com os motivos ✓ ✕ ! e o "Mandar →", que abre a mensagem "Apresentar empreendimento" daquele empreendimento. Sala e loja só para quem quer investir.
 - **Empreendimento do lead:** vira link para o catálogo quando é achado lá (pelo nome, pelas variações ou pelo condomínio). O campo do perfil sugere os nomes do catálogo e avisa quando o nome não está nele, mas continua texto livre.
 - **Aguardando lançamento:** na página do empreendimento em breve lançamento ou lançamento, os clientes nessa etapa que combinam (nota de 70% ou mais) vêm primeiro, com a barra vermelha. No catálogo, o card do lançamento mostra quantos são.
 - No Supabase real: `supabase/dados-teste.sql` cria 2 leads por corretor de teste, e `supabase/verificar-rls.sql` mostra o que cada perfil vê e a quem pode atribuir.
+
+## 17. Perfil ampliado, dados pessoais, aniversário e documentos (item 16)
+
+Construído em 29/10/2026, adaptado da ficha da Bruna (`profile-tab.tsx`, `personal-tab.tsx` e os documentos no bucket `documents`). As regras puras ficam em `crm/src/lib/perfil.ts`, com testes; o passo a passo do Felipe está em `crm/README.md`, seção 9.
+
+### Perfil de compra e dados pessoais
+- **Tudo opcional.** O cadastro continua só com nome, WhatsApp e origem. O que não foi preenchido não aparece em lugar nenhum.
+- **Perfil de compra** (somado a valor, dormitórios, região e finalidade):
+  - prazo de compra: imediato, até 3, 6 ou 12 meses, sem pressa (os da Bruna);
+  - forma de pagamento: à vista, financiamento ou consórcio;
+  - usa FGTS: sim ou não;
+  - renda familiar, em faixas de salários mínimos (até 3, 3 a 6, 6 a 10, 10 a 20, acima de 20), porque a restrição de renda dos empreendimentos vem nessa unidade;
+  - entrada disponível (R$);
+  - pronto para morar, na planta ou tanto faz;
+  - motivo da compra: primeiro imóvel, sair do aluguel, mais espaço, mudar de região, investimento ou outro.
+- **Dados pessoais:** data de nascimento, profissão, estado civil, cidade e bairro onde mora, e-mail (já existia) e outro telefone (guardado como o WhatsApp, só dígitos com 55).
+- **Na ficha:** o card "Perfil do cliente" tem dois blocos, Compra e Dados pessoais, e o botão Salvar perfil. Só o dono do lead ativo edita.
+- **Resumo no topo da ficha:** uma linha com o que estiver preenchido, por exemplo "Até R$ 450.000 · 2 dorms · Centro, SBC · Para morar · Financiamento + FGTS · Entrada R$ 80.000 · Renda 6 a 10 SM · Na planta · Compra em até 6 meses". O dono vê "Editar", que abre o card do perfil; com o perfil vazio, "Preencher quando der". O outro telefone aparece no topo, com link para ligar.
+- **Quem só lê** (gerente da equipe, gerente geral): vê o resumo no topo e o card "Dados do cliente" (aniversário sem o ano, profissão, estado civil, onde mora e motivo da compra).
+- **Banco:** colunas novas em `leads`, com um check só (`leads_perfil_ampliado_check`) e o gatilho `leads_perfil_guard` (limpa os textos e recusa nascimento no futuro). Valem as regras das outras colunas: quem vê o lead lê (`pode_ver_dados_de`), só o dono altera (`leads_guard`).
+- **Sem o SQL do item 16:** a ficha lê as colunas novas numa consulta à parte (`COLUNAS_PERFIL`), então continua de pé e salva só os campos de antes.
+
+### Aniversário
+- **Lista do dia:** o grupo "Aniversários de hoje" mostra "→ Aniversário de Juliana Alves hoje", com "Mandar parabéns →" e Abrir. Só os leads ativos do próprio corretor.
+- **Ficha:** "→ Faz aniversário hoje", "amanhã" ou "em 4 dias (03/01)", nos 7 dias antes (a Bruna avisa com 30). No dia, aparece o botão "Mandar parabéns →".
+- **Sem o ano:** nenhuma tela além do campo de edição mostra o ano de nascimento.
+- **29/02:** nos anos que não são bissextos, o aniversário é em 28/02. A virada do ano conta para o ano seguinte (em 31/12, o 01/01 é amanhã).
+- **Mensagem pronta nova** "Parabéns" (`parabens`), sem etapa. O gerente geral edita em Configurações, como as outras.
+- **Resumo das 9h** (`docs/notificacoes.md`): "· aniversário de Ana Souza" ou "· aniversários de Ana e Bruno". O dia só com aniversário também manda o resumo. A função recebe só o dia e o mês (`dia_mes`), nunca o ano.
+
+### Documentos
+- **Onde:** bucket privado `lead-documentos` no Supabase Storage, criado por `crm/supabase/storage-documentos.sql`, com 10 MB por arquivo e só PDF, JPG, PNG, WEBP e HEIC.
+- **Caminho:** `<id do lead>/<id aleatório>.<extensão>`. Nunca leva o nome do cliente nem o do arquivo, porque o caminho aparece na URL assinada. O nome original fica só na tabela `lead_documentos`, com a categoria, o tipo, o tamanho, quem enviou e quando.
+- **Categorias:** RG ou CNH, CPF, comprovante de residência, comprovante de renda, Imposto de Renda, certidão de estado civil e outro. Sem checklist de obrigatórios (menos burocracia).
+- **Na ficha (card Documentos):** escolher o tipo e tocar em "+ Foto ou PDF" (no celular abre a câmera ou os arquivos). A lista mostra tipo, nome, tamanho e data, com Abrir e Remover. Remover pede confirmação.
+- **Abrir:** URL assinada de 60 segundos, pedida no toque. A janela abre no toque e recebe o link quando ele chega (o iPhone bloqueia a janela aberta depois de esperar).
+- **Remover:** apaga o arquivo e depois a linha. Se cair no meio, a linha fica, e remover de novo termina. Nunca sobra arquivo sem linha.
+- **Histórico:** o gatilho grava "Documento anexado: RG ou CNH" e "Documento removido: RG ou CNH", só com a categoria.
+- **Aviso de LGPD na tela:** "Dados pessoais protegidos pela LGPD. Anexe só o que a proposta pede. Só o corretor do lead, o gerente da equipe e a gerência geral abrem os arquivos."
+
+| Quem | Lista e abre | Anexa | Remove |
+| --- | --- | --- | --- |
+| Corretor dono do lead | ✓ | ✓ (lead ativo) | ✓ (também com o lead descartado) |
+| Gerente da equipe (`dados.ver_equipe`) e gerente geral | ✓ | ✕ | ✕ |
+| Colega, gerente de outra equipe, recepção, desativado e anônimo | ✕ | ✕ | ✕ |
+
+- A tabela e o Storage usam as mesmas funções, com o caminho do arquivo: `pode_ver_documento` (`pode_ver_dados_de` do dono), `pode_enviar_documento` e `pode_remover_documento`, todas `security definer`. Caminho fora do padrão devolve falso, sem erro. Sem policy de update: o arquivo nunca é sobrescrito.
+
+### Testes
+- `npm test`: `perfil.test.ts` (aniversário hoje, amanhã, na virada do ano e no 29/02, com ano bissexto ou não e 2100; resumo do topo; dados para quem só lê; restrição de renda; tipo, tamanho e caminho do documento), `avisos.test.ts` (o resumo com aniversários, e a função e a ficha dão a mesma resposta) e `match.test.ts` (renda e fase no Radar).
+- `npm run test:banco`: `perfil.test.mjs`, com 10 testes. Roda o schema três vezes e o SQL do Storage duas; confere os checks e a limpeza dos campos novos, a leitura e a escrita por perfil, os documentos (tabela, histórico e as policies do Storage sobre uma imitação de `storage.objects` com RLS: caminho de outro lead ou com nome, tipo, tamanho, lead descartado, sem sobrescrever), as funções com caminho estranho, a mensagem Parabéns e os aniversários em `avisos_dados`.
+- **Só no Supabase real:** o limite de 10 MB e os tipos do bucket (quem confere é a API do Storage, não o Postgres), a URL assinada vencer em 60 segundos, o upload pelo celular (câmera, HEIC) e o `storage.objects` de verdade. O roteiro está em `crm/README.md`, seção 9, passo 5.
+- **Telas** conferidas em 375px com o Supabase falso v10 (pasta de notas das sessões): lista do dia com o aniversário, mensagem Parabéns, ficha do dono (resumo, perfil, salvar, documentos: anexar, limites, abrir, remover, histórico) e do gerente (só leitura).
+
+### Ficou de fora
+- Checklist de documentos obrigatórios por fase (proposta, contrato) e a contagem "3/5 essenciais" da Bruna.
+- Composição familiar e observações pessoais da Bruna: o histórico já guarda as anotações.
+- Valor da proposta no perfil: a venda tem o VGV (`docs/vendas-metas.md`).
+- Renda em reais: a faixa em salários mínimos basta para o Radar e evita pedir o valor exato.
+- Aviso de aniversário para o gerente.
+
+### Da Bruna (item 16, perfil, dados pessoais e documentos)
+| Recurso da Bruna | Como ficou | Por quê |
+| --- | --- | --- |
+| Perfil de busca com prazo de compra, "vai financiar" e "usa FGTS" (`profile-tab.tsx`) | Prazo igual, com as mesmas opções; "vai financiar" virou forma de pagamento (à vista, financiamento, consórcio); FGTS igual | Construtora vende também à vista e por consórcio |
+| Vagas, área mínima, tipos e orçamento mínimo | Não vieram | Muitos campos é a queixa T3; o Radar já usa dormitórios e finalidade |
+| Renda familiar em reais (`personal-tab.tsx`) | Faixa em salários mínimos, no perfil de compra | Casa com a restrição de renda dos empreendimentos |
+| Aniversário, profissão e estado civil | Iguais, mais cidade e bairro onde mora e outro telefone | Pedido do item 16 |
+| Alerta de aniversário em 30 dias, só na ficha | 7 dias na ficha, o dia na lista do dia e no resumo das 9h, e a mensagem "Parabéns" | O corretor vê a lista do dia, não abre cada ficha |
+| Documentos por categoria com checklist de essenciais | Categorias, sem checklist | Menos burocracia; a fase da proposta decide o que pedir |
+| Bucket `documents` com policy `using (true)` e link de 1 h | Bucket `lead-documentos` com policies por `pode_ver_dados_de`, só o dono envia e remove, link de 60 s | Equipes e LGPD |
+| Caminho `<lead>/<doc>-<nome do arquivo>` | `<lead>/<id aleatório>.<extensão>` | O nome do arquivo costuma ter o nome do cliente, e iria para a URL |
+| Remover apaga o arquivo e o registro, sem histórico | Apaga o arquivo e a linha, e o histórico registra só a categoria | Auditoria sem guardar o dado |

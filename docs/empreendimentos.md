@@ -1,6 +1,6 @@
 # Empreendimentos: dados coletados para o catálogo e o Radar de Match
 
-> Coleta feita em 29/10/2026 para os itens 13 (empreendimentos e tipologias) e 14 (Radar de Match) de `docs/referencia-crm-bruna.md`. Decisões do Felipe aplicadas no mesmo dia. Os dados estão em `docs/empreendimentos-dados.json`. **O catálogo e o Radar foram construídos no mesmo dia: veja a seção 12, "Como ficou".** As seções 9 e 10 são a proposta original; onde a construção mudou algo, vale a seção 12.
+> Coleta feita em 29/10/2026 para os itens 13 (empreendimentos e tipologias) e 14 (Radar de Match) de `docs/referencia-crm-bruna.md`. Decisões do Felipe aplicadas no mesmo dia. Os dados estão em `docs/empreendimentos-dados.json`. **O catálogo e o Radar foram construídos no mesmo dia: veja a seção 12, "Como ficou". A importação da tabela de preços por IA externa veio com o item 16: seção 13.** As seções 9 e 10 são a proposta original; onde a construção mudou algo, vale a seção 12.
 
 ## Sumário
 1. Resumo
@@ -15,6 +15,7 @@
 10. Como o Radar de Match usa esses dados
 11. Da Bruna: o que veio, o que foi adaptado e o que ficou de fora
 12. Como ficou (catálogo, Radar e integrações)
+13. Importar a tabela de preços por IA externa (item 16)
 
 ## 1. Resumo
 
@@ -358,11 +359,14 @@ Construído em 29/10/2026. Commits locais; o SQL ainda precisa rodar no Supabase
 | Região | 25 | Bairro: tudo. Mesma cidade: 70%. Fora: 15%. A região do lead é separada por vírgula, barra, "e" e "ou", com apelidos (SBC, São Bernardo, São Caetano, SP, ABC). Se o lead cita uma cidade, o bairro só vale nela ("Centro, SBC" não é o Centro de São Vicente). |
 | Dormitórios | 20 | Igual ou mais: tudo. Um a menos: 40%. Studio e loft contam 1. |
 | Finalidade | 10 | Morar: tudo. Investir: studio, loft, 1 dorm, sala e loja valem tudo; o resto, metade. Sala e loja só entram para quem investe. |
+| Renda (item 16) | 20 | Só quando o lead tem a faixa de renda e o empreendimento tem restrição com número de salários mínimos. Faixa até o limite: tudo (✓ "Renda dentro do limite (até 6 SM)"). Faixa acima: nada (✕). Faixa que cruza o limite, ou restrição só de parte das unidades ("Do 1º ao 12º andar"): aviso !, fora da nota. |
+| Fase (item 16) | 10 | Só quando o lead quer pronto ou na planta ("tanto faz" não conta). Quer pronto: pronto vale tudo, em obras 40%, lançamento nada. Quer na planta: breve lançamento, lançamento e em obras valem tudo, pronto metade. |
 
 - A nota do empreendimento é a da melhor tipologia (no empate, a mais barata). Critério vazio não conta. Lead sem perfil não entra.
 - **Ficha:** a partir de 50%, da maior nota para a menor, os 4 primeiros e "Ver todos". Cada um com fase, bairro, a tipologia, os motivos ✓ ✕ ! e "Mandar →" (mensagem "Apresentar empreendimento" com esse empreendimento).
 - **Clientes compatíveis** (página do empreendimento): a partir de 70%, entre os leads que quem vê enxerga pelo RLS (o corretor, os dele; o gerente, os da equipe). Entram os ativos fora da etapa Venda e os descartados por "fora do perfil". **Os que estão em "aguardando lançamento" vêm primeiro, com a barra vermelha, quando o empreendimento é breve lançamento ou lançamento.**
-- Avisos que não mudam a nota: preço de tabela de mês anterior, restrição de renda, empreendimento sem tipologias.
+- Avisos que não mudam a nota: preço de tabela de mês anterior, restrição de renda (quando o lead não tem a faixa de renda), empreendimento sem tipologias e "O FGTS não vale para imóvel comercial" (lead que usa FGTS e sala ou loja).
+- Renda e fase entraram com o item 16 (`docs/leads.md`, seção 17). O lead que não preencheu fica com a mesma nota de antes, porque critério vazio não conta. Os clientes compatíveis leem as colunas novas e, sem o SQL do item 16, seguem com o perfil de antes.
 
 ### Testes
 - `npm test`: `catalogo.test.ts` (normalização de nomes, `acharNoCatalogo`, lista do Cadastro Mágico com os dados reais, filtros, resumos e as variáveis das mensagens) e `match.test.ts` (pesos, tolerância, região com apelidos e cidade, studio, finalidade, sem preço, avisos, Radar e clientes compatíveis). Os dois usam o JSON real por `catalogo-teste.ts`.
@@ -376,7 +380,7 @@ Construído em 29/10/2026. Commits locais; o SQL ainda precisa rodar no Supabase
 - **Tabelas próprias dos 7 em obras:** o "a partir de" segue o da Tabela Promocional.
 
 ### Ficou de fora
-- Importar a tabela mensal colando o JSON de outra IA (a "Resposta de outra IA" da Bruna). Por ora o preço muda pela tela de edição.
+- ~~Importar a tabela mensal colando o JSON de outra IA~~: entrou com o item 16 (seção 13).
 - `empreendimento_id` em leads, visitas e vendas, e o filtro de Leads agrupado pelo catálogo ("Life" e "Life MBigucci" ainda são opções separadas).
 - Radar na ficha para o gerente (a página do empreendimento já mostra os clientes da equipe).
 - Vagas e área no perfil do lead (o lead não guarda).
@@ -393,3 +397,56 @@ Construído em 29/10/2026. Commits locais; o SQL ainda precisa rodar no Supabase
 | Botão "Enviar" no Radar (`profile-tab.tsx`) | "Mandar →", com a mensagem pronta e o link da apresentação | Usa os modelos que o gerente geral edita |
 | Studio = 1 dorm | Igual no Radar e no filtro | |
 | `deleteProperty` | Não veio: `ativo = false` | A MBigucci não apaga |
+
+## 13. Importar a tabela de preços por IA externa (item 16)
+
+Construído em 29/10/2026, adaptado da "Resposta de outra IA" da Bruna (`src/lib/import-parse.ts`, `import-schema.ts`, `public/importar-imoveis.md` e `scripts/check-import.mjs`). Roda no navegador, sem chave de API. As regras puras ficam em `crm/src/lib/importar-tabela.ts`, com testes.
+
+### Como usa
+1. **Empreendimentos > Importar tabela de preços** (só quem tem `empreendimentos.gerenciar`; no padrão, o operacional e o gerente geral).
+2. **Copiar instruções** (ou **Baixar .md**): o texto tem as regras, o formato, um exemplo e o **catálogo atual** (id, nome, fase e os rótulos das tipologias de cada empreendimento ativo), para a IA usar os mesmos nomes.
+3. Colar no ChatGPT, no Gemini ou no Claude, junto com o PDF ou a foto da tabela do mês.
+4. Colar a resposta (ou escolher o `.json`) e tocar em **Conferir**.
+5. Conferir a prévia e tocar em **Aplicar N mudanças**.
+
+### Formato
+O de `docs/empreendimentos-dados.json` (`"formato": "mbigucci-empreendimentos/1"`), com `tabela_mes` no topo e, por empreendimento, `id`, `nome`, `status`, `entrega_prevista` ("Ago/2030"), `restricao_renda`, `tipologias` e `avisos`. Cada tipologia tem os campos da tabela `tipologias` (`rotulo`, `tipo`, `dormitorios`, `suites`, `vagas_min`, `vagas_max`, `area_m2`, `preco_a_partir_de`, `preco_nota`, `esgotada`…). O próprio JSON de `docs/` é uma resposta válida e não muda nada (é um dos testes).
+
+### Leitura (zod)
+- Tolera o que as IAs costumam fazer: texto em volta, vários blocos ```json (junta os empreendimentos), aspas tortas, vírgula sobrando, número como "R$ 450.000,00" ou "520 mil", tipo e fase por extenso ("Apto", "Sala", "Em obras", "Pré-lançamento"), "sim" e "não".
+- Valida com zod: preço de R$ 20.000 a R$ 100 milhões, área positiva, dormitórios e suítes até 9, vagas até 20, até 100 empreendimentos e 60 tipologias cada. O erro diz onde está: "Empreendimento 2 (Life), tipologia 3, tipo: valor fora da lista".
+- Campos que o CRM não usa (`fonte`, `links`, `lazer`…) são ignorados.
+
+### Prévia
+- **Acha o empreendimento** pelo `id` (slug), pelo nome ou por uma variação que seja só dele. Nunca pelo condomínio nem por variação de várias torres: "Mundi" vira erro, pedindo um item por torre.
+- **Acha a tipologia** pelo rótulo ou, sem ele, pelo tipo, dormitórios e área (se for uma só).
+- **"→ Atualiza Marco Zero One: 1 preço muda, 1 tipologia nova, tabela de dez/2026"**, com o detalhe "R$ 2.436.300 → R$ 2.499.000". Do empreendimento que já existe, mudam só a fase, o mês da tabela, a entrega e a restrição de renda; endereço, links e textos continuam pela tela de edição. Na tipologia, campo vazio na resposta não apaga o catálogo (menos o preço, que pode ficar "sem preço").
+- **As tipologias que não vieram ficam como estão**, listadas na prévia ("Não vieram na tabela"). A tabela pode trazer só parte das plantas; para esgotar, a IA marca `"esgotada": true`, ou se usa a tela de edição.
+- **"+ Novo: Residencial Aurora, 1 tipologia"**: precisa da fase; o slug sai do `id` ou do nome. Repetido na mesma resposta, ou com slug que já existe, é erro.
+- **"✓ Life: sem mudança"** e **"✕ … erro"** não entram na aplicação. Os avisos da IA aparecem embaixo.
+
+### Aplicar
+Um empreendimento por vez, pelo app e com as permissões de sempre (RLS de `empreendimentos.gerenciar`). O erro num não para os outros, e a tela mostra o que foi feito e o que falhou. O "a partir de" do empreendimento continua vindo do gatilho do banco.
+
+### Conferir fora do app
+`node scripts/conferir-tabela.mjs resposta.json` (em `crm/`) lê a resposta e mostra a prévia contra o JSON de `docs/` (não contra o banco).
+
+### Testes
+`npm test` roda `importar-tabela.test.ts`: números e meses como as IAs escrevem, o JSON de `docs/` como resposta válida e sem mudança, os erros com o lugar, a tolerância (blocos, aspas, vírgula, tipos por extenso), a prévia (preço da tipologia certa pelo rótulo e pela área, tipologia nova, as que não vieram, achar pelo nome sem a marca, "Mundi" ambíguo, novo sem fase, repetido, esgotar, campo vazio que não apaga) e as instruções (o exemplo delas é uma resposta válida). A tela foi conferida em 375px com o Supabase falso v10.
+
+### Ficou de fora
+- "Ler aqui com IA" (rota de API com chave): exportação estática, sem servidor.
+- Retirar a tipologia que não veio na tabela: fica como está, para não apagar por engano.
+- Desfazer a importação: cada mudança fica no catálogo como a edição pela tela.
+
+### Da Bruna (item 16, importação)
+| Recurso da Bruna | Como ficou | Por quê |
+| --- | --- | --- |
+| "Resposta de outra IA": copiar as instruções, colar o JSON, conferir e cadastrar (`property-import-dialog.tsx`) | Igual, numa página própria (`/empreendimentos/importar/`), em 3 passos | No celular, uma página rola melhor que um diálogo longo |
+| Instruções em `public/importar-imoveis.md`, com o catálogo atual no fim | Geradas na hora, com id, nome, fase e rótulos das tipologias de cada empreendimento ativo | O catálogo muda; o arquivo fixo ficaria velho |
+| Formato `crm-imoveis/1` (`import-schema.ts`, zod) | Formato de `docs/empreendimentos-dados.json` (`mbigucci-empreendimentos/1`), validado com zod | Um formato só para a coleta e a tabela do mês |
+| Leitura tolerante (`import-parse.ts`): blocos, aspas, vírgula, "R$ 450.000,00" | Igual, mais tipo e fase por extenso | |
+| Deduplicar por nome ou por dormitórios e área | Pelo id, nome ou variação única; a tipologia pelo rótulo ou por tipo, dormitórios e área | Torres do mesmo condomínio têm nomes parecidos |
+| Cadastra os imóveis novos | Atualiza preços, cria tipologias e empreendimentos novos e mostra o que fica como está | A tabela mensal muda preço, não o catálogo inteiro |
+| `scripts/check-import.mjs` | `scripts/conferir-tabela.mjs` | |
+| "Ler aqui com IA" e o bucket `imports` | Não vieram | Precisa de servidor e chave |

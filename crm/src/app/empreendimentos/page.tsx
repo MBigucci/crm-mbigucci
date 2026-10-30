@@ -135,6 +135,13 @@ function Catalogo() {
             Mostrar os fora de venda
           </label>
         )}
+        {gerencia && (
+          <p className="flex min-h-[44px] items-center">
+            <Link href="/empreendimentos/importar/" className="link-acao text-[13px]">
+              Importar tabela de preços
+            </Link>
+          </p>
+        )}
       </div>
 
       {erro && <p className="aviso-erro">! Não foi possível carregar o catálogo. {erro}</p>}

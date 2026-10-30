@@ -48,8 +48,9 @@ Por que assim: o site é exportação estática no WordPress, sem servidor. Na B
 | Lead da empresa (`atribuido`) | Na hora, dentro do horário de atendimento; fora dele, na abertura. Só se o prazo ainda não venceu. | "Lead novo para você" · "Ana Souza · Marco Zero One. Responda em até 15 min." | Ficha do lead |
 | Prazo de 15 min (`prazo`) | Faltando de 1 a 6 min | "Faltam 5 min para responder" · "Ana Souza · Marco Zero One aguarda o primeiro contato." | Ficha do lead |
 | Prazo de 15 min (`prazo`) | Quando estoura, até 30 min depois | "Prazo de 15 min estourado" · "Ana Souza · Marco Zero One ainda está sem primeiro contato. Fale agora." | Ficha do lead |
-| Resumo do dia (`resumo`) | Na abertura do atendimento (9h no padrão), até 1 h depois, nos dias de atendimento. Dia sem pendências não manda nada. | "Seu dia no CRM" · "1 aguardando primeiro contato · 2 atrasados · 1 contato para hoje · 2 visitas (10h, 15h30)" | Lista do dia |
+| Resumo do dia (`resumo`) | Na abertura do atendimento (9h no padrão), até 1 h depois, nos dias de atendimento. Dia sem pendências não manda nada; dia só com aniversário manda. | "Seu dia no CRM" · "1 aguardando primeiro contato · 2 atrasados · 1 contato para hoje · 2 visitas (10h, 15h30) · aniversário de Ana Souza" | Lista do dia |
 
+- **Aniversários (item 16, `docs/leads.md`, seção 17):** `avisos_dados` manda só o dia e o mês (`dia_mes`, "MM-DD") dos leads ativos de quem tem aparelho, nunca o ano. A função decide com `ehAniversarioHoje`, a mesma regra da ficha: quem nasceu em 29/02 aparece em 28/02 nos anos que não são bissextos. Sem o SQL do item 16, o resumo sai como antes. Depois de mudar o `index.ts`, publique a função de novo (`crm/README.md`, seção 9).
 - **Quem recebe:** o dono do lead e o corretor da visita. O lead da empresa só avisa quando quem atribuiu não é o próprio dono.
 - **Lead da empresa em "novo":** fica só com os avisos do prazo e de atribuição. O de próximo contato não vale para ele, como na lista do dia.
 - **Mesmo lead, vários avisos:** usam a mesma `tag` (`lead-<id>`), então o mais novo substitui o anterior na bandeja do celular.

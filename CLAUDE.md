@@ -45,11 +45,11 @@ O CRM de corretores da MBigucci (construtora em São Bernardo do Campo). O usuá
 - `docs/gerentes-necessidades.md`: abra ao desenhar o painel ou o relatório do gerente, ou o cadastro de parceiros. São os pedidos dos gerentes de equipe e onde cada um entra.
 - `docs/design-system.md`: abra antes de criar ou alterar qualquer tela.
 - `docs/crm-arquitetura.md`: abra ao mexer na estrutura do `crm/` (schema, RLS, deploy).
-- `docs/leads.md`: abra ao mexer em leads, lista do dia, cadastro (e Cadastro Mágico), ficha, quadro, interações, follow-up e tentativas, histórico (`lead_eventos`), descarte ou atribuição de lead.
+- `docs/leads.md`: abra ao mexer em leads, lista do dia, cadastro (e Cadastro Mágico), ficha, quadro, interações, follow-up e tentativas, histórico (`lead_eventos`), descarte, atribuição de lead, perfil ampliado, dados pessoais, aniversário ou documentos do lead.
 - `docs/painel.md`: abra ao mexer no painel da equipe, no relatório do corretor, na impressão ou no botão Lead perdido.
 - `docs/vendas-metas.md`: abra ao mexer em vendas, correção ou cancelamento de venda, meta anual de VGV, metas próprias do corretor, conversão por origem e campanha ou na tela Faixas de VGV (sigilosa, só do gerente geral).
 - `docs/visitas.md`: abra ao mexer em visitas, agenda, baixa de visita, confirmação de visita ou nas visitas da lista do dia e do painel.
-- `docs/empreendimentos.md`: abra ao mexer no catálogo de empreendimentos e tipologias, no Radar de Match ou na lista do Cadastro Mágico. Tem o cruzamento com a lista atual, as dúvidas, o esquema e, na seção 12, como ficou. Os dados coletados estão em `docs/empreendimentos-dados.json`.
+- `docs/empreendimentos.md`: abra ao mexer no catálogo de empreendimentos e tipologias, no Radar de Match ou na lista do Cadastro Mágico. Tem o cruzamento com a lista atual, as dúvidas, o esquema, na seção 12 como ficou e, na seção 13, a importação da tabela de preços por IA externa. Os dados coletados estão em `docs/empreendimentos-dados.json`.
 - `docs/notificacoes.md`: abra ao mexer nos avisos no celular (push), no `sw.js`, na Edge Function `avisos`, no `agendar-avisos.sql` ou em Avisos neste aparelho. Tem quando cada aviso sai, o não repetir e a tabela "Da Bruna".
 - `docs/referencia-crm-bruna.md`: abra antes de planejar uma etapa nova ou ajustar um fluxo. Diz o que vem do CRM da Bruna, como adaptar e em que ordem.
 - `docs/fontes/regras-comerciais-2026-10.md`: o documento original do Felipe. Abra só para conferir o texto exato de uma regra.
