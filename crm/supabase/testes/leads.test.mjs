@@ -530,3 +530,17 @@ test("interações seguidas no mesmo lead: a hora segue a ordem de gravação", 
   assert.equal(lead.tentativas, 0);
   assert.equal(+lead.ultima_interacao_em, +xs[1].criado_em);
 });
+
+test("histórico: eventos da mesma transação ficam na ordem em que aconteceram", async () => {
+  const [l] = await como(CA, () => linhas(`insert into public.leads (dono_id, nome, whatsapp, origem) values ('${id(CA)}', 'Ordem eventos', '5511900003333', 'plantao') returning id`));
+  await como(CA, () => db.exec(`
+    update public.leads set etapa = 'em_contato' where id = '${l.id}';
+    update public.leads set etapa = 'proposta' where id = '${l.id}';
+    update public.leads set etapa = 'aguardando_lancamento' where id = '${l.id}';`));
+  const ev = await linhas(`select de, para from public.lead_eventos where lead_id = '${l.id}' and tipo = 'etapa' order by criado_em`);
+  assert.deepEqual(ev, [
+    { de: "novo", para: "em_contato" },
+    { de: "em_contato", para: "proposta" },
+    { de: "proposta", para: "aguardando_lancamento" },
+  ]);
+});

@@ -633,6 +633,12 @@ create table if not exists public.lead_eventos (
 
 create index if not exists lead_eventos_lead_idx on public.lead_eventos (lead_id, criado_em desc);
 
+-- A hora do evento é a da gravação (clock_timestamp), não a do início da
+-- transação (now()): os gatilhos gravam com a linha do lead travada, então dois
+-- usuários mudando o mesmo lead ao mesmo tempo ficam no histórico na ordem em
+-- que mudaram de fato (teste de carga, docs/teste-carga.md).
+alter table public.lead_eventos alter column criado_em set default clock_timestamp();
+
 -- ---------- Funções do módulo ----------
 
 -- O usuário logado pode atribuir leads a p_user: p_user é corretor ativo, de uma
