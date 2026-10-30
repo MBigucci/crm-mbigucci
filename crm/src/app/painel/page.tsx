@@ -38,7 +38,7 @@ export default function PainelPage() {
   const veOutros = pode("dados.ver_equipe") || pode("dados.ver_todos");
   return (
     <Casca titulo={veOutros ? "Painel da equipe" : "Meu painel"}>
-      <Suspense fallback={<p className="text-concrete">Carregando…</p>}>
+      <Suspense fallback={<p className="text-ink-soft">Carregando…</p>}>
         <Painel />
       </Suspense>
     </Casca>
@@ -120,7 +120,7 @@ function Painel() {
         {controles}
         <TituloImpressao titulo={`Relatório de ${nome}`} per={per} />
         {erro && <p className="aviso-erro">! {erro}</p>}
-        {!dados && !erro && <p className="text-concrete">Carregando…</p>}
+        {!dados && !erro && <p className="text-ink-soft">Carregando…</p>}
         {dados && (
           <RelatorioCorretor
             nome={nome}
@@ -156,7 +156,7 @@ function Painel() {
       {controles}
       <TituloImpressao titulo="Painel da equipe" per={per} />
       {erro && <p className="aviso-erro">! {erro}</p>}
-      {!dados && !erro && <p className="text-concrete">Carregando…</p>}
+      {!dados && !erro && <p className="text-ink-soft">Carregando…</p>}
       {dados && !linhas.length && <p className="text-ink-soft">Nenhum corretor na equipe ainda.</p>}
       {dados && linhas.length > 0 && (
         <TabelaEquipe
@@ -313,7 +313,7 @@ function TituloImpressao({ titulo, per }: { titulo: string; per: Periodo }) {
   useEffect(() => setAgora(new Date().toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })), []);
   return (
     <div className="so-impressao">
-      <p className="eyebrow">MBigucci · CRM</p>
+      <p className="eyebrow text-[12px] text-ink-soft">MBigucci · CRM</p>
       <h2 className="titulo-impressao">{titulo}</h2>
       <p className="num">
         {TIPOS_PERIODO.find((t) => t.slug === per.tipo)?.nome}: {rotuloPeriodo(per)} · impresso em {agora}
@@ -338,7 +338,7 @@ function Numero({
   destaque?: boolean;
   className?: string;
 }) {
-  if (!ids.length) return <span className={clsx("num text-concrete", className)}>0</span>;
+  if (!ids.length) return <span className={clsx("num text-ink-soft", className)}>0</span>;
   return (
     <button
       type="button"
@@ -377,7 +377,7 @@ function TabelaEquipe({
       {linhas.map((x) => (
         <tr key={x.corretor} className="border-b border-line">
           <td className="px-4 py-2">
-            <button type="button" className="link-acao focus-ring text-left" onClick={() => relatorio(x.corretor)}>
+            <button type="button" className="focus-ring text-left font-semibold text-ink underline decoration-line underline-offset-4 hover:decoration-ink" onClick={() => relatorio(x.corretor)}>
               {nome(x)}
             </button>
           </td>
@@ -398,14 +398,33 @@ function TabelaEquipe({
 
   return (
     <>
+      <section className="veredito" aria-label="Síntese do período">
+        <h2 className="font-display text-[18px] font-bold">Leads do período</h2>
+        <div className="mt-3 grid gap-4 sm:grid-cols-3">
+          {[
+            { titulo: "Recebidos da empresa", ids: total.recebidosEmpresa },
+            { titulo: "Perdidos", ids: total.perdidos },
+            { titulo: "Venda no funil", ids: total.vendas },
+          ].map((item) => (
+            <button key={item.titulo} type="button" disabled={!item.ids.length}
+              className="focus-ring text-left disabled:cursor-default"
+              onClick={() => abrir({ titulo: `Equipe · ${item.titulo}`, ids: item.ids })}>
+              <span className="block text-[14px] text-on-dark-soft">{item.titulo}{item.ids.length > 0 ? " →" : ""}</span>
+              <span className="num mt-1 block text-[32px] font-extrabold leading-none">
+                {item.titulo === "Perdidos" && item.ids.length > 0 ? "! " : ""}{item.ids.length}
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
       <section aria-labelledby="t-entrada" className="min-w-0">
-        <h2 id="t-entrada" className="eyebrow mb-2">
+        <h2 id="t-entrada" className="titulo-secao mb-3">
           Leads no período, por corretor
         </h2>
         <div className="card tabela-painel overflow-x-auto p-0">
           <table className="w-full text-left text-[14px]">
             <thead>
-              <tr className="border-b border-line text-concrete">
+              <tr className="border-b border-line text-ink-soft">
                 <th className="px-4 py-2 font-semibold">Corretor</th>
                 <th className={th}>Recebidos da empresa</th>
                 <th className={th}>Perdidos</th>
@@ -428,13 +447,13 @@ function TabelaEquipe({
       </section>
 
       <section aria-labelledby="t-funil" className="min-w-0">
-        <h2 id="t-funil" className="eyebrow mb-2">
+        <h2 id="t-funil" className="titulo-secao mb-3">
           Funil até a venda · leads que entraram na carteira no período
         </h2>
         <div className="card tabela-painel overflow-x-auto p-0">
           <table className="w-full text-left text-[14px]">
             <thead>
-              <tr className="border-b border-line text-concrete">
+              <tr className="border-b border-line text-ink-soft">
                 <th className="px-4 py-2 font-semibold">Corretor</th>
                 <th className={th}>Entraram</th>
                 {FUNIL.map((e, i) => (
@@ -492,7 +511,7 @@ function Distribuicao({
   const ordenados = [...grupos].sort((a, b) => b.ids.length - a.ids.length);
   return (
     <section className="card">
-      <span className="eyebrow">{titulo}</span>
+      <span className="eyebrow text-[12px] text-ink-soft">{titulo}</span>
       {ordenados.length ? (
         <ul className="mt-2 grid">
           {ordenados.map((g) => (
@@ -529,8 +548,8 @@ function TabelaVisitas({ linhas, numeros, nomes }: { linhas: string[]; numeros: 
         className={clsx(
           "num px-2 py-2 text-right",
           i === COLUNAS_VISITAS.length - 1 && "pr-4",
-          !x[c.chave] && "text-concrete",
-          c.chave === "aguardandoBaixa" && x[c.chave] > 0 && "font-semibold text-wa",
+          !x[c.chave] && "text-ink-soft",
+          c.chave === "aguardandoBaixa" && x[c.chave] > 0 && "font-bold text-ink",
         )}
       >
         {c.chave === "aguardandoBaixa" && x[c.chave] > 0 ? `! ${x[c.chave]}` : x[c.chave]}
@@ -538,13 +557,13 @@ function TabelaVisitas({ linhas, numeros, nomes }: { linhas: string[]; numeros: 
     ));
   return (
     <section aria-labelledby="t-visitas" className="min-w-0">
-      <h2 id="t-visitas" className="eyebrow mb-2">
+      <h2 id="t-visitas" className="titulo-secao mb-3">
         Visitas no período, por corretor · pela data da visita
       </h2>
       <div className="card tabela-painel overflow-x-auto p-0">
         <table className="w-full text-left text-[14px]">
           <thead>
-            <tr className="border-b border-line text-concrete">
+            <tr className="border-b border-line text-ink-soft">
               <th className="px-4 py-2 font-semibold">Corretor</th>
               {COLUNAS_VISITAS.map((c, i) => (
                 <th key={c.chave} className={clsx(th, i === COLUNAS_VISITAS.length - 1 && "pr-4")}>
@@ -574,18 +593,18 @@ function TabelaVisitas({ linhas, numeros, nomes }: { linhas: string[]; numeros: 
 function VisitasDoCorretor({ numeros }: { numeros: NumerosVisita }) {
   return (
     <section aria-labelledby="r-visitas" className="grid gap-2">
-      <h2 id="r-visitas" className="eyebrow">
+      <h2 id="r-visitas" className="eyebrow text-[12px] text-ink-soft">
         Visitas no período · pela data da visita
       </h2>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {COLUNAS_VISITAS.map((c) => (
           <div key={c.chave} className="card">
-            <span className="eyebrow">{c.rotulo}</span>
+            <span className="eyebrow text-[12px] text-ink-soft">{c.rotulo}</span>
             <span
               className={clsx(
                 "num mt-1 block font-display text-[30px] font-extrabold leading-none",
-                !numeros[c.chave] && "text-concrete",
-                c.chave === "aguardandoBaixa" && numeros[c.chave] > 0 && "text-wa",
+                !numeros[c.chave] && "text-ink-soft",
+                c.chave === "aguardandoBaixa" && numeros[c.chave] > 0 && "text-ink",
               )}
             >
               {c.chave === "aguardandoBaixa" && numeros[c.chave] > 0 ? `! ${numeros[c.chave]}` : numeros[c.chave]}
@@ -606,21 +625,21 @@ function TabelaVendas({ linhas, vendas, nomes }: { linhas: string[]; vendas: Ven
   const th = "px-2 py-2 text-right font-semibold align-bottom";
   const celulas = (t: Totais) => (
     <>
-      <td className={clsx("num px-2 py-2 text-right", !t.pagas && "text-concrete")}>{t.pagas}</td>
-      <td className={clsx("num px-2 py-2 text-right", !t.vgvValido && "text-concrete")}>{formatarReais(t.vgvValido)}</td>
-      <td className={clsx("num px-2 py-2 text-right", !t.assinadas && "text-concrete")}>{t.assinadas}</td>
-      <td className={clsx("num px-2 py-2 pr-4 text-right", !t.vgvAssinado && "text-concrete")}>{formatarReais(t.vgvAssinado)}</td>
+      <td className={clsx("num px-2 py-2 text-right", !t.pagas && "text-ink-soft")}>{t.pagas}</td>
+      <td className={clsx("num px-2 py-2 text-right", !t.vgvValido && "text-ink-soft")}>{formatarReais(t.vgvValido)}</td>
+      <td className={clsx("num px-2 py-2 text-right", !t.assinadas && "text-ink-soft")}>{t.assinadas}</td>
+      <td className={clsx("num px-2 py-2 pr-4 text-right", !t.vgvAssinado && "text-ink-soft")}>{formatarReais(t.vgvAssinado)}</td>
     </>
   );
   return (
     <section aria-labelledby="t-vendas" className="min-w-0">
-      <h2 id="t-vendas" className="eyebrow mb-2">
+      <h2 id="t-vendas" className="titulo-secao mb-3">
         Vendas no período, por corretor · pela data da assinatura
       </h2>
       <div className="card tabela-painel overflow-x-auto p-0">
         <table className="w-full text-left text-[14px]">
           <thead>
-            <tr className="border-b border-line text-concrete">
+            <tr className="border-b border-line text-ink-soft">
               <th className="px-4 py-2 font-semibold">Corretor</th>
               <th className={th}>Assinadas e pagas</th>
               <th className={th}>VGV assinado e pago</th>
@@ -708,7 +727,7 @@ function Conversao({
   };
   return (
     <section aria-labelledby="t-conversao" className="min-w-0">
-      <h2 id="t-conversao" className="eyebrow mb-2">
+      <h2 id="t-conversao" className="titulo-secao mb-3">
         {titulo} · leads que entraram na carteira no período, até hoje
       </h2>
       <ResumoConversao linhas={linhas} vendas={vendas} />
@@ -716,7 +735,7 @@ function Conversao({
         <div className="card tabela-painel overflow-x-auto p-0">
           <table className="w-full text-left text-[14px]">
             <thead>
-              <tr className="border-b border-line text-concrete">
+              <tr className="border-b border-line text-ink-soft">
                 <th className="px-4 py-2 font-semibold">{campanha ? "Origem e campanha" : "Origem"}</th>
                 <th className={th}>Leads</th>
                 <th className={th}>Primeiro contato</th>
@@ -765,7 +784,7 @@ function ResumoConversao({ linhas, vendas }: { linhas: LinhaConversao[]; vendas:
     <div className="mb-3 grid grid-cols-2 gap-3 md:grid-cols-4">
       {tiles.map((t) => (
         <div key={t.rotulo} className="card">
-          <span className="eyebrow">{t.rotulo}</span>
+          <span className="eyebrow text-[12px] text-ink-soft">{t.rotulo}</span>
           <span className="num mt-1 block whitespace-nowrap font-display text-[22px] font-extrabold leading-tight">{t.valor}</span>
           <span className="num mt-1 block text-[12px] text-ink-soft">{t.nota}</span>
         </div>
@@ -828,7 +847,7 @@ function RelatorioCorretor({
             Ver a equipe
           </button>
         )}
-        <span className="eyebrow">{proprio ? "Seus números" : "Relatório do corretor"}</span>
+        <span className="eyebrow text-[12px] text-ink-soft">{proprio ? "Seus números" : "Relatório do corretor"}</span>
         <h2 className="titulo-card mt-1 text-[22px]">{nome}</h2>
         <p className="num mt-1 text-ink-soft">{rotuloPeriodo(per)}</p>
       </section>
@@ -841,7 +860,7 @@ function RelatorioCorretor({
       <section aria-label="Números do período" className="grid grid-cols-2 gap-3 md:grid-cols-5">
         {blocos.map((b) => (
           <div key={b.rotulo} className="card">
-            <span className="eyebrow">{b.rotulo}</span>
+            <span className="eyebrow text-[12px] text-ink-soft">{b.rotulo}</span>
             <Numero
               ids={b.ids}
               titulo={b.rotulo}
@@ -872,7 +891,7 @@ function RelatorioCorretor({
           abrir={setSel}
         />
         <section className="card">
-          <span className="eyebrow">Funil até a venda</span>
+          <span className="eyebrow text-[12px] text-ink-soft">Funil até a venda</span>
           <p className="mt-1 text-[13px] text-ink-soft">
             Dos <span className="num">{x.entraram.length}</span> leads que entraram na carteira no período, até onde
             chegaram, até hoje.
@@ -899,7 +918,7 @@ function RelatorioCorretor({
 
       {vendas && (
         <section aria-labelledby="r-vendas" className="grid gap-2">
-          <h2 id="r-vendas" className="eyebrow">
+          <h2 id="r-vendas" className="eyebrow text-[12px] text-ink-soft">
             Vendas no período · pela data da assinatura
           </h2>
           <ResumoVendas t={vendas} />
