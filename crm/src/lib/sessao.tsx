@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
 import { esquecerEsteAparelho, sincronizarAvisos } from "./push";
+import { limparTodosRascunhos } from "./rascunho";
 import { COLUNAS_PROFILE, type Profile } from "./tipos";
 
 export type EstadoSessao =
@@ -81,6 +82,8 @@ export function SessaoProvider({ children }: { children: React.ReactNode }) {
       sair: async () => {
         // Antes do signOut: apagar a assinatura precisa do login.
         await esquecerEsteAparelho();
+        // Rascunhos têm dados de cliente: ficam só até o "Sair" (a sessão que expira não passa por aqui).
+        limparTodosRascunhos();
         await supabase?.auth.signOut();
         setEstado({ fase: "deslogado" });
       },

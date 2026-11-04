@@ -21,6 +21,7 @@ import { AvisarCorretor } from "@/components/leads/repasse";
 import { ConferirNoCatalogo, ListaEmpreendimentos } from "@/components/empreendimentos/partes";
 import { bairrosDoCatalogo, listaDoMagico } from "@/lib/catalogo";
 import { useCatalogo } from "@/lib/catalogo-dados";
+import { chaveRascunhoNovoLead, lerRascunho, limparRascunho, salvarRascunho } from "@/lib/rascunho";
 import Link from "next/link";
 
 export default function NovoLeadPage() {
@@ -37,6 +38,21 @@ export default function NovoLeadPage() {
 
 /** Perfil que veio da mensagem colada e que o corretor tocou para usar. */
 type PerfilColado = { valor: number | null; dormitorios: number | null; regiao: string | null };
+
+type RascunhoNovoLead = {
+  nome?: string;
+  whatsapp?: string;
+  email?: string;
+  origem?: string | null;
+  campanha?: string;
+  empreendimento?: string;
+  temperatura?: Temperatura | null;
+  contato?: { data: string; hora: string };
+  detalhes?: boolean;
+  dono?: string;
+  mensagem?: string | null;
+  perfil?: PerfilColado | null;
+};
 
 const reais = (v: number) => `R$ ${v.toLocaleString("pt-BR")}`;
 
@@ -74,6 +90,34 @@ function NovoLead() {
   const [repasse, setRepasse] = useState<Lead | null>(null);
   const ids = useRef<{ lead: string; mensagem: string } | null>(null);
   const horario = useHorarioAtendimento();
+  const restauradoRef = useRef(false);
+
+  useEffect(() => {
+    if (!eu.id || restauradoRef.current) return;
+    const r = lerRascunho<RascunhoNovoLead>(chaveRascunhoNovoLead(eu.id));
+    if (r) {
+      if (typeof r.nome === "string") setNome(r.nome);
+      if (typeof r.whatsapp === "string") setWhatsapp(r.whatsapp);
+      if (typeof r.email === "string") setEmail(r.email);
+      if (r.origem !== undefined) setOrigem(r.origem);
+      if (typeof r.campanha === "string") setCampanha(r.campanha);
+      if (typeof r.empreendimento === "string") setEmpreendimento(r.empreendimento);
+      if (r.temperatura !== undefined) setTemperatura(r.temperatura);
+      if (r.contato && typeof r.contato === "object") setContato(r.contato);
+      if (typeof r.dono === "string") setDono(r.dono);
+      if (r.mensagem !== undefined) setMensagem(r.mensagem);
+      if (r.perfil !== undefined) setPerfil(r.perfil);
+
+      const abrirDetalhes =
+        !!r.detalhes ||
+        !!r.email ||
+        !!r.empreendimento ||
+        !!r.temperatura ||
+        !!r.contato?.data;
+      if (abrirDetalhes) setDetalhes(true);
+    }
+    restauradoRef.current = true;
+  }, [eu.id]);
 
   const origens = useMemo(
     () => (catalogos?.origens ?? []).filter((o) => o.ativo && (atribui || !o.restrita)),
@@ -87,6 +131,56 @@ function NovoLead() {
     const padrao = atribui ? origens.find((o) => o.restrita) : undefined;
     setOrigem((origens.find((o) => o.slug === ultima) ?? padrao)?.slug ?? null);
   }, [origens, origem, eu.id, atribui]);
+
+  useEffect(() => {
+    if (!restauradoRef.current || !eu.id) return;
+    const temAlgo = !!(
+      nome.trim() ||
+      whatsapp.trim() ||
+      email.trim() ||
+      campanha.trim() ||
+      empreendimento.trim() ||
+      temperatura ||
+      contato.data ||
+      contato.hora ||
+      mensagem ||
+      perfil ||
+      (atribui && dono)
+    );
+    if (temAlgo) {
+      salvarRascunho(chaveRascunhoNovoLead(eu.id), {
+        nome,
+        whatsapp,
+        email,
+        origem,
+        campanha,
+        empreendimento,
+        temperatura,
+        contato,
+        detalhes,
+        dono,
+        mensagem,
+        perfil,
+      });
+    } else {
+      limparRascunho(chaveRascunhoNovoLead(eu.id));
+    }
+  }, [
+    eu.id,
+    atribui,
+    nome,
+    whatsapp,
+    email,
+    origem,
+    campanha,
+    empreendimento,
+    temperatura,
+    contato,
+    detalhes,
+    dono,
+    mensagem,
+    perfil,
+  ]);
 
   function usarMensagem(texto: string, lido: LeadLido, escolhido: PerfilColado) {
     if (lido.nome.valor) setNome(lido.nome.valor);
@@ -167,6 +261,7 @@ function NovoLead() {
       }
     }
     ids.current = null;
+    limparRascunho(chaveRascunhoNovoLead(eu.id));
     setSalvando(false);
     if (atribui) setRepasse(data);
     else router.push(`/leads/ficha/?id=${data.id}`);
@@ -192,6 +287,7 @@ function NovoLead() {
   }
 
   function novoCadastro() {
+    limparRascunho(chaveRascunhoNovoLead(eu.id));
     setRepasse(null);
     setNome("");
     setWhatsapp("");
@@ -200,6 +296,7 @@ function NovoLead() {
     setEmpreendimento("");
     setTemperatura(null);
     setContato({ data: "", hora: "" });
+    setDetalhes(false);
     setMensagem(null);
     setPerfil(null);
     setDuplicado(null);

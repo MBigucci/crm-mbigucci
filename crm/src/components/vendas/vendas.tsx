@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import clsx from "clsx";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { db, novoId } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
 import { ConferirNoCatalogo, ListaEmpreendimentos } from "@/components/empreendimentos/partes";
+import { chaveRascunhoNovaVenda, chaveRascunhoVenda, lerRascunho, limparRascunho, salvarRascunho } from "@/lib/rascunho";
 import {
   diaIso,
   formatarDia,
@@ -76,11 +77,31 @@ export function RegistrarVenda({
   });
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const [editado, setEditado] = useState(false);
+  const restauradoRef = useRef(false);
+
+  useEffect(() => {
+    const r = lerRascunho<typeof f>(chaveRascunhoVenda(lead.id));
+    if (r) {
+      setF((anterior) => ({ ...anterior, ...r }));
+      setEditado(true);
+    }
+    restauradoRef.current = true;
+  }, [lead.id]);
+
+  useEffect(() => {
+    if (!restauradoRef.current || !editado) return;
+    salvarRascunho(chaveRascunhoVenda(lead.id), f);
+  }, [lead.id, f, editado]);
+
   // Um id por formulário aberto: o reenvio (resposta perdida) não registra a venda duas vezes.
   const [idVenda] = useState(novoId);
   const campo = (k: "empreendimento" | "unidade" | "assinada_em" | "pago_em" | "observacao") => ({
     value: f[k],
-    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setF((x) => ({ ...x, [k]: e.target.value })),
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setEditado(true);
+      setF((x) => ({ ...x, [k]: e.target.value }));
+    },
   });
 
   async function salvar(e: React.FormEvent) {
@@ -104,6 +125,8 @@ export function RegistrarVenda({
     });
     setSalvando(false);
     if (r) return setErro(r);
+    limparRascunho(chaveRascunhoVenda(lead.id));
+    setEditado(false);
     onRegistrada();
   }
 
@@ -134,7 +157,14 @@ export function RegistrarVenda({
           <label className="field-label" htmlFor="v-vgv">
             VGV
           </label>
-          <CampoReais id="v-vgv" valor={f.vgv} onChange={(vgv) => setF((x) => ({ ...x, vgv }))} />
+          <CampoReais
+            id="v-vgv"
+            valor={f.vgv}
+            onChange={(vgv) => {
+              setEditado(true);
+              setF((x) => ({ ...x, vgv }));
+            }}
+          />
         </div>
         <div>
           <label className="field-label" htmlFor="v-ass">
@@ -144,7 +174,15 @@ export function RegistrarVenda({
         </div>
       </div>
       <label className="flex items-center gap-3 text-[15px]">
-        <input type="checkbox" className="checkbox" checked={f.paga} onChange={(e) => setF((x) => ({ ...x, paga: e.target.checked }))} />
+        <input
+          type="checkbox"
+          className="checkbox"
+          checked={f.paga}
+          onChange={(e) => {
+            setEditado(true);
+            setF((x) => ({ ...x, paga: e.target.checked }));
+          }}
+        />
         Já está paga
       </label>
       {f.paga && (
@@ -537,6 +575,26 @@ export function NovaVenda({ corretor, onRegistrada }: { corretor: string; onRegi
   const [aberto, setAberto] = useState(false);
   const [leads, setLeads] = useState<LeadParaVenda[] | null>(null);
   const [escolhido, setEscolhido] = useState("");
+  const restauradoRef = useRef(false);
+
+  useEffect(() => {
+    const r = lerRascunho<{ aberto?: boolean; leadId?: string }>(chaveRascunhoNovaVenda(corretor));
+    if (r) {
+      if (r.aberto) setAberto(true);
+      if (r.leadId) setEscolhido(r.leadId);
+    }
+    restauradoRef.current = true;
+  }, [corretor]);
+
+  useEffect(() => {
+    if (!restauradoRef.current) return;
+    if (aberto) {
+      salvarRascunho(chaveRascunhoNovaVenda(corretor), { aberto: true, leadId: escolhido });
+    } else {
+      limparRascunho(chaveRascunhoNovaVenda(corretor));
+    }
+  }, [corretor, aberto, escolhido]);
+
   useEffect(() => {
     if (!aberto || leads) return;
     db()
@@ -578,8 +636,12 @@ export function NovaVenda({ corretor, onRegistrada }: { corretor: string; onRegi
         <RegistrarVenda
           key={lead.id}
           lead={lead}
-          onCancelar={() => setAberto(false)}
+          onCancelar={() => {
+            limparRascunho(chaveRascunhoNovaVenda(corretor));
+            setAberto(false);
+          }}
           onRegistrada={() => {
+            limparRascunho(chaveRascunhoNovaVenda(corretor));
             setAberto(false);
             setEscolhido("");
             setLeads(null);
@@ -587,7 +649,14 @@ export function NovaVenda({ corretor, onRegistrada }: { corretor: string; onRegi
           }}
         />
       ) : (
-        <button type="button" className="btn btn-ghost focus-ring justify-self-start" onClick={() => setAberto(false)}>
+        <button
+          type="button"
+          className="btn btn-ghost focus-ring justify-self-start"
+          onClick={() => {
+            limparRascunho(chaveRascunhoNovaVenda(corretor));
+            setAberto(false);
+          }}
+        >
           Cancelar
         </button>
       )}

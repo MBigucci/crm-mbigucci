@@ -48,6 +48,7 @@ import { NomeEmpreendimento, RadarDoLead } from "@/components/empreendimentos/pa
 import { DadosDoCliente, DocumentosDoLead, PerfilCliente, ResumoDoPerfil } from "@/components/leads/perfil";
 import { usePerfilDoLead } from "@/lib/perfil-dados";
 import type { PerfilAmpliado } from "@/lib/perfil";
+import { chaveRascunhoInteracao, lerRascunho, limparRascunho, salvarRascunho } from "@/lib/rascunho";
 
 export default function FichaPage() {
   return (
@@ -597,6 +598,29 @@ function RegistrarInteracao({ leadId, onSalvo }: { leadId: string; onSalvo: () =
   const [salvando, setSalvando] = useState(false);
   // Mesmo id até gravar: se a resposta se perder e a pessoa tocar de novo, não duplica.
   const idEnvio = useRef<string | null>(null);
+  const restauradoRef = useRef(false);
+
+  useEffect(() => {
+    const r = lerRascunho<{ tipo?: TipoInteracao; texto?: string; contato?: { data: string; hora: string } }>(
+      chaveRascunhoInteracao(leadId),
+    );
+    if (r) {
+      if (r.tipo) setTipo(r.tipo);
+      if (typeof r.texto === "string") setTexto(r.texto);
+      if (r.contato && typeof r.contato === "object") setContato(r.contato);
+    }
+    restauradoRef.current = true;
+  }, [leadId]);
+
+  useEffect(() => {
+    if (!restauradoRef.current) return;
+    const vazio = !texto.trim() && !contato.data && !contato.hora && tipo === "whatsapp";
+    if (vazio) {
+      limparRascunho(chaveRascunhoInteracao(leadId));
+    } else {
+      salvarRascunho(chaveRascunhoInteracao(leadId), { tipo, texto, contato });
+    }
+  }, [leadId, tipo, texto, contato]);
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
@@ -613,6 +637,7 @@ function RegistrarInteracao({ leadId, onSalvo }: { leadId: string; onSalvo: () =
     setSalvando(false);
     if (error && !jaEstavaSalvo(error)) return setErro(mensagemErro(error));
     idEnvio.current = null;
+    limparRascunho(chaveRascunhoInteracao(leadId));
     setTexto("");
     setContato({ data: "", hora: "" });
     await onSalvo();

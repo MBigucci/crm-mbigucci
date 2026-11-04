@@ -4,9 +4,10 @@
 // "Perfil", os dados pessoais para quem só lê e os documentos. Regras em
 // docs/leads.md, seção 17.
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { formatarWhatsapp, normalizarWhatsapp, type Lead } from "@/lib/leads";
+import { chaveRascunhoPerfil, lerRascunho, limparRascunho, salvarRascunho } from "@/lib/rascunho";
 import {
   ACEITA_DOCUMENTO,
   CATEGORIAS_DOCUMENTO,
@@ -146,12 +147,31 @@ export function PerfilCliente({
   const [salvo, setSalvo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const [editado, setEditado] = useState(false);
+  const restauradoRef = useRef(false);
+
+  useEffect(() => {
+    const r = lerRascunho<typeof f>(chaveRascunhoPerfil(lead.id));
+    if (r) {
+      setF((anterior) => ({ ...anterior, ...r }));
+      setEditado(true);
+      if (!aberto) onAlternar(true);
+    }
+    restauradoRef.current = true;
+  }, [lead.id]);
+
+  useEffect(() => {
+    if (!restauradoRef.current || !editado) return;
+    salvarRascunho(chaveRascunhoPerfil(lead.id), f);
+  }, [lead.id, f, editado]);
+
   const campo = (k: keyof typeof f) => ({
     id: `p-${k}`,
     value: f[k],
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const v = e.target.value;
       setF((x) => ({ ...x, [k]: v }));
+      setEditado(true);
       setSalvo(false);
     },
   });
@@ -199,6 +219,8 @@ export function PerfilCliente({
     const e2 = await onSalvar({ ...base, ...extra });
     setSalvando(false);
     if (e2) return setErro(e2);
+    limparRascunho(chaveRascunhoPerfil(lead.id));
+    setEditado(false);
     setSalvo(true);
   }
 
