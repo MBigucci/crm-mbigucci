@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup: parcerias</title>
+<style>
+@font-face{font-family:"Bricolage Grotesque";src:url("../../crm/src/app/fonts/BricolageGrotesque-latin.woff2") format("woff2");font-weight:400 800}
+@font-face{font-family:"Inter";src:url("../../crm/src/app/fonts/Inter-latin.woff2") format("woff2");font-weight:400 700}
+:root{--paper:#f7f6f2;--surface:#fff;--ink:#0d0e11;--soft:#4a4b52;--conc:#6f6b63;--line:#e5e3dd;--ctl:#76736c;--brand:#e11119;--brand-d:#b90d14;--ok:#1f7a45;--wa:#925600;--tint:#fff6f6;--band:#0d0e11}
+*{box-sizing:border-box}
+body{margin:0;background:#dcdad3;font:14px/1.45 Inter,sans-serif;color:var(--ink)}
+h1,h2,h3{font-family:"Bricolage Grotesque",sans-serif;letter-spacing:-.01em;margin:0}
+.nota{max-width:1700px;margin:0 auto;padding:20px 24px 0}
+.nota h1{font-size:24px}.nota p{margin:4px 0 0;color:var(--soft);max-width:760px}
+.mesa{display:flex;gap:28px;flex-wrap:wrap;justify-content:center;padding:24px}
+.tela{width:375px}
+.rot{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#4a4b52;margin:0 0 6px}
+.fone{height:760px;overflow:auto;background:var(--paper);border:1px solid var(--ctl);border-radius:4px;position:relative}
+.topo{position:sticky;top:0;background:rgba(247,246,242,.92);padding:12px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;z-index:2}
+.logo{font:800 17px "Bricolage Grotesque";color:var(--brand)}
+.menu{font-size:13px;font-weight:600}
+.corpo{padding:16px 16px 100px}
+.eyebrow{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--conc)}
+.tp{font:800 25px/1.05 "Bricolage Grotesque";margin:2px 0 4px}
+.tc{font:700 17px/1.15 "Bricolage Grotesque"}
+.num{font-family:"Bricolage Grotesque";font-variant-numeric:tabular-nums}
+.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:14px 16px 14px 20px;margin-top:10px}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--ink)}
+.card.b::before{background:var(--brand)}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:2px;font:600 13px/1.2 Inter;padding:9px 16px;cursor:pointer;background:none;color:var(--ink)}
+.red{background:var(--brand);color:#fff}
+.ghost{border-color:var(--ctl);background:var(--surface)}
+.lg{font-size:15px;padding:14px 20px}
+.rodape{position:sticky;bottom:0;background:var(--paper);border-top:1px solid var(--line);padding:12px 16px;display:flex;gap:8px}
+.rodape .btn{flex:1}
+.lab{display:block;margin:12px 0 5px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--soft)}
+.in{width:100%;border:1px solid var(--ctl);background:var(--paper);border-radius:2px;padding:12px;font:16px/1.3 Inter;color:var(--ink)}
+.in::placeholder{color:var(--soft)}
+.busca{margin-top:12px}
+.chips{display:flex;gap:6px;margin:10px 0 0;flex-wrap:wrap}
+.chip{border:1px solid var(--ctl);background:var(--surface);border-radius:2px;padding:7px 11px;font-size:13px;font-weight:600}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.selo{display:inline-block;border:1px solid var(--line);border-radius:2px;padding:2px 6px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--soft);white-space:nowrap}
+.ok{color:var(--ok);font-weight:600}.wa{color:var(--wa);font-weight:600}.er{color:var(--brand);font-weight:600}
+.lin{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.sm{font-size:13px;color:var(--soft)}
+.aux{font-size:12px;color:var(--conc)}
+.sep{border-top:1px solid var(--line);margin:10px 0}
+.band{background:var(--band);color:#fff;border:1px solid var(--band);border-left:4px solid var(--brand);border-radius:3px;padding:14px;margin-top:10px}
+.band .sm{color:#d9d6cf}
+.tl{margin:8px 0 0;padding:0;list-style:none}
+.tl li{border-left:1px solid var(--ctl);padding:0 0 12px 12px;margin-left:4px;position:relative}
+.tl li::before{content:"";position:absolute;left:-4px;top:5px;width:7px;height:7px;background:var(--ink)}
+.tl li.nx::before{background:var(--brand)}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.legenda{max-width:1700px;margin:0 auto;padding:0 24px 32px;color:var(--soft);font-size:13px}
+.legenda li{margin-bottom:3px}
+.pub{background:var(--paper)}
+.pub .topo{justify-content:flex-start}
+</style>
+</head>
+<body>
+<div class="nota">
+  <h1>Parcerias: mockup das 4 telas</h1>
+  <p>Mobile primeiro (375px), no MBigucci Design System. Dados fictícios. Nada de verba, pontos ou ranking. Role cada tela.</p>
+</div>
+
+<div class="mesa">
+
+<!-- 1. LISTA -->
+<div class="tela">
+  <p class="rot">1. Lista de parceiros (gerente)</p>
+  <div class="fone">
+    <div class="topo"><span class="logo">MBigucci</span><span class="menu">Parceiros ▾</span></div>
+    <div class="corpo">
+      <span class="eyebrow">Seus parceiros</span>
+      <h2 class="tp">Parceiros</h2>
+
+      <div class="card b">
+        <span class="eyebrow">Atenção</span>
+        <p class="tc" style="margin:2px 0 6px">2 parceiros pedem contato</p>
+        <p class="sm" style="margin:0"><span class="er">✕</span> Ana Souza passa dos 90 dias em <span class="num">6</span> dias.<br><span class="wa">!</span> Marcos Lima procurou a MBigucci de novo.</p>
+      </div>
+
+      <div class="busca"><label class="lab" for="b1" style="margin-top:12px">Buscar</label><input id="b1" class="in" placeholder="Nome, empresa, WhatsApp ou CRECI"></div>
+      <div class="chips"><span class="chip on">Todos <span class="num">12</span></span><span class="chip">Contato vencido <span class="num">3</span></span><span class="chip">Sem interação 61 dias+ <span class="num">2</span></span></div>
+
+      <div class="card">
+        <div class="lin"><div><p class="tc" style="margin:0">Ana Souza</p><span class="sm">Imobiliária Vila Nova · CRECI 12345-J</span></div><span class="selo er">✕ 84 dias</span></div>
+        <div class="sep"></div>
+        <p class="sm" style="margin:0">Última interação: <span class="num">12/08/2026</span> · WhatsApp<br>Próximo contato: <span class="er">✕ vencido, <span class="num">02/11/2026</span></span></p>
+      </div>
+      <div class="card">
+        <div class="lin"><div><p class="tc" style="margin:0">Marcos Lima</p><span class="sm">Autônomo · CRECI 98765-F</span></div><span class="selo wa">! Procurou de novo</span></div>
+        <div class="sep"></div>
+        <p class="sm" style="margin:0">Última interação: <span class="num">29/09/2026</span> · Reunião<br>Próximo contato: <span class="num">10/11/2026</span></p>
+      </div>
+      <div class="card">
+        <div class="lin"><div><p class="tc" style="margin:0">Paula Reis</p><span class="sm">Reis Imóveis · Santo André</span></div><span class="selo ok">✓ <span class="num">21</span> dias</span></div>
+        <div class="sep"></div>
+        <p class="sm" style="margin:0">Última interação: <span class="num">14/10/2026</span> · Ligação<br>Próximo contato: <span class="num">08/11/2026</span></p>
+      </div>
+      <div class="card">
+        <div class="lin"><div><p class="tc" style="margin:0">Rafael Teixeira</p><span class="sm">Autônomo · São Bernardo</span></div><span class="selo">Novo</span></div>
+        <div class="sep"></div>
+        <p class="sm" style="margin:0">Recebido pelo link em <span class="num">03/11/2026</span>.<br>Registre a primeira interação.</p>
+      </div>
+    </div>
+    <div class="rodape"><button class="btn red lg">+ Novo parceiro</button></div>
+  </div>
+</div>
+
+<!-- 2. FICHA -->
+<div class="tela">
+  <p class="rot">2. Ficha do parceiro, com interações</p>
+  <div class="fone">
+    <div class="topo"><span class="logo">MBigucci</span><span class="menu">← Parceiros</span></div>
+    <div class="corpo">
+      <span class="eyebrow">Parceiro</span>
+      <h2 class="tp">Marcos Lima</h2>
+      <span class="sm">Autônomo · CRECI 98765-F · Santo André e região</span>
+
+      <div class="card b">
+        <span class="eyebrow">Atenção</span>
+        <p class="sm" style="margin:2px 0 0"><span class="wa">!</span> Marcos procurou a MBigucci de novo em <span class="num">03/11/2026</span>. Ele já é seu parceiro. Registre uma interação para reiniciar os <span class="num">90</span> dias.</p>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow">Prazo</span>
+        <div class="lin"><p class="tc" style="margin:2px 0 0"><span class="wa">!</span> <span class="num">36</span> dias sem interação</p><span class="aux">limite <span class="num">90</span></span></div>
+        <p class="aux" style="margin:4px 0 0">Editar o cadastro não reinicia o prazo. Só registrar interação.</p>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow">Contato</span>
+        <p class="sm" style="margin:4px 0 0;color:var(--ink)"><span class="num">(11) 98888-1234</span> · marcos@exemplo.com.br<br>Empresa: autônomo<br>Região: Santo André, Mauá, São Caetano</p>
+        <p style="margin:8px 0 0"><button class="btn ghost">Abrir WhatsApp</button> <button class="btn ghost">Editar</button></p>
+      </div>
+
+      <div class="card">
+        <div class="lin"><span class="eyebrow">Interações</span><span class="aux"><span class="num">4</span> registros</span></div>
+        <ul class="tl">
+          <li class="nx"><b>Próximo contato</b> · <span class="num">10/11/2026</span><br><span class="sm">Levar a tabela do Residencial Aurora</span></li>
+          <li><b>Reunião</b> · <span class="num">29/09/2026</span><br><span class="sm">Apresentou dois clientes. Quer material impresso.</span></li>
+          <li><b>WhatsApp</b> · <span class="num">02/09/2026</span><br><span class="sm">Enviei tipologias. Pediu visita ao decorado.</span></li>
+          <li><b>Cadastro</b> · <span class="num">19/08/2026</span><br><span class="sm">Veio pelo link. Roleta: você.</span></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow">Indicações</span>
+        <p class="sm" style="margin:4px 0 0">Aparecem aqui quando o lead tiver a origem Parceiro.</p>
+      </div>
+    </div>
+    <div class="rodape"><button class="btn red lg">+ Registrar interação</button></div>
+  </div>
+</div>
+
+<!-- 2b. REGISTRAR INTERAÇÃO + CADASTRO MANUAL -->
+<div class="tela">
+  <p class="rot">3. Cadastro manual (e registrar interação)</p>
+  <div class="fone">
+    <div class="topo"><span class="logo">MBigucci</span><span class="menu">← Parceiros</span></div>
+    <div class="corpo">
+      <span class="eyebrow">Novo parceiro</span>
+      <h2 class="tp">Cadastrar parceiro</h2>
+      <div class="card">
+        <label class="lab" for="n" style="margin-top:0">Nome</label><input id="n" class="in" value="Carla Mendes">
+        <label class="lab" for="e">Empresa</label><input id="e" class="in" placeholder="Deixe vazio se for autônomo">
+        <label class="lab" for="w">WhatsApp</label><input id="w" class="in" value="(11) 97777-5566">
+        <label class="lab" for="c">CRECI</label><input id="c" class="in" placeholder="Opcional se tiver WhatsApp">
+        <label class="lab" for="m">E-mail</label><input id="m" class="in" placeholder="nome@exemplo.com.br">
+        <label class="lab" for="r">Região de atuação</label><input id="r" class="in" placeholder="Ex.: Santo André e Mauá">
+      </div>
+
+      <div class="card" style="border-color:var(--ctl)">
+        <span class="eyebrow">Se o parceiro já existir</span>
+        <p class="sm" style="margin:4px 0 0;color:var(--ink)"><span class="er">✕</span> Já é parceiro de Roberto Alves. Não foi cadastrado. Roberto recebeu um aviso.</p>
+        <p class="aux" style="margin:6px 0 0">Compara WhatsApp ou CRECI. Se faltar um, vale o outro.</p>
+      </div>
+
+      <div style="height:18px"></div>
+      <span class="eyebrow">Interação (na ficha)</span>
+      <div class="card">
+        <span class="lab" style="margin-top:0">Tipo</span>
+        <div class="seg"><span class="chip on">Ligação</span><span class="chip">WhatsApp</span><span class="chip">Reunião</span><span class="chip">Visita</span></div>
+        <label class="lab" for="rs">Resumo</label><textarea id="rs" class="in" rows="3" placeholder="O que foi combinado"></textarea>
+        <label class="lab" for="pc">Próximo contato</label><input id="pc" class="in" value="10/11/2026">
+        <p class="aux" style="margin:6px 0 0">O próximo contato entra na sua lista do dia.</p>
+      </div>
+      <p class="aux">O rascunho fica salvo se a página recarregar.</p>
+    </div>
+    <div class="rodape"><button class="btn ghost lg">Cancelar</button><button class="btn red lg">Salvar</button></div>
+  </div>
+</div>
+
+<!-- 4. LINK PÚBLICO -->
+<div class="tela">
+  <p class="rot">4. Link público (sem login)</p>
+  <div class="fone pub">
+    <div class="topo"><span class="logo">MBigucci</span></div>
+    <div class="corpo">
+      <span class="eyebrow">Programa de parceiros</span>
+      <h2 class="tp">Seja parceiro MBigucci</h2>
+      <p class="sm" style="margin:6px 0 0;color:var(--ink)">Corretor autônomo ou imobiliária: deixe seus dados e um gerente fala com você.</p>
+      <div class="card b">
+        <label class="lab" for="p1" style="margin-top:0">Nome</label><input id="p1" class="in">
+        <label class="lab" for="p2">Empresa</label><input id="p2" class="in" placeholder="Se for autônomo, deixe vazio">
+        <label class="lab" for="p3">WhatsApp</label><input id="p3" class="in" inputmode="tel" placeholder="(11) 90000-0000">
+        <label class="lab" for="p4">CRECI</label><input id="p4" class="in">
+        <label class="lab" for="p5">E-mail</label><input id="p5" class="in" inputmode="email">
+        <label class="lab" for="p6">Região de atuação</label><input id="p6" class="in" placeholder="Ex.: São Bernardo e Diadema">
+      </div>
+
+      <p class="aux" style="margin:14px 0 4px">Depois de enviar, aparece:</p>
+      <div class="card">
+        <p class="tc" style="margin:0"><span class="ok">✓</span> Recebemos seus dados</p>
+        <p class="sm" style="margin:4px 0 0;color:var(--ink)">Um gerente da MBigucci entra em contato pelo WhatsApp.</p>
+      </div>
+      <p class="aux">Mesmo texto para parceiro novo ou já cadastrado, para não revelar quem é parceiro.</p>
+    </div>
+    <div class="rodape"><button class="btn red lg">Enviar</button></div>
+  </div>
+</div>
+
+</div>
+
+<ul class="legenda">
+  <li><b>Gerente geral:</b> a lista ganha o filtro "Gerente" e a coluna do dono; vê todos.</li>
+  <li><b>Faixa dos 90 dias</b> usa sinal + palavra + cor, por mês (definido pelo Felipe em 04/11/2026): ✓ até 30 dias, ! de 31 a 60 e ✕ de 61 a 90.</li>
+  <li><b>Lista do dia:</b> o próximo contato do parceiro aparece como item "Parceiro: ligar para ...", ao lado dos leads.</li>
+  <li>Sem ícones, emoji, sombra ou texto de verba, pontos e ranking.</li>
+</ul>
+</body>
+</html>

@@ -26,7 +26,9 @@ Sumário: Leia antes · O que o Felipe pediu · Decisões técnicas · Etapas ·
 9. **Indicações:** o lead ganha a origem "Parceiro" com o parceiro vinculado, para ver quanto cada parceiro indicou e vendeu.
 10. **Em paralelo** com a lista de melhorias do Felipe, em sessão separada: por isso os arquivos abaixo são separados.
 
-Suposições a confirmar com o Felipe na revisão: gerente que cadastra à mão um parceiro que já é de outro gerente vê "já é parceiro de <nome>" e o dono recebe o aviso; parceiro cujo gerente foi desativado é tratado como sem dono e entra na roleta.
+11. **Faixas do prazo (04/11/2026, mockup aprovado):** ✓ no 1º mês (até 30 dias), ! no 2º (31 a 60), ✕ no 3º (61 a 90). Suposições abaixo e aviso aos 80 dias aprovados ("de resto aprovado").
+
+Suposições (aprovadas pelo Felipe em 04/11/2026): gerente que cadastra à mão um parceiro que já é de outro gerente vê "já é parceiro de <nome>" e o dono recebe o aviso; parceiro cujo gerente foi desativado é tratado como sem dono e entra na roleta.
 
 ## Decisões técnicas
 - **SQL em arquivo novo** `crm/supabase/parcerias.sql`, idempotente, que o Felipe roda no SQL Editor. Não edite `schema.sql` (a outra frente mexe nele).
