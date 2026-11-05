@@ -205,6 +205,16 @@ Tamanho: **P** = até meia sessão, **M** = uma sessão, **G** = duas ou mais se
 | 23 | **Check-in do gerente no plantão** por localização (raio de 200 m, selfie como plano B). O check-in do corretor fica para depois, com o jurídico. Estudo `docs/estudo-checkin-plantao.md` | plantão | M | — |
 | 24 | **Relatórios para o Felipe e o marketing**. Estudo `docs/estudo-relatorios.md`. As Faixas de VGV da própria equipe para o gerente (D11) mudam a regra no banco | relatórios | G | — |
 | 25 | **Escala semanal pelo CRM** (pedido do Felipe em 04/11/2026): o corretor vê onde está escalado em cada dia e período, a recepção sabe quem esperar na loja, e o escalado se compara com os 6 períodos da roleta do fim de semana. Depois da etapa 1 da recepção (item 22). A decidir no desenho: quem monta a escala e se o corretor pede troca | plantão | M | — |
+| 26 | **Etapa parada como sugestão**: o card mostra "O ideal é até N dias nesta etapa", sem cobrança. Depois dos ajustes da ficha. `docs/crm-referencias.md`, proposta 1 | leads | P | — |
+| 27 | **Cadência das tentativas**: 1ª mensagem em 1 dia, 2ª ligação em 2 dias, 3ª última mensagem e sugestão de descarte, cada uma com a mensagem pronta. Depois dos ajustes da ficha. Proposta 4 | leads | P | — |
+| 28 | **Avisos para o gerente**: prazo de 15 min estourado na equipe, na hora, e visitas aguardando baixa às 19h. Proposta 3 | notificações | P | — |
+| 29 | **Agendar visita pela Agenda**, com a busca do cliente. Proposta 5 | visitas | P | — |
+| 30 | **Carteira para retomar**: até 5 por semana (descartados sem retorno há 90 dias, frios sem contato há 60) e um filtro para retomar os que aguardam lançamento. Proposta 8 | leads | M | — |
+| 31 | **Sequência de dias em dia** (da Bruna), para o corretor e para o gerente por corretor | metas | P | — |
+| 32 | **Pesquisa de satisfação depois da visita**, link público de 3 perguntas; nota para o gerente geral, marketing e gerente por corretor, e o corretor vê as dele. Proposta 6 | visitas | M | — |
+| 33 | **Unidades disponíveis** lidas de uma planilha do comercial, só leitura, sem reserva | imóveis | M | — |
+| 34 | **Simulador no menu**: abre `mbigucci.com.br/ferramentas` em outra aba | base | P | — |
+| 35 | **Pós-venda até as chaves**: conversar bem no futuro. Hoje a empresa usa outro sistema, e a ideia é trazer tudo para o CRM. Proposta 7 | pós-venda | G | — |
 
 Os itens 1, 2 e 3 mexem no mesmo gatilho e nas mesmas telas (cadastro, ficha, `lead_interacoes`). Por isso convém fazê-los na mesma sessão ou em sequência, nunca em paralelo.
 
