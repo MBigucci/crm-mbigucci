@@ -210,7 +210,8 @@ export function Cabecalho({ itens, conta }: { itens?: ItemMenu[]; conta?: Conta 
 
   return (
     <>
-      <header className="cabecalho-vidro sem-impressao sticky top-0 z-30">
+      {/* fixed, não sticky: no fim da rolagem o "quique" do navegador arrastava o sticky. */}
+      <header className="cabecalho-vidro sem-impressao fixed inset-x-0 top-0 z-30">
         <div className="flex min-h-[58px] items-center justify-between gap-4 px-4 py-2 lg:min-h-[63px] lg:px-6">
           <div className="flex min-w-0 items-center">
             <Marca />
@@ -295,6 +296,8 @@ export function Cabecalho({ itens, conta }: { itens?: ItemMenu[]; conta?: Conta 
         )}
       </header>
       {/* Fora do header: o desfoque dele viraria referência do position: fixed. */}
+      {/* Reserva a altura do cabeçalho fixo (60 + 1 px no celular, 63 + 1 px no computador). */}
+      <div aria-hidden className="sem-impressao h-[61px] lg:h-16" />
       <AvisoOffline />
     </>
   );
