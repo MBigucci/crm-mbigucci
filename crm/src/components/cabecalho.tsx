@@ -264,7 +264,7 @@ export function Cabecalho({ itens, conta }: { itens?: ItemMenu[]; conta?: Conta 
                 </li>
               ))}
             </ul>
-            <ul aria-label="Atalhos" className="mt-2 border-t border-on-dark/15 pt-2">
+            <ul aria-label="Atalhos" className="mt-2 divisoria-nav border-t pt-2">
               {ATALHOS.map((a) => (
                 <li key={a.href}>
                   <LinkDoMenu item={a} atual={false} onClick={() => setAberto(false)} className={itemCelular(false)} />
@@ -272,7 +272,7 @@ export function Cabecalho({ itens, conta }: { itens?: ItemMenu[]; conta?: Conta 
               ))}
             </ul>
             {conta && (
-              <div className="mt-2 border-t border-on-dark/15 pt-2">
+              <div className="mt-2 divisoria-nav border-t pt-2">
                 <p className="px-5 pb-1 pt-2 text-[13px] text-on-dark-muted">{conta.nome}</p>
                 <ul>
                   <li>

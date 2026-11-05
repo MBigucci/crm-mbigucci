@@ -27,8 +27,9 @@
   --overlay: 13 14 17;
   --secondary: 239 238 234;
   --secondary-edge: 129 125 116;
-  --nav: 33 30 32;
-  --nav-ativo: 73 59 61;
+  --nav: 22 24 28;
+  --nav-ativo: 43 45 50;
+  --nav-linha: 51 54 60;
   --nav-marca: 255 107 112;
 }
 
@@ -56,8 +57,9 @@
   --overlay: 13 14 17;
   --secondary: 48 49 56;
   --secondary-edge: 135 137 149;
-  --nav: 33 30 32;
-  --nav-ativo: 73 59 61;
+  --nav: 22 24 28;
+  --nav-ativo: 43 45 50;
+  --nav-linha: 51 54 60;
   --nav-marca: 255 107 112;
 }
 
@@ -298,9 +300,20 @@
     top: 50%;
     transform: translateY(-50%) rotate(-45deg);
   }
+  /* Grafite do menu do site (#16181c). */
   .menu-escuro {
     background: rgb(var(--nav));
     color: rgb(var(--on-dark-soft));
+  }
+  .divisoria-nav {
+    border-color: rgb(var(--nav-linha));
+  }
+  /* No tema escuro o grafite é quase o fundo da página: uma borda fina separa. */
+  :root[data-tema="escuro"] .barra-lateral {
+    border-right: 1px solid rgb(var(--line));
+  }
+  :root[data-tema="escuro"] #menu-celular {
+    border-bottom: 1px solid rgb(var(--line));
   }
   .item-menu {
     @apply flex items-center gap-[10px] font-semibold leading-[1.2] transition-colors;
