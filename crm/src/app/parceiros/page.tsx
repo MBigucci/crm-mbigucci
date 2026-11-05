@@ -162,10 +162,10 @@ function Parceiros() {
           ) : (
             <span
               key={e.slug}
-              className="rounded-sm border border-line px-3 py-2 text-[13px] font-semibold text-concrete opacity-60"
+              className="rounded-sm border border-dashed border-line px-3 py-2 text-[13px] font-semibold text-concrete"
               title="Depende da origem Parceiro no lead"
             >
-              {e.nome} –
+              {e.nome} · em breve
             </span>
           ),
         )}

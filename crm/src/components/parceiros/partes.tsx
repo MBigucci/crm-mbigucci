@@ -41,7 +41,10 @@ export function SeloPrazo({ faixa, dias, estagio }: { faixa: Faixa; dias: number
   );
 }
 
-/** Estágio no funil: os atingidos em ink, os seguintes apagados; Indicou e Vendeu ficam apagados até a etapa 5. */
+/**
+ * Estágio no funil. O atual é o único preenchido (não depende só da cor); os já passados ficam em ink,
+ * os seguintes em concrete. Indicou e Vendeu chegam na etapa 5: aparecem com "–" e "em breve" para o leitor de tela.
+ */
 export function TrilhaEstagio({ estagio }: { estagio: Estagio }) {
   const atual = ESTAGIOS.findIndex((e) => e.slug === estagio);
   return (
@@ -49,22 +52,25 @@ export function TrilhaEstagio({ estagio }: { estagio: Estagio }) {
       className="mt-2 inline-flex max-w-full divide-x divide-line overflow-hidden rounded-sm border border-line text-[11px] leading-[1.5]"
       aria-label={`Estágio: ${ESTAGIOS[atual]?.nome}`}
     >
-      {ESTAGIOS.map((e, i) => {
-        const feito = i <= atual && e.ativo;
-        return (
-          <li
-            key={e.slug}
-            aria-current={i === atual ? "step" : undefined}
-            className={clsx(
-              "whitespace-nowrap px-[5px] py-[1px] font-semibold",
-              feito ? "bg-ink text-surface" : "text-concrete",
-              !e.ativo && "opacity-60",
-            )}
-          >
-            {e.nome}
-          </li>
-        );
-      })}
+      {ESTAGIOS.map((e, i) => (
+        <li
+          key={e.slug}
+          aria-current={i === atual ? "step" : undefined}
+          title={e.ativo ? undefined : "Em breve"}
+          className={clsx(
+            "whitespace-nowrap px-1 py-[1px] font-semibold",
+            i === atual ? "bg-ink text-surface" : i < atual ? "text-ink" : "text-concrete",
+          )}
+        >
+          {e.nome}
+          {!e.ativo && (
+            <>
+              <span aria-hidden className="ml-0.5">–</span>
+              <span className="sr-only"> (em breve)</span>
+            </>
+          )}
+        </li>
+      ))}
     </ol>
   );
 }
@@ -206,7 +212,8 @@ export function CamposCadastro({
           onChange={muda("empresa")}
         />
       </div>
-      <div className="grid gap-3 md:grid-cols-2">
+      <fieldset className="grid gap-3 md:grid-cols-2">
+        <legend className="mb-2 text-[13px] text-ink-soft md:col-span-2">Informe WhatsApp ou CRECI</legend>
         <div>
           <label className="field-label" htmlFor={`${idBase}-whatsapp`}>
             WhatsApp
@@ -227,12 +234,11 @@ export function CamposCadastro({
           <input
             id={`${idBase}-creci`}
             className="input"
-            placeholder="Opcional se tiver WhatsApp"
             value={campos.creci}
             onChange={muda("creci")}
           />
         </div>
-      </div>
+      </fieldset>
       <div>
         <label className="field-label" htmlFor={`${idBase}-email`}>
           E-mail
