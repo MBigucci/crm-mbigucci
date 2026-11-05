@@ -1,7 +1,6 @@
-// Programa de pontuação e verba (puras, testadas com `node --test`). Sigiloso
-// até a reunião de novembro/2026: as telas só aparecem para o gerente geral
-// enquanto a chave estiver desligada, e o banco não entrega os dados aos
-// outros perfis. Regras em docs/pontuacao-verba.md.
+// Programa de pontuação e verba (puras, testadas com `node --test`). Quem vê
+// o quê sai das permissões, e o banco filtra os dados de cada perfil. Regras em
+// docs/pontuacao-verba.md.
 
 import { ehValida, type Venda } from "./vendas.ts";
 

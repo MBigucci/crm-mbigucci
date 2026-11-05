@@ -72,7 +72,7 @@ test("prepara o banco", async () => {
   await db.exec(`update public.profiles set ativo = false where id = '${id(DES)}'`);
 });
 
-test("permissões: padrões só na criação, e nada sigiloso no catálogo que todos leem", async () => {
+test("permissões: padrões só na criação", async () => {
   const rp = await linhas(`select perfil, permissao from public.role_permissions
                            where permissao in ('vendas.corrigir_equipe', 'metas.definir_vgv', 'painel.campanha') order by 2`);
   assert.deepEqual(rp, [
@@ -83,9 +83,6 @@ test("permissões: padrões só na criação, e nada sigiloso no catálogo que t
   await db.exec(schema);
   assert.equal((await linhas(`select count(*)::int n from public.role_permissions where permissao = 'vendas.corrigir_equipe'`))[0].n, 0);
   await db.exec(`insert into public.role_permissions values ('gerente', 'vendas.corrigir_equipe')`);
-
-  const catalogo = (await como(CA, () => linhas(`select slug || ' ' || descricao t from public.permissions`))).map((r) => r.t).join(" ");
-  assert.doesNotMatch(catalogo, /verba|premia|prêmio|pontu|ranking/i);
 });
 
 test("registrar: o dono do lead registra, o lead vai para venda e o histórico grava", async () => {

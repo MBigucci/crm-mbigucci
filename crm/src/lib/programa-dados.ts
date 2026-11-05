@@ -1,11 +1,11 @@
 "use client";
 
-// Leitura e escrita do programa de pontuação no Supabase. Quem pode o quê (a
-// chave, a aprovação só pelo gerente geral, o período sem duplicar) fica no
+// Leitura e escrita do programa de pontuação no Supabase. Quem pode o quê (as
+// permissões, a aprovação só pelo gerente geral, o período sem duplicar) fica no
 // banco: aqui só se grava e se traduz o erro. Regras em docs/pontuacao-verba.md.
 
 import { useCallback, useEffect, useState } from "react";
-import { db, supabase } from "./supabase";
+import { db } from "./supabase";
 import { mensagemErro } from "./erros";
 import { COLUNAS_CRITERIO, COLUNAS_LANCAMENTO, type Criterio, type Lancamento, type SlugCriterio, type StatusLancamento, type Turno } from "./programa";
 
@@ -20,40 +20,6 @@ function erroPrograma(e: { message?: string } | null): string | null {
   if (m.includes("lancamentos_pontos_comprovante_check")) return "O comprovante precisa ser um link que começa com https://.";
   if (m.includes("lancamentos_recusa_tem_motivo")) return "Escreva o motivo da recusa.";
   return mensagemErro(e);
-}
-
-export type EstadoPrograma = { carregado: boolean; ativo: boolean };
-
-let cache: { usuario: string; estado: EstadoPrograma } | null = null;
-const ouvintes = new Set<(e: EstadoPrograma) => void>();
-
-/**
- * A chave do programa para o usuário logado. Quem não é gerente geral só
- * fica sabendo se está ligada. Se a função não existe (o SQL ainda não rodou),
- * vale desligada.
- */
-export function useEstadoPrograma(usuario: string | null): EstadoPrograma & { recarregar: () => void } {
-  const [estado, setEstado] = useState<EstadoPrograma>(
-    cache && cache.usuario === usuario ? cache.estado : { carregado: false, ativo: false },
-  );
-  const recarregar = useCallback(() => {
-    if (!supabase || !usuario) return;
-    supabase.rpc("programa_estado").then(({ data }) => {
-      const d = (data ?? {}) as { ativo?: boolean };
-      const novo = { carregado: true, ativo: d.ativo === true };
-      cache = { usuario, estado: novo };
-      ouvintes.forEach((f) => f(novo));
-    });
-  }, [usuario]);
-  useEffect(() => {
-    ouvintes.add(setEstado);
-    if (!cache || cache.usuario !== usuario) recarregar();
-    else setEstado(cache.estado);
-    return () => {
-      ouvintes.delete(setEstado);
-    };
-  }, [usuario, recarregar]);
-  return { ...estado, recarregar };
 }
 
 export function useCriterios() {

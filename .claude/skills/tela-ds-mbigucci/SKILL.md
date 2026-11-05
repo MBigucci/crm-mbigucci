@@ -21,7 +21,6 @@ Leia `docs/design-system.md` primeiro. A fonte da verdade é o artifact citado l
 - [ ] Português do Brasil, frases curtas, imperativo, caixa de frase em títulos e botões, sem exclamação. O eyebrow fica em caixa alta pelo CSS.
 - [ ] Todo número vem em Bricolage com `.num` e no formato `R$ 1.300`, `60,60%` ou `dd/mm/aaaa`.
 - [ ] O erro diz o que houve e o que fazer, começa com ✕ e tem a barra `brand`. O estado vazio diz o próximo passo.
-- [ ] O texto para corretores **não cita** verba, pontos que viram verba nem ranking enquanto o "Programa de verba ativo" estiver desligado.
 
 ## Estado e acessibilidade
 - [ ] Sem ícones nem emoji: use os sinais ✓ ! ✕ – → +. O estado é sempre **sinal + palavra + cor**.

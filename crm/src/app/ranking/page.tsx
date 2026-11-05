@@ -8,10 +8,10 @@ import { usePerfil } from "@/lib/sessao";
 import { limitesDoMes, posicoes } from "@/lib/programa";
 import { useRanking } from "@/lib/programa-dados";
 
-/** Ranking de pontos aprovados no mês. Todos os corretores veem, só com a chave ligada. */
+/** Ranking de pontos aprovados no mês. Todo usuário ativo vê. */
 export default function RankingPage() {
   return (
-    <Casca titulo="Ranking de pontos" programa>
+    <Casca titulo="Ranking de pontos">
       <Ranking />
     </Casca>
   );

@@ -18,7 +18,7 @@ import { lancar, mudarStatus, useCorretoresPlantao, useLancamentos, type Correto
  */
 export default function PlantaoPage() {
   return (
-    <Casca titulo="Plantão" programa>
+    <Casca titulo="Plantão">
       <Plantao />
     </Casca>
   );

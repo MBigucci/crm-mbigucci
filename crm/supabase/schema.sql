@@ -6,7 +6,7 @@
 -- =====================================================================
 
 -- Funções que não devem aparecer na API pública (o schema "private" não é
--- exposto pelo Supabase). Ficam aqui as que tratam do programa sigiloso.
+-- exposto pelo Supabase).
 create schema if not exists private;
 
 -- ---------- Perfis e permissões ----------
@@ -34,8 +34,7 @@ create table if not exists public.permissions (
   ordem      integer not null default 0
 );
 
--- Só permissões que podem ser vistas por qualquer usuário logado. As do
--- programa sigiloso entram numa sessão futura, perto do lançamento.
+-- O catálogo de permissões é lido por qualquer usuário logado.
 insert into public.permissions (slug, descricao, ordem) values
   ('usuarios.gerenciar', 'Cadastrar usuários e definir perfil, equipe e situação', 1),
   ('equipes.gerenciar',  'Criar equipes e escolher o gerente de cada uma',        2),
@@ -116,10 +115,9 @@ create table if not exists public.app_settings (
   updated_by  uuid references public.profiles (id) on delete set null
 );
 
-insert into public.app_settings (chave, valor, rotulo, descricao) values
-  ('programa_verba_ativo', 'false'::jsonb, 'Programa de verba ativo',
-   'Mostra a verba de leads, os pontos que viram verba e o ranking para corretores e gerentes. Ligue só depois da reunião de novembro/2026.')
-on conflict (chave) do update set rotulo = excluded.rotulo, descricao = excluded.descricao;
+-- A chave programa_verba_ativo acabou em 04/11/2026 (fim do sigilo do programa
+-- de verba): quem vê o programa sai só das permissões. Limpa a linha antiga.
+delete from public.app_settings where chave = 'programa_verba_ativo';
 
 -- ---------- Funções auxiliares (usadas nas policies) ----------
 -- security definer: leem profiles/teams sem passar pelo RLS (evita recursão).
@@ -212,24 +210,13 @@ as $$
   );
 $$;
 
-create or replace function private.programa_verba_ativo()
-returns boolean
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select coalesce((select s.valor = 'true'::jsonb from public.app_settings s where s.chave = 'programa_verba_ativo'), false);
-$$;
-
 do $$
 declare
   f text;
 begin
   foreach f in array array[
     'public.current_perfil()', 'public.is_gerente_geral()', 'public.has_permission(text)',
-    'public.minha_equipe()', 'public.is_my_team_member(uuid)', 'public.pode_ver_dados_de(uuid)',
-    'private.programa_verba_ativo()'
+    'public.minha_equipe()', 'public.is_my_team_member(uuid)', 'public.pode_ver_dados_de(uuid)'
   ] loop
     execute format('revoke all on function %s from public, anon', f);
     execute format('grant execute on function %s to authenticated, service_role', f);
@@ -2028,9 +2015,9 @@ create policy "minhas metas" on public.metas
   with check (dono_id = auth.uid() and public.has_permission('leads.cadastrar'));
 
 -- ---------- Faixas de VGV do mês (só o gerente geral) ----------
--- Regra fixa, sem permissão no catálogo: o assunto é sigiloso até a reunião de
--- novembro/2026 (docs/pontuacao-verba.md). O título e os textos da tela ficam
--- em app_settings, que só o gerente geral lê, porque o código do site é público.
+-- Regra fixa, sem permissão no catálogo: a tela é só do gerente geral
+-- (docs/vendas-metas.md). O título e os textos da tela ficam em app_settings,
+-- que só o gerente geral lê.
 -- O padrão das faixas entra só na primeira vez.
 create table if not exists public.faixas_vgv (
   id              uuid primary key default gen_random_uuid(),
@@ -2079,15 +2066,14 @@ join nova on nova.nova
 on conflict (vgv_minimo) do nothing;
 
 -- =====================================================================
--- Programa de pontuação e verba (sigiloso até a reunião de novembro/2026).
--- Regras em docs/pontuacao-verba.md. Tudo atrás da chave programa_verba_ativo:
--- com ela desligada, só o gerente geral recebe alguma linha destas tabelas.
+-- Programa de pontuação e verba. Regras em docs/pontuacao-verba.md.
+-- Quem vê o quê sai só das permissões e do usuário ativo: a chave
+-- programa_verba_ativo acabou em 04/11/2026, com o fim do sigilo.
 -- O cálculo da verba é a função pura crm/src/lib/programa.ts; aqui ficam os
 -- lançamentos, a aprovação (só o gerente geral), a auditoria e o fechamento.
 -- =====================================================================
 
 -- ---------- Permissões do módulo ----------
--- Descrições neutras, porque o catálogo é lido por todo usuário ativo.
 -- plantao.registrar: períodos do plantão e saída para visita, de qualquer corretor.
 -- lancamentos.registrar: períodos e vídeos dos corretores que a pessoa vê.
 with novas as (
@@ -2108,31 +2094,6 @@ on conflict do nothing;
 -- primeiro mês já conta para a verba do segundo. Limpa a chave de uma versão
 -- anterior deste script.
 delete from public.app_settings where chave = 'programa_verba_inicio';
-
--- Estado do programa para o usuário logado (o app monta o menu com isso).
-create or replace function public.programa_estado()
-returns jsonb
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select case
-    when public.current_perfil() is null then null
-    else jsonb_build_object('ativo', private.programa_verba_ativo())
-  end;
-$$;
-
--- Vê o programa: o gerente geral sempre; os demais ativos só com a chave ligada.
-create or replace function private.ve_programa()
-returns boolean
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select public.is_gerente_geral() or (private.programa_verba_ativo() and public.current_perfil() is not null);
-$$;
 
 -- ---------- Critérios ----------
 -- Os três da regra, com pontos e limite no mês editáveis pelo gerente geral.
@@ -2324,7 +2285,7 @@ create trigger lancamentos_pontos_auditoria after insert or update on public.lan
 -- A baixa "realizada" da visita vira um lançamento pendente, uma vez por visita
 -- (visita_id é único). Se a correção tira a visita de realizada, o lançamento
 -- é cancelado; se volta a realizada, o cancelado volta a pendente. A data é o
--- dia da visita, na hora de São Paulo. Roda com a chave ligada ou desligada.
+-- dia da visita, na hora de São Paulo.
 create or replace function public.visita_lanca_pontos()
 returns trigger
 language plpgsql
@@ -2393,7 +2354,7 @@ create trigger fechamentos_verba_carimbo before insert or update on public.fecha
 
 -- ---------- Funções do programa ----------
 -- Corretores ativos para a tela do plantão: todos para quem registra o plantão,
--- os que a pessoa vê para quem registra lançamentos. Nada com a chave desligada.
+-- os que a pessoa vê para quem registra lançamentos.
 create or replace function public.plantao_corretores()
 returns table (id uuid, nome text, equipe text)
 language sql
@@ -2405,14 +2366,14 @@ as $$
   from public.profiles p
   left join public.teams t on t.id = p.equipe_id
   where p.perfil = 'corretor' and p.ativo
-    and private.ve_programa()
+    and public.current_perfil() is not null
     and (public.has_permission('plantao.registrar')
          or (public.has_permission('lancamentos.registrar') and public.pode_ver_dados_de(p.id)))
   order by p.nome;
 $$;
 
 -- Ranking de pontos aprovados no mês de p_mes, com os limites de cada critério.
--- Todo usuário ativo vê, só com a chave ligada (o gerente geral, sempre).
+-- Todo usuário ativo vê.
 create or replace function public.ranking_pontos(p_mes date)
 returns table (corretor_id uuid, nome text, pontos integer)
 language sql
@@ -2432,7 +2393,7 @@ as $$
   from public.profiles p
   left join q on q.corretor_id = p.id
   left join public.criterios_pontos c on c.slug = q.criterio
-  where p.perfil = 'corretor' and p.ativo and private.ve_programa()
+  where p.perfil = 'corretor' and p.ativo and public.current_perfil() is not null
   group by p.id, p.nome
   order by 3 desc, 2;
 $$;
@@ -2442,7 +2403,7 @@ declare
   f text;
 begin
   foreach f in array array[
-    'public.programa_estado()', 'private.ve_programa()', 'public.plantao_corretores()', 'public.ranking_pontos(date)'
+    'public.plantao_corretores()', 'public.ranking_pontos(date)'
   ] loop
     execute format('revoke all on function %s from public, anon', f);
     execute format('grant execute on function %s to authenticated, service_role', f);
@@ -2469,16 +2430,16 @@ grant select on public.fechamentos_verba to authenticated;
 grant insert (mes, corretor_id, pontos, pontos_validos, vendas, vgv, verba, premio),
       update (mes, corretor_id, pontos, pontos_validos, vendas, vgv, verba, premio) on public.fechamentos_verba to authenticated;
 
--- Critérios: o gerente geral sempre; os demais ativos só com a chave ligada.
+-- Critérios: todo usuário ativo vê.
 drop policy if exists "ver criterios" on public.criterios_pontos;
 create policy "ver criterios" on public.criterios_pontos
-  for select to authenticated using (private.ve_programa());
+  for select to authenticated using (public.current_perfil() is not null);
 
 drop policy if exists "gerente geral altera criterios" on public.criterios_pontos;
 create policy "gerente geral altera criterios" on public.criterios_pontos
   for update to authenticated using (public.is_gerente_geral()) with check (public.is_gerente_geral());
 
--- Lançamentos, com a chave ligada: quem lançou vê o que lançou (a baixa que o
+-- Lançamentos, para o usuário ativo: quem lançou vê o que lançou (a baixa que o
 -- corretor dá na própria visita não conta como lançada por ele); quem vê os
 -- dados de um corretor (o gerente, a equipe) vê os dele; quem registra o
 -- plantão vê os períodos; o corretor vê os próprios aprovados. O gerente geral
@@ -2487,7 +2448,7 @@ drop policy if exists "ver lancamentos" on public.lancamentos_pontos;
 create policy "ver lancamentos" on public.lancamentos_pontos
   for select to authenticated using (
     public.is_gerente_geral()
-    or (private.ve_programa() and (
+    or (public.current_perfil() is not null and (
       (lancado_por = auth.uid() and corretor_id <> auth.uid())
       or (corretor_id <> auth.uid() and public.pode_ver_dados_de(corretor_id))
       or (corretor_id = auth.uid() and status = 'aprovado')
@@ -2495,35 +2456,35 @@ create policy "ver lancamentos" on public.lancamentos_pontos
     ))
   );
 
--- Lançar: para outro corretor; o gerente geral sempre; os demais só com a chave
--- ligada, pela permissão (o gatilho deixa sempre pendente).
+-- Lançar: para outro corretor; o gerente geral sempre; os demais pela
+-- permissão (o gatilho deixa sempre pendente).
 drop policy if exists "lancar pontos" on public.lancamentos_pontos;
 create policy "lancar pontos" on public.lancamentos_pontos
   for insert to authenticated with check (
     lancado_por = auth.uid() and corretor_id <> auth.uid()
-    and (public.is_gerente_geral() or (private.ve_programa() and (
+    and (public.is_gerente_geral() or (public.current_perfil() is not null and (
       (public.has_permission('lancamentos.registrar') and public.pode_ver_dados_de(corretor_id))
       or (criterio = 'periodo' and public.has_permission('plantao.registrar'))
     )))
   );
 
--- Alterar: o gerente geral (aprova, recusa, desfaz) ou quem lançou para outro, com a chave
--- ligada (o gatilho limita a cancelar e desfazer o cancelamento).
+-- Alterar: o gerente geral (aprova, recusa, desfaz) ou quem lançou para outro
+-- (o gatilho limita a cancelar e desfazer o cancelamento).
 drop policy if exists "alterar lancamentos" on public.lancamentos_pontos;
 create policy "alterar lancamentos" on public.lancamentos_pontos
   for update to authenticated
-  using (public.is_gerente_geral() or (private.ve_programa() and lancado_por = auth.uid() and corretor_id <> auth.uid()))
-  with check (public.is_gerente_geral() or (private.ve_programa() and lancado_por = auth.uid() and corretor_id <> auth.uid()));
+  using (public.is_gerente_geral() or (public.current_perfil() is not null and lancado_por = auth.uid() and corretor_id <> auth.uid()))
+  with check (public.is_gerente_geral() or (public.current_perfil() is not null and lancado_por = auth.uid() and corretor_id <> auth.uid()));
 
 drop policy if exists "gerente geral le auditoria" on public.lancamentos_pontos_historico;
 create policy "gerente geral le auditoria" on public.lancamentos_pontos_historico
   for select to authenticated using (public.is_gerente_geral());
 
--- Fechamento: o gerente geral faz e vê tudo; o corretor vê o dele com a chave ligada.
+-- Fechamento: o gerente geral faz e vê tudo; o corretor vê o dele.
 drop policy if exists "ver fechamentos" on public.fechamentos_verba;
 create policy "ver fechamentos" on public.fechamentos_verba
   for select to authenticated using (
-    public.is_gerente_geral() or (private.ve_programa() and corretor_id = auth.uid())
+    public.is_gerente_geral() or (public.current_perfil() is not null and corretor_id = auth.uid())
   );
 
 drop policy if exists "gerente geral fecha o mes" on public.fechamentos_verba;
@@ -2533,6 +2494,13 @@ create policy "gerente geral fecha o mes" on public.fechamentos_verba
 drop policy if exists "gerente geral refaz o fechamento" on public.fechamentos_verba;
 create policy "gerente geral refaz o fechamento" on public.fechamentos_verba
   for update to authenticated using (public.is_gerente_geral()) with check (public.is_gerente_geral());
+
+-- Fim da chave programa_verba_ativo (04/11/2026). As policies acima já não
+-- usam ve_programa(); estas três funções saem de bancos que rodaram uma versão
+-- anterior deste script.
+drop function if exists private.ve_programa();
+drop function if exists public.programa_estado();
+drop function if exists private.programa_verba_ativo();
 
 -- =====================================================================
 -- Catálogo de empreendimentos e Radar de Match (itens 13 e 14).

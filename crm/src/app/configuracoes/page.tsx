@@ -5,7 +5,7 @@ import { Casca } from "@/components/casca";
 import { ConfigMensagens } from "@/components/config-mensagens";
 import { db } from "@/lib/supabase";
 import { mensagemErro } from "@/lib/erros";
-import { PERFIS, type Configuracao, type Permissao } from "@/lib/tipos";
+import { PERFIS, type Permissao } from "@/lib/tipos";
 import { esquecerHorarioAtendimento } from "@/lib/leads-dados";
 import { HORARIO_PADRAO, type HorarioAtendimento } from "@/lib/prazo";
 
@@ -13,98 +13,11 @@ export default function ConfiguracoesPage() {
   return (
     <Casca titulo="Configurações" soGerenteGeral>
       <div className="grid gap-8">
-        <Chaves />
         <Horario />
         <ConfigMensagens />
         <Permissoes />
       </div>
     </Casca>
-  );
-}
-
-/**
- * Chaves do sistema. Rótulo e descrição vêm do banco (app_settings), que só o
- * gerente geral lê: o código do site é público e não deve citar as chaves.
- */
-function Chaves() {
-  const [chaves, setChaves] = useState<Configuracao[] | null>(null);
-  const [erro, setErro] = useState<string | null>(null);
-  const [confirmando, setConfirmando] = useState<string | null>(null);
-  const [enviando, setEnviando] = useState(false);
-
-  const carregar = useCallback(async () => {
-    const { data, error } = await db()
-      .from("app_settings")
-      .select("chave, valor, rotulo, descricao, updated_at")
-      .order("chave");
-    if (error) return setErro(mensagemErro(error));
-    // Só as chaves de ligar e desligar. As outras têm tela própria.
-    setChaves((data as Configuracao[]).filter((c) => typeof c.valor === "boolean"));
-  }, []);
-
-  useEffect(() => {
-    carregar();
-  }, [carregar]);
-
-  async function alternar(c: Configuracao) {
-    setEnviando(true);
-    const { data, error } = await db()
-      .from("app_settings")
-      .update({ valor: c.valor !== true })
-      .eq("chave", c.chave)
-      .select("chave");
-    setEnviando(false);
-    setConfirmando(null);
-    if (error) return setErro(mensagemErro(error));
-    if (!data?.length) return setErro("Você não tem permissão para alterar esta chave.");
-    await carregar();
-  }
-
-  return (
-    <section className="grid gap-3">
-      <h2 className="titulo-secao">Chaves</h2>
-      {erro && <p className="aviso-erro">! {erro}</p>}
-      {!chaves && !erro && <p className="text-ink-soft">Carregando…</p>}
-      {chaves?.map((c) => {
-        const ligada = c.valor === true;
-        return (
-          <div key={c.chave} className={`card max-w-[720px] ${ligada ? "bar-brand" : ""}`}>
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <p className="titulo-card">{c.rotulo}</p>
-                <p className="mt-1 text-ink-soft">{c.descricao}</p>
-                <p className={`mt-2 text-[13px] font-semibold ${ligada ? "text-brand" : "text-ink-soft"}`}>
-                  {ligada ? "✓ Ligada" : "– Desligada"}
-                  <span className="font-normal text-ink-soft">
-                    {" "}
-                    · alterada em {new Date(c.updated_at).toLocaleString("pt-BR")}
-                  </span>
-                </p>
-              </div>
-              {confirmando === c.chave ? (
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className="btn btn-red focus-ring"
-                    disabled={enviando}
-                    onClick={() => alternar(c)}
-                  >
-                    {ligada ? "Confirmar: desligar" : "Confirmar: ligar"}
-                  </button>
-                  <button type="button" className="btn btn-ghost focus-ring" onClick={() => setConfirmando(null)}>
-                    Cancelar
-                  </button>
-                </div>
-              ) : (
-                <button type="button" className="btn btn-ghost focus-ring" onClick={() => setConfirmando(c.chave)}>
-                  {ligada ? "Desligar" : "Ligar"}
-                </button>
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </section>
   );
 }
 

@@ -1,12 +1,12 @@
 # Acessos e perfis do CRM
 
-> Fonte: conversa com o Felipe em 28/10/2026. O sigilo do programa de verba está em `docs/pontuacao-verba.md`.
+> Fonte: conversa com o Felipe em 28/10/2026. As regras do programa de verba estão em `docs/pontuacao-verba.md`. O sigilo acabou em 04/11/2026 (`docs/historico.md`).
 
 Os acessos são **perfis com permissões configuráveis**, não regras fixas no código. Operacional e Especialista ainda serão definidos.
 
 | Perfil | Vê | Faz |
 | --- | --- | --- |
-| **Gerente geral** (Felipe) | Tudo | Cadastra usuários, equipes, critérios de pontuação e metas. **Aprova todo lançamento de pontos.** Fecha o mês (verba e premiação). Liga e desliga o ranking e o programa de verba. |
+| **Gerente geral** (Felipe) | Tudo | Cadastra usuários, equipes, critérios de pontuação e metas. **Aprova todo lançamento de pontos.** Fecha o mês (verba e premiação). |
 | **Operacional** | _a definir_. Proposta: dados operacionais de todas as equipes, sem bônus em dinheiro | Lança pontos (períodos, vídeos, visitas), que ficam **pendentes de aprovação**. Cadastra e edita empreendimentos, tipologias e preços (`empreendimentos.gerenciar`, no padrão desde 29/10/2026). Proposta: conferir a conciliação de campanhas |
 | **Gerente** | Leads, atendimento, agendamentos e visitas **da própria equipe**, com o histórico de cada lead | Acompanha os leads da equipe, distribui os leads da empresa entre os corretores dela e lança pontos (pendentes de aprovação). **Não vende e não pontua.** |
 | **Corretor** | Os próprios leads, a agenda, os pontos, a verba, a meta e o ranking | Cadastra e trabalha os próprios leads e cria metas próprias |
@@ -15,7 +15,7 @@ Os acessos são **perfis com permissões configuráveis**, não regras fixas no 
 
 ## Programa de pontuação (construído em 29/10/2026)
 
-Tudo atrás da chave `programa_verba_ativo`. Com ela desligada, só o gerente geral vê as telas e recebe dados; o banco devolve zero linhas aos outros perfis. Detalhes e a tabela completa por perfil em `docs/pontuacao-verba.md`, seção "Como ficou".
+Desde 04/11/2026, sem chave: cada perfil vê o programa pelas permissões abaixo. Ranking para todo usuário ativo. Detalhes e a tabela completa por perfil em `docs/pontuacao-verba.md`, seção "Como ficou".
 
 - **Gerente geral:** sempre vê tudo. **Só ele aprova, recusa e volta para pendente** (regra fixa no banco, não é permissão do catálogo). Fecha o mês e edita os critérios.
 - **Recepção:** permissão `plantao.registrar`. Na tela Plantão, marca os períodos e a saída para visita (com o link da foto) de **qualquer** corretor ativo e vê a roleta. Só períodos: não lança vídeo.

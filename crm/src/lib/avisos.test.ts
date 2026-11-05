@@ -299,23 +299,6 @@ test("falha em todos os aparelhos volta para a próxima rodada; aparelho removid
   assert.deepEqual(de, [b]);
 });
 
-test("textos: nenhum aviso cita pontos, verba, ranking ou premiação", () => {
-  const proibido = /ponto|verba|ranking|premia|campanha|roleta/i;
-  for (const t of TIPOS_AVISO) assert.doesNotMatch(`${t.nome} ${t.explica}`, proibido);
-  const tudo = [
-    ...montarAvisos(
-      dados({
-        leads: [lead({ proximo_contato: iso("2026-11-03T08:00") }), daEmpresa("2026-11-03T09:00", "2026-11-03T09:15", { id: "e" })],
-        visitas: [visita({ inicio: iso("2026-11-03T10:00") }), visita({ id: "v0", inicio: iso("2026-11-02T10:00") })],
-      }),
-      sp("2026-11-03T09:10"),
-    ),
-    ...montarAvisos(dados({ visitas: [visita({ inicio: iso("2026-11-03T10:00") })] }), sp("2026-11-03T19:00")),
-  ];
-  assert.ok(tudo.length >= 4);
-  for (const a of tudo) assert.doesNotMatch(`${a.titulo} ${a.corpo}`, proibido);
-});
-
 test("os tipos de Minha conta são os mesmos da função", () => {
   assert.deepEqual(TIPOS_AVISO.map((t) => t.slug).sort(), [...TIPOS_DA_FUNCAO].sort());
 });

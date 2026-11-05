@@ -20,7 +20,7 @@
 - **Entrou:** service worker só para avisos (`crm/public/sw.js`, escopo `/crm/`, sem cache), card "Avisos neste aparelho" em Minha conta (ligar, desligar, tipos, enviar teste), tabelas `push_assinaturas` e `push_log` com RLS, a Edge Function `avisos` (montagem, envio e criptografia sem dependências), o agendador a cada 5 min e o gatilho de lead atribuído (`crm/supabase/agendar-avisos.sql`).
 - **Avisos:** próximo contato, visita 1 hora antes, visitas aguardando baixa no fim do dia, lead da empresa atribuído, prazo de 15 min (faltando 5 e estourado) e resumo do dia.
 - **Ficou de fora:** aviso para o gerente (prazo estourado na equipe, lead perdido), lista dos aparelhos para remover um celular perdido (cada um só vê os próprios; o aparelho sai sozinho em 60 dias sem abrir o CRM), religar sozinho ao entrar de novo na mesma conta (a Bruna faz; aqui a pessoa liga de novo em Minha conta) e qualquer aviso do programa de pontuação.
-- **Sigilo:** nenhum texto de aviso cita pontos, verba, ranking, premiação, campanha ou roleta. Um teste confere isso (seção 10).
+- **Programa de pontuação:** os avisos não tratam de pontos, verba nem ranking. Até 04/11/2026 era regra de sigilo, com teste; o sigilo acabou e o teste saiu, mas os textos ficaram como estavam.
 
 ## 2. Como funciona
 
@@ -115,7 +115,7 @@ Conferido em 375px em 29/10/2026 com o Supabase falso (`sqltest/fake-supabase-av
 
 ## 10. Testes
 
-- **`npm test`** (`crm/src/lib/avisos.test.ts`, 22 testes): cada aviso e suas janelas, remarcar gera chave nova, lead da empresa fora do horário, prazo de 5 min e estourado, resumo com as 4 contagens, dia sem pendências e dia sem atendimento, não repetir (`soNovos`), preferências por aparelho, juntar contatos, tentar de novo só na falha, nenhum texto com pontos, verba ou ranking, tipos iguais na tela e na função, endereços de push, cifra que o aparelho decifra (RFC 8291) e o JWT do VAPID verificado com a chave pública.
+- **`npm test`** (`crm/src/lib/avisos.test.ts`, 21 testes): cada aviso e suas janelas, remarcar gera chave nova, lead da empresa fora do horário, prazo de 5 min e estourado, resumo com as 4 contagens, dia sem pendências e dia sem atendimento, não repetir (`soNovos`), preferências por aparelho, juntar contatos, tentar de novo só na falha, tipos iguais na tela e na função, endereços de push, cifra que o aparelho decifra (RFC 8291) e o JWT do VAPID verificado com a chave pública.
 - **`npm run test:banco`** (`crm/supabase/testes/avisos.test.mjs`, 12 testes no PGlite): `push_assinar` com tipos padrão e escolhidos, RLS (cada um vê e apaga só os próprios; gerente e gerente geral não veem os da equipe; sem gravar direto), recusas (endereço, tipo, anônimo, desativado), aparelho que troca de conta, funções fechadas para o app, `avisos_dados` só de quem tem aparelho e conta ativa e com o fim do prazo, `avisos_registrar` sem repetir, `avisos_desmarcar`, `push_esquecer`, `avisos_limpar`, segredo no Vault e o gatilho de atribuição com um `pg_net` falso (chama só para o lead da empresa atribuído e não quebra o cadastro sem `pg_net`).
 - **Criptografia:** além do teste, conferida uma vez contra a biblioteca `http_ece` (a que o `web-push` usa): ela decifrou a mensagem da função.
 - **Ainda não validado:** o envio num Supabase real e num celular de verdade (Android e iPhone instalado), e o toque no aviso abrindo a tela certa.

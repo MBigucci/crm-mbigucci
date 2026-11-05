@@ -159,10 +159,8 @@ test("tipologias: quem gerencia altera, e o \"a partir de\" acompanha (sem as es
   await falha(OP, `update public.tipologias set tipo = 'casa' where empreendimento_id = '${e.id}'`, "check");
 });
 
-test("mensagem pronta nova e nada sigiloso no catálogo", async () => {
+test("mensagem pronta nova", async () => {
   const [m] = await como(CA, () => linhas(`select texto, ativo from public.mensagens_modelo where slug = 'apresentar_empreendimento'`));
   assert.ok(m.ativo);
   for (const v of ["{endereco}", "{apresentacao}", "{a_partir_de}"]) assert.ok(m.texto.includes(v), v);
-  const catalogo = (await como(CA, () => linhas(`select slug || ' ' || descricao t from public.permissions`))).map((r) => r.t).join(" ");
-  assert.doesNotMatch(catalogo, /verba|premia|prêmio|pontu|ranking/i);
 });

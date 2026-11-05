@@ -28,10 +28,3 @@ export type Team = { id: string; nome: string; gerente_id: string };
 
 export type Permissao = { slug: string; descricao: string; ordem: number };
 
-export type Configuracao = {
-  chave: string;
-  valor: unknown;
-  rotulo: string;
-  descricao: string;
-  updated_at: string;
-};

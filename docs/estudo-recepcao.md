@@ -4,6 +4,8 @@
 >
 > **Atualizado em 04/11/2026** com a regra do cadastro por tipo de cliente, ditada pelo Felipe depois da primeira versão (seção 3.1).
 >
+> **Nota de 04/11/2026:** o sigilo do programa de verba e a chave "Programa de verba ativo" acabaram (`docs/historico.md`). Onde este estudo diz "atrás da chave", "só com a chave ligada" ou "texto neutro por sigilo", leia "pela permissão": o programa aparece sempre, para quem tem permissão.
+>
 > **Sumário:** 0. Resposta curta · 1. O que a planilha registra · 2. Mapa coluna → CRM · 3. Proposta de tela (3.1 regra do cadastro por tipo de cliente) · 4. Mescla com o check-in e os períodos · 5. Migração e transição · 6. Permissões, RLS e sigilo · 7. Modelo de dados · 8. Riscos, esforço e decisões do Felipe · 9. Da Bruna · 10. O que foi conferido e o que não foi
 
 ## 0. Resposta curta

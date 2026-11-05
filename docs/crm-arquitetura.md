@@ -3,7 +3,7 @@
 > Decisões tomadas na fundação do CRM (`crm/`), em 28/10/2026. O passo a passo de instalação está em `crm/README.md`. As regras de negócio estão em `docs/acessos-perfis.md`, `docs/leads.md` e `docs/pontuacao-verba.md`, e as regras visuais em `docs/design-system.md`.
 
 ## Sumário
-Deploy estático · Modelo de permissões · RLS · Sigilo do programa de verba · Módulo de leads · Visitas · Vendas e metas · Programa de pontuação · Catálogo e Radar · PWA · Avisos no celular · Perfil ampliado e documentos · Testes
+Deploy estático · Modelo de permissões · RLS · Fim do sigilo do programa de verba · Módulo de leads · Visitas · Vendas e metas · Programa de pontuação · Catálogo e Radar · PWA · Avisos no celular · Perfil ampliado e documentos · Testes
 
 ## Deploy estático
 
@@ -49,12 +49,13 @@ Deploy estático · Modelo de permissões · RLS · Sigilo do programa de verba 
 - **Colunas graváveis:** as escritas do app são limitadas por GRANT de coluna. Por exemplo, em `profiles` só é possível alterar nome, perfil, equipe e ativo. O e-mail vem do Auth por gatilho.
 - **Detalhes:** a tabela de policies por tabela está em `crm/README.md`, na seção "Segurança (RLS)".
 
-## Sigilo do programa de verba (até a reunião de nov/2026)
+## Fim do sigilo do programa de verba (04/11/2026)
 
-- **Código público:** o código do front é público, porque qualquer um baixa os arquivos de `out/`. Até 29/10/2026 o código não citava verba, ranking, pontos nem prêmios. **Desde o programa de pontuação, cita:** não publique o CRM antes da reunião de novembro (`docs/pontuacao-verba.md`).
-- **Rótulos sensíveis:** o nome e a descrição da chave `programa_verba_ativo` ficam em `app_settings`, que só o gerente geral lê. A tela de Configurações lista as chaves sem saber quais são.
-- **Gate das policies:** as próximas etapas devem usar `private.programa_verba_ativo()`. O schema `private` não é exposto pela API do Supabase, então o nome da função não aparece no catálogo da API.
-- **Catálogo de permissões:** a tabela `permissions` é legível por todo usuário ativo. As permissões do programa sigiloso só entram nela perto do lançamento.
+- **Decisão do Felipe:** o sigilo e a chave `programa_verba_ativo` acabaram, porque o CRM só vai ao ar depois do anúncio das regras novas. Quem vê o programa sai só de `role_permissions` e do usuário ativo. O que era o sigilo está em `docs/historico.md`.
+- **Código público:** o código do front continua público (qualquer um baixa `out/`) e cita pontos, verba e ranking. A publicação no WordPress é decisão do Felipe.
+- **Configurações:** a seção Chaves saiu da tela, porque a única chave de ligar e desligar era a do programa. `app_settings` continua só do gerente geral e guarda os textos das Faixas de VGV.
+- **Faixas de VGV:** continuam só do gerente geral, por regra fixa no banco (`is_gerente_geral()`), sem permissão no catálogo.
+- **Banco antigo:** o `schema.sql` apaga a linha da chave e as funções `programa_estado()`, `private.ve_programa()` e `private.programa_verba_ativo()` com `drop function if exists`, depois de refazer as policies.
 
 ## Módulo de leads (29/10/2026)
 
@@ -106,10 +107,10 @@ As regras de negócio estão em `docs/vendas-metas.md`.
 
 As regras de negócio e a tabela por perfil estão em `docs/pontuacao-verba.md`, seção "Como ficou".
 
-- **Gate:** toda policy e função do programa usa `private.ve_programa()` (gerente geral, ou chave ligada e usuário ativo). O app pergunta à `programa_estado()`, que diz só se a chave está ligada. A `Casca` ganhou a prop `programa`: para quem não é gerente geral, a tela só abre com a chave ligada.
+- **Gate (desde 04/11/2026):** as policies e funções do programa exigem usuário ativo (`current_perfil()` não nulo) e a permissão de cada caso. O menu da `Casca` mostra as telas pelas permissões. Até 04/11/2026 havia a chave `programa_verba_ativo` (`private.ve_programa()`, `programa_estado()` e a prop `programa` da `Casca`), removida com o fim do sigilo.
 - **Tabelas:** `criterios_pontos`, `lancamentos_pontos` (sem exclusão; escrita por coluna: o app grava os dados no insert e só `status` e `motivo_recusa` no update), `lancamentos_pontos_historico` (só gatilho) e `fechamentos_verba` (upsert pelo gerente geral).
 - **Gatilhos:** `lancamentos_pontos_guard` (antes: sempre pendente, data até hoje, corretor ativo, visita só pela baixa, identidade imutável, aprovação só do gerente geral, carimbo da decisão), `lancamentos_pontos_auditoria` (depois) e `visita_lanca_pontos` (depois, em `visitas`; usa `on conflict (visita_id)`). A escrita que vem do gatilho da visita passa pelo guard por `pg_trigger_depth() > 1`.
-- **Front:** `programa.ts` (puro, com testes: cálculo, limites, roleta, filtros, ranking), `programa-dados.ts` (leitura em páginas, escrita, RPCs e o estado da chave com cache por usuário), `components/programa/partes.tsx` e as páginas `/programa/`, `/programa/aprovacao/`, `/plantao/`, `/meus-pontos/` e `/ranking/`.
+- **Front:** `programa.ts` (puro, com testes: cálculo, limites, roleta, filtros, ranking), `programa-dados.ts` (leitura em páginas, escrita, RPCs), `components/programa/partes.tsx` e as páginas `/programa/`, `/programa/aprovacao/`, `/plantao/`, `/meus-pontos/` e `/ranking/`.
 
 ## Catálogo de empreendimentos e Radar (29/10/2026)
 
@@ -156,7 +157,7 @@ As regras de negócio estão em `docs/leads.md`, seção 17, e a importação da
 - **RLS de leads:** `crm/supabase/testes/leads.test.mjs`, com o mesmo tipo de simulação, roda com `npm run test:banco`. São 25 testes por perfil, incluindo `lead_eventos`, tentativas, avanço de etapa, a mensagem original e o horário de atendimento, (corretor, colega, gerente da equipe, gerente de outra equipe, gerente geral, recepção, desativado e anônimo).
 - **RLS e gatilhos das visitas:** `crm/supabase/testes/visitas.test.mjs`, também no `npm run test:banco`, com 13 testes (`docs/visitas.md`, seção 9).
 - **RLS e gatilhos de vendas e metas:** `crm/supabase/testes/vendas.test.mjs`, também no `npm run test:banco`, com 12 testes (`docs/vendas-metas.md`, seção 10).
-- **RLS e gatilhos do programa de pontuação:** `crm/supabase/testes/programa.test.mjs`, também no `npm run test:banco`, com 9 testes perfil a perfil, chave desligada e ligada (`docs/pontuacao-verba.md`, seção "Testes").
+- **RLS e gatilhos do programa de pontuação:** `crm/supabase/testes/programa.test.mjs`, também no `npm run test:banco`, com 10 testes perfil a perfil e a limpeza da chave antiga num banco que rodou a versão anterior (`docs/pontuacao-verba.md`, seção "Testes").
 - **Perfil ampliado e documentos:** `crm/supabase/testes/perfil.test.mjs`, também no `npm run test:banco`, com 10 testes (colunas novas por perfil, documentos e as policies do Storage sobre uma imitação de `storage.objects`), e `perfil.test.ts` e `importar-tabela.test.ts` no `npm test` (`docs/leads.md`, seção 17, e `docs/empreendimentos.md`, seção 13).
 - **Avisos no celular:** `crm/supabase/testes/avisos.test.mjs`, também no `npm run test:banco`, com 12 testes (RLS das assinaturas, funções fechadas, não repetir, gatilho de atribuição com `pg_net` falso), e `crm/src/lib/avisos.test.ts` no `npm test`, com 22 (`docs/notificacoes.md`, seção 10).
 - **Catálogo:** `crm/supabase/testes/empreendimentos.test.mjs`, também no `npm run test:banco`, com 8 testes (schema três vezes, carga duas, RLS por perfil, gatilho do preço, checks).

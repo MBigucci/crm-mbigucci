@@ -6,7 +6,6 @@ import clsx from "clsx";
 import { Casca } from "@/components/casca";
 import { MESES, mesAtual, NavMes, type Mes } from "@/components/programa/partes";
 import { db } from "@/lib/supabase";
-import { usePerfil } from "@/lib/sessao";
 import { COLUNAS_FAIXA, faixasDoMes, type Faixa } from "@/lib/faixas";
 import { formatarReais } from "@/lib/vendas";
 import { useVendas } from "@/lib/vendas-dados";
@@ -15,14 +14,12 @@ import {
   fecharMes,
   salvarCriterio,
   useCriterios,
-  useEstadoPrograma,
   useFechamentos,
   useLancamentos,
 } from "@/lib/programa-dados";
 
 /**
- * Resumo do mês do programa, só do gerente geral (sempre, com a chave ligada
- * ou não): pontos, verba prevista, vendas e premiação por corretor, o
+ * Resumo do mês do programa, só do gerente geral: pontos, verba prevista, vendas e premiação por corretor, o
  * fechamento do mês e os critérios.
  */
 export default function ProgramaPage() {
@@ -37,8 +34,6 @@ type Corretor = { id: string; nome: string; ativo: boolean };
 const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
 
 function Programa() {
-  const eu = usePerfil();
-  const estado = useEstadoPrograma(eu.id);
   const [mes, setMes] = useState<Mes>(mesAtual());
   const { ini, fim } = limitesDoMes(mes.ano, mes.mes);
   const { criterios, erro: erroCriterios, recarregar: recarregarCriterios } = useCriterios();
@@ -113,11 +108,9 @@ function Programa() {
   return (
     <div className="grid gap-5">
       <section className="card bar-brand grid gap-2">
-        <p className="eyebrow">Programa de verba {estado.ativo ? "· ligado" : "· desligado"}</p>
+        <p className="eyebrow">Programa de verba</p>
         <p className="text-ink-soft">
-          {estado.ativo
-            ? "Os corretores veem os próprios pontos, a verba e o ranking. Gerentes e recepção veem o plantão e a roleta."
-            : "Só você vê estas telas e estes dados. Ligue a chave em Configurações depois da reunião de novembro."}
+          Os corretores veem os próprios pontos, a verba e o ranking. Gerentes e recepção veem o plantão e a roleta.
         </p>
         <p className="flex flex-wrap gap-x-5 gap-y-1 text-[14px]">
           <Link href="/programa/aprovacao/" className="link-acao focus-ring">

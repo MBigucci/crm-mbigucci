@@ -33,12 +33,12 @@ O CRM de corretores da MBigucci (construtora em São Bernardo do Campo). O usuá
 - Alternar seleção múltipla usa `setState` funcional. A versão com closure perde cliques rápidos.
 
 ## Restrições fixas
-- **Sigilo até a reunião de novembro de 2026:** verba por corretor, pontos que viram verba, ranking e o fim dos leads do Google não aparecem para corretores nem gerentes. Ficam atrás da chave "Programa de verba ativo". Textos para corretores não citam esses temas.
+- **Faixas de VGV** são só do gerente geral, por regra fixa no banco (`is_gerente_geral()`), nunca por permissão do catálogo.
 - Nunca use credenciais reais nem crie recursos externos (Supabase, implantações) sem o Felipe.
 
 ## Onde encontrar contexto
 - `docs/acessos-perfis.md`: abra ao mexer em login, perfis, equipes, permissões, RLS ou origem e distribuição de leads.
-- `docs/pontuacao-verba.md`: abra ao mexer em pontos, lançamentos e aprovação, cálculo da verba, premiação por VGV ou roleta. Tem a regra do sigilo.
+- `docs/pontuacao-verba.md`: abra ao mexer em pontos, lançamentos e aprovação, cálculo da verba, premiação por VGV ou roleta. Tem a tabela de quem vê cada tela do programa.
 - `docs/metas-ranking.md`: abra ao mexer na meta anual de VGV, nas metas próprias do corretor ou no ranking.
 - `docs/pesquisa-discovery.md`: abra ao mexer em `discovery/`, ao analisar as respostas da pesquisa ou ao escrever qualquer texto para corretores.
 - `docs/pesquisa-resultados.md`: abra ao desenhar leads, cadastro, lista do dia, painel ou qualquer tela do corretor. São as 34 respostas consolidadas e as decisões que saem delas.
@@ -48,12 +48,13 @@ O CRM de corretores da MBigucci (construtora em São Bernardo do Campo). O usuá
 - `docs/crm-arquitetura.md`: abra ao mexer na estrutura do `crm/` (schema, RLS, deploy).
 - `docs/leads.md`: abra ao mexer em leads, lista do dia, cadastro (e Cadastro Mágico), ficha, quadro, interações, follow-up e tentativas, histórico (`lead_eventos`), descarte, atribuição de lead, perfil ampliado, dados pessoais, aniversário ou documentos do lead.
 - `docs/painel.md`: abra ao mexer no painel da equipe, no relatório do corretor, na impressão ou no botão Lead perdido.
-- `docs/vendas-metas.md`: abra ao mexer em vendas, correção ou cancelamento de venda, meta anual de VGV, metas próprias do corretor, conversão por origem e campanha ou na tela Faixas de VGV (sigilosa, só do gerente geral).
+- `docs/vendas-metas.md`: abra ao mexer em vendas, correção ou cancelamento de venda, meta anual de VGV, metas próprias do corretor, conversão por origem e campanha ou na tela Faixas de VGV (só do gerente geral).
 - `docs/visitas.md`: abra ao mexer em visitas, agenda, baixa de visita, confirmação de visita ou nas visitas da lista do dia e do painel.
 - `docs/empreendimentos.md`: abra ao mexer no catálogo de empreendimentos e tipologias, no Radar de Match ou na lista do Cadastro Mágico. Tem o cruzamento com a lista atual, as dúvidas, o esquema, na seção 12 como ficou e, na seção 13, a importação da tabela de preços por IA externa. Os dados coletados estão em `docs/empreendimentos-dados.json`.
 - `docs/notificacoes.md`: abra ao mexer nos avisos no celular (push), no `sw.js`, na Edge Function `avisos`, no `agendar-avisos.sql` ou em Avisos neste aparelho. Tem quando cada aviso sai, o não repetir e a tabela "Da Bruna".
 - `docs/referencia-crm-bruna.md`: abra antes de planejar uma etapa nova ou ajustar um fluxo. Diz o que vem do CRM da Bruna, como adaptar e em que ordem.
 - `docs/fontes/regras-comerciais-2026-10.md`: o documento original do Felipe. Abra só para conferir o texto exato de uma regra.
+- `docs/historico.md`: abra antes de retomar algo que já foi tentado ou abandonado. Tem o sigilo do programa de verba e por que acabou (04/11/2026).
 - `docs/candidatos-automacao.md`: abra ao criar testes, hooks ou skills, ou quando um hook bloquear algo e você precisar entender por quê.
 - `docs/teste-carga.md`: abra ao mexer em RLS, gatilhos, gravações do app (salvar, cadastrar, Desfazer) ou no plano do Supabase. Tem o teste de carga (`npm run test:carga`), o id gerado no aparelho contra duplicados e o que ficou pendente.
 - `docs/apresentacao/`: o deck da reunião de novembro (Artifact Slides, fontes em `project/`). Abra ao mexer na apresentação ou ao conferir o que foi anunciado a corretores e gerentes.

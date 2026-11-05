@@ -1,6 +1,6 @@
 // Teste do schema, do RLS e dos gatilhos do programa de pontuação num Postgres
-// local (PGlite), perfil a perfil, com a chave programa_verba_ativo desligada e
-// ligada. Simula o que o Supabase tem: auth.users, auth.uid() e os papéis anon
+// local (PGlite), perfil a perfil. Desde 04/11/2026 não há chave: quem vê o quê
+// sai só das permissões e do usuário ativo. Simula o que o Supabase tem: auth.users, auth.uid() e os papéis anon
 // e authenticated. Rode com: npm run test:banco
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -30,7 +30,6 @@ async function falha(n, sql, trecho) {
     return true;
   });
 }
-const chave = (ligada) => db.exec(`update public.app_settings set valor = '${ligada}'::jsonb where chave = 'programa_verba_ativo'`);
 const hoje = `(now() at time zone 'America/Sao_Paulo')::date`;
 const periodo = (corretor, turno = "manha", dia = hoje, extra = "") =>
   `insert into public.lancamentos_pontos (corretor_id, criterio, data, periodo${extra ? ", saida_visita, comprovante" : ""})
@@ -47,7 +46,6 @@ const contagens = (n) =>
     fechamentos: (await linhas(`select count(*)::int n from public.fechamentos_verba`))[0].n,
     ranking: (await linhas(`select count(*)::int n from public.ranking_pontos(${hoje})`))[0].n,
     plantao: (await linhas(`select count(*)::int n from public.plantao_corretores()`))[0].n,
-    estado: (await linhas(`select public.programa_estado() e`))[0].e,
   }));
 
 test("prepara o banco", async () => {
@@ -80,7 +78,7 @@ test("prepara o banco", async () => {
   await db.exec(`update public.profiles set ativo = false where id = '${id(DES)}'`);
 });
 
-test("permissões: padrões só na criação, e o catálogo que todos leem não cita o programa", async () => {
+test("permissões: padrões só na criação", async () => {
   const rp = await linhas(`select perfil, permissao from public.role_permissions
                            where permissao in ('plantao.registrar', 'lancamentos.registrar') order by 2, 1`);
   assert.deepEqual(rp, [
@@ -93,8 +91,6 @@ test("permissões: padrões só na criação, e o catálogo que todos leem não 
   await db.exec(schema); // idempotente: não devolve o que o gerente geral tirou
   assert.equal((await linhas(`select count(*)::int n from public.role_permissions where perfil = 'operacional' and permissao = 'lancamentos.registrar'`))[0].n, 0);
 
-  const catalogo = (await como(CA, () => linhas(`select slug || ' ' || descricao t from public.permissions`))).map((r) => r.t).join(" ");
-  assert.doesNotMatch(catalogo, /verba|premia|prêmio|pontu|ponto|ranking/i);
   const criterios = await linhas(`select slug, pontos, limite_mes, maximo from public.criterios_pontos order by ordem`);
   assert.deepEqual(criterios, [
     { slug: "periodo", pontos: 5, limite_mes: 24, maximo: 120 },
@@ -103,14 +99,14 @@ test("permissões: padrões só na criação, e o catálogo que todos leem não 
   ]);
 });
 
-test("chave desligada: só o gerente geral lança, e o banco não entrega nada aos outros perfis", async () => {
-  await chave(false);
-  for (const n of [REC, GA, OP, CA, 0]) await falha(n, periodo(CA), n ? "row-level security" : "permission denied");
+test("sem chave: cada perfil ativo vê o programa pela permissão; desativado e anônimo, nada", async () => {
+  // Corretor (nem para si), desativado e anônimo não lançam.
+  for (const n of [CA, DES, 0]) await falha(n, periodo(CA), n ? "row-level security" : "permission denied");
   await como(GG, () => db.exec(periodo(CA) + ";" + video(CA, 2) + ";" + periodo(CB, "tarde")));
   await como(GG, () => db.exec(`update public.lancamentos_pontos set status = 'aprovado' where corretor_id = '${id(CA)}'`));
   await como(GG, () => db.exec(`insert into public.fechamentos_verba (mes, corretor_id, pontos, pontos_validos, vendas, vgv, verba, premio)
                                values (date_trunc('month', ${hoje})::date, '${id(CA)}', 15, 15, 0, 0, 0, 0)`));
-  // A visita realizada entra como pendente mesmo com a chave desligada.
+  // A visita realizada entra como pendente.
   const ana = (await linhas(`select id from public.leads where nome = 'Ana'`))[0].id;
   await db.exec(`insert into public.visitas (lead_id, corretor_id, empreendimento, inicio, status, baixa_por)
                  values ('${ana}', '${id(CA)}', 'Marco Zero One', now() - interval '1 day', 'realizada', '${id(CA)}')`);
@@ -122,22 +118,27 @@ test("chave desligada: só o gerente geral lança, e o banco não entrega nada a
   assert.equal(gg.fechamentos, 1);
   assert.equal(gg.ranking, 3);
   assert.equal(gg.plantao, 3);
-  assert.deepEqual(gg.estado, { ativo: false });
 
-  for (const n of NAO_GG) {
-    const c = await contagens(n);
-    assert.deepEqual({ ...c, estado: undefined }, { criterios: 0, lancamentos: 0, historico: 0, fechamentos: 0, ranking: 0, plantao: 0, estado: undefined }, `perfil ${n}`);
-    assert.deepEqual(c.estado, n === DES ? null : { ativo: false }, `estado do perfil ${n}`);
-  }
+  // A tabela perfil × tela aprovada em 04/11/2026: critérios e ranking para todo
+  // ativo; plantão para quem registra; fechamento só o próprio; auditoria só do GG.
+  const esperado = {
+    [GA]:  { criterios: 3, lancamentos: 3, historico: 0, fechamentos: 0, ranking: 3, plantao: 2 },
+    [GB]:  { criterios: 3, lancamentos: 1, historico: 0, fechamentos: 0, ranking: 3, plantao: 1 },
+    [CA]:  { criterios: 3, lancamentos: 2, historico: 0, fechamentos: 1, ranking: 3, plantao: 0 },
+    [CA2]: { criterios: 3, lancamentos: 0, historico: 0, fechamentos: 0, ranking: 3, plantao: 0 },
+    [CB]:  { criterios: 3, lancamentos: 0, historico: 0, fechamentos: 0, ranking: 3, plantao: 0 },
+    [REC]: { criterios: 3, lancamentos: 2, historico: 0, fechamentos: 0, ranking: 3, plantao: 3 },
+    [OP]:  { criterios: 3, lancamentos: 2, historico: 0, fechamentos: 0, ranking: 3, plantao: 3 },
+    [DES]: { criterios: 0, lancamentos: 0, historico: 0, fechamentos: 0, ranking: 0, plantao: 0 },
+  };
+  for (const n of NAO_GG) assert.deepEqual(await contagens(n), esperado[n], `perfil ${n}`);
   await falha(0, `select * from public.lancamentos_pontos`, "permission denied");
-  await falha(0, `select public.programa_estado()`, "permission denied");
   await falha(0, `select * from public.ranking_pontos(current_date)`, "permission denied");
   // Ninguém além do gerente geral lê as chaves (app_settings).
   assert.equal((await como(CA, () => linhas(`select * from public.app_settings`))).length, 0);
 });
 
-test("chave ligada: cada perfil vê só o que é dele", async () => {
-  await chave(true);
+test("cada perfil vê só o que é dele", async () => {
   await como(REC, () => db.exec(periodo(CA2, "tarde")));
   await como(GA, () => db.exec(video(CA2, 3)));
   await como(GB, () => db.exec(video(CB, 1)));
@@ -160,10 +161,9 @@ test("chave ligada: cada perfil vê só o que é dele", async () => {
   assert.equal((await ver(DES)).length, 0);
   await falha(0, `select * from public.lancamentos_pontos`, "permission denied");
 
-  // Critérios, ranking e estado para todo ativo; auditoria só do gerente geral; fechamento só o próprio.
+  // Critérios e ranking para todo ativo; auditoria só do gerente geral; fechamento só o próprio.
   const ca = await contagens(CA);
   assert.deepEqual([ca.criterios, ca.historico, ca.fechamentos, ca.ranking, ca.plantao], [3, 0, 1, 3, 0]);
-  assert.deepEqual(ca.estado, { ativo: true });
   assert.equal((await contagens(CA2)).fechamentos, 0);
   assert.equal((await contagens(REC)).plantao, 3);
   assert.equal((await contagens(GA)).plantao, 2);
@@ -173,7 +173,6 @@ test("chave ligada: cada perfil vê só o que é dele", async () => {
 });
 
 test("lançar: regras de quem lança o quê, sempre pendente e sem duplicar o período", async () => {
-  await chave(true);
   await falha(CA, periodo(CA2), "row-level security"); // corretor não lança
   await falha(CA, periodo(CA), "row-level security"); // nem para si
   await falha(GA, periodo(CB), "row-level security"); // gerente só a equipe
@@ -196,7 +195,6 @@ test("lançar: regras de quem lança o quê, sempre pendente e sem duplicar o pe
 });
 
 test("aprovar: só o gerente geral, com carimbo, motivo na recusa, Desfazer e auditoria", async () => {
-  await chave(true);
   const [l] = (await doCorretor(CA2)).filter((x) => x.criterio === "periodo" && x.periodo === "tarde");
   await falha(REC, `update public.lancamentos_pontos set status = 'aprovado' where id = '${l.id}'`, "Só o gerente geral");
   // Quem não lançou não altera nada (o RLS esconde a linha), nem o próprio corretor.
@@ -229,7 +227,6 @@ test("aprovar: só o gerente geral, com carimbo, motivo na recusa, Desfazer e au
 });
 
 test("quem lançou cancela o próprio pendente e desfaz, mas não mexe no aprovado", async () => {
-  await chave(true);
   await como(REC, () => db.exec(periodo(CA, "tarde")));
   const l = (await doCorretor(CA)).find((x) => x.criterio === "periodo" && x.periodo === "tarde");
   await como(REC, () => db.exec(`update public.lancamentos_pontos set status = 'cancelado' where id = '${l.id}'`));
@@ -238,15 +235,15 @@ test("quem lançou cancela o próprio pendente e desfaz, mas não mexe no aprova
   await falha(REC, `update public.lancamentos_pontos set status = 'aprovado' where id = '${l.id}'`, "Só o gerente geral");
   await como(GG, () => db.exec(`update public.lancamentos_pontos set status = 'aprovado' where id = '${l.id}'`));
   await falha(REC, `update public.lancamentos_pontos set status = 'cancelado' where id = '${l.id}'`, "Só o gerente geral");
-  // Com a chave desligada, nem o próprio lançador altera.
-  await chave(false);
+  // Desativado, nem o próprio lançador altera.
+  await db.exec(`update public.profiles set ativo = false where id = '${id(REC)}'`);
   const antes = (await doCorretor(CA2)).find((x) => x.saida_visita);
   await como(REC, () => db.exec(`update public.lancamentos_pontos set status = 'cancelado' where id = '${antes.id}'`));
   assert.equal((await doCorretor(CA2)).find((x) => x.id === antes.id).status, "pendente");
+  await db.exec(`update public.profiles set ativo = true where id = '${id(REC)}'`);
 });
 
 test("visita: a baixa vira lançamento pendente uma vez, a correção cancela e reativa", async () => {
-  await chave(true);
   const edu = (await linhas(`select id from public.leads where nome = 'Edu'`))[0].id;
   await como(CB, () => db.exec(`insert into public.visitas (lead_id, empreendimento, inicio) values ('${edu}', 'Marco Zero One', now() + interval '1 hour')`));
   const v = (await linhas(`select id from public.visitas where lead_id = $1`, [edu]))[0];
@@ -268,8 +265,7 @@ test("visita: a baixa vira lançamento pendente uma vez, a correção cancela e 
   assert.equal((await linhas(`select count(*)::int n from public.lancamentos_pontos where criterio = 'visita'`))[0].n, 2);
 });
 
-test("critérios, fechamento e a chave: só o gerente geral altera", async () => {
-  await chave(true);
+test("critérios e fechamento: só o gerente geral altera", async () => {
   await como(CA, () => db.exec(`update public.criterios_pontos set pontos = 50`));
   assert.equal((await linhas(`select pontos from public.criterios_pontos where slug = 'video'`))[0].pontos, 5);
   await como(GG, () => db.exec(`update public.criterios_pontos set limite_mes = 10 where slug = 'video'`));
@@ -287,7 +283,23 @@ test("critérios, fechamento e a chave: só o gerente geral altera", async () =>
 
   // Sem regra de primeiro mês: a chave da versão anterior não existe.
   assert.equal((await linhas(`select count(*)::int n from public.app_settings where chave = 'programa_verba_inicio'`))[0].n, 0);
-  // A chave em si, só o gerente geral liga.
-  await como(GA, () => db.exec(`update public.app_settings set valor = 'false' where chave = 'programa_verba_ativo'`));
-  assert.deepEqual((await contagens(GA)).estado, { ativo: true });
+});
+
+test("fim da chave: um banco com a versão anterior perde a chave e as três funções", async () => {
+  // Simula o que um banco que rodou o schema antes de 04/11/2026 tem: a linha da
+  // chave, as funções e uma policy que dependia de ve_programa().
+  await db.exec(`
+    insert into public.app_settings (chave, valor, rotulo) values ('programa_verba_ativo', 'true', 'Programa de verba ativo');
+    create function private.programa_verba_ativo() returns boolean language sql stable as $$ select true $$;
+    create function private.ve_programa() returns boolean language sql stable as $$ select private.programa_verba_ativo() $$;
+    create function public.programa_estado() returns jsonb language sql stable as $$ select '{}'::jsonb $$;
+    drop policy "ver criterios" on public.criterios_pontos;
+    create policy "ver criterios" on public.criterios_pontos for select to authenticated using (private.ve_programa());
+  `);
+  await db.exec(schema);
+  assert.equal((await linhas(`select count(*)::int n from public.app_settings where chave = 'programa_verba_ativo'`))[0].n, 0);
+  const funcoes = await linhas(`select n.nspname || '.' || p.proname f from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                                where p.proname in ('programa_verba_ativo', 've_programa', 'programa_estado')`);
+  assert.deepEqual(funcoes, []);
+  assert.equal((await contagens(CB)).criterios, 3);
 });

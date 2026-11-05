@@ -29,10 +29,12 @@
 - **Parceiros** são outra etapa do projeto, **no mesmo app**, para o gerente trabalhar num ambiente só. Não entram agora. Antes de começar, falta decidir a segurança do cadastro público: um formulário que só grava (como a pesquisa) ou uma tabela com inserção anônima e nenhuma leitura.
 - Nada do sistema atual precisa ser mantido além disso.
 
-## Cuidados com o sigilo
+## Campanha e programa no painel do gerente
 
-- **Empresa x captado** aparece para o gerente só como **origem do lead**. Nunca como verba, campanha paga ou conciliação, e o campo campanha fica fora do painel do gerente enquanto a chave "Programa de verba ativo" estiver desligada (`docs/pontuacao-verba.md`). Desde 29/10/2026 a conversão por campanha existe atrás da permissão `painel.campanha`, que o gerente não tem no padrão (`docs/vendas-metas.md`, seção 5).
-- O painel do gerente não mostra pontos, verba nem ranking.
+> O sigilo do programa de verba acabou em 04/11/2026 (`docs/historico.md`). Os cuidados abaixo nasceram dele; o padrão foi mantido.
+
+- **Empresa x captado** aparece para o gerente como **origem do lead**. A conversão por campanha existe desde 29/10/2026 atrás da permissão `painel.campanha`, que o gerente não tem no padrão (`docs/vendas-metas.md`, seção 5). O gerente geral liga em Configurações → Permissões.
+- O painel do gerente não mostra pontos, verba nem ranking: o gerente vê o plantão da equipe e o ranking nas telas do programa (`docs/pontuacao-verba.md`).
 
 ## Onde entra
 

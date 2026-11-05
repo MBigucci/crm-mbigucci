@@ -2,7 +2,7 @@
 
 O CRM dos corretores, no visual do MBigucci Design System. É um site **estático**, como a pesquisa da Fase 1. Ele fica numa pasta do servidor do WordPress, sem Node e sem plugin. O login e os dados vêm do **Supabase**, direto do navegador. Quem garante que cada pessoa só vê o que pode são as regras de segurança do banco (RLS), descritas no fim deste arquivo.
 
-Esta versão tem o login, os usuários, as equipes, as permissões por perfil, as chaves do sistema e o primeiro corte do módulo de leads (lista do dia, cadastro rápido, ficha, quadro por etapas e atribuição pelo gerente, descritos em `docs/leads.md`). As próximas telas entram nas próximas etapas.
+Esta versão tem o login, os usuários, as equipes, as permissões por perfil e o primeiro corte do módulo de leads (lista do dia, cadastro rápido, ficha, quadro por etapas e atribuição pelo gerente, descritos em `docs/leads.md`). As próximas telas entram nas próximas etapas.
 
 ## 1. Criar o projeto no Supabase (uma vez)
 
@@ -162,18 +162,18 @@ Os perfis são: gerente geral, operacional, gerente, corretor, recepção e espe
 - O **gerente geral** tem todas as permissões, sempre, sem depender da tabela. Assim ele não consegue se trancar fora por engano.
 - Algumas regras ficam fixas no banco, para não dependerem de configuração:
   - Só o gerente geral altera um gerente geral.
-  - Só o gerente geral liga ou desliga as chaves.
+  - Só o gerente geral altera as configurações (`app_settings`).
   - Só o gerente geral muda as permissões.
   - Sempre existe ao menos um gerente geral ativo.
 - Cada corretor **ativo** está em exatamente uma equipe. O **gerente** é ligado à equipe como gerente dela e não é membro: ele não vende nem pontua. O gerente geral também não é membro de equipe.
 - Uma equipe só pode ser excluída depois que ninguém mais estiver nela. Um gerente só muda de perfil depois que outra pessoa assumir as equipes dele.
 
-## Sigilo do programa de verba
+## Programa de verba: quem vê
 
-A chave `programa_verba_ativo`, que começa desligada, está em **Configurações > Chaves**. Com ela desligada, só o gerente geral vê as telas Pontos, Aprovar lançamentos, Plantão e Ranking. Quando ela for ligada, depois da reunião de novembro/2026, corretores, gerentes e recepção passam a ver o que é deles (`docs/pontuacao-verba.md`).
+Desde 04/11/2026 não há chave nem sigilo (`docs/historico.md`). Quem vê as telas Pontos, Aprovar lançamentos, Plantão, Meus pontos e Ranking sai só das permissões; a tabela por perfil está em `docs/pontuacao-verba.md`, seção "O que cada perfil recebe". As Faixas de VGV continuam só do gerente geral, por regra fixa no banco.
 
-- **Banco:** `app_settings` só é lida pelo gerente geral. As tabelas do programa (`criterios_pontos`, `lancamentos_pontos`, `fechamentos_verba`) e as funções `plantao_corretores` e `ranking_pontos` não entregam nada a quem não é gerente geral enquanto `private.programa_verba_ativo()` for falsa.
-- **Código do site:** ! **as telas do programa estão no código.** Qualquer pessoa baixa os arquivos de `out/`, e eles citam pontos, verba e ranking. **Não publique o CRM com estas telas antes da reunião de novembro.** Rodar o SQL antes é seguro para os dados, mas o catálogo da API do Supabase mostra o nome das tabelas a quem tem a chave anon.
+- **Banco:** as tabelas do programa (`criterios_pontos`, `lancamentos_pontos`, `fechamentos_verba`) e as funções `plantao_corretores` e `ranking_pontos` exigem usuário ativo e a permissão de cada caso. O `schema.sql` apaga a chave `programa_verba_ativo` e as funções `programa_estado`, `private.ve_programa` e `private.programa_verba_ativo` de um banco que rodou a versão anterior.
+- **Publicação:** continua sendo decisão do Felipe, depois do anúncio das regras novas.
 
 ## Segurança (RLS)
 
@@ -217,10 +217,10 @@ Um **usuário desativado** perde todas as permissões na hora. Ele continua vend
 | `metas_vgv` | O valor geral: todo usuário ativo. O de um corretor: `pode_ver_dados_de(corretor)` | Quem tem `metas.definir_vgv` (no padrão, só o gerente geral) |
 | `metas` | `pode_ver_dados_de(dono)` | Só o próprio corretor (com `leads.cadastrar`) cria, altera e exclui as dele |
 | `faixas_vgv` | Só o gerente geral | Só o gerente geral (regra fixa, sem permissão no catálogo) |
-| `criterios_pontos` | O gerente geral; os demais ativos só com a chave do programa ligada | Só o gerente geral: nome, pontos e limite no mês |
-| `lancamentos_pontos` | O gerente geral, todos. Com a chave ligada: quem lançou (para outro), quem passa em `pode_ver_dados_de` (fora o próprio corretor), quem tem `plantao.registrar` (os períodos) e o corretor (os próprios aprovados) | Lançar: o gerente geral; com a chave ligada, `lancamentos.registrar` para quem a pessoa vê ou `plantao.registrar` para períodos. Aprovar, recusar e voltar para pendente: só o gerente geral. Quem lançou cancela o próprio pendente. Sem exclusão. |
+| `criterios_pontos` | Todo usuário ativo | Só o gerente geral: nome, pontos e limite no mês |
+| `lancamentos_pontos` | O gerente geral, todos. Os demais ativos: quem lançou (para outro), quem passa em `pode_ver_dados_de` (fora o próprio corretor), quem tem `plantao.registrar` (os períodos) e o corretor (os próprios aprovados) | Lançar: o gerente geral; `lancamentos.registrar` para quem a pessoa vê ou `plantao.registrar` para períodos. Aprovar, recusar e voltar para pendente: só o gerente geral. Quem lançou cancela o próprio pendente. Sem exclusão. |
 | `lancamentos_pontos_historico` | Só o gerente geral | Ninguém pelo app. Só o gatilho grava. |
-| `fechamentos_verba` | O gerente geral; o corretor, o dele, com a chave ligada | Só o gerente geral |
+| `fechamentos_verba` | O gerente geral; o corretor, o dele | Só o gerente geral |
 | `empreendimentos` | Todo usuário ativo | Cadastrar e alterar: quem tem `empreendimentos.gerenciar` (no padrão, o operacional; o gerente geral sempre). Sem exclusão: `ativo = false`. O "a partir de" só o gatilho grava. |
 | `tipologias` | Todo usuário ativo | Cadastrar, alterar e retirar: quem tem `empreendimentos.gerenciar` |
 

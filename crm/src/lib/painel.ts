@@ -1,7 +1,7 @@
 // Painel da equipe: números por corretor num dia, semana ou mês, calculados
 // do histórico automático (lead_eventos). Funções puras, testadas com
 // `node --test`. Adaptado do conversionReport da Bruna (ref/CRM Bruna/src/lib/
-// performance.ts), sem verba, pontos nem ranking (sigilo).
+// performance.ts), sem verba, pontos nem ranking (ficam nas telas do programa).
 // Regras em docs/painel.md.
 
 import type { Evento, MotivoDescarte } from "./leads.ts";

@@ -54,4 +54,3 @@ As imagens são recortes das capturas claras de `docs/revisao-visual/temas/claro
 - **[data]** na capa e **[data de início]** nos próximos passos.
 - O endereço `mbigucci.com.br/crm` (slide 15), que é o do `crm/README.md`.
 - Quem confere a conciliação todo mês e o que acontece se não bater (nota do slide 14).
-- Ligar a chave "Programa de verba ativo" depois da reunião, para corretores e gerentes verem Meus pontos, Plantão e Ranking.

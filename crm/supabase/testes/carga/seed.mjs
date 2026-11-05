@@ -39,9 +39,6 @@ export async function semear() {
   for (let i = 0; i < corretores.length; i++)
     await c.query(`update public.profiles set ativo = true, equipe_id = $2 where id = $1`, [corretores[i], equipes[equipeDe(i)]]);
 
-  // Programa ligado: a recepção marca períodos e a baixa gera lançamento.
-  await c.query(`update public.app_settings set valor = 'true'::jsonb where chave = 'programa_verba_ativo'`);
-
   // 2.000 leads: 50 por corretor, com etapas, temperaturas e próximos contatos variados.
   await c.query(
     `insert into public.leads (dono_id, nome, whatsapp, origem, etapa, temperatura, proximo_contato, campanha, empreendimento)

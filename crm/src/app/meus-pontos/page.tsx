@@ -12,13 +12,13 @@ import { limitesDoMes, mesDeLiberacao, pontosDoMes, REGRAS, resumoDoMes } from "
 import { useCriterios, useFechamentos, useLancamentos } from "@/lib/programa-dados";
 
 /**
- * Meus pontos: só com a chave do programa ligada (o banco não entrega nada
- * antes). Os pontos aprovados do mês, o que falta para o mínimo e a verba que
+ * Meus pontos do corretor (o banco entrega só os próprios aprovados).
+ * Os pontos aprovados do mês, o que falta para o mínimo e a verba que
  * vem no mês seguinte.
  */
 export default function MeusPontosPage() {
   return (
-    <Casca titulo="Meus pontos" programa exige="leads.cadastrar">
+    <Casca titulo="Meus pontos" exige="leads.cadastrar">
       <MeusPontos />
     </Casca>
   );

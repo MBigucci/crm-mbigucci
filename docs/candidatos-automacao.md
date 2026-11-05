@@ -14,7 +14,7 @@
 5. A roleta exige 6 períodos completos na semana.
 6. RLS: o corretor vê só os próprios dados e o gerente só os da equipe dele.
 7. Cada corretor pertence a uma única equipe, e o gerente não pontua.
-8. Com a chave "Programa de verba ativo" desligada, corretores e gerentes não recebem nenhum dado de verba nem de ranking.
+8. ~~Com a chave "Programa de verba ativo" desligada, corretores e gerentes não recebem nenhum dado de verba nem de ranking.~~ **Mudou em 04/11/2026:** a chave acabou. `programa.test.mjs` confere a tabela perfil × tela aprovada pelo Felipe.
 9. O Apps Script da pesquisa neutraliza texto que começa com `=`, `+`, `-` ou `@`.
 
 ## Hooks (proibições absolutas)
@@ -35,21 +35,21 @@ Testes:
 - `app_settings` só pode ser lida e alterada pelo gerente geral.
 - Só o gerente geral promove alguém a gerente geral, e sempre resta pelo menos um gerente geral ativo.
 - Corretor ativo precisa ter equipe. O gerente de uma equipe precisa ter o perfil Gerente. Uma equipe com membros não pode ser excluída.
-- ~~A busca no `out/` não encontra nenhuma palavra sigilosa (verba, ranking, pontua, premia).~~ **Mudou em 29/10/2026:** as telas do programa de pontuação estão no código, então o `out/` **vai** conter essas palavras. O teste vira um bloqueio de publicação: a skill `publicar-wordpress` (ou um hook no envio por FTP) procura `verba|ranking|pontos|premia|roleta` no `out/` e, se achar, **recusa publicar antes da reunião de novembro de 2026**, a menos que o Felipe confirme que a reunião já aconteceu. O teste de banco `crm/supabase/testes/programa.test.mjs` já cobre o sigilo dos dados (chave desligada, perfil a perfil).
+- ~~A busca no `out/` não encontra nenhuma palavra sigilosa (verba, ranking, pontua, premia).~~ Não serve mais: o sigilo acabou em 04/11/2026 (`docs/historico.md`). A publicação continua sendo decisão do Felipe.
 - Toda tabela nova com dados de corretor usa `pode_ver_dados_de()` e tem um teste por perfil.
 - Hoje o teste de SQL existe só fora do repositório (`sqltest/test.mjs`, na pasta de notas daquela sessão). Precisa ser trazido para `crm/`.
 
 Hooks:
 - Bloquear tabela nova em `schema.sql` sem `enable row level security`.
-- ~~Bloquear palavras sigilosas em `crm/src` enquanto o programa de verba não for lançado.~~ Não serve mais: o programa foi construído em `crm/src` por decisão do Felipe. O bloqueio passa para a publicação (ver o teste do `out/` acima).
+- ~~Bloquear palavras sigilosas em `crm/src` enquanto o programa de verba não for lançado.~~ Não serve mais: o sigilo acabou em 04/11/2026.
 - Bloquear rotas de API, `"use server"` e `getServerSideProps` em `crm/src`, porque quebram a exportação estática.
-- Bloquear inserts de permissões ligadas à verba em `permissions` antes do lançamento, porque essa tabela é legível por todos os usuários ativos.
+- ~~Bloquear inserts de permissões ligadas à verba em `permissions` antes do lançamento.~~ Não serve mais: o sigilo acabou em 04/11/2026.
 
 ## Sugeridos pela sessão "Módulo de leads" (29/10/2026), ainda não criados
 Testes:
 - Rodar `npm test` e `npm run test:banco` antes de todo commit que mexe em `crm/` (hoje é manual).
 - Trazer o teste da base (`sqltest/test.mjs`) para `crm/supabase/testes/`, ao lado do de leads, e trocar a contagem fixa de permissões por uma conferência por nome.
-- O build (`out/`) não contém a palavra "campanha" junto de termos do programa sigiloso.
+- ~~O build (`out/`) não contém a palavra "campanha" junto de termos do programa sigiloso.~~ Não serve mais: o sigilo acabou em 04/11/2026.
 - As origens e etapas do `schema.sql` batem com as listas de `docs/leads.md`.
 - Os motivos de descarte do check de `leads` batem com `MOTIVOS_DESCARTE` em `crm/src/lib/leads.ts`.
 - Toda tela nova do `crm/` funciona em 375px sem rolagem lateral da página (`scrollWidth` igual à largura).

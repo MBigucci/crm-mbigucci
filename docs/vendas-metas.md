@@ -76,16 +76,16 @@
 - **Conta:** dos leads que **entraram na carteira no período** (o mesmo grupo do funil), por origem: leads, primeiro contato, visita realizada, proposta e venda, até hoje, com a taxa sobre os leads, e os descartados por motivo. Cada número abre a lista dos leads. Função `conversaoPorOrigem` em `crm/src/lib/painel.ts`.
 - **Campanha:** dentro de cada origem, uma linha por campanha ("Sem campanha" por último). Aparece só para quem tem a permissão **`painel.campanha`**:
   - no padrão, o **corretor** (vê as campanhas dos próprios leads, que ele mesmo digitou);
-  - o **gerente não** tem no padrão, porque `docs/gerentes-necessidades.md` registra que o campo campanha fica fora do painel do gerente enquanto a chave "Programa de verba ativo" estiver desligada. O gerente geral liga em Configurações → Permissões quando quiser.
+  - o **gerente não** tem no padrão. Nasceu do sigilo do programa de verba (`docs/gerentes-necessidades.md`); com o fim do sigilo, em 04/11/2026, o Felipe manteve o padrão. O gerente geral liga em Configurações → Permissões quando quiser.
 - **Lead perdido:** o corretor que perdeu não vê mais o lead; ele conta como origem Empresa.
 
 ## 6. Faixas de VGV do mês (só o gerente geral)
 
-- **Sigilo:** é a premiação mensal por VGV de `docs/pontuacao-verba.md`. Fica numa tela só do gerente geral, `/faixas/` (menu "Faixas de VGV"), protegida por regra fixa no banco (`is_gerente_geral()`), sem permissão no catálogo, porque a tabela `permissions` é legível por todos.
+- **Só do gerente geral:** é a premiação mensal por VGV de `docs/pontuacao-verba.md`. Fica numa tela só do gerente geral, `/faixas/` (menu "Faixas de VGV"), protegida por regra fixa no banco (`is_gerente_geral()`), sem permissão no catálogo, porque a tabela `permissions` é legível por todos.
 - **Código público neutro:** o título, a descrição e o nome da coluna de valor vêm de `app_settings` (chave `faixas_vgv`), que só o gerente geral lê. O código do site fala só em "faixas de VGV" e "valor". A tela de Configurações mostra só as chaves de ligar e desligar.
 - **Tabela de faixas** (`faixas_vgv`): "VGV no mês a partir de" e o valor. O padrão entra só na primeira vez: R$ 1.000.000 → R$ 2.000; R$ 1.500.000 → R$ 3.000; R$ 2.000.000 → R$ 5.000; R$ 3.000.000 → R$ 10.000. O gerente geral cria, altera e exclui faixas na tela.
 - **Cálculo** (`faixasDoMes` em `crm/src/lib/faixas.ts`): por corretor, o VGV das vendas **assinadas no mês e pagas**; vale só a **faixa mais alta** atingida (não acumula). A tela mostra também o assinado com pendentes e o mês de liberação (o seguinte).
-- **Nada para corretor nem gerente:** sem premiação, verba, pontos nem ranking em nenhuma outra tela. O build é conferido com grep (seção 10).
+- **Premiação só aqui:** nenhuma outra tela mostra as faixas. Verba, pontos e ranking ficam nas telas do programa, por permissão (`docs/pontuacao-verba.md`).
 
 ## 7. Quem vê e quem faz
 
@@ -119,8 +119,8 @@ Tomadas nesta etapa por falta de regra escrita; todas mudam por permissão ou po
 ## 10. Testes
 
 - `npm test` (`crm/src/lib/vendas.test.ts` e `painel.test.ts`): as duas visões do VGV, mês da assinatura (assinada em outubro e paga em novembro conta em outubro), formatos, textos do histórico, meta anual (do corretor, geral, padrão), acumulado, falta, %, ritmo por mês com o mês atual, projeção só depois de 1/4 do ano, ano encerrado e futuro, períodos e progresso das metas próprias, frases de ritmo, meta repetida, faixas (só a mais alta, só pagas, mês seguinte) e conversão por origem e campanha.
-- `npm run test:banco` (`crm/supabase/testes/vendas.test.mjs`): o schema roda de novo com vendas gravadas; padrões das permissões só na criação e nada sigiloso no catálogo; registrar (só o dono, lead ativo, sem data futura, gerente não); etapa Venda só pelo registro; leitura por perfil; pagar sem motivo e o resto só com motivo; correção auditável com antes e depois; cancelar e reativar sem apagar; meta anual e metas próprias por perfil; faixas e os textos delas só para o gerente geral.
-- **Build:** `grep -riE "verba|ranking|pontua|premia|prêmio|roleta"` no `out/` encontra só "menu de três pontos" (instrução do Chrome em `/conta`).
+- `npm run test:banco` (`crm/supabase/testes/vendas.test.mjs`): o schema roda de novo com vendas gravadas; padrões das permissões só na criação; registrar (só o dono, lead ativo, sem data futura, gerente não); etapa Venda só pelo registro; leitura por perfil; pagar sem motivo e o resto só com motivo; correção auditável com antes e depois; cancelar e reativar sem apagar; meta anual e metas próprias por perfil; faixas e os textos delas só para o gerente geral.
+- **Build:** até 04/11/2026 um `grep` de palavras do programa no `out/` conferia o sigilo. Saiu com o fim do sigilo.
 - **Telas em 375px:** ficha (registrar venda pela etapa), `/vendas/` (corretor e gerente, correção com motivo), `/metas/` (corretor e gerente geral), painel (corretor e equipe) e `/faixas/`, sem rolagem lateral da página, com o Supabase falso `fake-supabase-vendas-v6.mjs` da pasta de notas.
 
 ## 11. Da Bruna: o que veio, o que foi adaptado e o que ficou de fora
