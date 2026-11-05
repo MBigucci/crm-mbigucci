@@ -53,7 +53,7 @@ Códigos da pesquisa:
 - **Servidor:** a Bruna roda na Vercel com rotas em `src/app/api/` (push, importação com IA). A MBigucci é exportação estática no WordPress. O que precisa de chave secreta vira Edge Function do Supabase, e o que é agendado vira `pg_cron`.
 - **Catálogo:** a Bruna revende imóveis de terceiros (planta, pronto, usado). A MBigucci vende os próprios empreendimentos, um catálogo pequeno e estável.
 - **Exclusão:** a Bruna apaga lead, venda e imóvel de vez. A MBigucci não exclui (descarte com motivo).
-- **Sigilo:** pontos, verba e ranking não aparecem no código do front até a reunião de novembro (`docs/pontuacao-verba.md`). Várias recomendações abaixo (visitas, vendas) alimentam esse programa, mas as telas e textos ficam neutros.
+- **Sigilo (acabou em 04/11/2026, `docs/historico.md`):** até então pontos, verba e ranking não apareciam para corretores e gerentes (`docs/pontuacao-verba.md`). Várias recomendações abaixo (visitas, vendas) alimentam esse programa; as que citam "neutro" ou "sigilo" são dessa época.
 
 ## 3. Cadastro de lead
 
@@ -199,6 +199,12 @@ Tamanho: **P** = até meia sessão, **M** = uma sessão, **G** = duas ou mais se
 | 17 | **Revisão visual**, com tudo pronto e antes de entregar: hierarquia e destaque em cada tela. O Felipe sentiu que "as coisas ficam todas iguais". Para cada tela, ver o que é a ação principal, o que precisa saltar (atrasado, prazo estourado, visita de hoje), o que está apagado demais (`concrete`, texto pequeno) e o contraste em 375px. Pode ser feita no Codex, como revisão independente | visual | M | — |
 | 18 ✓ | **Feito** (`docs/design-system.md` e `docs/revisao-visual.md`, seção Modo escuro). Tokens claro/escuro e contrastes conferidos, CSS compartilhado, `prefers-color-scheme`, escolha em Minha conta guardada no aparelho, inicialização sem flash e impressão sempre clara. Capturas em 375px e desktop nos dois temas. | visual | M | — |
 | 19 ✓ | **Feito** (`docs/apresentacao/`, publicada em 30/10/2026). **Apresentação do CRM para a reunião de novembro**: o deck que o Felipe vai usar para anunciar o CRM e o programa aos corretores e gerentes. Fica no fim do roadmap, com tudo pronto, para usar prints reais das telas. Conteúdo: por que um CRM próprio, o que os corretores pediram na pesquisa e como foi atendido, o tour pelas telas (lista do dia, Cadastro Mágico, visitas, metas), o programa de pontos e verba e os próximos passos. As regras comerciais entram completas, a partir de `docs/fontes/regras-comerciais-2026-10.md`: a roleta, a premiação por VGV, a verba por pontos e os 7 exemplos como casos ("quem fez X recebe Y"). No MBigucci DS | apresentação | M | — |
+| 20 | **Fim do sigilo e da chave "Programa de verba ativo"** (decisão do Felipe em 04/11/2026). Brief `docs/codex-fim-do-sigilo.md` | programa | M | — |
+| 21 | **CRM de parcerias**: parceiros do gerente, interações, roleta entre gerentes, 90 dias, link público, origem "Parceiro" no lead. Brief `docs/codex-parcerias.md` | parcerias | G | — |
+| 22 | **Recepção no CRM** (`/recepcao/`): livro de visitas do estande e controle da vez, no lugar da planilha, em todas as lojas de uma vez. Estudo `docs/estudo-recepcao.md` | recepção | G | — |
+| 23 | **Check-in do gerente no plantão** por localização (raio de 200 m, selfie como plano B). O check-in do corretor fica para depois, com o jurídico. Estudo `docs/estudo-checkin-plantao.md` | plantão | M | — |
+| 24 | **Relatórios para o Felipe e o marketing**. Estudo `docs/estudo-relatorios.md`. As Faixas de VGV da própria equipe para o gerente (D11) mudam a regra no banco | relatórios | G | — |
+| 25 | **Escala semanal pelo CRM** (pedido do Felipe em 04/11/2026): o corretor vê onde está escalado em cada dia e período, a recepção sabe quem esperar na loja, e o escalado se compara com os 6 períodos da roleta do fim de semana. Depois da etapa 1 da recepção (item 22). A decidir no desenho: quem monta a escala e se o corretor pede troca | plantão | M | — |
 
 Os itens 1, 2 e 3 mexem no mesmo gatilho e nas mesmas telas (cadastro, ficha, `lead_interacoes`). Por isso convém fazê-los na mesma sessão ou em sequência, nunca em paralelo.
 

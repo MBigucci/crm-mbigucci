@@ -2,6 +2,8 @@
 
 > Estudo de 04/11/2026, a pedido do Felipe. **Só pesquisa e desenho: nada foi implementado, nenhum arquivo existente foi alterado.** Corretores e gerentes farão check-in pela localização, dizendo que estão em um plantão. Para o corretor, controla os períodos (meio dia, valem pontos e roleta). Para o gerente, controla a visita dele aos plantões.
 >
+> **Nota de 04/11/2026:** o sigilo do programa de verba e a chave "Programa de verba ativo" acabaram (`docs/historico.md`). Onde este estudo diz "atrás da chave", "só com a chave ligada" ou "texto neutro por sigilo", leia "pela permissão": o programa aparece sempre, para quem tem permissão.
+>
 > **Sumário:** 0. Resposta curta · 1. Viabilidade técnica · 2. Validar a presença · 3. Privacidade e LGPD · 4. Desenho para o corretor · 5. Desenho para o gerente · 6. Modelo de dados, permissões, telas e avisos · 7. Alternativas e recomendação · 8. Riscos, esforço e decisões do Felipe · 9. O que foi conferido e o que não foi · Fontes
 
 ## 0. Resposta curta
@@ -344,6 +346,21 @@ Por quê: o GPS é o que o Felipe pediu e cobre o corretor e o gerente com o mes
     - (recomendada) Sim, atrás da chave;
     - Não, o check-in é só de presença e vale já (os textos continuam neutros, mas o código fica publicado antes da reunião);
     - Liberar só para gerentes até a reunião.
+
+### Respostas do Felipe (04/11/2026)
+
+| # | Decisão |
+| --- | --- |
+| 1 e 2 | **Etapa 1 = só o check-in do gerente.** O corretor terá check-in **depois**, numa etapa futura, com o jurídico consultado antes |
+| 7 | O gerente **só marca "passei no estande"**: um check-in, sem saída nem duração. Não entra em períodos nem roleta |
+| Corretor hoje | A presença do corretor é a da recepção: **a entrada é estar na roleta do dia**, e **a saída e a volta são marcadas pela recepção**, como já faz na planilha (aba `ROLETA`, ver `docs/estudo-recepcao.md`) |
+| 3 | Para o período do corretor (quando o check-in dele existir, e para a presença marcada pela recepção): **80% do período, com 30 min de tolerância**, editáveis em Configurações |
+| 5 | Sem saída: **fecha como "sem saída" às 19h30 e a recepção decide** |
+| 8 | Cadastram os plantões: **gerente geral e operacional**. **Raio de 200 m**, porque os plantões são grandes |
+| 6 | Falha de localização: **plano B com selfie** |
+| 4 | Retenção: **selfie 30 dias**; a visita do gerente fica **12 meses sem coordenadas** (quem, onde e quando) |
+| 9 | **Todos os gerentes de uma vez**, sem piloto |
+| 10 | Perdeu o sentido: o sigilo acabou em 04/11/2026 (`docs/codex-fim-do-sigilo.md`) |
 
 ## 9. O que foi conferido e o que não foi
 
