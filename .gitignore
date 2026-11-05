@@ -28,3 +28,6 @@ passkey.txt
 
 # Insumos pessoais (áudios, transcrições, planilhas com nomes)
 insumos/
+
+# Testes e arquivos gerados locais (capturas, PNGs da marca, perfis de navegador)
+local/
