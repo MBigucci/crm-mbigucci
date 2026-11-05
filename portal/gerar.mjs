@@ -1,15 +1,16 @@
-// Tela de escolha do módulo do Base360 (mbigucci.com.br/base360/).
-// Uso: node portal/gerar.mjs  → grava portal/index.html (o arquivo que vai por FTP para /base360/).
+// Tela de escolha do módulo do Base360 (https://base360.mbigucci.com.br/, site próprio, só links).
+// Uso: node portal/gerar.mjs  → grava portal/index.html (o arquivo que vai por FTP para a raiz de base360.mbigucci.com.br).
 // Monta a página a partir de portal/fonte.html com:
 // - o CSS dos tokens (marca/tokens/dist/mbigucci.css, gerado antes por marca/tokens/gerar.mjs);
 // - o lockup Base360 de docs/marca-base360/, com as cores trocadas por tokens (claro e escuro pelo sistema);
 // - o favicon da marca embutido, para a página abrir sem servidor.
 // Não edite o index.html à mão: mude a fonte ou as constantes abaixo e gere de novo.
 
-/** Endereço do módulo Repasse (o sistema da Roberta). Vazio = cartão "Repasse · em breve", sem link. */
+/** Endereço do módulo Repasse (o sistema da Roberta). Vazio = cartão "Repasse · em breve", sem link.
+ *  Hoje repasse.mbigucci.com.br; na migração vira repasse.base360.mbigucci.com.br (troque aqui e gere de novo). */
 const ENDERECO_REPASSE = "https://repasse.mbigucci.com.br/";
-/** Endereço do módulo de Vendas no site (o BASE_PATH do build do crm/). */
-const ENDERECO_VENDAS = "/base360/vendas/";
+/** Endereço do módulo de Vendas: subdomínio próprio (05/11/2026), o build do crm/ na raiz. */
+const ENDERECO_VENDAS = "https://vendas.base360.mbigucci.com.br/";
 
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";

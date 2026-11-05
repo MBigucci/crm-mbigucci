@@ -8,7 +8,7 @@ function substituir(nome, antes, depois) {
   if (!fonte.includes(antes)) throw Error('Atualize o cenário de QA: ' + nome);
   writeFileSync(path, fonte.replace(antes, depois));
 }
-substituir('lib/sessao.tsx', "const gerente=path", "const gerente=new URLSearchParams(location.search).get('qa')==='gerente' || path.startsWith('/base360/vendas/parceiros/') || path");
+substituir('lib/sessao.tsx', "const gerente=path", "const gerente=new URLSearchParams(location.search).get('qa')==='gerente' || path.startsWith('/parceiros/') || path");
 substituir('lib/sessao.tsx', "'dados.ver_equipe','leads.atribuir'", "'dados.ver_equipe','leads.atribuir','parceiros.cadastrar','plantao.atendimentos_ver'");
 // Estados transitórios do componente real, sem simular sucesso de uma escrita.
 const estado = "new URLSearchParams(location.search).get('estado')";

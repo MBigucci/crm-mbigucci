@@ -1,6 +1,6 @@
 /* Service worker do Base360 Vendas: só os avisos no celular (Web Push).
    Não guarda páginas nem dados em cache e não intercepta nenhuma requisição.
-   Fica em /base360/vendas/sw.js, com escopo /base360/vendas/ (o BASE_PATH). Regras em docs/notificacoes.md. */
+   Fica na raiz do site (vendas.base360.mbigucci.com.br/sw.js), com escopo / (o BASE_PATH, vazio). Regras em docs/notificacoes.md. */
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));

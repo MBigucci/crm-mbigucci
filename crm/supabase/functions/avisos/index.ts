@@ -869,7 +869,7 @@ if (deno?.serve) {
       vapid: {
         publica: deno.env.get("VAPID_PUBLIC_KEY") ?? "",
         privada: deno.env.get("VAPID_PRIVATE_KEY") ?? "",
-        assunto: deno.env.get("VAPID_SUBJECT") || "https://mbigucci.com.br/base360/vendas/",
+        assunto: deno.env.get("VAPID_SUBJECT") || "https://vendas.base360.mbigucci.com.br/",
       },
     };
     if (!amb.vapid.publica || !amb.vapid.privada) {

@@ -1,6 +1,6 @@
 // Avisos no celular (Web Push), do lado do navegador. Adaptado do CRM da Bruna
 // (ref/CRM Bruna/src/lib/push.ts). O service worker fica em public/sw.js, com
-// escopo no BASE_PATH (/base360/vendas/). O envio é da Edge Function "avisos".
+// escopo no BASE_PATH (a raiz de vendas.base360.mbigucci.com.br). O envio é da Edge Function "avisos".
 // Regras em docs/notificacoes.md.
 
 import { supabase } from "./supabase";

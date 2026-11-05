@@ -10,7 +10,7 @@ Esta versão tem o login, os usuários, as equipes, as permissões por perfil e 
 2. Em **Authentication > Sign In / Providers**:
    - Desligue **Allow new users to sign up**. Ninguém se cadastra sozinho: é você quem cria as contas.
    - Deixe o provedor **Email** ligado.
-3. Em **Authentication > URL Configuration**, coloque `https://mbigucci.com.br/base360/vendas/` em **Site URL** (e o mesmo endereço em **Redirect URLs**).
+3. Em **Authentication > URL Configuration**, coloque `https://vendas.base360.mbigucci.com.br/` em **Site URL** (e o mesmo endereço em **Redirect URLs**).
 
 ## 2. Rodar o schema
 
@@ -52,7 +52,7 @@ Das próximas contas em diante, use o próprio CRM, na tela **Usuários**.
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<chave anon / publishable>
-BASE_PATH=/base360/vendas
+BASE_PATH=
 ```
 
 3. Rode:
@@ -69,14 +69,14 @@ O build gera a pasta `out/`.
 
 ## 6. Subir no WordPress
 
-1. Pelo FTP ou pelo gerenciador de arquivos da hospedagem, crie a pasta `base360/vendas` na raiz do site, onde ficam `wp-config.php` e `wp-content`.
-2. Envie **o conteúdo** de `out/` para dentro dela.
-3. Coloque o logo em `base360/vendas/mbigucci-logo.png`, o mesmo arquivo da pesquisa. Sem ele, a lateral, o menu e a tela de entrar mostram "MBigucci" em texto.
-4. Envie `portal/index.html` (da raiz do repositório, gerado por `node portal/gerar.mjs`) para `base360/`. É a tela de escolha do módulo.
-5. Troque o conteúdo da pasta `crm` antiga pelo de `crm-redirecionamento/` (o `.htaccess` e o `index.html`): quem abrir `/crm/...` vai para `/base360/vendas/...`.
-6. Abra `https://mbigucci.com.br/base360/vendas/` e entre com a conta do passo 4.
+1. Peça ao TI os registros DNS (na Locaweb) de `vendas.base360.mbigucci.com.br` e `base360.mbigucci.com.br`, apontando para a Hostinger. Na Hostinger, cada um é um site estático próprio, com SSL ligado.
+2. Envie **o conteúdo** de `out/` para a raiz do site de Vendas.
+3. Coloque o logo em `mbigucci-logo.png`, na mesma raiz, o mesmo arquivo da pesquisa. Sem ele, a lateral, o menu e a tela de entrar mostram "MBigucci" em texto.
+4. Envie `portal/index.html` (da raiz do repositório, gerado por `node portal/gerar.mjs`) para a raiz de `base360.mbigucci.com.br`. É a tela de escolha do módulo.
+5. No site institucional, troque o conteúdo da pasta `crm` antiga pelo de `crm-redirecionamento/` (o `.htaccess` e o `index.html`): quem abrir `mbigucci.com.br/crm/...` vai para `https://vendas.base360.mbigucci.com.br/...`.
+6. Abra `https://vendas.base360.mbigucci.com.br/` e entre com a conta do passo 4.
 
-O WordPress não interfere, porque o `.htaccess` dele serve as pastas reais antes das páginas do WP. Para usar outra pasta, mude `BASE_PATH`, gere o build de novo e atualize a **Site URL** do passo 1.
+Os sites de Vendas e do portal não passam pelo WordPress; só o redirecionamento de `/crm/` fica no site institucional, e o `.htaccess` dele serve a pasta real antes das páginas do WP. Para usar uma pasta dentro do site, mude `BASE_PATH`, gere o build de novo e atualize a **Site URL** do passo 1.
 
 ## 7. Primeiro uso
 
@@ -109,7 +109,7 @@ Ele mostra uma **Public Key** e uma **Private Key**. Deixe a janela aberta: voc�
 | --- | --- |
 | `VAPID_PUBLIC_KEY` | a Public Key |
 | `VAPID_PRIVATE_KEY` | a Private Key |
-| `VAPID_SUBJECT` | `mailto:` seguido do seu e-mail (opcional; sem ele vale `https://mbigucci.com.br/base360/vendas/`) |
+| `VAPID_SUBJECT` | `mailto:` seguido do seu e-mail (opcional; sem ele vale `https://vendas.base360.mbigucci.com.br/`) |
 
 Clique em **Save**. A `SUPABASE_SERVICE_ROLE_KEY` você não cria: o Supabase já põe sozinho.
 
@@ -261,7 +261,7 @@ Em 29/10/2026 o schema rodou no projeto Supabase de produção (`crm-mbigucci`, 
 npm run dev
 ```
 
-Abra `http://localhost:3000/base360/vendas`. Sem o `.env.local`, as telas avisam que o Supabase não está configurado.
+Abra `http://localhost:3000`. Sem o `.env.local`, as telas avisam que o Supabase não está configurado.
 
 ### Revisão visual sem login
 
@@ -273,7 +273,7 @@ npm --prefix .visual-preview run build
 node scripts/visual-preview.mjs --serve
 ```
 
-Abra `http://127.0.0.1:4173/base360/vendas/`. A cópia usa corretor nas telas pessoais, gerente em Leads/Painel e gerente geral em Configurações. Os dados estão em `scripts/visual-fixtures.ts`; os horários acompanham o dia atual. Para refletir uma alteração de código, prepare e gere a cópia novamente. Encerre o servidor com Ctrl+C. Não publique o conteúdo de `.visual-preview/`.
+Abra `http://127.0.0.1:4173/`. A cópia usa corretor nas telas pessoais, gerente em Leads/Painel e gerente geral em Configurações. Os dados estão em `scripts/visual-fixtures.ts`; os horários acompanham o dia atual. Para refletir uma alteração de código, prepare e gere a cópia novamente. Encerre o servidor com Ctrl+C. Não publique o conteúdo de `.visual-preview/`.
 
 Relatório e capturas em [`docs/revisao-visual.md`](../docs/revisao-visual.md). Não rode build com `npm run dev` ativo no mesmo app.
 

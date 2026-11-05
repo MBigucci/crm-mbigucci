@@ -26,8 +26,8 @@ export async function revisar({browser, abrir, capturar, destino, telas, captura
     const mime={'.html':'text/html; charset=utf-8','.js':'application/javascript','.css':'text/css','.woff2':'font/woff2','.json':'application/json','.png':'image/png'};
     await ctx.route('**/*', async r => {
       const url=new URL(r.request().url());
-      if (url.origin!=='http://127.0.0.1:4173' || !url.pathname.startsWith('/base360/vendas/') || r.request().method()!=='GET') return r.abort();
-      const caminho=resolve(raiz,decodeURIComponent(url.pathname.slice('/base360/vendas/'.length)) || '.',url.pathname.endsWith('/')?'index.html':'');
+      if (url.origin!=='http://127.0.0.1:4173' || !url.pathname.startsWith('/') || r.request().method()!=='GET') return r.abort();
+      const caminho=resolve(raiz,decodeURIComponent(url.pathname.slice('/'.length)) || '.',url.pathname.endsWith('/')?'index.html':'');
       if (!caminho.startsWith(raiz+sep)) return r.abort();
       try {await r.fulfill({path:caminho,contentType:mime[extname(caminho)]});}
       catch {await r.fulfill({status:404,body:''});}
@@ -50,7 +50,7 @@ export async function revisar({browser, abrir, capturar, destino, telas, captura
     for (const [nome,rota] of cenarios) {
       atual=rota;
       try {
-        if(nome==='cadastro-publico') await page.goto('http://127.0.0.1:4173/base360/vendas/'+rota);
+        if(nome==='cadastro-publico') await page.goto('http://127.0.0.1:4173/'+rota);
         else await abrir(page,rota);
         if(nome==='aviso' && largura===375) await botao('+ Cliente');
         await foto(nome);

@@ -37,7 +37,7 @@ O histórico completo está no estudo, na nota da sessão e na memória do proje
 | --- | --- |
 | `simbolo-claro.svg` / `simbolo-escuro.svg` | O símbolo sozinho, sobre `paper` ou `surface` |
 | `logotipo-claro.svg` / `logotipo-escuro.svg` | Só o nome "Base360" |
-| `lockup-base360-claro.svg` / `-escuro.svg` | Símbolo + nome, sem módulo: tela de escolha do módulo (`/base360/`) e materiais do sistema como um todo |
+| `lockup-base360-claro.svg` / `-escuro.svg` | Símbolo + nome, sem módulo: tela de escolha do módulo (`base360.mbigucci.com.br`) e materiais do sistema como um todo |
 | `lockup-vendas-claro.svg` / `-escuro.svg` | Cabeçalho do CRM, inclusive na tela de entrar |
 | `lockup-repasse-claro.svg` / `-escuro.svg` | Cabeçalho do Base360 da Roberta |
 | `icone.svg` | Ícone do app (192, 512 e 180 da Apple) |
@@ -163,5 +163,5 @@ Implementado em 05/11/2026 (brief `codex-aplicar-logo-base360.md`), ainda sem pu
 - **Tela de entrar:** o cabeçalho mostra "Base360 · Vendas", e não o lockup sem módulo, porque o login é só deste módulo (Felipe, 05/11/2026).
 - **Logo MBigucci:** rodapé da lateral aberta, fim do menu do celular e tela de entrar (seção 1).
 - **Ícones e favicon:** `crm/scripts/gerar-icones.mjs` gera os PNGs de `crm/public/icons/` a partir de `icone.svg`, `icone-maskable.svg` e `favicon.svg`, com a densidade alta de `gerar-png.mjs`. Os PNGs do app continuam no Git, porque o build só copia `public/`. O `icon.svg` do app é cópia do `favicon.svg`.
-- **Tela de escolha (`/base360/`):** `portal/index.html`, gerada por `node portal/gerar.mjs` com o `lockup-base360-claro.svg` (cores por token) e o CSS de `marca/tokens/`.
+- **Tela de escolha (`base360.mbigucci.com.br`):** `portal/index.html`, gerada por `node portal/gerar.mjs` com o `lockup-base360-claro.svg` (cores por token) e o CSS de `marca/tokens/`.
 - **Nome do app no celular:** "Base360". Nos textos, o sistema é "Base360 Vendas".

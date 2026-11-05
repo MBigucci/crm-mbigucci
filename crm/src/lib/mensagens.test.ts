@@ -92,7 +92,7 @@ test("links: WhatsApp com texto e Ligar", () => {
 });
 
 test("repasse: nome, WhatsApp, empreendimento, prazo e link da ficha", () => {
-  const link = "https://www.mbigucci.com.br/base360/vendas/leads/ficha/?id=1";
+  const link = "https://vendas.base360.mbigucci.com.br/leads/ficha/?id=1";
   assert.equal(
     mensagemRepasse({
       corretor: "Carla Souza",

@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import assert from 'node:assert/strict';
 import { resultados } from './contraste-temas.mjs';
 const { chromium } = createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const base = 'http://127.0.0.1:4173/base360/vendas/';
+const base = 'http://127.0.0.1:4173/';
 const preSubida = process.argv.includes('--pre-subida');
 const destino = resolve('..', 'docs/revisao-visual', preSubida ? '2026-11-05' : 'temas');
 const chave = 'mbigucci-crm-aparencia';
