@@ -118,7 +118,7 @@ export const linkLigar = (numero: string) => `tel:+${numero}`;
 export function mensagemRepasse(d: {
   corretor: string;
   cliente: string;
-  whatsapp: string;
+  whatsapp: string | null;
   empreendimento: string | null;
   /** "responder em 15 min" ou "responder até amanhã, 9h15"; sem prazo, a linha some. */
   prazo: string | null;
@@ -128,7 +128,7 @@ export function mensagemRepasse(d: {
     `Oi, ${primeiroNome(d.corretor)}. Você recebeu um lead da empresa no CRM.`,
     "",
     `*${d.cliente.trim()}*`,
-    `WhatsApp: ${formatarWhatsapp(d.whatsapp)}`,
+    d.whatsapp ? `WhatsApp: ${formatarWhatsapp(d.whatsapp)}` : "WhatsApp: sem telefone",
   ];
   if (d.empreendimento?.trim()) linhas.push(`Empreendimento: ${d.empreendimento.trim()}`);
   if (d.prazo) linhas.push("", `Prazo do primeiro contato: ${d.prazo}.`);

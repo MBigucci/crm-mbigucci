@@ -18,7 +18,7 @@ export type Lead = {
   id: string;
   dono_id: string;
   nome: string;
-  whatsapp: string;
+  whatsapp: string | null;
   email: string | null;
   origem: string;
   campanha: string | null;
@@ -57,7 +57,8 @@ export type TipoInteracao =
   | "tentativa"
   | "mensagem"
   | "toque_whatsapp"
-  | "toque_ligacao";
+  | "toque_ligacao"
+  | "plantao";
 
 /** Os tipos que o corretor escolhe ao registrar; "tentativa" e "mensagem" têm botão e fluxo próprios. */
 export const TIPOS_INTERACAO: { slug: TipoInteracao; nome: string }[] = [
@@ -77,6 +78,7 @@ const NOME_TIPO: Record<TipoInteracao, string> = {
   mensagem: "Mensagem original",
   toque_whatsapp: "Abriu o WhatsApp",
   toque_ligacao: "Ligou",
+  plantao: "No stand",
 };
 export const nomeTipoInteracao = (t: TipoInteracao) => NOME_TIPO[t] ?? t;
 
@@ -262,6 +264,18 @@ export function normalizarWhatsapp(entrada: string): string | null {
   if (d.length === 10 || d.length === 11) d = "55" + d;
   if (/^55[1-9]{2}[6-9]\d{7}$/.test(d)) d = d.slice(0, 4) + "9" + d.slice(4);
   return /^55[1-9]{2}\d{8,9}$/.test(d) ? d : null;
+}
+
+/**
+ * Aviso de duplicado do WhatsApp (cadastro e ficha). Na carteira que a pessoa
+ * vê, diz o nome; fora dela, só que o número já está em outra carteira.
+ */
+export function textoDuplicado(d: { visivel?: { nome: string; deOutro?: string } | null; emOutraCarteira?: boolean; atribui?: boolean }): string | null {
+  if (d.visivel) return `Já existe um lead ativo com este WhatsApp: ${d.visivel.nome}${d.visivel.deOutro ? `, na carteira de ${d.visivel.deOutro}` : ""}.`;
+  if (!d.emOutraCarteira) return null;
+  return d.atribui
+    ? "Este WhatsApp já está num lead ativo de outra equipe."
+    : "Este WhatsApp já está num lead ativo de outro corretor. Confira com seu gerente.";
 }
 
 /** "5511987654321" → "(11) 98765-4321". */

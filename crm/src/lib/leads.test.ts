@@ -9,6 +9,7 @@ import {
   grupoNaListaDoDia,
   montarListaDoDia,
   normalizarWhatsapp,
+  textoDuplicado,
   ordenarListaDoDia,
   type Temperatura,
 } from "./leads.ts";
@@ -170,4 +171,12 @@ test("lista do dia: o lead com toque sem detalhe vai só para Detalhe o contato,
   );
   assert.equal(grupoNaListaDoDia(leads[1], agora), "detalhar");
   assert.equal(grupoDoLead(leads[0], agora), "atrasados"); // fora da lista do dia, o atraso continua contando
+});
+
+test("aviso de duplicado: nome só na carteira que a pessoa vê", () => {
+  assert.equal(textoDuplicado({ visivel: { nome: "Ana" } }), "Já existe um lead ativo com este WhatsApp: Ana.");
+  assert.equal(textoDuplicado({ visivel: { nome: "Ana", deOutro: "Beto" } }), "Já existe um lead ativo com este WhatsApp: Ana, na carteira de Beto.");
+  assert.equal(textoDuplicado({ emOutraCarteira: true }), "Este WhatsApp já está num lead ativo de outro corretor. Confira com seu gerente.");
+  assert.equal(textoDuplicado({ emOutraCarteira: true, atribui: true }), "Este WhatsApp já está num lead ativo de outra equipe.");
+  assert.equal(textoDuplicado({}), null);
 });

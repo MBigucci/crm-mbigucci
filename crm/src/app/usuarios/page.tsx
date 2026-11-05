@@ -27,7 +27,7 @@ export default function UsuariosPage() {
 }
 
 type Aviso = { ok: boolean; texto: string } | null;
-type ProfileComWhatsapp = Profile & { whatsapp: string | null };
+type ProfileComWhatsapp = Profile & { whatsapp: string | null; apelido: string | null; creci: string | null };
 
 /** Chama a Edge Function usuarios-admin e devolve a mensagem de erro, se houver. */
 async function usuariosAdmin(corpo: Record<string, unknown>): Promise<string | null> {
@@ -55,7 +55,7 @@ function Usuarios() {
 
   const carregar = useCallback(async () => {
     const [p, t] = await Promise.all([
-      db().from("profiles").select(`${COLUNAS_PROFILE}, whatsapp`).order("nome"),
+      db().from("profiles").select(`${COLUNAS_PROFILE}, whatsapp, apelido, creci`).order("nome"),
       db().from("teams").select("id, nome, gerente_id").order("nome"),
     ]);
     if (p.error || t.error) return setErro(mensagemErro(p.error ?? t.error));
@@ -169,7 +169,10 @@ function Usuarios() {
             ) : (
               <div className="card flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <p className="titulo-card truncate">{u.nome || u.email}</p>
+                  <p className="titulo-card truncate">
+                    {u.nome || u.email}
+                    {u.apelido && <span className="text-ink-soft"> · {u.apelido}</span>}
+                  </p>
                   <p className="truncate text-ink-soft">{u.email}</p>
                   {u.whatsapp && <p className="num truncate text-[13px] text-ink-soft">{formatarWhatsapp(u.whatsapp)}</p>}
                   <div className="mt-2 flex flex-wrap gap-2">
@@ -383,6 +386,8 @@ function EditarUsuario({
   const [equipe, setEquipe] = useState(usuario.equipe_id ?? "");
   const [ativo, setAtivo] = useState(usuario.ativo);
   const [whatsapp, setWhatsapp] = useState(usuario.whatsapp ? formatarWhatsapp(usuario.whatsapp) : "");
+  const [apelido, setApelido] = useState(usuario.apelido ?? "");
+  const [creci, setCreci] = useState(usuario.creci ?? "");
   const [novaSenha, setNovaSenha] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [okSenha, setOkSenha] = useState(false);
@@ -393,12 +398,22 @@ function EditarUsuario({
     e.preventDefault();
     if (!nome.trim()) return setErro("Informe o nome.");
     if (perfil === "corretor" && ativo && !equipe) return setErro("Corretor ativo precisa estar em uma equipe.");
+    // A recepção chama o corretor pelo apelido (recepcao.sql, 04/11/2026).
+    if (perfil === "corretor" && ativo && !apelido.trim()) return setErro("Corretor ativo precisa de apelido.");
     const numero = whatsapp.trim() ? normalizarWhatsapp(whatsapp) : null;
     if (whatsapp.trim() && !numero) return setErro("Confira o WhatsApp: DDD e número, como (11) 98765-4321.");
     setEnviando(true);
     const { data, error } = await db()
       .from("profiles")
-      .update({ nome: nome.trim(), perfil, equipe_id: temEquipe ? equipe || null : null, ativo, whatsapp: numero })
+      .update({
+        nome: nome.trim(),
+        perfil,
+        equipe_id: temEquipe ? equipe || null : null,
+        ativo,
+        whatsapp: numero,
+        apelido: apelido.trim() || null,
+        creci: creci.trim() || null,
+      })
       .eq("id", usuario.id)
       .select("id");
     setEnviando(false);
@@ -454,6 +469,35 @@ function EditarUsuario({
             placeholder="(11) 98765-4321"
             value={whatsapp}
             onChange={(e) => setWhatsapp(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="field-label" htmlFor={`apelido-${usuario.id}`}>
+            {perfil === "corretor" ? "Apelido" : "Apelido (opcional)"}
+          </label>
+          <input
+            id={`apelido-${usuario.id}`}
+            className="input"
+            autoComplete="off"
+            maxLength={40}
+            value={apelido}
+            onChange={(e) => setApelido(e.target.value)}
+          />
+          {perfil === "corretor" && (
+            <p className="mt-1 text-[12px] text-concrete">Como a recepção chama na vez do stand. Não pode repetir.</p>
+          )}
+        </div>
+        <div>
+          <label className="field-label" htmlFor={`creci-${usuario.id}`}>
+            CRECI (opcional)
+          </label>
+          <input
+            id={`creci-${usuario.id}`}
+            className="input num"
+            autoComplete="off"
+            maxLength={40}
+            value={creci}
+            onChange={(e) => setCreci(e.target.value)}
           />
         </div>
       </div>

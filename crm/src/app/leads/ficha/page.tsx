@@ -27,6 +27,8 @@ import {
   formatarQuando,
   formatarWhatsapp,
   MOTIVOS_DESCARTE,
+  normalizarWhatsapp,
+  textoDuplicado,
   nomeTipoInteracao,
   paraCampos,
   TIPOS_INTERACAO,
@@ -270,7 +272,7 @@ function Ficha({ id }: { id: string }) {
           <div className="min-w-0">
             <span className="eyebrow text-[12px] text-ink-soft">{etapa?.nome ?? lead.etapa}</span>
             <h2 className="titulo-card mt-1 break-words text-[24px]">{lead.nome}</h2>
-            <p className="num mt-1 text-ink-soft">{formatarWhatsapp(lead.whatsapp)}</p>
+            <p className="num mt-1 text-ink-soft">{lead.whatsapp ? formatarWhatsapp(lead.whatsapp) : "– Sem telefone"}</p>
           </div>
           <SeloTemperatura valor={lead.temperatura} />
         </div>
@@ -335,19 +337,23 @@ function Ficha({ id }: { id: string }) {
             ✕ Descartado · {MOTIVOS_DESCARTE.find((m) => m.slug === lead.motivo_descarte)?.nome}
           </p>
         )}
-        <div className="mt-4 flex flex-wrap gap-2">
-          <BotaoMensagem
-            lead={lead}
-            destaque
-            className="btn-lg flex-1 md:flex-none"
-            onAbrirWhatsapp={podeTocar ? () => tocar("toque_whatsapp") : undefined}
-          />
-          <BotaoLigar
-            numero={lead.whatsapp}
-            className="btn-lg flex-1 md:flex-none"
-            onLigar={podeTocar ? () => tocar("toque_ligacao") : undefined}
-          />
-        </div>
+        {lead.whatsapp ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            <BotaoMensagem
+              lead={lead}
+              destaque
+              className="btn-lg flex-1 md:flex-none"
+              onAbrirWhatsapp={podeTocar ? () => tocar("toque_whatsapp") : undefined}
+            />
+            <BotaoLigar
+              numero={lead.whatsapp}
+              className="btn-lg flex-1 md:flex-none"
+              onLigar={podeTocar ? () => tocar("toque_ligacao") : undefined}
+            />
+          </div>
+        ) : (
+          <DigitarWhatsapp leadId={lead.id} podeDigitar={ehDono && lead.status === "ativo"} onSalvo={carregar} />
+        )}
       </section>
 
       {ehDono && lead.status === "ativo" && (
@@ -918,5 +924,74 @@ function Atribuir({
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * Lead sem telefone (04/11/2026): o dono digita o WhatsApp quando o cliente der.
+ * Antes de salvar, o mesmo aviso de duplicado do cadastro; um segundo toque em
+ * Salvar segue assim mesmo. Só grava se o lead ainda estiver sem número.
+ */
+function DigitarWhatsapp({ leadId, podeDigitar, onSalvo }: { leadId: string; podeDigitar: boolean; onSalvo: () => Promise<void> }) {
+  const [valor, setValor] = useState("");
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [confirmado, setConfirmado] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
+
+  if (!podeDigitar) return <p className="mt-4 text-[13px] text-ink-soft">– Sem telefone: o cliente não deu o número.</p>;
+
+  async function salvar(e: React.FormEvent) {
+    e.preventDefault();
+    const numero = normalizarWhatsapp(valor);
+    if (!numero) return setAviso("Confira o WhatsApp: DDD e número, como (11) 98765-4321.");
+    setSalvando(true);
+    if (confirmado !== numero) {
+      const { data } = await db().from("leads").select("nome").eq("whatsapp", numero).eq("status", "ativo").neq("id", leadId).limit(1);
+      const visivel = (data?.[0] as { nome: string } | undefined) ?? null;
+      const emOutra = visivel ? false : (await db().rpc("whatsapp_em_outra_carteira", { p_whatsapp: numero })).data === true;
+      const t = textoDuplicado({ visivel, emOutraCarteira: emOutra });
+      if (t) {
+        setConfirmado(numero);
+        setSalvando(false);
+        return setAviso(`${t} Toque em Salvar de novo para seguir assim mesmo.`);
+      }
+    }
+    const erro = await alterarLead(leadId, { whatsapp: numero }, { whatsapp: null });
+    setSalvando(false);
+    if (erro) return setAviso(erro);
+    setAviso(null);
+    await onSalvo();
+  }
+
+  return (
+    <form className="mt-4 grid gap-2" onSubmit={salvar} noValidate>
+      <label className="field-label" htmlFor="whatsapp-depois">
+        Sem telefone. Digite quando o cliente der
+      </label>
+      <div className="flex flex-wrap gap-2">
+        <input
+          id="whatsapp-depois"
+          className="input num min-w-[180px] flex-1"
+          type="tel"
+          inputMode="tel"
+          autoComplete="off"
+          placeholder="(11) 98765-4321"
+          value={valor}
+          onChange={(e) => {
+            setValor(e.target.value);
+            setConfirmado(null);
+            setAviso(null);
+          }}
+        />
+        <button type="submit" className="btn btn-ghost focus-ring" disabled={salvando || !valor.trim()}>
+          {salvando ? "Salvando…" : "Salvar"}
+        </button>
+      </div>
+      {aviso && (
+        <p role="alert" className="aviso-erro">
+          ! {aviso}
+        </p>
+      )}
+    </form>
   );
 }

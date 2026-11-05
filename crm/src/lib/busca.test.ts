@@ -14,7 +14,7 @@ import { normalizarWhatsapp } from "./leads.ts";
 
 const lead = (nome: string, extra: Record<string, unknown> = {}) => ({
   nome,
-  whatsapp: "5511987654321",
+  whatsapp: "5511987654321" as string | null,
   email: null as string | null,
   empreendimento: null as string | null,
   campanha: null as string | null,
@@ -98,4 +98,11 @@ test("filtro de empreendimento: grafias parecidas viram uma opção", () => {
   assert.deepEqual(leads.filter((l) => noEmpreendimento(l, "marco zero one")).map((l) => l.nome), ["A", "B", "C"]);
   assert.deepEqual(leads.filter((l) => noEmpreendimento(l, SEM_EMPREENDIMENTO)).map((l) => l.nome), ["E"]);
   assert.equal(leads.filter((l) => noEmpreendimento(l, "")).length, 5);
+});
+
+test("busca: lead sem telefone não quebra e não aparece na busca por número", () => {
+  const leads = [lead("Ana Souza"), lead("Sem Fone", { whatsapp: null })];
+  assert.deepEqual(achados("98765", leads), ["Ana Souza"]);
+  assert.deepEqual(achados("sem 4321", leads), []);
+  assert.deepEqual(achados("fone", leads), ["Sem Fone"]);
 });

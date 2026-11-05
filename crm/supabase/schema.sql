@@ -561,6 +561,10 @@ create table if not exists public.leads (
     check ((status = 'descartado') = (motivo_descarte is not null))
 );
 
+-- Lead sem telefone (Felipe, 04/11/2026): a recepção do stand registra o
+-- cliente que não dá telefone. O formato só vale quando há número.
+alter table public.leads alter column whatsapp drop not null;
+
 -- Colunas que vieram depois do primeiro corte (add column if not exists para
 -- o banco que já está em produção).
 -- tentativas: "Sem resposta" seguidas; só o gatilho das interações mexe nela.
@@ -600,11 +604,13 @@ create table if not exists public.lead_interacoes (
 -- "toque_whatsapp" e "toque_ligacao" são o registro automático do toque em
 -- Abrir no WhatsApp e em Ligar: tiram de "novo" (encerram o prazo de 15 min),
 -- mas não mexem no último contato, no próximo contato nem nas tentativas.
+-- "plantao" é o registro da recepção do stand ("Atendido no plantão",
+-- "Voltou ao plantão"; recepcao.sql): conta como conversa de verdade.
 alter table public.lead_interacoes add column if not exists tipo text not null default 'nota';
 alter table public.lead_interacoes drop constraint if exists lead_interacoes_tipo_check;
 alter table public.lead_interacoes add constraint lead_interacoes_tipo_check
   check (tipo in ('whatsapp', 'ligacao', 'email', 'visita', 'nota', 'tentativa', 'mensagem',
-                  'toque_whatsapp', 'toque_ligacao'));
+                  'toque_whatsapp', 'toque_ligacao', 'plantao'));
 
 -- Toda interação termina com o próximo contato (dia e hora), menos a mensagem
 -- original e o toque, que não pede nada ao corretor (e nunca traz um).
@@ -838,7 +844,7 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_conversa boolean := new.tipo in ('whatsapp', 'ligacao', 'email', 'visita');
+  v_conversa boolean := new.tipo in ('whatsapp', 'ligacao', 'email', 'visita', 'plantao');
 begin
   if new.tipo in ('toque_whatsapp', 'toque_ligacao') then
     update public.leads

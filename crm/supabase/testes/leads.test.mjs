@@ -279,6 +279,17 @@ test("avanço automático: a primeira conversa tira o lead de novo, e a etapa nu
   assert.equal((await linhas(`select etapa from public.leads where id = '${a1}'`))[0].etapa, "proposta");
 });
 
+test("interação plantao (recepção do stand): conta como conversa e pede próximo contato", async () => {
+  await como(CA, () => db.exec(lead(CA, "Plantão 1")));
+  const p1 = await idDe("Plantão 1");
+  await como(CA, () => db.exec(interacao(p1, "tentativa")));
+  await como(CA, () => db.exec(interacao(p1, "plantao")));
+  const [l] = await linhas(`select etapa, tentativas, proximo_contato is not null as tem from public.leads where id = '${p1}'`);
+  assert.deepEqual(l, { etapa: "em_contato", tentativas: 0, tem: true });
+  await falha(CA, `insert into public.lead_interacoes (lead_id, tipo, texto) values ('${p1}', 'plantao', 'Atendido no plantão')`,
+    "lead_interacoes_pede_proximo_contato");
+});
+
 test("toque em WhatsApp e Ligar: tira de novo, não mexe no contato nem nas tentativas, um por tipo por dia", async () => {
   await como(GA, () => db.exec(lead(CA, "Toque 1").replace("'plantao'", "'empresa'")));
   const t = await idDe("Toque 1");
@@ -602,4 +613,20 @@ test("histórico: eventos da mesma transação ficam na ordem em que aconteceram
     { de: "em_contato", para: "proposta" },
     { de: "proposta", para: "aguardando_lancamento" },
   ]);
+});
+
+test("lead sem telefone (04/11/2026): cadastra sem número; o formato só vale quando há", async () => {
+  await como(CA, () => db.exec(`insert into public.leads (nome, origem) values ('Sem Telefone', 'plantao')`));
+  assert.equal((await linhas(`select whatsapp from public.leads where nome = 'Sem Telefone'`))[0].whatsapp, null);
+  assert.equal(await como(CA, async () => (await linhas(`select public.whatsapp_em_outra_carteira(null) r`))[0].r), false);
+});
+
+test("lead sem telefone ganha o WhatsApp depois: só o dono grava, e só se ainda estiver vazio", async () => {
+  const [{ id: s }] = await linhas(`select id from public.leads where nome = 'Sem Telefone'`);
+  await falha(GA, `update public.leads set whatsapp = '5511911112222' where id = '${s}'`, "Só o corretor dono");
+  const r = await como(CA, () => db.query(`update public.leads set whatsapp = '5511911112222' where id = '${s}' and whatsapp is null returning id`));
+  assert.equal(r.rows.length, 1);
+  const r2 = await como(CA, () => db.query(`update public.leads set whatsapp = '5511933334444' where id = '${s}' and whatsapp is null returning id`));
+  assert.equal(r2.rows.length, 0, "já tem número: não sobrescreve");
+  assert.equal((await linhas(`select whatsapp from public.leads where id = '${s}'`))[0].whatsapp, "5511911112222");
 });

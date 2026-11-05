@@ -29,7 +29,19 @@ from (values ('Equipe A (teste)', 'felipe+gerentea@mbigucci.com.br'),
 join public.profiles p on p.email = t.email
 on conflict do nothing;
 
--- 4. Corretores, cada um na sua equipe
+-- 4. Corretores, cada um na sua equipe. Com o recepcao.sql no banco, corretor
+--    ativo precisa de apelido: ele vem antes de ativar.
+do $$
+begin
+  if exists (select 1 from information_schema.columns
+             where table_schema = 'public' and table_name = 'profiles' and column_name = 'apelido') then
+    execute $q$update public.profiles set apelido = coalesce(apelido, case email
+      when 'felipe+corretora@mbigucci.com.br' then 'Teste A'
+      when 'felipe+corretorb@mbigucci.com.br' then 'Teste B' end)
+      where email in ('felipe+corretora@mbigucci.com.br', 'felipe+corretorb@mbigucci.com.br')$q$;
+  end if;
+end;
+$$;
 update public.profiles p set perfil = 'corretor', ativo = true, equipe_id = t.id
 from public.teams t
 where (p.email, t.nome) in (('felipe+corretora@mbigucci.com.br', 'Equipe A (teste)'),

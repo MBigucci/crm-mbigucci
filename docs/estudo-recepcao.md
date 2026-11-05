@@ -643,6 +643,22 @@ Todas as decisões abertas foram respondidas em 04/11/2026. O número é o da ve
 
 Nenhuma. As duas últimas foram respondidas em 04/11/2026: só a primeira visita do cliente de indicação conta para o programa, e o parceiro sem gerente vai pela roleta de parceiros.
 
+### Decisões no mockup (04/11/2026)
+
+O Felipe aprovou o mockup (`docs/mockups/recepcao.html`) com 11 ajustes. A lista completa está em `docs/codex-recepcao.md`, seção "Decisões do mockup". As que mudam este estudo:
+- **"Stand", não "loja":** "No stand agora".
+- **A vez:**
+  - o **"Pôr na vez" só abre das 8h45 às 9h15 e das 13h45 às 14h15**;
+  - antes das 8h45, a recepção escolhe à mão quem atende, e a vez não gira.
+- **Especialistas:**
+  - **sem escolha por stand:** a lista é única e a escala fica fora do CRM por enquanto;
+  - cada stand diz se **tem especialista** (sim ou não).
+- **Indicação com o corretor fora do stand:** anuncia o gerente dele; sem o gerente, o corretor da equipe que está mais atrás na vez. O lead fica com quem indicou.
+- **Roleta de gerentes da parceria:** a recepção confirma se o gerente indicado está no stand. Quem foi pulado não perde a vez.
+- **Lead sem telefone:** permitido. Isso substitui o "telefone opcional só no atendimento" da seção 2. O dono digita o WhatsApp depois, na ficha.
+- **Retorno mostra o corretor dono**, mesmo achado pelo telefone na carteira. No cliente novo, o aviso de outra carteira continua sem dizer de quem.
+- **Fica para depois da parte 2:** a visita realizada pendente da indicação (decisão 14).
+
 ## 9. Da Bruna
 
 | Recurso da Bruna | Como fica aqui | Por quê |

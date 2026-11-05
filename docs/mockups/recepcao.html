@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup: recepção</title>
+<style>
+@font-face{font-family:"Bricolage Grotesque",system-ui,sans-serif;src:url("../../crm/src/app/fonts/BricolageGrotesque-latin.woff2") format("woff2");font-weight:400 800}
+@font-face{font-family:"Inter";src:url("../../crm/src/app/fonts/Inter-latin.woff2") format("woff2");font-weight:400 700}
+:root{--paper:#f7f6f2;--surface:#fff;--ink:#0d0e11;--soft:#4a4b52;--conc:#6f6b63;--line:#e5e3dd;--ctl:#76736c;--brand:#e11119;--brand-d:#b90d14;--ok:#1f7a45;--wa:#925600;--tint:#fff6f6;--band:#0d0e11;--dis:#eeede9}
+*{box-sizing:border-box}
+body{margin:0;background:#dcdad3;font:14px/1.45 Inter,system-ui,sans-serif;color:var(--ink)}
+h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif;letter-spacing:-.01em;margin:0}
+code{font-size:12px}
+.nota{max-width:1360px;margin:0 auto;padding:20px 24px 0}
+.nota h1{font-size:24px}.nota p{margin:4px 0 0;color:var(--soft);max-width:860px}
+.secao{max-width:1360px;margin:0 auto;padding:24px 24px 0}
+.secao>h2{font-size:19px;margin-bottom:4px}
+.secao>p{margin:0 0 12px;color:var(--soft);max-width:860px}
+.rot{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#4a4b52;margin:0 0 6px}
+/* tela do PC */
+.pc{width:1312px;background:var(--paper);border:1px solid var(--ctl);border-radius:4px;overflow:hidden}
+.topo{background:rgba(247,246,242,.92);padding:10px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:16px}
+.logo{font:800 17px "Bricolage Grotesque",system-ui,sans-serif;color:var(--brand)}
+.nav{display:flex;gap:18px;font-size:13px;font-weight:600;color:var(--soft)}
+.nav b{color:var(--ink);border-bottom:2px solid var(--ink);padding-bottom:2px}
+.corpo{padding:16px 20px 24px}
+.cab{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:6px}
+.eyebrow{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--conc)}
+.tp{font:800 26px/1.05 "Bricolage Grotesque",system-ui,sans-serif;margin:2px 0 0}
+.tc{font:700 17px/1.15 "Bricolage Grotesque",system-ui,sans-serif;margin:2px 0 0}
+.num{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:14px 16px 14px 20px;margin-top:12px}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--ink)}
+.card.b::before{background:var(--brand)}
+.card.tint{background:var(--tint)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid transparent;border-radius:2px;font:600 13px/1.2 Inter;padding:9px 16px;cursor:pointer;background:none;color:var(--ink);white-space:nowrap}
+.red{background:var(--brand);color:#fff}
+.ghost{border-color:var(--ctl);background:var(--surface)}
+.mini{padding:4px 8px;font-size:12px}
+.link{color:var(--brand-d);font-weight:600;text-decoration:underline;text-underline-offset:2px;font-size:13px;background:none;border:0;padding:0;cursor:pointer}
+.lab{display:block;margin:0 0 4px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--soft)}
+.in{width:100%;border:1px solid var(--ctl);background:var(--paper);border-radius:2px;padding:8px 10px;font:14px/1.3 Inter;color:var(--ink)}
+.in::placeholder{color:var(--soft)}
+.in.foco{outline:2px solid var(--brand);outline-offset:2px}
+.in.cheio{background:var(--surface)}
+.kbd{display:inline-block;border:1px solid var(--ctl);border-bottom-width:2px;border-radius:2px;padding:0 4px;font:600 11px/1.5 Inter;color:var(--soft);background:var(--surface);margin-left:4px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--ctl);background:var(--surface);border-radius:2px;padding:6px 10px;font-size:13px;font-weight:600;color:var(--ink)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip.on .kbd{background:transparent;color:#d9d6cf;border-color:#d9d6cf}
+.ok{color:var(--ok);font-weight:600}.wa{color:var(--wa);font-weight:600}.er{color:var(--brand);font-weight:600}.nt{color:#5a5b60;font-weight:600}
+.sm{font-size:13px;color:var(--soft)}
+.aux{font-size:12px;color:var(--conc)}
+.lin{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.abas{display:flex;border-bottom:1px solid var(--line);margin:10px 0 0}
+.abas>span{padding:7px 12px;font-size:13px;font-weight:600;color:var(--soft);border-bottom:2px solid transparent;margin-bottom:-1px}
+.abas>span.on{color:var(--ink);border-color:var(--ink)}
+/* tabela densa */
+table{border-collapse:collapse;width:100%}
+th{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--conc);text-align:left;padding:6px 6px;border-bottom:1px solid var(--line)}
+td{padding:6px 6px;border-bottom:1px solid var(--line);vertical-align:middle;font-size:13px}
+tr.davez td{background:var(--paper)}
+tr.davez td:first-child{box-shadow:inset 3px 0 0 var(--ink)}
+tr.fora td{color:var(--conc)}
+tr.sel td{outline:0;background:#f0efea}
+td.n{width:28px;font-family:"Bricolage Grotesque",system-ui,sans-serif;font-variant-numeric:tabular-nums;font-weight:700;color:var(--soft)}
+td.ap{font-weight:700;white-space:nowrap}
+td.sm{white-space:nowrap}
+td>b{white-space:nowrap}
+td.rod{font-weight:700;color:var(--ok);letter-spacing:1px}
+td.ac{text-align:right;white-space:nowrap}
+.grade{display:grid;grid-template-columns:500px 1fr;gap:16px;align-items:start}
+.form{display:grid;gap:10px 12px;margin-top:10px}
+.f2{grid-template-columns:1fr 1fr}
+.f3{grid-template-columns:1.3fr 1fr 1fr}
+.f4{grid-template-columns:1fr 1fr 1fr 1fr}
+.pre{position:relative;align-self:start}
+.pre .tag{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:600;color:var(--ok)}
+.sugest{border:1px solid var(--ctl);border-top:0;background:var(--surface);border-radius:0 0 2px 2px}
+.sugest div{padding:7px 10px;font-size:13px;border-top:1px solid var(--line)}
+.sugest div.on{background:var(--paper);box-shadow:inset 3px 0 0 var(--ink)}
+.dica{font-size:12px;color:var(--soft);margin-top:8px}
+.anuncie{display:flex;gap:16px;align-items:center;justify-content:space-between}
+.anuncie .quem{font:800 22px/1.1 "Bricolage Grotesque",system-ui,sans-serif}
+.anuncie .quem .e{color:var(--soft);font:600 14px Inter,system-ui,sans-serif;margin:0 4px}
+.pap{font:600 14px Inter,system-ui,sans-serif;color:var(--soft)}
+.prog{height:3px;background:var(--line);margin-top:10px}
+.prog i{display:block;height:3px;width:62%;background:var(--ink)}
+.tipo{display:inline-block;border:1px solid var(--line);border-radius:2px;padding:1px 6px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--soft);white-space:nowrap}
+.legenda{max-width:1360px;margin:0 auto;padding:12px 24px 40px;color:var(--soft);font-size:13px}
+.legenda li{margin-bottom:3px}
+.vars{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.vars .card{margin-top:0}
+.estados{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.estados .card{margin-top:0}
+.lojas{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.loja{border:1px solid var(--ctl);border-radius:2px;padding:12px;background:var(--surface);font-weight:700;font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:16px}
+.res{border:1px solid var(--ctl);border-radius:2px;margin-top:8px;background:var(--surface)}
+.res .it{padding:9px 12px;border-top:1px solid var(--line);display:grid;grid-template-columns:1.1fr 1.4fr 1.2fr auto;gap:10px;align-items:center;font-size:13px}
+.res .it:first-child{border-top:0}
+.res .it.on{background:var(--paper);box-shadow:inset 3px 0 0 var(--ink)}
+.cc{display:grid;grid-template-columns:repeat(7,auto);gap:6px;justify-content:start}
+/* celular */
+.mesa{display:flex;gap:28px;flex-wrap:wrap;padding:0 0 8px}
+.tela{width:375px}
+.fone{height:760px;overflow:auto;background:var(--paper);border:1px solid var(--ctl);border-radius:4px;position:relative;display:flex;flex-direction:column}
+.fone .topo{position:sticky;top:0;z-index:2;padding:12px 16px}
+.fone .corpo{padding:12px 16px 16px;flex:1}
+.fone .in{font-size:16px;padding:11px 12px}
+.fone .chip{padding:10px 12px;font-size:14px}
+.fone .btn{font-size:14px;padding:12px 16px}
+.mabas{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--ctl);border-radius:2px;overflow:hidden}
+.mabas>span{text-align:center;padding:9px;font-weight:600;font-size:14px;background:var(--surface)}
+.mabas>span.on{background:var(--ink);color:#fff}
+.rodape{position:sticky;bottom:0;background:var(--paper);border-top:1px solid var(--line);padding:12px 16px;display:flex;gap:8px;z-index:2}
+.rodape .btn{flex:1}
+.mlin{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--line)}
+.mlin:first-child{border-top:0}
+.mlin .ap{font-weight:700;font-size:15px}
+.mfield{margin-top:12px}
+.mfield .lab{font-size:12px}
+.mchips{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+</style>
+</head>
+<body>
+<div class="nota">
+  <h1>Recepção no CRM (<code>/recepcao/</code>): mockup da etapa 1</h1>
+  <p>Desenho para aprovar antes do banco. Feito para o PC da loja, com a versão em 375px no fim. Segue <code>docs/codex-recepcao.md</code> e as decisões da seção 8 de <code>docs/estudo-recepcao.md</code>. Todos os nomes são inventados. Não é código: nada foi gravado.</p>
+</div>
+
+<!-- ============ 1. PC: estado principal ============ -->
+<div class="secao">
+  <h2>1. Computador: a tela inteira, cliente novo sendo digitado</h2>
+  <p>No stand agora à esquerda, Clientes de hoje à direita. O card "Anuncie" do cliente anterior ainda está no ar (Desfazer por 8 s). O cursor está no campo Cliente; Tab avança, Enter registra.</p>
+  <div class="rot">PC da loja · 1312px</div>
+  <div class="pc">
+    <div class="topo">
+      <div style="display:flex;gap:28px;align-items:center"><span class="logo">MBigucci</span>
+        <nav class="nav"><b>Recepção</b><span>Minha conta</span></nav></div>
+      <span class="sm">Carla · recepção · <button class="link">Sair</button></span>
+    </div>
+    <div class="corpo">
+      <div class="cab">
+        <div><span class="eyebrow">Recepção · Loja Marco Zero <button class="link" style="font-size:11px;letter-spacing:0;text-transform:none">Trocar loja</button></span>
+          <h1 class="tp">Hoje, quarta, <span class="num">04/11/2026</span></h1></div>
+        <div class="sm" style="text-align:right">Agora <b class="num">11h24</b> · período da manhã<br><span class="aux">Atalhos: <span class="kbd">Alt</span>+<span class="kbd">V</span> pôr na vez · <span class="kbd">Alt</span>+<span class="kbd">K</span> novo cliente · <span class="kbd">Esc</span> limpa a linha</span></div>
+      </div>
+
+      <div class="grade">
+        <!-- Esquerda -->
+        <div>
+          <section class="card">
+            <span class="eyebrow">No stand agora</span>
+            <h2 class="tc">Vez dos corretores</h2>
+            <div class="abas"><span class="on">Manhã 9h–14h · <span class="num">6</span></span><span>Tarde 14h–19h · <span class="num">2</span></span></div>
+            <div style="display:flex;gap:8px;align-items:flex-end;margin-top:10px">
+              <div style="flex:1"><label class="lab" for="pv">Pôr na vez, na ordem da roleta</label>
+                <input id="pv" class="in" placeholder="Digite o apelido ou o nome"></div>
+              <button class="btn ghost">+ Pôr na vez<span class="kbd">Enter</span></button>
+            </div>
+            <table style="margin-top:8px">
+              <thead><tr><th>#</th><th>Apelido</th><th>Equipe</th><th>Vez</th><th>Estado</th><th></th></tr></thead>
+              <tbody>
+                <tr><td class="n">1</td><td class="ap">Tavinho</td><td class="sm">Eq. Rocha</td><td class="rod">✓✓</td><td class="sm">Manhã e tarde</td><td class="ac"><button class="btn ghost mini">Saiu</button></td></tr>
+                <tr><td class="n">2</td><td class="ap">Duda</td><td class="sm">Eq. Lima</td><td class="rod">✓</td><td><span class="wa">! Saiu 10h15</span></td><td class="ac"><button class="btn ghost mini">Voltou</button></td></tr>
+                <tr><td class="n">3</td><td class="ap">Beto</td><td class="sm">Eq. Rocha</td><td class="rod">✓</td><td class="sm">Chegou 9h40</td><td class="ac"><button class="btn ghost mini">Saiu</button></td></tr>
+                <tr class="davez"><td class="n">4</td><td class="ap">Japa</td><td class="sm">Eq. Souza</td><td class="rod"></td><td><b>→ Da vez</b></td><td class="ac"><button class="btn ghost mini">Passar a vez</button> <button class="btn ghost mini">Saiu</button></td></tr>
+                <tr><td class="n">5</td><td class="ap">Rê</td><td class="sm">Eq. Lima</td><td class="rod"></td><td class="sm">Voltou 11h02</td><td class="ac"><button class="btn ghost mini">Saiu</button></td></tr>
+                <tr class="fora"><td class="n">6</td><td class="ap">Nando</td><td>Eq. Souza</td><td></td><td>– Não está mais 11h10</td><td class="ac"><button class="link">Desfazer</button></td></tr>
+              </tbody>
+            </table>
+            <p class="dica">Na linha: <b>Saiu</b>, <b>Voltou</b>, <b>Passar a vez</b> e, no menu da linha, <b>Não está mais</b>. Quem saiu é pulado até voltar. ✓ = cliente novo recebido nesta volta.</p>
+          </section>
+
+          <section class="card">
+            <span class="eyebrow">Especialistas</span>
+            <h2 class="tc">Vez dos especialistas</h2>
+            <div style="display:flex;gap:8px;align-items:flex-end;margin-top:10px">
+              <div style="flex:1"><label class="lab" for="pve">Pôr na vez</label>
+                <input id="pve" class="in" placeholder="Nome do especialista"></div>
+              <button class="btn ghost">+ Pôr na vez</button>
+            </div>
+            <table style="margin-top:8px">
+              <tbody>
+                <tr><td class="n">1</td><td class="ap">Marina</td><td class="rod">✓✓</td><td class="sm">Chegou 9h05</td><td class="ac"><button class="btn ghost mini">Saiu</button></td></tr>
+                <tr class="davez"><td class="n">2</td><td class="ap">Paula</td><td class="rod">✓</td><td><b>→ Da vez</b></td><td class="ac"><button class="btn ghost mini">Passar a vez</button> <button class="btn ghost mini">Saiu</button></td></tr>
+                <tr><td class="n">3</td><td class="ap">Sueli</td><td class="rod">✓</td><td class="sm">Chegou 9h30</td><td class="ac"><button class="btn ghost mini">Saiu</button></td></tr>
+              </tbody>
+            </table>
+            <p class="dica">Gira no cliente novo e nas duas indicações. No retorno, não gira.</p>
+          </section>
+        </div>
+
+        <!-- Direita -->
+        <div>
+          <section class="card b">
+            <span class="eyebrow">Anuncie</span>
+            <div class="anuncie">
+              <div>
+                <div class="ok">✓ Cliente registrado às <span class="num">11h21</span></div>
+                <div class="quem"><span class="pap">Corretor(a)</span> Beto <span class="e">e</span> <span class="pap">especialista</span> Sueli</div>
+                <div class="sm">Cliente novo · vez dos corretores e dos especialistas · lead criado na carteira de Beto</div>
+              </div>
+              <button class="btn ghost">Desfazer · <span class="num">5 s</span></button>
+            </div>
+            <div class="prog"><i></i></div>
+          </section>
+
+          <section class="card">
+            <div class="lin"><div><span class="eyebrow">Clientes de hoje</span><h2 class="tc">Registrar cliente</h2></div>
+              <span class="aux">Tab avança · Enter registra · Esc limpa</span></div>
+
+            <div style="margin-top:10px">
+              <span class="lab">Tipo do cliente</span>
+              <div class="chips">
+                <span class="chip on">Novo<span class="kbd">N</span></span>
+                <span class="chip">Indicação de corretor<span class="kbd">C</span></span>
+                <span class="chip">Indicação de parceiro<span class="kbd">P</span></span>
+                <span class="chip">Retorno<span class="kbd">R</span></span>
+              </div>
+            </div>
+
+            <div style="margin-top:10px">
+              <span class="lab">Como conheceu · marque um ou mais</span>
+              <div class="chips">
+                <span class="chip on">✓ Passagem pela loja</span>
+                <span class="chip">Mora ou trabalha na região</span>
+                <span class="chip">Indicação de amigo, família ou vizinho</span>
+                <span class="chip on">✓ Instagram</span>
+                <span class="chip">Facebook ou outras redes</span>
+                <span class="chip">WhatsApp</span>
+                <span class="chip">Site MBigucci</span>
+                <span class="chip">Google ou internet</span>
+                <span class="chip">Outdoor</span>
+                <span class="chip">Painel de LED</span>
+                <span class="chip">Folheto ou panfleto</span>
+                <span class="chip">E-mail marketing</span>
+                <span class="chip">Telefone da loja</span>
+                <span class="chip">Outro</span>
+              </div>
+            </div>
+
+            <div class="form f3">
+              <div><label class="lab" for="c1">Cliente</label><input id="c1" class="in foco cheio" value="Rodrigo Exemplo"></div>
+              <div><label class="lab" for="c2">Telefone</label><input id="c2" class="in" placeholder="(11) 90000-0000"></div>
+              <div><label class="lab" for="c3">E-mail · opcional</label><input id="c3" class="in" placeholder="nome@exemplo.com"></div>
+            </div>
+            <div class="form" style="grid-template-columns:1fr auto">
+              <div><label class="lab" for="c4">Acompanhante · nome, ou marque Veio sozinho</label><input id="c4" class="in" placeholder="Nomes separados por vírgula"></div>
+              <div style="align-self:end"><span class="chip">Veio sozinho<span class="kbd">S</span></span></div>
+            </div>
+            <div class="form f2">
+              <div class="pre"><label class="lab" for="c5">Corretor</label><input id="c5" class="in cheio" value="Japa · Eq. Souza"><span class="tag" style="top:70%">→ da vez</span></div>
+              <div class="pre"><label class="lab" for="c6">Especialista</label><input id="c6" class="in cheio" value="Paula"><span class="tag" style="top:70%">→ da vez</span></div>
+            </div>
+            <div class="form" style="grid-template-columns:1fr 1.6fr">
+              <div><label class="lab" for="c7">Empreendimento · opcional</label><input id="c7" class="in" placeholder="Escolha da lista"></div>
+              <div><label class="lab" for="c8">Observação · opcional</label><input id="c8" class="in" placeholder="Anotação curta"></div>
+            </div>
+            <div class="lin" style="margin-top:14px">
+              <span class="aux">O lead vai para a carteira do corretor com a origem Plantão e próximo contato amanhã às 10h.</span>
+              <button class="btn red">Registrar cliente<span class="kbd" style="color:#fff;border-color:#fff;background:transparent">Enter</span></button>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="lin"><div><span class="eyebrow">Clientes de hoje · Loja Marco Zero</span><h2 class="tc"><span class="num">4</span> clientes</h2></div>
+              <span class="aux">Os dias anteriores só pela busca do Retorno</span></div>
+            <table style="margin-top:8px">
+              <thead><tr><th>Hora</th><th>Tipo</th><th>Cliente</th><th>Corretor</th><th>Especialista</th><th>Como conheceu</th><th></th></tr></thead>
+              <tbody>
+                <tr><td class="num">11h21</td><td><span class="tipo">Novo</span></td><td><b>Lucas Exemplo</b><div class="aux">final 4410 · veio sozinho</div></td><td>Beto</td><td>Sueli</td><td class="sm">Passagem</td><td class="ac"><button class="btn ghost mini">Corrigir</button></td></tr>
+                <tr><td class="num">10h40</td><td><span class="tipo">Ind. parceiro</span></td><td><b>Fulana de Tal</b><div class="aux">final 2231 · com Marcos</div></td><td>Parceiro: Ana Silva<div class="aux">Imob. Exemplo · gerente Rocha</div></td><td>Marina</td><td class="sm">Instagram</td><td class="ac"><button class="btn ghost mini">Corrigir</button></td></tr>
+                <tr><td class="num">10h02</td><td><span class="tipo">Ind. corretor</span></td><td><b>Beltrano Exemplo</b><div class="aux">final 8812 · com Joana</div></td><td>Duda<div class="ok" style="font-size:12px">✓ Já estava na carteira</div></td><td>Marina</td><td class="sm">Indicação de amigo</td><td class="ac"><button class="btn ghost mini">Corrigir</button></td></tr>
+                <tr><td class="num">9h48</td><td><span class="tipo">Retorno</span></td><td><b>Ciclano Exemplo</b><div class="aux">final 0907 · veio sozinho</div></td><td>Tavinho</td><td>Sueli<div class="aux">do último atendimento</div></td><td class="sm">–</td><td class="ac"><button class="btn ghost mini">Corrigir</button></td></tr>
+              </tbody>
+            </table>
+            <p class="dica">Corrigir sem motivo até 30 min depois; depois disso, com motivo. Depois do dia, só o gerente geral e o operacional.</p>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 2. Variantes da linha por tipo ============ -->
+<div class="secao">
+  <h2>2. A linha de digitação em cada tipo de cliente</h2>
+  <p>Só muda a parte de Corretor e Especialista e o texto que diz para onde vai o cliente. O resto dos campos é igual ao da tela 1.</p>
+  <div class="vars">
+    <section class="card">
+      <span class="eyebrow">Tipo: Indicação de corretor <span class="kbd">C</span></span>
+      <div class="form f2">
+        <div><label class="lab">Corretor que indicou</label><input class="in foco cheio" value="du"><div class="sugest"><div class="on"><b>Duda</b> · Eduarda Lima · Eq. Lima</div><div><b>Dudu</b> · Eduardo Reis · Eq. Rocha</div></div></div>
+        <div class="pre"><label class="lab">Especialista</label><input class="in cheio" value="Paula"><span class="tag" style="top:70%">→ da vez</span></div>
+      </div>
+      <p class="dica">A vez dos corretores não gira; a dos especialistas gira. O CRM procura o cliente na carteira de Duda pelo telefone e depois pelo nome. Se não achar, cria o lead lá com a origem Indicação.</p>
+    </section>
+
+    <section class="card">
+      <span class="eyebrow">Indicação de corretor · corretor(a) fora do stand</span>
+      <div class="form f2">
+        <div><label class="lab">Corretor que indicou</label><input class="in cheio" value="Duda · Eq. Lima"></div>
+        <div class="pre"><label class="lab">Especialista</label><input class="in cheio" value="Paula"><span class="tag" style="top:70%">→ da vez</span></div>
+      </div>
+      <div class="card tint" style="margin-top:10px;padding:10px 12px 10px 16px">
+        <div class="wa">! Duda não está no stand agora.</div>
+        <div class="sm" style="margin:2px 0 8px">Pergunte: o gerente <b>Lima</b> está no stand?</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="chip on">Sim, anunciar o gerente</span><span class="chip">Não está</span></div>
+      </div>
+      <div class="card" style="margin-top:8px;padding:10px 12px 10px 16px">
+        <div class="sm">Se o gerente não estiver: anuncie <b>Rê</b>, o último corretor da equipe Lima na vez de hoje.</div>
+        <div class="aux">O lead continua na carteira de Duda. A vez dos corretores não gira.</div>
+      </div>
+      <p class="dica">"Fora do stand" o CRM sabe sozinho: Duda não está na vez de hoje ou está como Saiu. O gerente, a recepção responde, sem check-in.</p>
+    </section>
+
+    <section class="card">
+      <span class="eyebrow">Tipo: Indicação de parceiro <span class="kbd">P</span></span>
+      <div class="form f2">
+        <div><label class="lab">Parceiro ou imobiliária</label><input class="in foco cheio" value="imob"><div class="sugest"><div class="on"><b>Ana Silva</b> · Imob. Exemplo · gerente Rocha</div><div><b>Pedro Costa</b> · Casa Fictícia · gerente Lima</div><div>+ Parceiro não cadastrado</div></div></div>
+        <div class="pre"><label class="lab">Especialista</label><input class="in cheio" value="Paula"><span class="tag" style="top:70%">→ da vez</span></div>
+      </div>
+      <p class="dica">Gira só a vez dos especialistas. O cliente vai para Clientes de parceiros do gerente dono do parceiro (aqui, Rocha).</p>
+    </section>
+
+    <section class="card">
+      <span class="eyebrow">Indicação de parceiro · parceiro não cadastrado</span>
+      <div class="form f2">
+        <div><label class="lab">Nome do corretor parceiro</label><input class="in cheio" value="Marcos Fictício"></div>
+        <div><label class="lab">Imobiliária ou autônomo</label><input class="in cheio" value="Lar Exemplo"></div>
+        <div><label class="lab">Telefone do parceiro</label><input class="in" placeholder="(11) 90000-0000"></div>
+        <div><label class="lab">Procura algum gerente?</label>
+          <div class="chips"><span class="chip on">Não, usar a roleta de parceiros</span><span class="chip">Sim, escolher o gerente</span></div></div>
+      </div>
+      <div class="card tint" style="margin-top:10px;padding:10px 12px 10px 16px">
+        <div class="sm">A roleta de parceiros indica o gerente <b>Rocha</b>. Pergunte: ele está no stand?</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><span class="chip">Sim, fica com Rocha</span><span class="chip on">Não está, passar ao próximo</span></div>
+        <div class="sm" style="margin-top:8px">→ Próximo da roleta: gerente <b>Souza</b>. Ele está no stand? <span class="chip on" style="margin-left:4px">Sim</span></div>
+        <div class="aux" style="margin-top:4px">Rocha não perde a vez: continua o primeiro da roleta para o próximo parceiro.</div>
+      </div>
+      <p class="dica">Sem gerente, o parceiro entra pela roleta de parceiros (do módulo de Parcerias). A recepção só confirma se o gerente indicado está no stand; se não estiver, passa ao próximo. O Anuncie mostra qual foi.</p>
+    </section>
+
+    <section class="card">
+      <span class="eyebrow">Tipo: Retorno <span class="kbd">R</span></span>
+      <label class="lab" style="margin-top:10px">Procurar cliente · telefone, ou o nome</label>
+      <input class="in foco cheio" value="(11) 98765-12">
+      <div class="res">
+        <div class="it on"><div><b>Ciclano</b><div class="aux">final 1290</div></div><div>Corretor Tavinho<div class="aux">Eq. Rocha</div></div><div>Último: <span class="num">21/10/2026</span><div class="aux">Marco Zero · esp. Sueli</div></div><button class="btn ghost mini">Escolher<span class="kbd">Enter</span></button></div>
+        <div class="it"><div><b>Ciclana</b><div class="aux">final 1277</div></div><div>Parceiro Ana Silva<div class="aux">gerente Rocha</div></div><div>Último: <span class="num">02/10/2026</span><div class="aux">Easy · esp. Marina</div></div><button class="btn ghost mini">Escolher</button></div>
+      </div>
+      <div class="card" style="margin-top:10px;padding:10px 12px 10px 16px">
+        <div class="sm">Especialista do último atendimento: <b>Sueli</b> · último da vez: <b>Marina</b></div>
+        <div class="aux">Se Sueli não puder atender, apresente Marina. A cortesia não é registrada.</div>
+      </div>
+      <div class="lin" style="margin-top:10px"><span class="aux">Não achou? Troque o tipo para Novo ou uma das indicações.</span><button class="btn red">Registrar retorno</button></div>
+    </section>
+  </div>
+</div>
+
+<!-- ============ 3. Anuncie por tipo ============ -->
+<div class="secao">
+  <h2>3. O card "Anuncie" em cada tipo</h2>
+  <p>Aparece no topo de Clientes de hoje logo depois de registrar, com Desfazer por 8 s. É a única barra vermelha da tela.</p>
+  <div class="vars">
+    <section class="card b"><span class="eyebrow">Anuncie · cliente novo</span><div class="anuncie"><div><div class="quem"><span class="pap">Corretor(a)</span> Japa <span class="e">e</span> <span class="pap">especialista</span> Paula</div><div class="sm">Cliente novo · vez dos corretores e dos especialistas</div></div><button class="btn ghost">Desfazer</button></div></section>
+    <section class="card b"><span class="eyebrow">Anuncie · indicação de corretor</span><div class="anuncie"><div><div class="quem"><span class="pap">Corretor(a)</span> Duda <span class="e">e</span> <span class="pap">especialista</span> Paula</div><div class="ok" style="font-size:13px">✓ Já estava na carteira de Duda</div><div class="sm">Indicação de corretor · só a vez dos especialistas girou</div></div><button class="btn ghost">Desfazer</button></div></section>
+    <section class="card b"><span class="eyebrow">Anuncie · indicação de corretor, cliente novo para ele</span><div class="anuncie"><div><div class="quem"><span class="pap">Corretor(a)</span> Duda <span class="e">e</span> <span class="pap">especialista</span> Paula</div><div class="wa" style="font-size:13px">! Não estava na carteira: lead criado para Duda com a origem Indicação</div><div class="sm">Indicação de corretor · só a vez dos especialistas girou</div></div><button class="btn ghost">Desfazer</button></div></section>
+    <section class="card b"><span class="eyebrow">Anuncie · indicação de parceiro</span><div class="anuncie"><div><div class="quem"><span class="pap">Parceiro</span> Ana Silva <span class="e">e</span> <span class="pap">especialista</span> Paula</div><div class="sm">Indicação de parceiro · Imob. Exemplo · cliente enviado ao gerente Rocha</div></div><button class="btn ghost">Desfazer</button></div></section>
+    <section class="card b"><span class="eyebrow">Anuncie · retorno</span><div class="anuncie"><div><div class="quem"><span class="pap">Corretor(a)</span> Tavinho <span class="e">e</span> <span class="pap">especialista</span> Sueli</div><div class="sm">Retorno · especialista do último atendimento: Sueli · último da vez: Marina</div></div><button class="btn ghost">Desfazer</button></div></section>
+    <section class="card b"><span class="eyebrow">Anuncie · parceiro sem gerente</span><div class="anuncie"><div><div class="quem"><span class="pap">Parceiro</span> Marcos Fictício <span class="e">e</span> <span class="pap">especialista</span> Paula</div><div class="sm">Parceiro novo pela roleta de parceiros · cliente enviado ao gerente Souza (Rocha não estava no stand e mantém a vez)</div></div><button class="btn ghost">Desfazer</button></div></section>
+    <section class="card b"><span class="eyebrow">Anuncie · indicação, corretor(a) fora do stand</span><div class="anuncie"><div><div class="quem"><span class="pap">Gerente</span> Lima <span class="e">e</span> <span class="pap">especialista</span> Paula</div><div class="sm">Indicação de Duda, que não está no stand · lead na carteira de Duda</div></div><button class="btn ghost">Desfazer</button></div></section>
+    <section class="card b"><span class="eyebrow">Anuncie · indicação, corretor(a) e gerente fora do stand</span><div class="anuncie"><div><div class="quem"><span class="pap">Corretor(a)</span> Rê <span class="e">e</span> <span class="pap">especialista</span> Paula</div><div class="sm">Indicação de Duda · gerente Lima fora · último da equipe Lima na vez · lead na carteira de Duda</div></div><button class="btn ghost">Desfazer</button></div></section>
+    <section class="card b"><span class="eyebrow">Anuncie · stand sem especialista</span><div class="anuncie"><div><div class="quem"><span class="pap">Corretor(a)</span> Japa</div><div class="sm">Cliente novo · vez dos corretores · este stand não tem especialista</div></div><button class="btn ghost">Desfazer</button></div></section>
+  </div>
+</div>
+
+<!-- ============ 4. Avisos, vazios e erros ============ -->
+<div class="secao">
+  <h2>4. Avisos, estados vazios e erros</h2>
+  <p>Avisos aparecem logo acima de "Registrar cliente" e pedem uma decisão; o registro só segue com a confirmação.</p>
+  <div class="estados">
+    <section class="card tint"><span class="wa">! Esse cliente já é de outro corretor.</span><p class="sm" style="margin:4px 0 10px">Confirme se é retorno. Se for cliente novo mesmo, registre: o caso fica no histórico.</p><div style="display:flex;gap:8px"><button class="btn ghost">Trocar para Retorno</button><button class="btn ghost">Registrar mesmo assim</button></div></section>
+    <section class="card tint"><span class="wa">! Esse telefone já foi registrado hoje às <span class="num">10h02</span>.</span><p class="sm" style="margin:4px 0 10px">Registrar de novo?</p><div style="display:flex;gap:8px"><button class="btn ghost">Registrar de novo</button><button class="btn ghost">Cancelar</button></div></section>
+    <section class="card"><span class="eyebrow">Acompanhante vazio</span><p class="sm" style="margin:6px 0 0"><span class="er">✕ Digite o nome do acompanhante ou marque Veio sozinho.</span></p></section>
+    <section class="card"><span class="eyebrow">No stand agora · tarde</span><p style="margin:6px 0 0"><span class="wa">! Ninguém na vez neste período.</span></p><p class="sm" style="margin:2px 0 0">Digite o apelido em Pôr na vez, na ordem da roleta da loja.</p></section>
+    <section class="card b"><span class="er">✕ Sem conexão. O cliente não foi registrado ainda.</span><p class="sm" style="margin:4px 0 10px">O que você digitou continua aqui. Tente de novo; o CRM não duplica o cliente.</p><button class="btn ghost">Tentar de novo</button></section>
+    <section class="card"><span class="eyebrow">Recepção</span><h2 class="tc">Escolha a loja deste computador</h2><div class="lojas"><span class="loja">Marco Zero</span><span class="loja">Home Store</span><span class="loja">Easy</span><span class="loja">Elleva</span></div><p class="aux" style="margin:8px 0 0">Este aparelho lembra a escolha. Dá para trocar no topo da tela.</p></section>
+    <section class="card"><span class="eyebrow">Antes da vez · 8h20</span><p style="margin:6px 0 0"><span class="wa">! A vez da manhã ainda não foi montada (8h45).</span></p><div style="margin-top:8px"><label class="lab">Quem atendeu</label><input class="in cheio" value="Beto · Eq. Rocha"></div><p class="sm" style="margin:8px 0 0">Escolha o corretor(a) que está no stand. O lead vai para ele, marcado Antes da vez. A vez não gira: às 8h45 ele entra na roleta normalmente, sem ganhar nem perder posição.</p></section>
+    <section class="card b"><span class="eyebrow">Anuncie · antes da vez</span><div class="quem" style="font:800 22px/1.1 'Bricolage Grotesque',system-ui,sans-serif"><span class="pap">Corretor(a)</span> Beto</div><div class="sm">Cliente novo · antes da vez das 8h45 · a vez não girou</div><button class="btn ghost" style="margin-top:8px">Desfazer</button></section>
+  </div>
+</div>
+
+<!-- ============ 4b. Stands e especialistas ============ -->
+<div class="secao">
+  <h2>4b. Stands e especialistas (gerente geral e operacional)</h2>
+  <p>Cada stand diz se tem especialista. Sem especialista, a recepção não vê a vez dos especialistas nem o campo Especialista, e o Anuncie traz só o corretor(a). Quem são os especialistas não se configura aqui: a escala muda toda semana, e a recepção põe na vez quem veio no dia. A escala no CRM fica para depois.</p>
+  <div class="vars">
+    <section class="card">
+      <span class="eyebrow">Configurações · Stands</span><h2 class="tc">Stands e especialistas</h2>
+      <table style="margin-top:8px">
+        <thead><tr><th>Stand</th><th>Tem especialista</th></tr></thead>
+        <tbody>
+          <tr><td class="ap">Marco Zero</td><td><span class="chip on">Sim</span> <span class="chip">Não</span></td></tr>
+          <tr><td class="ap">Home Store</td><td><span class="chip on">Sim</span> <span class="chip">Não</span></td></tr>
+          <tr><td class="ap">Easy</td><td><span class="chip">Sim</span> <span class="chip on">Não</span></td></tr>
+          <tr><td class="ap">Elleva</td><td><span class="chip">Sim</span> <span class="chip on">Não</span></td></tr>
+        </tbody>
+      </table>
+      <p class="dica">Só o gerente geral e o operacional editam (permissão em role_permissions, não por perfil fixo). A troca vale a partir do próximo cliente.</p>
+    </section>
+    <section class="card">
+      <span class="eyebrow">Recepção · Stand Easy, sem especialista</span><h2 class="tc">Registrar cliente</h2>
+      <div class="form f2">
+        <div class="pre"><label class="lab">Corretor</label><input class="in cheio" value="Japa · Eq. Souza"><span class="tag" style="top:70%">→ da vez</span></div>
+        <div><label class="lab">Empreendimento · opcional</label><input class="in" placeholder="Escolha da lista"></div>
+      </div>
+      <p class="dica">Sem o card Especialistas à esquerda e sem o campo Especialista. No retorno, também não aparece "especialista do último atendimento".</p>
+    </section>
+  </div>
+</div>
+
+<!-- ============ 5. Celular ============ -->
+<div class="secao">
+  <h2>5. Celular (375px), a reserva</h2>
+  <p>Duas abas no topo. "+ Cliente" fica fixo no rodapé e abre os mesmos campos em tela cheia, na mesma ordem. Campos com 16px e botões largos.</p>
+  <div class="mesa">
+    <div class="tela"><div class="rot">No stand</div><div class="fone">
+      <div class="topo"><span class="logo">MBigucci</span><span class="sm">Marco Zero</span></div>
+      <div class="corpo">
+        <span class="eyebrow">Recepção · quarta, <span class="num">04/11</span></span>
+        <div class="mabas" style="margin-top:8px"><span class="on">No stand</span><span>Clientes · <span class="num">4</span></span></div>
+        <section class="card">
+          <span class="eyebrow">No stand agora</span><h2 class="tc">Corretores</h2>
+          <div class="abas"><span class="on">Manhã · <span class="num">6</span></span><span>Tarde · <span class="num">2</span></span></div>
+          <div style="margin-top:10px"><label class="lab" for="m1">Pôr na vez</label><input id="m1" class="in" placeholder="Apelido ou nome"></div>
+          <div style="margin-top:6px">
+            <div class="mlin"><div><span class="num nt">1</span> <span class="ap">Tavinho</span> <span class="rod ok">✓✓</span><div class="aux">Manhã e tarde</div></div><button class="btn ghost mini">Saiu</button></div>
+            <div class="mlin"><div><span class="num nt">2</span> <span class="ap">Duda</span> <span class="ok">✓</span><div class="wa" style="font-size:13px">! Saiu 10h15</div></div><button class="btn ghost mini">Voltou</button></div>
+            <div class="mlin"><div><span class="num nt">3</span> <span class="ap">Beto</span> <span class="ok">✓</span><div class="aux">Chegou 9h40</div></div><button class="btn ghost mini">Saiu</button></div>
+            <div class="mlin" style="background:var(--paper);margin:0 -8px;padding:10px 8px;box-shadow:inset 3px 0 0 var(--ink)"><div><span class="num nt">4</span> <span class="ap">Japa</span><div><b>→ Da vez</b></div></div><div style="display:flex;gap:4px"><button class="btn ghost mini">Passar</button><button class="btn ghost mini">Saiu</button></div></div>
+            <div class="mlin"><div><span class="num nt">5</span> <span class="ap">Rê</span><div class="aux">Voltou 11h02</div></div><button class="btn ghost mini">Saiu</button></div>
+          </div>
+        </section>
+        <section class="card">
+          <span class="eyebrow">Especialistas</span>
+          <div class="mlin"><div><span class="num nt">1</span> <span class="ap">Marina</span> <span class="ok">✓✓</span></div><button class="btn ghost mini">Saiu</button></div>
+          <div class="mlin"><div><span class="num nt">2</span> <span class="ap">Paula</span> <b>→ Da vez</b></div><button class="btn ghost mini">Passar</button></div>
+          <div class="mlin"><div><span class="num nt">3</span> <span class="ap">Sueli</span> <span class="ok">✓</span></div><button class="btn ghost mini">Saiu</button></div>
+        </section>
+      </div>
+      <div class="rodape"><button class="btn red">+ Cliente</button></div>
+    </div></div>
+
+    <div class="tela"><div class="rot">+ Cliente, em tela cheia</div><div class="fone">
+      <div class="topo"><button class="link">Cancelar</button><span class="sm">Novo cliente</span></div>
+      <div class="corpo">
+        <div class="mfield"><span class="lab">Tipo do cliente</span><div class="mchips"><span class="chip on">Novo</span><span class="chip">Ind. corretor</span><span class="chip">Ind. parceiro</span><span class="chip">Retorno</span></div></div>
+        <div class="mfield"><span class="lab">Como conheceu · um ou mais</span><div class="mchips"><span class="chip on">✓ Passagem</span><span class="chip">Mora na região</span><span class="chip">Amigo ou família</span><span class="chip on">✓ Instagram</span><span class="chip">Facebook</span><span class="chip">WhatsApp</span><span class="chip">Site MBigucci</span><span class="chip">Google</span><span class="chip">+ Ver os outros 6</span></div></div>
+        <div class="mfield"><label class="lab" for="m2">Cliente</label><input id="m2" class="in cheio" value="Rodrigo Exemplo"></div>
+        <div class="mfield"><label class="lab" for="m3">Telefone</label><input id="m3" class="in" placeholder="(11) 90000-0000" inputmode="tel"></div>
+        <div class="mfield"><label class="lab" for="m4">E-mail · opcional</label><input id="m4" class="in" placeholder="nome@exemplo.com"></div>
+        <div class="mfield"><label class="lab" for="m5">Acompanhante</label><input id="m5" class="in" placeholder="Nome, ou marque abaixo"><div style="margin-top:6px"><span class="chip">Veio sozinho</span></div></div>
+        <div class="mfield"><label class="lab" for="m6">Corretor · da vez</label><input id="m6" class="in cheio" value="Japa · Eq. Souza"></div>
+        <div class="mfield"><label class="lab" for="m7">Especialista · da vez</label><input id="m7" class="in cheio" value="Paula"></div>
+        <div class="mfield"><label class="lab" for="m8">Empreendimento · opcional</label><input id="m8" class="in" placeholder="Escolha da lista"></div>
+        <div class="mfield"><label class="lab" for="m9">Observação · opcional</label><input id="m9" class="in" placeholder="Anotação curta"></div>
+      </div>
+      <div class="rodape"><button class="btn red">Registrar cliente</button></div>
+    </div></div>
+
+    <div class="tela"><div class="rot">Clientes, logo depois de registrar</div><div class="fone">
+      <div class="topo"><span class="logo">MBigucci</span><span class="sm">Marco Zero</span></div>
+      <div class="corpo">
+        <span class="eyebrow">Recepção · quarta, <span class="num">04/11</span></span>
+        <div class="mabas" style="margin-top:8px"><span>No stand</span><span class="on">Clientes · <span class="num">5</span></span></div>
+        <section class="card b"><span class="eyebrow">Anuncie</span>
+          <div class="ok" style="font-size:13px">✓ Cliente registrado</div>
+          <div class="quem" style="font:800 22px/1.25 'Bricolage Grotesque',system-ui,sans-serif"><span class="pap">Corretor(a)</span> Japa<br><span class="pap">especialista</span> Paula</div>
+          <div class="sm">Cliente novo · vez dos corretores e dos especialistas</div>
+          <button class="btn ghost" style="width:100%;margin-top:10px">Desfazer · <span class="num">6 s</span></button>
+          <div class="prog"><i style="width:75%"></i></div>
+        </section>
+        <section class="card"><span class="eyebrow">Clientes de hoje</span>
+          <div class="mlin"><div><span class="num sm">11h24</span> <span class="tipo">Novo</span><div class="ap">Rodrigo Exemplo</div><div class="aux">Japa · Paula · Passagem, Instagram</div></div><button class="btn ghost mini">Corrigir</button></div>
+          <div class="mlin"><div><span class="num sm">11h21</span> <span class="tipo">Novo</span><div class="ap">Lucas Exemplo</div><div class="aux">Beto · Sueli · Passagem</div></div><button class="btn ghost mini">Corrigir</button></div>
+          <div class="mlin"><div><span class="num sm">10h40</span> <span class="tipo">Ind. parceiro</span><div class="ap">Fulana de Tal</div><div class="aux">Ana Silva, Imob. Exemplo · Marina</div></div><button class="btn ghost mini">Corrigir</button></div>
+          <div class="mlin"><div><span class="num sm">10h02</span> <span class="tipo">Ind. corretor</span><div class="ap">Beltrano Exemplo</div><div class="aux">Duda · Marina</div></div><button class="btn ghost mini">Corrigir</button></div>
+        </section>
+      </div>
+      <div class="rodape"><button class="btn red">+ Cliente</button></div>
+    </div></div>
+  </div>
+</div>
+
+<div class="legenda">
+  <h2 style="font-size:17px;color:var(--ink);margin:16px 0 6px">Para o Felipe decidir</h2>
+  <ul>
+    <li><b>Lista "Como conheceu"</b> (seção 1): os 14 itens da proposta do estudo, escolha múltipla. Indicação de corretor e Retorno ficam fora, porque já são o tipo. Aprovar, tirar ou acrescentar itens.</li>
+    <li><b>Atalhos do tipo</b>: N, C, P e R quando o foco está na linha de tipo; S marca Veio sozinho.</li>
+    <li><b>"Pôr na vez"</b> no lugar de "Chegou": a recepção digita na ordem da roleta da loja e o CRM só segue em círculo, pulando quem saiu (decisão 4).</li>
+    <li><b>Não está mais</b> fica no menu da linha, com Desfazer, para não ser tocado por engano.</li>
+    <li>✓ <b>"Último corretor da roleta, da equipe dele"</b> (seção 2): é o corretor da equipe que está mais atrás na vez de hoje (Felipe, 04/11/2026).</li>
+    <li>✓ <b>Lead da indicação com o corretor fora do stand</b>: fica na carteira de quem indicou; o gerente ou o colega só atende (Felipe, 04/11/2026).</li>
+  </ul>
+  <h2 style="font-size:17px;color:var(--ink);margin:16px 0 6px">Fica fora desta tela</h2>
+  <ul>
+    <li>Pontos, períodos, verba e ranking; escala das recepcionistas; check-in pelo celular (só depois).</li>
+    <li>Temperatura, etapa e próximo contato do lead: são do corretor.</li>
+    <li>A tela Clientes de parceiros do gerente: é etapa do módulo de Parcerias.</li>
+  </ul>
+</div>
+</body>
+</html>

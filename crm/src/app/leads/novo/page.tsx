@@ -8,7 +8,7 @@ import { CampoProximoContato, EscolhaTemperatura, RodapeAcao, SeloCampo } from "
 import { db, novoId } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
 import { jaEstavaSalvo, mensagemErro } from "@/lib/erros";
-import { COLUNAS_LEAD, deCampos, formatarWhatsapp, normalizarWhatsapp, type Lead, type Temperatura } from "@/lib/leads";
+import { COLUNAS_LEAD, deCampos, formatarWhatsapp, normalizarWhatsapp, textoDuplicado, type Lead, type Temperatura } from "@/lib/leads";
 import { camposEncontrados, lerMensagem, type LeadLido } from "@/lib/cadastro-magico";
 import {
   gravarUltimaOrigem,
@@ -198,9 +198,10 @@ function NovoLead() {
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
     setErro(null);
-    const numero = normalizarWhatsapp(whatsapp);
+    // Sem telefone pode (04/11/2026); digitado, precisa estar certo.
+    const numero = whatsapp.trim() ? normalizarWhatsapp(whatsapp) : null;
     if (!nome.trim()) return setErro("Preencha o nome.");
-    if (!numero) return setErro("Confira o WhatsApp: DDD e número, como (11) 98765-4321.");
+    if (whatsapp.trim() && !numero) return setErro("Confira o WhatsApp: DDD e número, como (11) 98765-4321.");
     if (!origemAtual) return setErro("Escolha a origem.");
     if (atribui && !dono) return setErro("Escolha o corretor que vai receber o lead.");
     if (email.trim() && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) return setErro("Confira o e-mail.");
@@ -209,7 +210,7 @@ function NovoLead() {
 
     setSalvando(true);
     // Num novo toque depois de uma tentativa enviada, o lead "duplicado" pode ser o próprio.
-    if (duplicado !== numero && !ids.current) {
+    if (numero && duplicado !== numero && !ids.current) {
       // Aviso de duplicado; não impede o cadastro. Entre os leads que a pessoa
       // enxerga, mostra o nome (e o corretor, para o gerente). Nos outros, a
       // função do banco só diz que o número está em outra carteira.
@@ -277,13 +278,10 @@ function NovoLead() {
     const visivel = data?.[0] as { nome: string; dono_id: string } | undefined;
     if (visivel) {
       const deOutro = visivel.dono_id !== eu.id ? corretores.find((c) => c.id === visivel.dono_id)?.nome : undefined;
-      return `Já existe um lead ativo com este WhatsApp: ${visivel.nome}${deOutro ? `, na carteira de ${deOutro}` : ""}.`;
+      return textoDuplicado({ visivel: { nome: visivel.nome, deOutro } });
     }
     const { data: emOutra } = await db().rpc("whatsapp_em_outra_carteira", { p_whatsapp: numero });
-    if (emOutra !== true) return null;
-    return atribui
-      ? "Este WhatsApp já está num lead ativo de outra equipe."
-      : "Este WhatsApp já está num lead ativo de outro corretor. Confira com seu gerente.";
+    return textoDuplicado({ emOutraCarteira: emOutra === true, atribui });
   }
 
   function novoCadastro() {
@@ -392,7 +390,7 @@ function NovoLead() {
 
       <div>
         <label className="field-label" htmlFor="whatsapp">
-          WhatsApp
+          WhatsApp · se o cliente der
         </label>
         <input
           id="whatsapp"

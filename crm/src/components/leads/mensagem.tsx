@@ -42,12 +42,14 @@ export function BotaoMensagem({
   onAbrirWhatsapp?: () => void;
 }) {
   const [aberto, setAberto] = useState(false);
+  // Lead sem telefone (04/11/2026): sem botão de WhatsApp.
+  if (!lead.whatsapp) return null;
   return (
     <>
       <button
         type="button"
         className={clsx("btn focus-ring", destaque ? "btn-red" : "btn-ghost", className)}
-        aria-label={rotuloAcessivel ?? `WhatsApp de ${lead.nome}, ${formatarWhatsapp(lead.whatsapp)}`}
+        aria-label={rotuloAcessivel ?? `WhatsApp de ${lead.nome}, ${lead.whatsapp ? formatarWhatsapp(lead.whatsapp) : "sem telefone"}`}
         onClick={() => setAberto(true)}
       >
         {rotulo}
@@ -66,7 +68,8 @@ export function BotaoMensagem({
 }
 
 /** Ligar: com `onLigar`, o toque grava o registro automático "Ligou" sem segurar o discador. */
-export function BotaoLigar({ numero, className, onLigar }: { numero: string; className?: string; onLigar?: () => void }) {
+export function BotaoLigar({ numero, className, onLigar }: { numero: string | null; className?: string; onLigar?: () => void }) {
+  if (!numero) return null;
   return (
     <a
       href={linkLigar(numero)}
@@ -212,7 +215,7 @@ export function DialogoMensagem({
             {copiado ? "✓ Copiado" : "Copiar"}
           </button>
           <a
-            href={linkWhatsappComTexto(lead.whatsapp, texto)}
+            href={linkWhatsappComTexto(lead.whatsapp ?? "", texto)}
             target="_blank"
             rel="noopener noreferrer"
             className="btn btn-red btn-lg focus-ring flex-1"

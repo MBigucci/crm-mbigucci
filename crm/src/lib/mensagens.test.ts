@@ -125,3 +125,8 @@ test("repasse: nome, WhatsApp, empreendimento, prazo e link da ficha", () => {
   assert.ok(!semExtras.includes("Empreendimento"));
   assert.ok(!semExtras.includes("Prazo"));
 });
+
+test("repasse: lead sem telefone diz que não tem", () => {
+  const t = mensagemRepasse({ corretor: "Carla", cliente: "Ana", whatsapp: null, empreendimento: null, prazo: null, link: "x" });
+  assert.ok(t.includes("WhatsApp: sem telefone"));
+});

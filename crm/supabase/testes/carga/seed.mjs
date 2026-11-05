@@ -36,6 +36,12 @@ export async function semear() {
     equipes.push(r.rows[0].id);
   }
   const equipeDe = (i) => i % 3;
+  // Com o recepcao.sql no banco, corretor ativo precisa de apelido (antes de ativar).
+  const temApelido = (await c.query(
+    `select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'apelido'`)).rows.length > 0;
+  if (temApelido)
+    for (let i = 0; i < corretores.length; i++)
+      await c.query(`update public.profiles set apelido = $2 where id = $1`, [corretores[i], `Carga ${String(i + 1).padStart(2, "0")}`]);
   for (let i = 0; i < corretores.length; i++)
     await c.query(`update public.profiles set ativo = true, equipe_id = $2 where id = $1`, [corretores[i], equipes[equipeDe(i)]]);
 

@@ -16,3 +16,11 @@ test("sessão expirada e sem conexão viram frases para a tela", () => {
   assert.match(mensagemErro({ message: "TypeError: Failed to fetch" }), /Sem conexão/);
   assert.match(mensagemErro({ message: "Request rate limit reached" }), /Espere um minuto/);
 });
+
+test("apelido repetido entre corretores ativos vira texto da tela", () => {
+  assert.equal(
+    mensagemErro({ message: 'duplicate key value violates unique constraint "profiles_apelido_ativo_unico"' }),
+    "Já existe um corretor ativo com esse apelido. Escolha outro.",
+  );
+  assert.equal(mensagemErro({ message: "Corretor ativo precisa de apelido." }), "Corretor ativo precisa de apelido.");
+});

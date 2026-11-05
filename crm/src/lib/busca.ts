@@ -39,7 +39,7 @@ export function criarBusca(consulta: string): (l: LeadDaBusca) => boolean {
   if (!q) return () => true;
   if (PARECE_TELEFONE.test(q) && /\d/.test(q)) {
     const fones = variacoesTelefone(q);
-    return (l) => fones.some((f) => l.whatsapp.includes(f));
+    return (l) => !!l.whatsapp && fones.some((f) => l.whatsapp!.includes(f));
   }
   const termos = q.split(" ");
   return (l) => {
@@ -47,7 +47,7 @@ export function criarBusca(consulta: string): (l: LeadDaBusca) => boolean {
     return termos.every((t) => {
       if (texto.includes(t)) return true;
       const d = t.replace(/\D/g, "");
-      return PARECE_TELEFONE.test(t) && d.length >= 3 && l.whatsapp.includes(d);
+      return PARECE_TELEFONE.test(t) && d.length >= 3 && !!l.whatsapp && l.whatsapp.includes(d);
     });
   };
 }

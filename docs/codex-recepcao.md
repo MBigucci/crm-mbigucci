@@ -27,6 +27,25 @@ Trazer para o CRM o trabalho que a recepção faz hoje na planilha, **mudando o 
 10. As visitas da recepção entram no painel da equipe e no relatório do corretor. Os relatórios para o Felipe e o marketing são outra frente (`docs/estudo-relatorios.md`).
 11. Corretor não faz check-in por localização agora (decisão do check-in); a presença dele é a da recepção.
 
+## Decisões do mockup (Felipe, 04/11/2026)
+Mockup aprovado: `docs/mockups/recepcao.html`. Além das decisões do estudo:
+1. "Na loja agora" vira **"No stand agora"** (aba do celular "No stand").
+2. O card "Anuncie" diz o papel: "Corretor(a) X e especialista Y" (ou "Parceiro X", "Gerente X").
+3. **Roleta de gerentes da parceria:** a recepção responde se o gerente indicado está no stand (pergunta, sem check-in). Se não está, passa ao próximo; **quem foi pulado não perde a vez**.
+4. **Indicação de corretor com o corretor fora do stand** (na vez como Saiu ou Não está mais; ou fora da vez, e a recepção responde que ele não está, porque pode ter chegado depois da janela): anuncia o **gerente** dele, se a recepção disser que está; senão, o **corretor da equipe dele que está mais atrás na vez de hoje**. A vez dos corretores não gira.
+5. Nesse caso, o **lead fica na carteira de quem indicou**; o gerente ou o colega só atende.
+6. **Stand sem especialista:** "tem especialista" sim/não por stand, configurado pelo gerente geral e pelo operacional, que também cadastram, renomeiam e desativam stands. Sem especialista, somem a vez dos especialistas, o campo e o especialista do Anuncie.
+7. **Os especialistas não são escolhidos por stand** (a escala muda toda semana): uma lista única; a recepção põe na vez quem veio no dia. A escala no CRM fica para o futuro.
+8. **Cliente novo antes das 8h45** (vez da manhã ainda não montada): a recepção escolhe o corretor que está no stand; o lead vai para ele marcado "Antes da vez"; a vez não gira e ele entra na roleta das 8h45 sem ganhar nem perder posição.
+9. **"Pôr na vez" só abre das 8h45 às 9h15 (manhã) e das 13h45 às 14h15 (tarde).** Confirmado pelo Felipe (04/11/2026): vale também para os especialistas; quem chega depois da janela fica fora da vez daquele turno (indicação e retorno seguem normais); a vez da tarde passa a valer a partir das 13h45, assim que já tem alguém nela.
+10. **Especialista antes das 8h45:** escolhido à mão, opcional; a vez dos especialistas não gira.
+11. **Lead sem telefone:** o cliente pode ser registrado sem telefone e o lead nasce assim (`leads.whatsapp` aceita nulo; aviso de duplicado só com telefone; WhatsApp e Ligar somem sem telefone). O corretor dono digita o WhatsApp depois, na ficha, com o mesmo aviso de duplicado do cadastro.
+12. **Retorno mostra o corretor dono** (a recepção precisa saber quem anunciar), inclusive quando acha o cliente pelo telefone na carteira. No cliente novo, o telefone de outro corretor continua sem dizer de quem (decisão 18 do estudo).
+
+**Pendência:** a visita realizada pendente da primeira visita da indicação de corretor (decisão 14 do estudo) fica para depois da parte 2. `lancamentos_pontos` exige `visita_id` no critério visita, então precisa de uma linha em `visitas` ou de mudar o schema.
+
+**Combinado com a sessão principal (04/11/2026):** interação nova `plantao` em `lead_interacoes` ("Atendido no plantão", "Voltou ao plantão"), contando como conversa; o próximo contato fica o atual do lead e só vira amanhã às 10h se estiver vazio. O cliente de parceiro fica em `plantao_atendimentos` (`parceiro_id` e `gerente_id` congelado na visita), lido pela tela "Clientes de parceiros". O gerente escolhido na roleta de parceiros usa um parâmetro novo de `parcerias.sql`, feito pela frente Parcerias.
+
 ## Decisões técnicas
 - **SQL em arquivo novo** `crm/supabase/recepcao.sql`, idempotente, que o Felipe roda. Tabelas e funções do estudo, seção 7 (com os ajustes da seção 8): presença ampliada e eventos (saiu, voltou, passou a vez, encerrou), `especialistas`, atendimentos do plantão, como conheceu, apelido e CRECI em `profiles`.
 - **Toda escrita da recepção por funções `security definer`** (`recepcao_registrar_cliente`, `recepcao_chegada`, `recepcao_saida`, `recepcao_passar_vez`, `recepcao_corrigir`), sem insert ou update direto. Permissões novas em `role_permissions`, nunca `perfil ===`. A recepção não lê leads: a busca do retorno devolve só o mínimo (primeiro nome, final do telefone, a quem está vinculado, data e especialista do último atendimento).
