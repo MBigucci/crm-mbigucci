@@ -77,6 +77,7 @@ export const RegistrarCliente = forwardRef<
   const parceiroId = useRef<string | null>(null);
   const idEntradaParceiro = useRef<string | null>(null);
   const tipoRef = useRef<HTMLDivElement>(null);
+  const cartaoPergunta = useRef<HTMLDivElement>(null);
   const { catalogo } = useCatalogo();
 
   const antes = antesDaVez(agora) && tipo === "novo";
@@ -90,6 +91,14 @@ export const RegistrarCliente = forwardRef<
     focarTipo: () => tipoRef.current?.querySelector<HTMLButtonElement>("[aria-checked=true]")?.focus(),
     escolherTipo: (t) => mudarTipo(t),
   }));
+
+  // A pergunta do banco aparece onde a recepcionista está olhando: rola até ela
+  // e põe o foco na resposta recomendada (no rodapé fixo, no celular).
+  useEffect(() => {
+    if (!pendente) return;
+    cartaoPergunta.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    document.getElementById("resposta-principal")?.focus({ preventScroll: true });
+  }, [pendente]);
 
   // A fila dos gerentes para o parceiro: carregada quando o tipo é escolhido.
   useEffect(() => {
@@ -253,6 +262,13 @@ export const RegistrarCliente = forwardRef<
   );
 
   const fila0 = fila?.[filaPos];
+  const pergunta = pendente
+    ? opcoesDaPergunta(pendente, {
+        responder: (extra, e) => registrar(e, extra),
+        retorno: () => mudarTipo("retorno"),
+        fechar: () => setPendente(null),
+      })
+    : null;
   const lab = "field-label";
   const inp = "input md:py-[9px] md:text-[14px]";
 
@@ -384,7 +400,7 @@ export const RegistrarCliente = forwardRef<
         </div>
       </fieldset>
 
-      <div className={clsx("grid gap-3", p && "md:grid-cols-[1.3fr_1fr_1fr]")}>
+      <div className={clsx("grid gap-3", p && "xl:grid-cols-[1.3fr_1fr_1fr]")}>
         <div>
           <label className={lab} htmlFor="c-nome">
             Cliente
@@ -393,7 +409,7 @@ export const RegistrarCliente = forwardRef<
         </div>
         <div>
           <label className={lab} htmlFor="c-tel">
-            Telefone
+            Telefone · se o cliente der
           </label>
           <input
             id="c-tel"
@@ -449,10 +465,10 @@ export const RegistrarCliente = forwardRef<
 
       {/* Quem atende: muda com o tipo. */}
       {tipo === "novo" && (
-        <div className={clsx("grid gap-3", p && "md:grid-cols-2")}>
+        <div className={clsx("grid gap-3", p && "xl:grid-cols-2")}>
           {antes ? (
             <>
-              <div className="md:col-span-2">
+              <div className="xl:col-span-2">
                 <p className="text-[13px] font-semibold text-wa">! Antes da vez: a vez da manhã abre às 8h45. Escolha quem atende; a vez não gira.</p>
               </div>
               <BuscaPessoa id="c-antes" rotulo="Quem atende" pessoas={pessoas} papel="corretor" escolhido={atendeAntes} onEscolher={setAtendeAntes} />
@@ -477,14 +493,14 @@ export const RegistrarCliente = forwardRef<
         </div>
       )}
       {tipo === "indicacao_corretor" && (
-        <div className={clsx("grid gap-3", p && "md:grid-cols-2")}>
+        <div className={clsx("grid gap-3", p && "xl:grid-cols-2")}>
           <BuscaPessoa id="c-indicou" rotulo="Corretor(a) que indicou" pessoas={pessoas} papel="corretor" escolhido={indicou} onEscolher={setIndicou} />
           {stand.tem_especialista && <DaVez rotulo="Especialista" linha={daVezE} vazio="– Ninguém na vez" />}
         </div>
       )}
       {tipo === "indicacao_parceiro" && (
         <div className="grid gap-3">
-          <div className={clsx("grid gap-3", p && "md:grid-cols-2")}>
+          <div className={clsx("grid gap-3", p && "xl:grid-cols-2")}>
             <div>
               <label className={lab} htmlFor="p-nome">
                 Corretor(a) parceiro
@@ -592,7 +608,7 @@ export const RegistrarCliente = forwardRef<
         </div>
       )}
 
-      <div className={clsx("grid gap-3", p && "md:grid-cols-[1fr_1.6fr]")}>
+      <div className={clsx("grid gap-3", p && "xl:grid-cols-[1fr_1.6fr]")}>
         <div>
           <label className={lab} htmlFor="c-emp">
             Empreendimento · opcional
@@ -612,7 +628,12 @@ export const RegistrarCliente = forwardRef<
         </div>
       </div>
 
-      {pendente && <Pergunta pendente={pendente} onResponder={(extra, ev) => registrar(ev, extra)} onRetorno={() => mudarTipo("retorno")} onFechar={() => setPendente(null)} />}
+      {pergunta && (
+        <div ref={cartaoPergunta} tabIndex={-1} className="card bg-tint-brand scroll-mb-24 outline-none" role="alert">
+          <p className="font-semibold text-wa">{pergunta.texto}</p>
+          <p className="mt-1 text-[12px] text-concrete">Responda {p ? "abaixo" : "no rodapé"}.</p>
+        </div>
+      )}
       {erro && (
         <p role="alert" className="aviso-erro">
           ✕ {erro}
@@ -625,14 +646,33 @@ export const RegistrarCliente = forwardRef<
             {tipo === "novo" && !antes ? "O lead vai para a carteira do corretor da vez, com próximo contato amanhã às 10h." : "Tab avança · Enter registra"}
           </span>
         )}
-        {onCancelar && (
-          <button type="button" className="btn btn-ghost btn-lg focus-ring" onClick={onCancelar}>
-            Cancelar
-          </button>
+        {pergunta ? (
+          <div className={clsx("flex gap-2", !p && "w-full flex-col")}>
+            {pergunta.opcoes.map((o, i) => (
+              <button
+                key={o.rotulo}
+                id={i === 0 ? "resposta-principal" : undefined}
+                type="button"
+                className={clsx("btn focus-ring", i === 0 ? "btn-red" : "btn-ghost", !p && "btn-lg w-full")}
+                disabled={enviando}
+                onClick={o.fazer}
+              >
+                {o.rotulo}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <>
+            {onCancelar && (
+              <button type="button" className="btn btn-ghost btn-lg focus-ring" onClick={onCancelar}>
+                Cancelar
+              </button>
+            )}
+            <button type="submit" className={clsx("btn btn-red focus-ring", !p && "btn-lg flex-1")} disabled={enviando}>
+              {enviando ? "Registrando…" : tipo === "retorno" ? "Registrar retorno" : "Registrar cliente"}
+            </button>
+          </>
         )}
-        <button type="submit" className={clsx("btn btn-red focus-ring", !p && "btn-lg flex-1")} disabled={enviando}>
-          {enviando ? "Registrando…" : tipo === "retorno" ? "Registrar retorno" : "Registrar cliente"}
-        </button>
       </div>
     </form>
   );
@@ -650,79 +690,42 @@ function DaVez({ rotulo, linha, vazio }: { rotulo: string; linha: LinhaVez | nul
   );
 }
 
-/** O que o banco pediu antes de gravar: uma confirmação ou uma pergunta. */
-function Pergunta({
-  pendente,
-  onResponder,
-  onRetorno,
-  onFechar,
-}: {
-  pendente: Pendente;
-  onResponder: (extra: { corretor_no_stand?: boolean; gerente_no_stand?: boolean; confirmar?: string[] }, e: React.FormEvent) => void;
-  onRetorno: () => void;
-  onFechar: () => void;
-}) {
-  const btn = "btn btn-ghost focus-ring";
-  let texto: React.ReactNode;
-  let botoes: React.ReactNode;
-  if (pendente.status === "vez_mudou") {
-    texto = pendente.texto;
-    botoes = (
-      <button type="button" className={btn} onClick={onFechar}>
-        Entendi
-      </button>
-    );
-  } else if (pendente.status === "confirmar") {
-    texto = textoConfirmar(pendente);
-    botoes = (
-      <>
-        {pendente.aviso === "outra_carteira" && (
-          <button type="button" className={btn} onClick={onRetorno}>
-            Trocar para Retorno
-          </button>
-        )}
-        <button type="button" className={btn} onClick={(e) => onResponder({ confirmar: [pendente.aviso] }, e)}>
-          Registrar mesmo assim
-        </button>
-      </>
-    );
-  } else if (pendente.pergunta === "corretor_no_stand") {
-    texto = (
-      <>
-        ! {pendente.corretor} não está na vez. Pergunte: {pendente.corretor} está no stand?
-      </>
-    );
-    botoes = (
-      <>
-        <button type="button" className={btn} onClick={(e) => onResponder({ corretor_no_stand: true }, e)}>
-          Sim, está
-        </button>
-        <button type="button" className={btn} onClick={(e) => onResponder({ corretor_no_stand: false }, e)}>
-          Não está
-        </button>
-      </>
-    );
-  } else {
-    texto = (
-      <>
-        ! {pendente.corretor} não está no stand. Pergunte: o gerente {pendente.gerente ?? "da equipe"} está no stand?
-      </>
-    );
-    botoes = (
-      <>
-        <button type="button" className={btn} onClick={(e) => onResponder({ gerente_no_stand: true }, e)}>
-          Sim, anunciar o gerente
-        </button>
-        <button type="button" className={btn} onClick={(e) => onResponder({ gerente_no_stand: false }, e)}>
-          Não está
-        </button>
-      </>
-    );
+type Opcao = { rotulo: string; fazer: (e: React.MouseEvent) => void };
+
+/**
+ * O que o banco pediu antes de gravar: o texto e as respostas, a recomendada
+ * primeiro (ela vira a ação principal do rodapé enquanto a pergunta estiver aberta).
+ */
+function opcoesDaPergunta(
+  pendente: Pendente,
+  h: {
+    responder: (extra: { corretor_no_stand?: boolean; gerente_no_stand?: boolean; confirmar?: string[] }, e: React.FormEvent) => void;
+    retorno: () => void;
+    fechar: () => void;
+  },
+): { texto: React.ReactNode; opcoes: Opcao[] } {
+  if (pendente.status === "vez_mudou") return { texto: pendente.texto, opcoes: [{ rotulo: "Entendi", fazer: h.fechar }] };
+  if (pendente.status === "confirmar") {
+    const aviso = pendente.aviso;
+    const mesmoAssim = { rotulo: aviso === "repetido_hoje" ? "Registrar de novo" : "Registrar mesmo assim", fazer: (e: React.MouseEvent) => h.responder({ confirmar: [aviso] }, e) };
+    return {
+      texto: textoConfirmar(pendente),
+      opcoes: aviso === "outra_carteira" ? [{ rotulo: "Trocar para Retorno", fazer: h.retorno }, mesmoAssim] : [mesmoAssim, { rotulo: "Cancelar", fazer: h.fechar }],
+    };
   }
-  return (
-    <div className="card bg-tint-brand" role="alert">
-      <p className="font-semibold text-wa">{texto}</p>
-      <div className="mt-2 flex flex-wrap gap-2">{botoes}</div>
-    </div>
-  );
+  if (pendente.pergunta === "corretor_no_stand")
+    return {
+      texto: `! ${pendente.corretor} não está na vez. Pergunte: ${pendente.corretor} está no stand?`,
+      opcoes: [
+        { rotulo: "Sim, está", fazer: (e) => h.responder({ corretor_no_stand: true }, e) },
+        { rotulo: "Não está", fazer: (e) => h.responder({ corretor_no_stand: false }, e) },
+      ],
+    };
+  return {
+    texto: `! ${pendente.corretor} não está no stand. Pergunte: o gerente ${pendente.gerente ?? "da equipe"} está no stand?`,
+    opcoes: [
+      { rotulo: "Sim, anunciar o gerente", fazer: (e) => h.responder({ gerente_no_stand: true }, e) },
+      { rotulo: "Não está", fazer: (e) => h.responder({ gerente_no_stand: false }, e) },
+    ],
+  };
 }

@@ -102,7 +102,7 @@ export function Cabecalho({ itens, onSair, nome }: { itens?: ItemMenu[]; onSair?
         )}
       </div>
       {itens && aberto && (
-        <nav id="menu-celular" className="border-t border-line bg-paper md:hidden" aria-label="Menu principal">
+        <nav id="menu-celular" className="max-h-[calc(100dvh-59px)] overflow-y-auto overscroll-contain border-t border-line bg-paper md:hidden" aria-label="Menu principal">
           {nome && <span className="eyebrow px-5 pb-1 pt-3">{nome}</span>}
           {itens.map((i) => (
             <LinkDoMenu

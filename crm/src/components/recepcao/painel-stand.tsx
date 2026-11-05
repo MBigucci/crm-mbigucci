@@ -27,7 +27,30 @@ export function TabelaStand({ linhas, numeros, nomes }: { linhas: string[]; nume
       <h2 id="t-stand" className="titulo-secao mb-3">
         Clientes no stand, por corretor · pela recepção
       </h2>
-      <div className="card tabela-painel overflow-x-auto p-0">
+      <ul className="grid gap-2 sm:hidden">
+        {[...linhas.map((id) => ({ id, nome: nomes.get(id) ?? "Corretor", x: numeros.get(id) ?? standZerado() })), { id: "equipe", nome: "Equipe", x: total }].map((l) => (
+          <li key={l.id} className="card px-4 py-3">
+            <details>
+              <summary className="focus-ring flex cursor-pointer list-none items-center justify-between gap-3">
+                <span className={clsx("min-w-0 truncate", l.id === "equipe" && "font-semibold")}>{l.nome}</span>
+                <span className="shrink-0 text-[13px] text-ink-soft">
+                  <b className={clsx("num text-[18px]", l.x.clientes ? "text-ink" : "text-ink-soft")}>{l.x.clientes}</b>{" "}
+                  {l.x.clientes === 1 ? "cliente" : "clientes"} <span aria-hidden>+</span>
+                </span>
+              </summary>
+              <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 border-t border-line pt-2 text-[13px]">
+                {COLUNAS.slice(1).map((c) => (
+                  <div key={c.chave} className="flex justify-between gap-2">
+                    <dt className="text-ink-soft">{c.rotulo}</dt>
+                    <dd className="num font-semibold">{l.x[c.chave]}</dd>
+                  </div>
+                ))}
+              </dl>
+            </details>
+          </li>
+        ))}
+      </ul>
+      <div className="card tabela-painel hidden overflow-x-auto p-0 sm:block">
         <table className="w-full text-left text-[14px]">
           <thead>
             <tr className="border-b border-line text-ink-soft">
@@ -70,11 +93,17 @@ export function StandDoCorretor({ numeros }: { numeros: NumerosStand }) {
       <h2 id="r-stand" className="eyebrow text-[12px] text-ink-soft">
         Clientes no stand no período · pela recepção
       </h2>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        {COLUNAS.map((c) => (
+      <div className="card">
+        <span className="eyebrow text-[12px] text-ink-soft">{COLUNAS[0].rotulo}</span>
+        <span className={clsx("num mt-1 block font-display text-[36px] font-extrabold leading-none", !numeros.clientes && "text-ink-soft")}>
+          {numeros.clientes}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {COLUNAS.slice(1).map((c) => (
           <div key={c.chave} className="card">
             <span className="eyebrow text-[12px] text-ink-soft">{c.rotulo}</span>
-            <span className={clsx("num mt-1 block font-display text-[30px] font-extrabold leading-none", !numeros[c.chave] && "text-ink-soft")}>
+            <span className={clsx("num mt-1 block font-display text-[24px] font-extrabold leading-none", !numeros[c.chave] && "text-ink-soft")}>
               {numeros[c.chave]}
             </span>
           </div>

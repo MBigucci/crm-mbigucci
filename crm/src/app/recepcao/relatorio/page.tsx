@@ -90,6 +90,9 @@ function Relatorio() {
   const parceiros = useNomes("parceiros", r ? r.parceiros.map((c) => c.chave) : []);
   const nomeMidia = (s: string) => midias?.find((m) => m.slug === s)?.nome ?? s;
   const ehAtual = periodo(per.tipo, new Date()).ini.getTime() === per.ini.getTime();
+  const nomeStand = standId ? (stands?.find((s) => s.id === standId)?.nome ?? "Stand") : "Todos os stands";
+  const [impresso, setImpresso] = useState("");
+  useEffect(() => setImpresso(new Date().toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })), []);
 
   return (
     <div className="grid gap-5">
@@ -142,8 +145,15 @@ function Relatorio() {
         </button>
       </section>
 
-      <div>
-        <span className="eyebrow">{standId ? stands?.find((s) => s.id === standId)?.nome : "Todos os stands"}</span>
+      <div className="so-impressao">
+        <p className="eyebrow text-[12px] text-ink-soft">MBigucci · CRM</p>
+        <h2 className="titulo-impressao">Relatório do stand · {nomeStand}</h2>
+        <p className="num">
+          {TIPOS_PERIODO.find((t) => t.slug === per.tipo)?.nome}: {rotuloPeriodo(per)} · impresso em {impresso}
+        </p>
+      </div>
+      <div className="sem-impressao">
+        <span className="eyebrow">{nomeStand}</span>
         <p className="titulo-secao mt-1">{rotuloPeriodo(per)}</p>
       </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { normalizarWhatsapp } from "@/lib/leads";
 import { horaCheia, nomeTipo, type ClienteHoje, type Midia } from "@/lib/recepcao";
@@ -21,13 +21,25 @@ export function ClientesDeHoje({
   onMudou: () => void;
 }) {
   const [editando, setEditando] = useState<string | null>(null);
+  // A tabela só cabe com folga: abaixo de 600px de coluna (o PC a 900–1200px),
+  // ficam as linhas compactas do celular, com Corrigir junto do nome.
+  const caixa = useRef<HTMLElement>(null);
+  const [largura, setLargura] = useState(0);
+  useEffect(() => {
+    const el = caixa.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setLargura(e.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const comoTabela = tela === "pc" && largura >= 600;
   const ativos = clientes.filter((c) => c.status === "ativo");
   const nomeMidia = (s: string) => midias.find((m) => m.slug === s)?.nome ?? s;
   const atendeu = (c: ClienteHoje) =>
     c.parceiro ? `Parceiro ${c.parceiro}` : c.anunciado && c.anunciado !== c.corretor ? `${c.anunciado} · indicou ${c.corretor}` : c.corretor ?? "–";
 
   return (
-    <section className="card" aria-labelledby="t-clientes">
+    <section ref={caixa} className="card" aria-labelledby="t-clientes">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
           <span className="eyebrow">Clientes de hoje · {standNome}</span>
@@ -40,7 +52,7 @@ export function ClientesDeHoje({
 
       {!clientes.length && <p className="mt-3 text-[13px] text-ink-soft">Nenhum cliente ainda. O primeiro que chegar aparece aqui.</p>}
 
-      {tela === "pc" && clientes.length > 0 && (
+      {comoTabela && clientes.length > 0 && (
         <table className="mt-3 w-full border-collapse text-[13px]">
           <thead>
             <tr className="text-left">
@@ -96,7 +108,7 @@ export function ClientesDeHoje({
         </table>
       )}
 
-      {tela === "celular" && clientes.length > 0 && (
+      {!comoTabela && clientes.length > 0 && (
         <ul className="mt-2">
           {clientes.map((c) => (
             <li key={c.id} className="border-t border-line py-3 first:border-t-0">

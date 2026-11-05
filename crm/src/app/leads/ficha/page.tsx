@@ -276,6 +276,7 @@ function Ficha({ id }: { id: string }) {
           </div>
           <SeloTemperatura valor={lead.temperatura} />
         </div>
+        {!lead.whatsapp && <DigitarWhatsapp leadId={lead.id} podeDigitar={ehDono && lead.status === "ativo"} onSalvo={carregar} />}
         <dl className="mt-3 grid gap-1 text-[13px]">
           {aguardaPrimeiroContato(lead) && (
             <Linha rotulo="Primeiro contato">
@@ -351,9 +352,7 @@ function Ficha({ id }: { id: string }) {
               onLigar={podeTocar ? () => tocar("toque_ligacao") : undefined}
             />
           </div>
-        ) : (
-          <DigitarWhatsapp leadId={lead.id} podeDigitar={ehDono && lead.status === "ativo"} onSalvo={carregar} />
-        )}
+        ) : null}
       </section>
 
       {ehDono && lead.status === "ativo" && (
@@ -938,7 +937,7 @@ function DigitarWhatsapp({ leadId, podeDigitar, onSalvo }: { leadId: string; pod
   const [confirmado, setConfirmado] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
 
-  if (!podeDigitar) return <p className="mt-4 text-[13px] text-ink-soft">– Sem telefone: o cliente não deu o número.</p>;
+  if (!podeDigitar) return null;
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
@@ -964,9 +963,9 @@ function DigitarWhatsapp({ leadId, podeDigitar, onSalvo }: { leadId: string; pod
   }
 
   return (
-    <form className="mt-4 grid gap-2" onSubmit={salvar} noValidate>
+    <form className="mt-3 grid gap-2" onSubmit={salvar} noValidate>
       <label className="field-label" htmlFor="whatsapp-depois">
-        Sem telefone. Digite quando o cliente der
+        WhatsApp com DDD
       </label>
       <div className="flex flex-wrap gap-2">
         <input

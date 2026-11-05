@@ -73,6 +73,14 @@ export function ListaDoDia() {
   const doDia = useMemo(() => visitasDoDia(visitas, agora), [visitas, agora]);
   const aniversarios = useMemo(() => aniversariantesDeHoje(comNascimento, agora), [comNascimento, agora]);
   const comVisitas = doDia.hoje.length + doDia.aguardandoBaixa.length > 0;
+  // A próxima visita de hoje (ou a última, se já passaram todas), para o atalho da faixa.
+  const proximaVisita = useMemo(() => {
+    const ordenadas = [...doDia.hoje].sort((a, b) => a.inicio.localeCompare(b.inicio));
+    const v = ordenadas.find((x) => new Date(x.inicio).getTime() >= agora.getTime()) ?? null;
+    if (!v) return null;
+    const d = new Date(v.inicio);
+    return `${d.getHours()}h${d.getMinutes() ? String(d.getMinutes()).padStart(2, "0") : ""}`;
+  }, [doDia.hoje, agora]);
   const depois = (leads ?? []).filter((l) => grupoNaListaDoDia(l, agora) === null).length;
   const nomeEtapa = (slug: string) => catalogos?.etapas.find((e) => e.slug === slug)?.nome ?? slug;
   const hoje = `${diaDaSemana.format(agora)}, ${agora.toLocaleDateString("pt-BR")}`;
@@ -133,6 +141,13 @@ export function ListaDoDia() {
               </a>
             ))}
           </div>
+          {doDia.hoje.length > 0 && (
+            <a href="#bloco-visitas-hoje" className="focus-ring mt-3 inline-block border-t border-on-dark-muted/40 pt-3 text-[14px] text-on-dark-soft">
+              <span className="num font-semibold text-on-dark">{doDia.hoje.length}</span>{" "}
+              {doDia.hoje.length === 1 ? "visita hoje" : "visitas hoje"}
+              {proximaVisita ? ` · próxima às ${proximaVisita}` : ""} <span className="underline underline-offset-4">Ver visitas →</span>
+            </a>
+          )}
         </section>
       )}
 
@@ -147,7 +162,7 @@ export function ListaDoDia() {
         ).map(
           ([chave, titulo, lista, comDia]) =>
             lista.length > 0 && (
-              <section key={chave} aria-labelledby={`visitas-${chave}`}>
+              <section key={chave} id={`bloco-visitas-${chave}`} aria-labelledby={`visitas-${chave}`} className="scroll-mt-24">
                 <h2 id={`visitas-${chave}`} className="titulo-secao mb-3">
                   {titulo} · <span className="num">{lista.length}</span>
                 </h2>

@@ -67,7 +67,7 @@ function Inicio() {
             <Atalho href="/equipes/" titulo="Equipes" texto="Crie equipes e escolha o gerente de cada uma." />
           )}
           {ehGG && (
-            <Atalho href="/configuracoes/" titulo="Configurações" texto="Chaves do sistema e permissões de cada perfil." />
+            <Atalho href="/configuracoes/" titulo="Configurações" texto="Horário de atendimento, mensagens prontas e permissões de cada perfil." />
           )}
         </div>
       ) : null}
