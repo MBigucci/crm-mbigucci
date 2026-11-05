@@ -33,6 +33,10 @@ declare
   g3 uuid := gen_random_uuid();
   gg uuid := gen_random_uuid();
   op uuid := gen_random_uuid();
+  rc uuid := gen_random_uuid();
+  fr uuid[];
+  fr2 uuid[];
+  nm1 text; nm2 text; nm3 text;
   base timestamptz := now();
   r text;
   j jsonb;
@@ -59,16 +63,23 @@ declare
   ts timestamptz;
 begin
   -- ---------- Preparação (como o dono do banco) ----------
+  -- A permissão da recepção nasce no recepcao.sql (outra frente). Aqui ela é
+  -- garantida só dentro do teste (desfeito no fim): só o perfil recepcao a tem.
+  insert into public.roles (slug, nome, ordem) values ('recepcao', 'Recepção', 5) on conflict do nothing;
+  insert into public.permissions (slug, descricao, ordem)
+  values ('plantao.atendimentos', 'Registrar os clientes que chegam ao stand', 31) on conflict do nothing;
+  delete from public.role_permissions where permissao = 'plantao.atendimentos';
+  insert into public.role_permissions (perfil, permissao) values ('recepcao', 'plantao.atendimentos');
   insert into auth.users (instance_id, id, aud, role, email, raw_app_meta_data, raw_user_meta_data,
                           email_confirmed_at, created_at, updated_at)
   select '00000000-0000-0000-0000-000000000000', t.id, 'authenticated', 'authenticated', t.email,
          '{"provider":"email","providers":["email"]}'::jsonb, jsonb_build_object('nome', t.nome), now(), now(), now()
   from (values (g1, 'parc-g1@teste.invalid', 'T-Gerente 1'), (g2, 'parc-g2@teste.invalid', 'T-Gerente 2'),
                (g3, 'parc-g3@teste.invalid', 'T-Gerente 3'), (gg, 'parc-gg@teste.invalid', 'T-Geral'),
-               (op, 'parc-op@teste.invalid', 'T-Operacional')) as t (id, email, nome);
+               (op, 'parc-op@teste.invalid', 'T-Operacional'), (rc, 'parc-rc@teste.invalid', 'T-Recepcao')) as t (id, email, nome);
 
   update public.profiles p set perfil = t.perfil, ativo = true
-  from (values (g1, 'gerente'), (g2, 'gerente'), (g3, 'gerente'), (gg, 'gerente_geral'), (op, 'operacional')) as t (id, perfil)
+  from (values (g1, 'gerente'), (g2, 'gerente'), (g3, 'gerente'), (gg, 'gerente_geral'), (op, 'operacional'), (rc, 'recepcao')) as t (id, perfil)
   where p.id = t.id;
 
   update public.profiles set ativo = false where perfil = 'gerente' and email not like 'parc-%@teste.invalid';
@@ -90,20 +101,22 @@ begin
   for f in
     select p.oid, p.oid::regprocedure::text as assinatura, p.proname
     from pg_proc p join pg_namespace s on s.oid = p.pronamespace
-    where s.nspname in ('public', 'private') and p.proname like 'parceiro%' and p.prokind = 'f'
+    where s.nspname in ('public', 'private') and p.prokind = 'f'
+      and (p.proname like 'parceiro%' or p.proname like 'recepcao%parceiro%')
   loop
     perform pg_temp.ck(has_function_privilege('anon', f.oid, 'execute') = (f.proname = 'parceiro_enviar'),
                        'anon executa só parceiro_enviar: ' || f.assinatura);
     perform pg_temp.ck(has_function_privilege('authenticated', f.oid, 'execute')
                          = (f.proname in ('parceiro_enviar', 'parceiro_cadastrar', 'parceiros_fila',
-                                          'parceiro_evento_lote', 'parceiro_linha_do_tempo')),
-                       'authenticated executa só link, cadastro, fila, evento em lote e linha do tempo: ' || f.assinatura);
+                                          'parceiro_evento_lote', 'parceiro_linha_do_tempo',
+                                          'recepcao_parceiro_entrar', 'recepcao_fila_parceiros')),
+                       'authenticated executa só link, cadastro, fila, evento em lote, linha do tempo e recepção: ' || f.assinatura);
   end loop;
   -- Uma versão só de cada função (troca de assinatura não pode deixar a antiga com grant)
   for f in
     select p.proname, count(*) as n
     from pg_proc p join pg_namespace s on s.oid = p.pronamespace
-    where s.nspname in ('public', 'private') and (p.proname like 'parceiro%')
+    where s.nspname in ('public', 'private') and (p.proname like 'parceiro%' or p.proname like 'recepcao%parceiro%')
     group by p.proname
   loop
     perform pg_temp.ck(f.n = 1, 'sem sobrecarga: ' || f.proname);
@@ -456,6 +469,148 @@ begin
   end;
   reset role;
   perform pg_temp.ck(est = '42501', 'perfil sem permissão de parceiros não vê a fila');
+
+  -- ---------- 5b. Recepção: entrada no estande ----------
+  -- Quem não tem plantao.atendimentos (um gerente) não chama nenhuma das duas
+  perform set_config('request.jwt.claims', json_build_object('sub', g1, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  begin
+    perform * from public.recepcao_fila_parceiros();
+    e1 := 'sem erro';
+  exception when others then e1 := sqlstate;
+  end;
+  begin
+    perform public.recepcao_parceiro_entrar(gen_random_uuid(), 'T-Rec X', null, '11 95550-0500', null, null);
+    e2 := 'sem erro';
+  exception when others then e2 := sqlstate;
+  end;
+  reset role;
+  perform pg_temp.ck(e1 = '42501' and e2 = '42501', 'sem plantao.atendimentos: a fila e a entrada da recepção dão 42501');
+  perform pg_temp.ck(not exists (select 1 from public.parceiros where whatsapp_norm = '11955500500'), 'a entrada recusada não grava');
+  perform pg_temp.ck((select array_agg(a.n order by a.o)
+                      from pg_proc p, unnest(p.proargnames, p.proargmodes) with ordinality a (n, m, o)
+                      where p.oid = 'public.recepcao_fila_parceiros()'::regprocedure and a.m = 't')
+                     = array['posicao', 'gerente_id', 'gerente_nome'],
+                     'a fila da recepção devolve só posição e gerente');
+
+  -- A fila da recepção é a mesma da roleta e da fila dos gerentes
+  perform set_config('request.jwt.claims', json_build_object('sub', g2, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  select array_agg(q.gerente_id order by q.posicao) into fila from public.parceiros_fila() q;
+  reset role;
+  perform set_config('request.jwt.claims', json_build_object('sub', rc, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  select array_agg(q.gerente_id order by q.posicao) into fr from public.recepcao_fila_parceiros() q;
+  select count(*) into n from public.parceiros;
+  reset role;
+  perform pg_temp.ck(fr = fila and fr[1] = private.parceiro_proximo_gerente(null) and cardinality(fr) = 3,
+                     'fila da recepção: mesma ordem da roleta e da fila dos gerentes');
+  perform pg_temp.ck(n = 0, 'a recepção não lê parceiros');
+  select g.nome into nm1 from public.profiles g where g.id = fr[1];
+  select g.nome into nm2 from public.profiles g where g.id = fr[2];
+  select g.nome into nm3 from public.profiles g where g.id = fr[3];
+
+  -- Procurado: vai para o gerente certo (o último da fila) e a fila não muda
+  select array_agg(e.criado_em order by e.id)::text into e1 from public.parceiro_eventos e where e.origem is not null;
+  set local role authenticated;
+  j := public.recepcao_parceiro_entrar(gen_random_uuid(), 'T-Rec Procurou', null, '11 95550-0501', null, null,
+                                       array['sao_bernardo'], null, p_procurado => fr[3]);
+  select array_agg(q.gerente_id order by q.posicao) into fr2 from public.recepcao_fila_parceiros() q;
+  reset role;
+  pf := (j ->> 'parceiro_id')::uuid;
+  perform pg_temp.ck(j - 'parceiro_id' = jsonb_build_object('status', 'criado', 'gerente_nome', nm3),
+                     'procurado: devolve "criado" e o nome do gerente procurado, nada mais');
+  perform pg_temp.ck((select gerente_id from public.parceiros where id = pf) = fr[3]
+                     and (select entrada from public.parceiros where id = pf) = 'estande'
+                     and (select criado_por from public.parceiros where id = pf) = rc,
+                     'procurado: o parceiro fica com o gerente procurado (entrada estande, criado pela recepção)');
+  perform pg_temp.ck((select count(*) from public.parceiro_eventos where parceiro_id = pf and tipo = 'atribuido'
+                      and como = 'procurado' and origem = 'estande' and para_gerente_id = fr[3]) = 1,
+                     'procurado: evento atribuido com como "procurado"');
+  perform pg_temp.ck(fr2 = fr, 'procurado não conta como vez: a fila fica igual');
+  perform pg_temp.ck((select count(*) from public.parceiro_avisos where parceiro_id = pf and gerente_id = fr[3] and tipo = 'recebido') = 1,
+                     'procurado: o gerente recebe o aviso "recebido"');
+
+  -- Pulo: o 1º não está no stand; a recepção escolhe o 2º. O pulado continua em 1º.
+  set local role authenticated;
+  j := public.recepcao_parceiro_entrar(gen_random_uuid(), 'T-Rec Pulo', null, '11 95550-0502', null, null,
+                                       p_escolhido => fr[2]);
+  select array_agg(q.gerente_id order by q.posicao) into fr2 from public.recepcao_fila_parceiros() q;
+  reset role;
+  pf := (j ->> 'parceiro_id')::uuid;
+  perform pg_temp.ck(j ->> 'status' = 'criado' and j ->> 'gerente_nome' = nm2
+                     and (select gerente_id from public.parceiros where id = pf) = fr[2],
+                     'pulo: o parceiro vai para o escolhido da fila');
+  perform pg_temp.ck((select count(*) from public.parceiro_eventos where parceiro_id = pf and tipo = 'atribuido'
+                      and como = 'roleta' and origem = 'estande') = 1, 'pulo: conta como vez (roleta, tag estande)');
+  perform pg_temp.ck(fr2 = array[fr[1], fr[3], fr[2]], 'pulo: o pulado continua em 1º e o escolhido vai para o fim');
+  -- Sem escolha: o próximo da vez (o pulado) recebe
+  set local role authenticated;
+  j := public.recepcao_parceiro_entrar(gen_random_uuid(), 'T-Rec Roleta', null, '11 95550-0503', null, null);
+  select array_agg(q.gerente_id order by q.posicao) into fr2 from public.recepcao_fila_parceiros() q;
+  reset role;
+  perform pg_temp.ck(j ->> 'gerente_nome' = nm1 and (select gerente_id from public.parceiros where id = (j ->> 'parceiro_id')::uuid) = fr[1],
+                     'sem escolha: vai para o 1º da fila (o pulado)');
+  perform pg_temp.ck(fr2 = array[fr[3], fr[2], fr[1]], 'depois da vez dele, o pulado vai para o fim');
+  -- Reenvio do mesmo id: mesma resposta, sem duplicar
+  set local role authenticated;
+  j := public.recepcao_parceiro_entrar((j ->> 'parceiro_id')::uuid, 'T-Rec Roleta', null, '11 95550-0503', null, null);
+  select array_agg(q.gerente_id order by q.posicao) into fila2 from public.recepcao_fila_parceiros() q;
+  reset role;
+  perform pg_temp.ck(j ->> 'status' = 'criado' and j ->> 'gerente_nome' = nm1 and fila2 = fr2
+                     and (select count(*) from public.parceiros where whatsapp_norm = '11955500503') = 1,
+                     'recepção: reenvio do mesmo id é idempotente');
+
+  -- Gerente fora da fila, inativo ou que não é gerente: recusado, sem gravar
+  update public.profiles set ativo = false where id = g3;
+  set local role authenticated;
+  est := '';
+  foreach x in array array[gg, op, g3, gen_random_uuid()] loop
+    begin
+      perform public.recepcao_parceiro_entrar(gen_random_uuid(), 'T-Rec Ruim', null, '11 95550-0504', null, null, p_escolhido => x);
+      est := est || 'sem erro ';
+    exception when others then est := est || sqlstate || ':' || sqlerrm || ' ';
+    end;
+    begin
+      perform public.recepcao_parceiro_entrar(gen_random_uuid(), 'T-Rec Ruim', null, '11 95550-0504', null, null, p_procurado => x);
+      est := est || 'sem erro ';
+    exception when others then est := est || sqlstate || ':' || sqlerrm || ' ';
+    end;
+  end loop;
+  begin
+    perform public.recepcao_parceiro_entrar(gen_random_uuid(), 'T-Rec Ruim', null, '11 95550-0504', null, null,
+                                            p_procurado => g1, p_escolhido => g2);
+    e1 := 'sem erro';
+  exception when others then e1 := sqlstate;
+  end;
+  reset role;
+  update public.profiles set ativo = true where id = g3;
+  perform pg_temp.ck(est = repeat('22023:gerente_invalido ', 8),
+                     'recepção: gerente geral, não gerente, inativo ou inexistente é recusado (escolhido e procurado)');
+  perform pg_temp.ck(e1 = '22023', 'recepção: procurado e escolhido juntos é recusado');
+  perform pg_temp.ck(not exists (select 1 from public.parceiros where whatsapp_norm = '11955500504'), 'escolha recusada não grava');
+
+  -- Duplicado pela recepção: não entra, o dono é avisado e a recepção sabe de quem é
+  select p.id into x from public.parceiros p where p.whatsapp_norm = '11955500101';
+  select count(*) into n from public.parceiro_avisos where gerente_id = g1 and parceiro_id = x and tipo = 'reentrada';
+  select count(*) into n2 from public.parceiros;
+  set local role authenticated;
+  j := public.recepcao_parceiro_entrar(gen_random_uuid(), 'Mesmo do G1', null, '+55 11 95550-0101', null, null, p_escolhido => fr[1]);
+  select array_agg(q.gerente_id order by q.posicao) into fila2 from public.recepcao_fila_parceiros() q;
+  reset role;
+  perform pg_temp.ck(j = jsonb_build_object('status', 'ja_cadastrado', 'parceiro_id', x, 'gerente_nome', 'T-Gerente 1'),
+                     'duplicado pela recepção: "já é parceiro de T-Gerente 1", sem outro dado');
+  perform pg_temp.ck((select count(*) from public.parceiros) = n2 and fila2 = fr2, 'duplicado pela recepção não cria parceiro nem mexe na fila');
+  perform pg_temp.ck((select count(*) from public.parceiro_avisos where gerente_id = g1 and parceiro_id = x and tipo = 'reentrada') = n + 1
+                     and (select count(*) from public.parceiro_eventos where parceiro_id = x and tipo = 'reentrada_aviso' and detalhe = 'estande') = 1,
+                     'duplicado pela recepção avisa o dono (reentrada pelo estande)');
+  -- Linha do tempo do procurado
+  perform set_config('request.jwt.claims', json_build_object('sub', fr[3], 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  select count(*) into n from public.parceiro_linha_do_tempo((select p.id from public.parceiros p where p.whatsapp_norm = '11955500501')) t
+    where t.titulo = 'Procurou o gerente no estande' and t.resumo = 'Pelo estande';
+  reset role;
+  perform pg_temp.ck(n = 1, 'linha do tempo: "Procurou o gerente no estande"');
 
   -- ---------- 6. Quem vê o quê (RLS) ----------
   -- Parceiros extras para os testes de prazo

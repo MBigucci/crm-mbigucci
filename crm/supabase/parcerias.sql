@@ -138,7 +138,8 @@ create table if not exists public.parceiro_eventos (
   tipo             text not null check (tipo in ('cadastrado', 'atribuido', 'reentrada_aviso', 'perdido_90_dias', 'sem_gerente')),
   de_gerente_id    uuid references public.profiles (id) on delete set null,
   para_gerente_id  uuid references public.profiles (id) on delete set null,
-  como             text check (como is null or como in ('roleta', 'redistribuicao', 'manual')),
+  -- 'procurado': na recepção, o parceiro procurou um gerente (não é vez na roleta).
+  como             text,
   -- Só em "atribuido": a tag que a fila mostra. 'link', 'estande', '90_dias'
   -- (vez na roleta) ou 'manual' (cadastro do próprio gerente, não é vez).
   origem           text,
@@ -266,6 +267,9 @@ alter table public.parceiro_interacoes add constraint parceiro_interacoes_tipo_c
 -- Tag da fila no evento "atribuido". O que já existia ganha a tag pelo "como"
 -- (a roleta antiga só tinha o link; o cadastro do gerente geral vira 'estande', [TROCA d]).
 alter table public.parceiro_eventos add column if not exists origem text;
+alter table public.parceiro_eventos drop constraint if exists parceiro_eventos_como_check;
+alter table public.parceiro_eventos add constraint parceiro_eventos_como_check
+  check (como is null or como in ('roleta', 'redistribuicao', 'manual', 'procurado'));
 alter table public.parceiro_eventos drop constraint if exists parceiro_eventos_origem_check;
 alter table public.parceiro_eventos add constraint parceiro_eventos_origem_check
   check (origem is null or origem in ('link', 'estande', '90_dias', 'manual'));
@@ -518,8 +522,13 @@ as $$
 $$;
 
 -- Lógica única do link, do estande e do cadastro manual. p_entrada: 'link',
--- 'estande' (recepção, função própria ainda por fazer) ou 'manual';
--- p_autor: o gerente que cadastra (nulo no link e no estande).
+-- 'estande' (recepção, public.recepcao_parceiro_entrar) ou 'manual';
+-- p_autor: quem cadastra (nulo no link; na recepção, o usuário da recepção).
+-- p_para e p_como: só no estande. p_como 'procurado' = o parceiro procurou
+-- esse gerente (gerente ativo; não é vez na roleta); p_como 'roleta' = a
+-- recepção pulou quem não está no stand e escolheu outro da fila (tem de
+-- estar na fila; conta como vez e ele vai para o fim). Gerente que não
+-- cumpre isso devolve o erro 'gerente_invalido' (22023).
 -- p_regioes: códigos de parceiro_regioes (ativos); código desconhecido ou
 -- inativo devolve o erro 'regiao_invalida' (22023). Devolve jsonb:
 --   {"status": "criado"      , "parceiro_id", "gerente_id"}  parceiro novo
@@ -528,10 +537,13 @@ $$;
 -- Duplicado = WhatsApp OU CRECI iguais (normalizados), entre ativos; se um
 -- dos dois faltar, vale o outro. Parceiro repetido NUNCA entra na roleta,
 -- exceto se o dono estiver desativado (ou sem dono): aí entra.
+-- Versões anteriores saem, para não sobrar sobrecarga.
 drop function if exists private.parceiro_entrar(uuid, text, text, text, text, text, text, text, uuid);
+drop function if exists private.parceiro_entrar(uuid, text, text, text, text, text, text[], text, text, uuid);
 create or replace function private.parceiro_entrar(
   p_id uuid, p_nome text, p_empresa text, p_whatsapp text, p_creci text,
-  p_email text, p_regioes text[], p_regiao_outra text, p_entrada text, p_autor uuid)
+  p_email text, p_regioes text[], p_regiao_outra text, p_entrada text, p_autor uuid,
+  p_para uuid default null, p_como text default null)
 returns jsonb
 language plpgsql
 volatile
@@ -569,9 +581,23 @@ begin
   if v_email !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then
     v_email := null;
   end if;
+  if (p_para is null) <> (p_como is null) or (p_para is not null and
+      (p_entrada <> 'estande' or p_como not in ('procurado', 'roleta'))) then
+    raise exception 'dados_invalidos' using errcode = '22023';
+  end if;
 
   -- A trava vem sozinha, antes de qualquer consulta que dependa dela.
   perform pg_advisory_xact_lock(7305001);
+
+  -- O gerente escolhido é conferido já com a trava (a fila não muda no meio).
+  if p_como = 'procurado' and not exists (
+       select 1 from public.profiles g where g.id = p_para and g.ativo and g.perfil = 'gerente') then
+    raise exception 'gerente_invalido' using errcode = '22023';
+  end if;
+  if p_como = 'roleta' and not exists (
+       select 1 from private.parceiro_fila(null) f where f.gerente_id = p_para) then
+    raise exception 'gerente_invalido' using errcode = '22023';
+  end if;
 
   -- Repetição do mesmo envio (id gerado no aparelho): já gravado, sem nada de novo.
   if p_id is not null and exists (select 1 from public.parceiros p where p.id = p_id) then
@@ -602,8 +628,10 @@ begin
                                 'dono_id', v_dup.gerente_id, 'dono_nome', v_dono_nome);
     end if;
 
-    -- Sem dono ou dono desativado: entra na roleta agora (nunca para o dono antigo).
-    v_gerente := private.parceiro_atribuir(v_dup.id, v_agora, 'roleta', v_origem, v_dup.gerente_id);
+    -- Sem dono ou dono desativado: entra na roleta agora (nunca para o dono
+    -- antigo), ou vai para o gerente escolhido na recepção.
+    v_gerente := private.parceiro_atribuir(v_dup.id, v_agora, coalesce(p_como, 'roleta'), v_origem,
+                                           v_dup.gerente_id, p_para);
     if v_gerente is not null then
       insert into public.parceiro_eventos (parceiro_id, tipo, de_gerente_id, para_gerente_id, detalhe)
       values (v_dup.id, 'sem_gerente', v_dup.gerente_id, v_gerente, 'reentrada');
@@ -637,11 +665,12 @@ begin
 
   -- [TROCA a] para o cadastro manual do gerente também ir para a roleta, apague
   -- este bloco "if" e deixe só o "else".
-  if p_autor is not null and exists (select 1 from public.profiles g
-                                     where g.id = p_autor and g.ativo and g.perfil = 'gerente') then
+  if p_entrada = 'manual' and p_autor is not null
+     and exists (select 1 from public.profiles g where g.id = p_autor and g.ativo and g.perfil = 'gerente') then
     v_gerente := private.parceiro_atribuir(v_novo, v_agora, 'manual', 'manual', null, p_autor);
   else
-    v_gerente := private.parceiro_atribuir(v_novo, v_agora, 'roleta', v_origem);
+    -- p_para nulo: o próximo da roleta. Preenchido: o procurado ou o escolhido da fila.
+    v_gerente := private.parceiro_atribuir(v_novo, v_agora, coalesce(p_como, 'roleta'), v_origem, null, p_para);
     if v_gerente is not null then
       perform private.parceiro_aviso(v_gerente, v_novo, 'recebido',
         'recebido:' || v_novo || ':' || extract(epoch from v_agora)::bigint);
@@ -770,6 +799,93 @@ begin
     from private.parceiro_fila(null) f
     join public.profiles g on g.id = f.gerente_id
     left join public.parceiro_eventos e on e.id = f.ultimo_evento
+    order by f.posicao;
+end;
+$$;
+
+-- RECEPÇÃO: ENTRADA DO PARCEIRO NO ESTANDE (04/11/2026, frente Recepção).
+-- Só para quem tem plantao.atendimentos (a permissão é criada pelo
+-- recepcao.sql; sem ela, só o gerente geral passa). Vale só para esta entrada:
+-- não dá acesso a parceiros nem a interações.
+--   p_procurado: o parceiro procurou este gerente (ativo). Fica com ele e NÃO
+--     conta como vez: a fila não muda.
+--   p_escolhido: a recepção pulou o gerente da vez (não está no stand) e
+--     escolheu outro DA FILA. Conta como vez ('roleta'): o escolhido vai para o
+--     fim e o pulado continua em 1º (a ordem é por última vez recebida).
+--   os dois nulos: o próximo da roleta. Os dois preenchidos: 'dados_invalidos'.
+-- Duplicado: não entra, o dono é avisado (como no link). Devolve só:
+--   {"status": "criado" | "ja_cadastrado", "parceiro_id", "gerente_nome"}
+-- gerente_nome é quem ficou com o parceiro, ou o dono ("já é parceiro de
+-- <gerente>"); nulo se não há gerente ativo. O nome do gerente já é público
+-- dentro do app (está na fila); nada de outro parceiro sai daqui. O
+-- parceiro_id é o do próprio parceiro digitado, para ligar o atendimento a ele.
+create or replace function public.recepcao_parceiro_entrar(
+  p_id uuid, p_nome text, p_empresa text, p_whatsapp text, p_creci text, p_email text,
+  p_regioes text[] default '{}', p_regiao_outra text default null,
+  p_procurado uuid default null, p_escolhido uuid default null)
+returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  v_eu uuid := auth.uid();
+  j jsonb;
+  v_parceiro uuid;
+  v_gerente uuid;
+begin
+  if v_eu is null or not public.has_permission('plantao.atendimentos') then
+    raise exception 'sem_permissao' using errcode = '42501';
+  end if;
+  if p_procurado is not null and p_escolhido is not null then
+    raise exception 'dados_invalidos' using errcode = '22023';
+  end if;
+
+  j := private.parceiro_entrar(p_id, p_nome, p_empresa, p_whatsapp, p_creci, p_email,
+                               p_regioes, p_regiao_outra, 'estande', v_eu,
+                               coalesce(p_procurado, p_escolhido),
+                               case when p_procurado is not null then 'procurado'
+                                    when p_escolhido is not null then 'roleta' end);
+  v_parceiro := (j ->> 'parceiro_id')::uuid;
+
+  if j ->> 'status' = 'criado' then
+    v_gerente := (j ->> 'gerente_id')::uuid;
+    if v_gerente is null then
+      -- Reenvio do mesmo id: só devolve o gerente se foi esta pessoa que cadastrou.
+      select p.gerente_id into v_gerente from public.parceiros p
+      where p.id = v_parceiro and p.criado_por = v_eu and p.entrada = 'estande';
+    end if;
+    return jsonb_build_object('status', 'criado', 'parceiro_id', v_parceiro,
+                              'gerente_nome', (select g.nome from public.profiles g where g.id = v_gerente));
+  end if;
+
+  -- 'ja_cadastrado' (ou 'seu', se quem está na recepção é o próprio dono).
+  v_gerente := coalesce((j ->> 'dono_id')::uuid,
+                        case when j ->> 'status' = 'seu' then v_eu end);
+  return jsonb_build_object('status', 'ja_cadastrado', 'parceiro_id', v_parceiro,
+                            'gerente_nome', (select g.nome from public.profiles g where g.id = v_gerente));
+end;
+$$;
+
+-- RECEPÇÃO: A FILA DOS GERENTES para escolher no estande. Só a posição e o
+-- gerente (o id é o que vai em p_escolhido ou p_procurado), na mesma ordem
+-- de private.parceiro_fila. Nenhum dado de parceiro.
+create or replace function public.recepcao_fila_parceiros()
+returns table (posicao integer, gerente_id uuid, gerente_nome text)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  if auth.uid() is null or not public.has_permission('plantao.atendimentos') then
+    raise exception 'sem_permissao' using errcode = '42501';
+  end if;
+  return query
+    select f.posicao, f.gerente_id, g.nome
+    from private.parceiro_fila(null) f
+    join public.profiles g on g.id = f.gerente_id
     order by f.posicao;
 end;
 $$;
@@ -1048,6 +1164,7 @@ as $$
                                                    when 'estande' then 'Cadastrado no estande'
                                                    else 'Cadastrado à mão' end
              when 'atribuido' then case e.como when 'manual' then 'Ficou com quem cadastrou'
+                                               when 'procurado' then 'Procurou o gerente no estande'
                                                when 'redistribuicao' then 'Mudou de gerente'
                                                else 'Recebido pela roleta' end
              when 'reentrada_aviso' then case e.detalhe when 'manual' then 'Outro gerente tentou cadastrar'
@@ -1197,7 +1314,7 @@ begin
     'private.parceiro_fila(uuid)', 'private.parceiro_proximo_gerente(uuid)',
     'private.parceiro_atribuir(uuid, timestamptz, text, text, uuid, uuid)',
     'private.parceiro_aviso(uuid, uuid, text, text)',
-    'private.parceiro_entrar(uuid, text, text, text, text, text, text[], text, text, uuid)',
+    'private.parceiro_entrar(uuid, text, text, text, text, text, text[], text, text, uuid, uuid, text)',
     'private.parceiros_redistribuir(timestamptz)', 'private.parceiros_gerar_avisos(timestamptz)',
     'private.parceiros_rotina(timestamptz)',
     'public.parceiros_avisos_pendentes()', 'public.parceiros_avisos_marcar(bigint[])',
@@ -1205,7 +1322,9 @@ begin
     'public.parceiro_cadastrar(uuid, text, text, text, text, text, text[], text)',
     'public.parceiros_fila()',
     'public.parceiro_evento_lote(uuid, text, date, uuid[])',
-    'public.parceiro_linha_do_tempo(uuid)'
+    'public.parceiro_linha_do_tempo(uuid)',
+    'public.recepcao_parceiro_entrar(uuid, text, text, text, text, text, text[], text, uuid, uuid)',
+    'public.recepcao_fila_parceiros()'
   ] loop
     execute format('revoke all on function %s from public, anon, authenticated', f);
     execute format('grant execute on function %s to service_role', f);
@@ -1220,3 +1339,5 @@ grant execute on function public.parceiro_cadastrar(uuid, text, text, text, text
 grant execute on function public.parceiros_fila() to authenticated;
 grant execute on function public.parceiro_evento_lote(uuid, text, date, uuid[]) to authenticated;
 grant execute on function public.parceiro_linha_do_tempo(uuid) to authenticated;
+grant execute on function public.recepcao_parceiro_entrar(uuid, text, text, text, text, text, text[], text, uuid, uuid) to authenticated;
+grant execute on function public.recepcao_fila_parceiros() to authenticated;
