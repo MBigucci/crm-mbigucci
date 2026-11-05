@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup: parcerias, ideias</title>
+<style>
+@font-face{font-family:"Bricolage Grotesque";src:url("../../crm/src/app/fonts/BricolageGrotesque-latin.woff2") format("woff2");font-weight:400 800}
+@font-face{font-family:"Inter";src:url("../../crm/src/app/fonts/Inter-latin.woff2") format("woff2");font-weight:400 700}
+:root{--paper:#f7f6f2;--surface:#fff;--ink:#0d0e11;--soft:#4a4b52;--conc:#6f6b63;--line:#e5e3dd;--ctl:#76736c;--brand:#e11119;--brand-d:#b90d14;--ok:#1f7a45;--wa:#925600;--tint:#fff6f6;--band:#0d0e11}
+*{box-sizing:border-box}
+body{margin:0;background:#dcdad3;font:14px/1.45 Inter,sans-serif;color:var(--ink)}
+h1,h2,h3{font-family:"Bricolage Grotesque",sans-serif;letter-spacing:-.01em;margin:0}
+.nota{max-width:1700px;margin:0 auto;padding:20px 24px 0}
+.nota h1{font-size:24px}.nota p{margin:4px 0 0;color:var(--soft);max-width:760px}
+.mesa{display:flex;gap:28px;flex-wrap:wrap;justify-content:center;padding:24px}
+.tela{width:375px}
+.rot{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#4a4b52;margin:0 0 6px}
+.fone{height:760px;overflow:auto;background:var(--paper);border:1px solid var(--ctl);border-radius:4px;position:relative}
+.topo{position:sticky;top:0;background:rgba(247,246,242,.92);padding:12px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;z-index:2}
+.logo{font:800 17px "Bricolage Grotesque";color:var(--brand)}
+.menu{font-size:13px;font-weight:600}
+.corpo{padding:16px 16px 100px}
+.eyebrow{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--conc)}
+.tp{font:800 25px/1.05 "Bricolage Grotesque";margin:2px 0 4px}
+.tc{font:700 17px/1.15 "Bricolage Grotesque"}
+.num{font-family:"Bricolage Grotesque";font-variant-numeric:tabular-nums}
+.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:14px 16px 14px 20px;margin-top:10px}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--ink)}
+.card.b::before{background:var(--brand)}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:2px;font:600 13px/1.2 Inter;padding:9px 16px;cursor:pointer;background:none;color:var(--ink)}
+.red{background:var(--brand);color:#fff}
+.ghost{border-color:var(--ctl);background:var(--surface)}
+.lg{font-size:15px;padding:14px 20px}
+.rodape{position:sticky;bottom:0;background:var(--paper);border-top:1px solid var(--line);padding:12px 16px;display:flex;gap:8px}
+.rodape .btn{flex:1}
+.lab{display:block;margin:12px 0 5px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--soft)}
+.in{width:100%;border:1px solid var(--ctl);background:var(--paper);border-radius:2px;padding:12px;font:16px/1.3 Inter;color:var(--ink)}
+.in::placeholder{color:var(--soft)}
+.busca{margin-top:12px}
+.chips{display:flex;gap:6px;margin:10px 0 0;flex-wrap:wrap}
+.chip{border:1px solid var(--ctl);background:var(--surface);border-radius:2px;padding:7px 11px;font-size:13px;font-weight:600}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.selo{display:inline-block;border:1px solid var(--line);border-radius:2px;padding:2px 6px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--soft);white-space:nowrap}
+.ok{color:var(--ok);font-weight:600}.wa{color:var(--wa);font-weight:600}.er{color:var(--brand);font-weight:600}
+.lin{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.sm{font-size:13px;color:var(--soft)}
+.aux{font-size:12px;color:var(--conc)}
+.sep{border-top:1px solid var(--line);margin:10px 0}
+.band{background:var(--band);color:#fff;border:1px solid var(--band);border-left:4px solid var(--brand);border-radius:3px;padding:14px;margin-top:10px}
+.band .sm{color:#d9d6cf}
+.tl{margin:8px 0 0;padding:0;list-style:none}
+.tl li{border-left:1px solid var(--ctl);padding:0 0 12px 12px;margin-left:4px;position:relative}
+.tl li::before{content:"";position:absolute;left:-4px;top:5px;width:7px;height:7px;background:var(--ink)}
+.tl li.nx::before{background:var(--brand)}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.legenda{max-width:1700px;margin:0 auto;padding:0 24px 32px;color:var(--soft);font-size:13px}
+.legenda li{margin-bottom:3px}
+.pub{background:var(--paper)}
+.pub .topo{justify-content:flex-start}
+</style>
+<style>
+.res{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.res div{background:var(--surface);border:1px solid var(--ctl);border-radius:2px;padding:8px 10px}
+.res .n{font:800 22px/1 "Bricolage Grotesque";font-variant-numeric:tabular-nums;display:block}
+.res .t{font-size:12px;font-weight:600}
+.est{display:flex;gap:4px;margin-top:8px}
+.est span{flex:1;border-top:3px solid var(--line);padding-top:3px;font-size:11px;font-weight:600;color:var(--conc)}
+.est span.on{border-color:var(--ink);color:var(--ink)}
+.acoes{display:flex;gap:8px;margin-top:10px}
+.ck{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
+.ck:first-child{border-top:0}
+.ck b.box{display:inline-flex;width:20px;height:20px;border:1px solid var(--ctl);border-radius:2px;align-items:center;justify-content:center;font-size:13px;flex:none}
+.ck b.box.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.msg{background:var(--paper);border:1px solid var(--ctl);border-radius:2px;padding:10px;font-size:14px;margin-top:6px}
+.ideia{display:block;font-size:12px;color:var(--soft);margin:0 0 8px;max-width:375px}
+</style>
+</head>
+<body>
+<div class="nota">
+  <h1>Parcerias: ideias para enriquecer a aba</h1>
+  <p>Esboço das 3 propostas mais fortes de <code>docs/parcerias-referencias.md</code>. Não está aprovado. Dados fictícios. Mobile (375px), no MBigucci Design System. O mockup aprovado continua em <code>parcerias.html</code>.</p>
+</div>
+
+<div class="mesa">
+
+<!-- A. LISTA COM RESUMO E ESTÁGIO -->
+<div class="tela">
+  <p class="rot">A. Lista: resumo da carteira e estágio (propostas 1 e 4a)</p>
+  <span class="ideia">A faixa do topo filtra a lista. O estágio é calculado pelos dados, sem campo para preencher.</span>
+  <div class="fone">
+    <div class="topo"><span class="logo">MBigucci</span><span class="menu">Parceiros ▾</span></div>
+    <div class="corpo">
+      <span class="eyebrow">Seus parceiros</span>
+      <h2 class="tp">Parceiros</h2>
+
+      <div class="res">
+        <div><span class="n ok">✓ <span class="num">7</span></span><span class="t">Até 30 dias</span></div>
+        <div><span class="n wa">! <span class="num">3</span></span><span class="t">31 a 60 dias</span></div>
+        <div><span class="n er">✕ <span class="num">2</span></span><span class="t">61 a 90 dias</span></div>
+      </div>
+      <p class="sm" style="margin:8px 0 0"><span class="num">1</span> novo sem a primeira interação · <span class="num">3</span> com contato vencido</p>
+
+      <div class="chips"><span class="chip on">Todos <span class="num">12</span></span><span class="chip">Novo <span class="num">1</span></span><span class="chip">Apresentado <span class="num">6</span></span><span class="chip">Indicou <span class="num">4</span></span><span class="chip">Vendeu <span class="num">1</span></span></div>
+
+      <div class="card b">
+        <div class="lin"><div><p class="tc" style="margin:0">Imobiliária Vila Nova</p><span class="sm">Ana Souza · <span class="num">3</span> pessoas</span></div><span class="selo er">✕ 84 dias</span></div>
+        <div class="est"><span class="on">Novo</span><span class="on">Apresentado</span><span class="on">Indicou</span><span>Vendeu</span></div>
+        <p class="sm" style="margin:8px 0 0">Próximo contato: <span class="er">✕ vencido, <span class="num">02/11/2026</span></span></p>
+        <div class="acoes"><button class="btn red">Registrar</button><button class="btn ghost">Abrir WhatsApp</button></div>
+      </div>
+      <div class="card">
+        <div class="lin"><div><p class="tc" style="margin:0">Paula Reis</p><span class="sm">Reis Imóveis · Santo André</span></div><span class="selo ok">✓ <span class="num">21</span> dias</span></div>
+        <div class="est"><span class="on">Novo</span><span class="on">Apresentado</span><span class="on">Indicou</span><span class="on">Vendeu</span></div>
+        <p class="sm" style="margin:8px 0 0">Próximo contato: <span class="num">08/11/2026</span></p>
+        <div class="acoes"><button class="btn ghost">Registrar</button><button class="btn ghost">Abrir WhatsApp</button></div>
+      </div>
+      <div class="card">
+        <div class="lin"><div><p class="tc" style="margin:0">Rafael Teixeira</p><span class="sm">Autônomo · São Bernardo</span></div><span class="selo">Novo</span></div>
+        <div class="est"><span class="on">Novo</span><span>Apresentado</span><span>Indicou</span><span>Vendeu</span></div>
+        <p class="sm" style="margin:8px 0 0">Recebido pelo link em <span class="num">03/11/2026</span>. Registre a primeira interação.</p>
+        <div class="acoes"><button class="btn ghost">Registrar</button><button class="btn ghost">Abrir WhatsApp</button></div>
+      </div>
+    </div>
+    <div class="rodape"><button class="btn ghost lg">Enviar material</button><button class="btn red lg">+ Novo parceiro</button></div>
+  </div>
+</div>
+
+<!-- B. FICHA ENRIQUECIDA -->
+<div class="tela">
+  <p class="rot">B. Ficha: indicações, perfil e linha do tempo (propostas 2, 5 e 6)</p>
+  <span class="ideia">As indicações dependem da origem Parceiro no lead (etapa 5). A linha do tempo junta interações e o que o banco já grava.</span>
+  <div class="fone">
+    <div class="topo"><span class="logo">MBigucci</span><span class="menu">← Parceiros</span></div>
+    <div class="corpo">
+      <span class="eyebrow">Parceiro · Imobiliária</span>
+      <h2 class="tp">Imobiliária Vila Nova</h2>
+      <span class="sm">CRECI 12345-J · <span class="wa">!</span> Conferir CRECI</span><p class="sm" style="margin:6px 0 0;color:var(--ink)"><span class="er">✕</span> <span class="num">84</span> dias sem interação · limite <span class="num">90</span></p>
+
+      <div class="band">
+        <span class="eyebrow" style="color:#d9d6cf">Indicações</span>
+        <p class="tc" style="margin:4px 0 2px;color:#fff"><span class="num">5</span> indicados · <span class="num">1</span> vendido</p>
+        <p class="sm" style="margin:0">Última indicação em <span class="num">28/10/2026</span></p>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow">Clientes indicados</span>
+        <p class="sm" style="margin:6px 0 0;color:var(--ink)"><b>Juliana</b> · Residencial Aurora · Visita marcada<br><span class="aux"><span class="num">28/10/2026</span></span></p>
+        <div class="sep"></div>
+        <p class="sm" style="margin:0;color:var(--ink)"><b>Carlos</b> · Residencial Aurora · <span class="ok">✓ Vendido</span><br><span class="aux"><span class="num">15/09/2026</span></span></p>
+        <div class="sep"></div>
+        <p class="sm" style="margin:0"><span class="num">3</span> outros · Ver todos</p>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow">Perfil</span>
+        <p class="sm" style="margin:6px 0 0;color:var(--ink)">Regiões: <span class="selo">Santo André</span> <span class="selo">Mauá</span> <span class="selo">São Caetano</span></p>
+        <p class="sm" style="margin:8px 0 0;color:var(--ink)">Interesse: Residencial Aurora, Vista Parque<br>Público: primeiro imóvel, até 2 dormitórios</p>
+      </div>
+
+      <div class="card">
+        <div class="lin"><span class="eyebrow">Pessoas</span><span class="aux"><span class="num">3</span></span></div>
+        <p class="sm" style="margin:6px 0 0;color:var(--ink)"><b>Ana Souza</b> · dona · contato principal<br><b>Bruno Dias</b> · corretor<br><b>Lia Moraes</b> · corretora</p>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow">Linha do tempo</span>
+        <ul class="tl">
+          <li class="nx"><b>Próximo contato</b> · <span class="num">10/11/2026</span><br><span class="sm">Levar a tabela nova do Aurora</span></li>
+          <li><b>! Aviso dos 80 dias</b> · <span class="num">31/10/2026</span><br><span class="sm">Faltam <span class="num">10</span> dias para o parceiro passar a outro gerente.</span></li>
+          <li><b>Material enviado</b> · <span class="num">20/10/2026</span><br><span class="sm">Tabela do Residencial Aurora. Não reinicia o prazo.</span></li>
+          <li><b>Evento</b> · <span class="num">12/08/2026</span><br><span class="sm">Café no decorado do Aurora, com <span class="num">14</span> parceiros.</span></li>
+          <li><b>Cadastro</b> · <span class="num">19/07/2026</span><br><span class="sm">Veio pelo link. Roleta: você.</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="rodape"><button class="btn red lg">+ Registrar interação</button></div>
+  </div>
+</div>
+
+<!-- C. ENVIAR MATERIAL -->
+<div class="tela">
+  <p class="rot">C. Enviar material por região ou empreendimento (proposta 3)</p>
+  <span class="ideia">Abre o WhatsApp de um por um com o texto pronto. Só registra "Material enviado" quando o gerente confirma. Se isso reinicia os 90 dias é a pergunta 1.</span>
+  <div class="fone">
+    <div class="topo"><span class="logo">MBigucci</span><span class="menu">← Parceiros</span></div>
+    <div class="corpo">
+      <span class="eyebrow">Enviar material</span>
+      <h2 class="tp">Mandar tabela e book</h2>
+
+      <div class="card">
+        <span class="lab" style="margin-top:0">Empreendimento</span>
+        <div class="seg"><span class="chip on">Residencial Aurora</span><span class="chip">Vista Parque</span><span class="chip">Jardim Sul</span></div>
+        <span class="lab">O que mandar</span>
+        <div class="seg"><span class="chip on">Tabela</span><span class="chip on">Book</span><span class="chip">Lançamento</span></div>
+        <span class="lab">Para quem</span>
+        <div class="seg"><span class="chip on">Santo André</span><span class="chip">Mauá</span><span class="chip">Interesse no Aurora</span></div>
+      </div>
+
+      <div class="card">
+        <div class="lin"><span class="eyebrow">Parceiros</span><span class="aux"><span class="num">4</span> de <span class="num">5</span></span></div>
+        <div class="ck"><b class="box on">✓</b><div><b>Imobiliária Vila Nova</b><br><span class="sm">Ana Souza · <span class="ok">✓ Enviado</span></span></div></div>
+        <div class="ck"><b class="box on">✓</b><div><b>Paula Reis</b><br><span class="sm">Reis Imóveis</span></div></div>
+        <div class="ck"><b class="box on">✓</b><div><b>Marcos Lima</b><br><span class="sm">Autônomo</span></div></div>
+        <div class="ck"><b class="box on">✓</b><div><b>Carla Mendes</b><br><span class="sm">Autônoma</span></div></div>
+        <div class="ck"><b class="box"></b><div><b>Rafael Teixeira</b><br><span class="sm"><span class="wa">!</span> Novo: registre a primeira conversa antes</span></div></div>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow">Texto</span>
+        <div class="msg">Olá, Paula. Segue a tabela de novembro e o book do Residencial Aurora. Confira a disponibilidade comigo antes de fechar. Qualquer dúvida, me chame.</div>
+        <p class="aux" style="margin:6px 0 0">O primeiro nome muda para cada parceiro.</p>
+      </div>
+    </div>
+    <div class="rodape"><button class="btn red lg">Abrir WhatsApp de Paula (2 de 4)</button></div>
+  </div>
+</div>
+
+</div>
+
+<ul class="legenda">
+  <li><b>O nome do parceiro aparece só para o dono e o gerente geral.</b> As indicações são contagens. A visão por gerente (proposta 7) e o ranking geral (proposta 11) são só do gerente geral.</li>
+  <li><b>Estágios:</b> Novo (sem interação), Apresentado (teve reunião ou visita), Indicou (tem cliente com origem Parceiro), Vendeu. Até a etapa 5, só os dois primeiros funcionam.</li>
+  <li><b>Uma ação vermelha por grupo:</b> na lista, o "Registrar" vermelho fica só no card mais urgente (barra brand).</li>
+  <li>Sem ícones, emoji ou sombra. Sinais em glifos com palavra.</li>
+</ul>
+</body>
+</html>

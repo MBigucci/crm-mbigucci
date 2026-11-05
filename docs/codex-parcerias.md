@@ -30,6 +30,10 @@ Sumário: Leia antes · O que o Felipe pediu · Decisões técnicas · Etapas ·
 
 12. **Cadastro manual do gerente (04/11/2026):** parceiro novo cadastrado à mão por um gerente **fica com ele**, sem roleta (como no `[TROCA a]` padrão de `parcerias.sql`). Coerente com o estudo da recepção: "procurou um gerente, fica com ele".
 14. **Fila da roleta visível (04/11/2026):** todos os gerentes veem a ordem (próximo da vez) e o último a receber, só com gerente, data e tag (Estande, Link, 90 dias). Nome do parceiro só para o dono e o gerente geral. Exige função no banco que devolve a fila sem dados do parceiro.
+15. **Rodada 1 do estudo de referências (04/11/2026, `docs/parcerias-referencias.md`):**
+   - Envio de material **e** evento em lote **reiniciam** os 90 dias (opção c). Entram como tipos de registro novos.
+   - Entram junto com a etapa 3 as propostas 1 (resumo da carteira e estágio calculado), 4a (registrar pela lista) e 6 (linha do tempo com interações e eventos).
+   - Região de atuação vira **lista fechada**: cidades do ABC e de São Paulo, bairros nas maiores, várias escolhas e "Outra" com texto.
 13. **A decidir (estudo da recepção, `docs/estudo-recepcao.md` 1.5 e 3.1):** entrada pela recepção (gerente procurado ou roleta), tela "Clientes de parceiros" do gerente (`parceiro_clientes`, ficam com o gerente antigo na troca de 90 dias) e importação da aba `NOVAS PARCERIAS`.
 
 Suposições (aprovadas pelo Felipe em 04/11/2026): gerente que cadastra à mão um parceiro que já é de outro gerente vê "já é parceiro de <nome>" e o dono recebe o aviso; parceiro cujo gerente foi desativado é tratado como sem dono e entra na roleta.
