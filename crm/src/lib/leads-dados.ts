@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { db } from "./supabase";
+import { db, novoId } from "./supabase";
 import { mensagemErro, NAO_SALVOU } from "./erros";
-import type { Etapa, Origem } from "./leads";
-import { sugerirProximaTentativa, TEXTO_SEM_RESPOSTA } from "./followup";
+import { COLUNAS_LEAD, COLUNAS_TOQUE, type Etapa, type Origem } from "./leads";
+import { TOQUE, type TipoToque } from "./followup";
 import { HORARIO_PADRAO, type HorarioAtendimento } from "./prazo";
 import { COLUNAS_MODELO, type ModeloMensagem } from "./mensagens";
 
@@ -66,24 +66,35 @@ export function gravarUltimaOrigem(usuario: string, origem: string) {
 }
 
 /**
- * "Sem resposta (+1)": grava a tentativa com o próximo contato já sugerido
- * (daqui a 2 dias, na hora cheia). O gatilho do banco soma a tentativa no lead.
+ * Registro automático do toque em Abrir no WhatsApp ou em Ligar (04/11/2026).
+ * Não espera nada nem dá erro: o WhatsApp e o discador abrem do mesmo jeito,
+ * com ou sem internet. O banco descarta o segundo toque do mesmo tipo no dia.
+ * A promessa resolve quando a gravação termina (ou falha), para a tela recarregar.
  */
-export async function registrarSemResposta(leadId: string): Promise<{ proximo: string; erro: string | null }> {
-  const proximo = sugerirProximaTentativa(new Date()).toISOString();
-  // Toque duplo: o segundo toque, com o primeiro ainda gravando, não conta outra tentativa.
-  if (semRespostaGravando.has(leadId)) return { proximo, erro: null };
-  semRespostaGravando.add(leadId);
+export function registrarToque(leadId: string, tipo: TipoToque): Promise<void> {
   try {
-    const { error } = await db()
-      .from("lead_interacoes")
-      .insert({ lead_id: leadId, tipo: "tentativa", texto: TEXTO_SEM_RESPOSTA, proximo_contato: proximo });
-    return { proximo, erro: error ? mensagemErro(error) : null };
-  } finally {
-    semRespostaGravando.delete(leadId);
+    return Promise.resolve(
+      db().from("lead_interacoes").insert({ id: novoId(), lead_id: leadId, tipo, texto: TOQUE[tipo].texto }),
+    ).then(
+      () => undefined,
+      () => undefined,
+    );
+  } catch {
+    return Promise.resolve();
   }
 }
-const semRespostaGravando = new Set<string>();
+
+/**
+ * Lê leads com as colunas do toque; se o SQL de 04/11/2026 ainda não rodou
+ * (coluna inexistente, 42703), lê sem elas e a tela continua de pé.
+ */
+export async function lerComToque<R extends { error: { code?: string } | null }>(
+  ler: (colunas: string) => PromiseLike<R>,
+): Promise<R> {
+  const r = await ler(`${COLUNAS_LEAD}, ${COLUNAS_TOQUE}`);
+  if (r.error?.code === "42703") return ler(COLUNAS_LEAD);
+  return r;
+}
 
 /**
  * Altera só as colunas passadas e confere que o banco gravou: o RLS não dá

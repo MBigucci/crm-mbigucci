@@ -40,6 +40,7 @@
 - **Interação:** tem um tipo (WhatsApp, ligação, e-mail, visita ou anotação, em 1 toque) e sempre termina com o próximo contato (dia e hora). Ela atualiza no lead a última interação e o próximo contato. O histórico não é editado nem apagado.
   - Dois tipos têm fluxo próprio: "Sem resposta" (seção 5) e "Mensagem original" (seção 7), a única sem próximo contato.
   - Anotação, Sem resposta e Mensagem original não contam como conversa: não tiram o lead de "novo".
+  - O toque em WhatsApp ou Ligar grava um registro automático ("Abriu o WhatsApp" ou "Ligou"), sem próximo contato. Ele tira de "novo", mas não conta como último contato (seção 5).
 - **Descarte:** 1 toque no motivo (sem interesse, fora do perfil, fora da região, contato inválido, duplicado, sem retorno), com Desfazer no rodapé (seção 11). O lead continua no banco e pode ser reativado. Não há exclusão física.
 - **Carteira:** não expira, e não há justificativa obrigatória.
 
@@ -50,14 +51,16 @@
 Acima dos grupos ficam as **Visitas de hoje**, as que estão **Aguardando baixa** (`docs/visitas.md`, seção 6) e os **Aniversários de hoje** (seção 17).
 
 1. **Aguardando primeiro contato:** lead da empresa ativo em "novo", com ou sem dia marcado, pelo fim do prazo (seção 4). Os estourados vêm primeiro.
-2. **Atrasados:** o próximo contato já passou, inclusive hoje mais cedo.
-3. **Hoje:** o próximo contato é até o fim do dia, pela hora do aparelho.
-4. **Sem próximo contato:** os outros leads sem data marcada, inclusive o lead novo que o próprio corretor cadastrou.
+2. **Detalhe o contato** (04/11/2026): o corretor tocou em WhatsApp ou Ligar e ainda não registrou a interação detalhada (`aDetalhar`, em `crm/src/lib/followup.ts`). O lead aparece **só** aqui, mesmo atrasado, de hoje ou com contato para depois, até ser detalhado. Quentes primeiro; empatando, o toque mais antigo. Entra na faixa preta "Contatos que precisam de atenção". O card mostra "! Abriu o WhatsApp hoje, 09:00" e os botões WhatsApp e **Detalhar**, que abre a ficha em Registrar interação com o tipo marcado.
+3. **Atrasados:** o próximo contato já passou, inclusive hoje mais cedo.
+4. **Hoje:** o próximo contato é até o fim do dia, pela hora do aparelho.
+5. **Sem próximo contato:** os outros leads sem data marcada, inclusive o lead novo que o próprio corretor cadastrou.
 
-- Nos grupos 2 a 4, a ordem é quentes, mornos, frios e sem temperatura.
+- Nos grupos 3 a 5, a ordem é quentes, mornos, frios e sem temperatura.
 - Na mesma temperatura, nos atrasados e de hoje vem antes o contato mais antigo; nos sem data, o cadastro mais novo.
 - Leads com contato para depois de hoje e leads descartados ficam fora. Eles aparecem em Leads e no Quadro.
-- O card mostra o nome, a temperatura, o prazo do primeiro contato (lead da empresa em "novo") ou o próximo contato e os dias sem contato (seção 5), a última interação, a etapa e os botões Sem resposta (+1), Abrir e WhatsApp (que abre a mensagem pronta).
+- O card mostra o nome, a temperatura, o prazo do primeiro contato (lead da empresa em "novo") ou o próximo contato e os dias sem contato (seção 5), a última interação, a etapa e os botões Abrir e WhatsApp (que abre a mensagem pronta). O Sem resposta saiu do card em 04/11/2026 e ficou só em "Como foi", na ficha. O "Abrir no WhatsApp" do card grava o toque.
+- Fora da lista do dia (resumo do gerente em Leads), o atraso continua contando pelo `grupoDoLead`; o grupo "Detalhe o contato" é só da lista do dia (`grupoNaListaDoDia`).
 - Sem nenhum lead, o início mostra um card de boas-vindas que explica o Colar mensagem.
 
 ## 4. Prazo do primeiro contato
@@ -67,7 +70,7 @@ Adaptado do CRM da Bruna (`performance.ts` e `followup.ts`). Lá o prazo vale pa
 - **Para quem:** só o lead que vem do gerente, com origem "empresa" (`ORIGEM_COM_PRAZO`), inclusive quando o gerente ou o gerente geral reatribui. O lead que o corretor cadastra (plantão, indicação, carteira, redes, anúncio, outros) não tem prazo: o corretor organiza o tempo dele pelo próximo contato.
 - **Prazo:** 15 min (`PRAZO_MINUTOS`) a partir do cadastro ou, se o gerente reatribuiu depois, da atribuição (`atribuido_em`). Conta só dentro do horário de atendimento.
 - **Fora do horário:** o prazo começa na abertura seguinte. Com o padrão, o lead que chega às 22h vence às 9h15 do dia seguinte, e o que chega às 18h50 vence às 9h05.
-- **Fim:** o prazo acaba quando o lead sai de "novo", ou seja, na primeira conversa (WhatsApp, ligação, e-mail ou visita) ou quando o corretor muda a etapa. Anotação, Sem resposta e Mensagem original não encerram o prazo. Lead descartado sai do prazo.
+- **Fim:** o prazo acaba quando o lead sai de "novo", ou seja, na primeira conversa (WhatsApp, ligação, e-mail ou visita), no **toque em Abrir no WhatsApp ou Ligar** (04/11/2026) ou quando o corretor muda a etapa. Anotação, Sem resposta e Mensagem original não encerram o prazo. Lead descartado sai do prazo.
 - **Estados no card e na ficha**, sempre com sinal + palavra + cor:
   - `! Responder em 12 min` (âmbar): o prazo está correndo.
   - `→ Responder até amanhã, 9h15` (tinta): o lead chegou fora do horário e o prazo ainda não começou. Também "até 9h15" e "até segunda, 9h15".
@@ -83,7 +86,14 @@ Adaptado do CRM da Bruna (`performance.ts` e `followup.ts`). Lá o prazo vale pa
 Adaptado da regra de ouro do CRM da Bruna (`followup.ts`). Lá, 2 dias sem interação já viram follow-up atrasado. Aqui o próximo contato marcado continua mandando na lista do dia (é o pedido T1), e os dias sem contato aparecem no card para o lead não sumir quando a data ficou longe. As regras ficam em `crm/src/lib/followup.ts`, com testes.
 
 - **"Sem contato há N dias":** conta os dias de calendário desde a última interação ou, sem nenhuma, desde o cadastro. Com 2 dias aparece em âmbar, com 3 ou mais em vermelho, sempre com o sinal !. Até 1 dia não aparece. Só vale para lead ativo.
-- **"Sem resposta (+1)":** 1 toque no card da lista do dia ou na ficha. Grava uma interação do tipo tentativa com o texto "Tentei contato, sem retorno." e o próximo contato daqui a 2 dias, na hora cheia. Na ficha, "Mudar o dia" troca esse próximo contato.
+- **Sem resposta** (desde 04/11/2026): é uma opção de "Como foi", em Registrar interação na ficha, e não fica mais no topo da ficha nem no card da lista do dia. **Só aparece com 2 dias de calendário ou mais desde a última interação detalhada** (anteontem ou antes; sem interação, desde o cadastro), regra `podeSemResposta` em `crm/src/lib/followup.ts`. Escolhê-la preenche o texto "Tentei contato, sem retorno." e o próximo contato daqui a 2 dias, na hora cheia, os dois editáveis; o botão vira "Registrar tentativa n de 3" e grava a tentativa. Trocar para outro tipo devolve o texto e a data de antes.
+- **Toque em WhatsApp ou Ligar** (04/11/2026): tocar em "Abrir no WhatsApp" (diálogo da mensagem pronta, na ficha e no card da lista do dia) ou em Ligar (ficha) grava sozinho uma interação `toque_whatsapp` ("Abriu o WhatsApp") ou `toque_ligacao` ("Ligou"), sem pedir nada e sem segurar a abertura; sem internet, o WhatsApp abre do mesmo jeito. Abrir a caixa ou Copiar não grava. Regras:
+  - **Um por tipo por dia**, no dia de São Paulo: o gatilho `lead_interacao_toque_unico` descarta o repetido sem erro, e o índice único `lead_interacoes_toque_dia_idx` segura duas gravações ao mesmo tempo.
+  - Conta como primeiro contato: tira de "novo" e encerra o prazo de 15 min.
+  - **Não** muda o próximo contato, **não** zera as tentativas e **não** conta como último contato: `ultima_interacao_em`, o "Sem contato há N dias" e a regra do Sem resposta só olham a interação detalhada.
+  - O gatilho grava `leads.ultimo_toque_em` e `ultimo_toque_tipo`. "A detalhar" é derivado: o último toque é mais novo que a última interação. Qualquer interação registrada depois (inclusive Sem resposta, anotação e baixa de visita) encerra. Reatribuir o lead limpa o toque.
+  - Na ficha, depois do toque, aparece "A detalhar" no cabeçalho e Registrar interação já vem com WhatsApp ou Ligação marcado. No histórico, o toque aparece com "automático". Cobrar o detalhe fica com o gerente.
+  - As telas leem `ultimo_toque_*` com `lerComToque` (`crm/src/lib/leads-dados.ts`): se o SQL ainda não rodou, elas continuam de pé sem o toque.
 - **Contador:** `leads.tentativas` fica no banco e só o gatilho mexe nele. Cada Sem resposta soma 1. Uma conversa de verdade zera. Anotação não muda. Reativar um lead descartado também zera.
 - **3ª tentativa:** a ficha mostra "! 3 tentativas sem resposta" e o botão "Descartar: sem retorno". Nunca descarta sozinha, porque a carteira não expira.
 
@@ -112,7 +122,7 @@ Adaptado da regra de ouro do CRM da Bruna (`followup.ts`). Lá, 2 dias sem inter
 
 Adaptado de `templates.ts` e `message-dialog.tsx` da Bruna. As regras ficam em `crm/src/lib/mensagens.ts`, com testes.
 
-- **Diálogo:** o botão WhatsApp (lista do dia, Leads e ficha) abre o diálogo com a mensagem sugerida já preenchida. O corretor troca o modelo em 1 toque, edita o texto e toca em "Abrir no WhatsApp", que abre `wa.me` com o texto. "Copiar" copia o texto. Sem modelos (tabela vazia ou fora do ar), o diálogo abre com o campo vazio.
+- **Diálogo:** o botão WhatsApp (lista do dia, Leads e ficha) abre o diálogo com a mensagem sugerida já preenchida. O corretor troca o modelo em 1 toque, edita o texto e toca em "Abrir no WhatsApp", que abre `wa.me` com o texto. Na ficha e na lista do dia, esse toque grava o registro automático (seção 5); Ligar, na ficha, também. "Copiar" copia o texto. Sem modelos (tabela vazia ou fora do ar), o diálogo abre com o campo vazio.
 - **Modelos:** tabela `mensagens_modelo`. Os 6 iniciais são primeiro contato, retomar contato, convite para visita, confirmar visita, depois da visita e novidades do lançamento. Nenhum cita verba nem campanha paga.
 - **Variáveis:** `{primeiro_nome}` (do cliente, com a primeira letra maiúscula), `{nome}`, `{empreendimento}` (vazio vira "nossos empreendimentos"), `{corretor}` (o nome de quem envia, como está em Usuários) e `{visita}` (na confirmação). Do catálogo, pelo empreendimento do lead: `{endereco}`, `{apresentacao}` (link da apresentação, do book ou da página) e `{a_partir_de}`. **A linha com uma variável do catálogo vazia sai da mensagem** (empreendimento fora do catálogo ou sem preço). Variável desconhecida fica como está, e o editor avisa.
 - **Apresentar empreendimento:** o 7º modelo, usado pelo "Mandar →" do Radar, dos clientes compatíveis e do catálogo. No catálogo não há cliente: "Oi, {primeiro_nome}, tudo bem?" vira "Oi, tudo bem?", e o WhatsApp abre para escolher o contato.
@@ -154,7 +164,7 @@ As regras ficam em `crm/src/lib/busca.ts`, com testes. A busca vem do `search-di
 
 | Quem | Vê | Faz |
 | --- | --- | --- |
-| Corretor (`leads.cadastrar`) | Os próprios leads e o histórico deles | Cadastra, registra interação e Sem resposta, muda etapa e temperatura, descarta e reativa |
+| Corretor (`leads.cadastrar`) | Os próprios leads e o histórico deles | Cadastra, registra interação (com Sem resposta e o toque automático), muda etapa e temperatura, descarta e reativa |
 | Gerente (`leads.atribuir` + `dados.ver_equipe`) | Os leads da equipe e o histórico | Cadastra lead da empresa já para um corretor ativo da equipe (com a mensagem original, se colou) e reatribui dentro da equipe. Não altera os outros dados do lead. |
 | Gerente geral | Tudo | Atribui para qualquer corretor ativo |
 | Corretor desativado, recepção e visitante | Nada | Nada |
@@ -173,7 +183,7 @@ As regras ficam em `crm/src/lib/busca.ts`, com testes. A busca vem do `search-di
 | `/` | Lista do dia (corretor) ou painel com atalho para Leads (gerente e gerente geral) |
 | `/leads/` | Todos os leads visíveis, com busca, filtros (corretor, origem, empreendimento e situação), ordem e o resumo por corretor (ativos, prazo estourado, atrasados, sem contato) para o gerente |
 | `/leads/novo/` | Cadastro rápido, com o "+ Colar mensagem" do Cadastro Mágico. Para quem atribui, vira "Lead da empresa", com a escolha do corretor e, depois de cadastrar, o "Avisar no WhatsApp". |
-| `/leads/ficha/?id=` | Ficha: WhatsApp com mensagem pronta, Ligar, prazo do primeiro contato (lead da empresa em "novo"), Sem resposta, resumo do perfil e aviso de aniversário no topo, sugestão de descarte, interação por tipo, andamento e descarte com Desfazer, Perfil do cliente (compra e dados pessoais), atribuição com o aviso ao corretor (e o Lead perdido, com o prazo estourado), Radar de Match (empreendimentos que combinam), Documentos e histórico com os eventos |
+| `/leads/ficha/?id=` | Ficha (04/11/2026: no computador, a partir de 1024px, duas colunas: à esquerda o que se faz, à direita andamento, Radar e histórico, ou Atribuir e histórico para o gerente; nada fixo ao rolar; no celular uma coluna na ordem de sempre): WhatsApp com mensagem pronta e Ligar (gravam o toque), prazo do primeiro contato (lead da empresa em "novo"), "A detalhar", resumo do perfil e aviso de aniversário no topo, sugestão de descarte, interação por tipo, andamento e descarte com Desfazer, Perfil do cliente (compra e dados pessoais), atribuição com o aviso ao corretor (e o Lead perdido, com o prazo estourado), Radar de Match (empreendimentos que combinam), Documentos e histórico com os eventos |
 | `/empreendimentos/` | Catálogo de empreendimentos, com o detalhe em `/empreendimentos/ver/?slug=` (com os clientes compatíveis) e a edição em `/empreendimentos/editar/` (`docs/empreendimentos.md`, seção 12) |
 | `/painel/` | Painel da equipe (gerente) ou Meu painel (corretor), por dia, semana ou mês, com o relatório do corretor e a versão para imprimir (`docs/painel.md`) |
 | `/leads/quadro/` | Quadro por etapas, com rolagem lateral no celular, filtros e o mais esquecido no topo |
@@ -196,6 +206,7 @@ A ficha usa `?id=` porque a exportação estática não tem rotas dinâmicas.
 ## 15. Testes
 
 - `npm test` (em `crm/`): ordenação da lista do dia (com o grupo do primeiro contato), prazo do primeiro contato (só lead da empresa, virada de dia, chegada fora do horário, fim de semana, reatribuição e rótulos), WhatsApp (com o 9º dígito), datas, follow-up, histórico e o parser do Cadastro Mágico (portal, tabela de e-mail, WhatsApp do iPhone e do Android, Facebook, RD Station, nome por assinatura e por e-mail, orçamento e dormitórios), mensagens prontas (variáveis, sugestão pela etapa e pelo tempo sem contato, links e o aviso de repasse) e busca (acento, termos, telefone em qualquer formato, ordem e filtro de empreendimento).
+- Toque e Sem resposta (04/11/2026): `npm test` cobre `aDetalhar`, `podeSemResposta` e o grupo Detalhe o contato; `npm run test:banco` cobre o toque (tira de novo, não mexe no contato nem nas tentativas, um por tipo por dia de São Paulo, sem próximo contato e limpo ao reatribuir).
 - `npm run test:banco`: roda o `schema.sql` três vezes no PGlite e confere o RLS de leads, interações e eventos por perfil, o Lead perdido e os perdidos por perfil (`docs/painel.md`), as tentativas, o avanço de etapa, a mensagem original, o horário de atendimento (quem lê, quem altera e os checks), a função de duplicado por perfil, o WhatsApp do usuário e o RLS das mensagens prontas.
 - Catálogo e Radar: `catalogo.test.ts` e `match.test.ts` no `npm test`, `empreendimentos.test.mjs` no `npm run test:banco` (`docs/empreendimentos.md`, seção 12).
 - Perfil ampliado, aniversário e documentos: `perfil.test.ts` no `npm test` e `perfil.test.mjs` no `npm run test:banco` (seção 17).

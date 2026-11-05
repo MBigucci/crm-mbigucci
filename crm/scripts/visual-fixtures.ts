@@ -8,7 +8,8 @@ export const profiles = [
 ];
 const base = {dono_id:'corretor-1',whatsapp:'5511999990010',email:null,origem:'indicacao',campanha:null,empreendimento:'Residencial Exemplo',temperatura:'quente',etapa:'em_contato',proximo_contato:at(-1),status:'ativo',motivo_descarte:null,valor:600000,dormitorios:2,regiao:'Centro',finalidade:'morar',ultima_interacao_em:at(-3),ultima_interacao_texto:'Quer conhecer a planta de dois dormitórios. Retornar para combinar a visita.',tentativas:2,atribuido_por:null,atribuido_em:null,created_at:at(-7),nascimento:null,telefone2:null,estado_civil:null,profissao:null,renda:null,entrada:null,fgts:null,composicao_renda:null,possui_imovel:null};
 const leads = [
-  {...base,id:'lead-1',nome:'Ana Exemplo'},
+  // Tocou em Abrir no WhatsApp hoje e ainda não detalhou (ajustes da ficha, 04/11/2026).
+  {...base,id:'lead-1',nome:'Ana Exemplo',ultimo_toque_em:at(0,9),ultimo_toque_tipo:'toque_whatsapp'},
   {...base,id:'lead-2',nome:'Bruno Exemplo',origem:'empresa',etapa:'novo',ultima_interacao_em:null,ultima_interacao_texto:null,proximo_contato:null,atribuido_em:at(-1),atribuido_por:'gerente'},
   {...base,id:'lead-3',nome:'Clara Exemplo',temperatura:'morno',proximo_contato:at(0,23),nascimento:'1990-'+day.slice(5)},
   {...base,id:'lead-4',nome:'Daniel Exemplo',dono_id:'corretor-2',temperatura:'frio',etapa:'proposta',proximo_contato:null},
@@ -28,7 +29,7 @@ const tables: Record<string, Row[]> = {
  teams:[{id:'equipe-1',nome:'Equipe Exemplo',gerente_id:'gerente'}],
  lead_origens:['indicacao','anuncio_proprio','plantao','empresa'].map((slug,ordem)=>({slug,nome:['Indicação','Anúncio próprio','Plantão','Empresa'][ordem],ordem,ativo:true,pede_campanha:ordem===1,restrita:ordem===3})),
  lead_etapas:['novo','em_contato','visita_agendada','visita_realizada','proposta','venda'].map((slug,ordem)=>({slug,nome:['Novo','Em contato','Visita agendada','Visita realizada','Proposta','Venda'][ordem],ordem,ativo:true})),
- lead_interacoes:[{id:'interacao-1',lead_id:'lead-1',autor_id:'corretor-1',criado_em:at(-3),tipo:'whatsapp',texto:base.ultima_interacao_texto,proximo_contato:at(-1)}],
+ lead_interacoes:[{id:'toque-1',lead_id:'lead-1',autor_id:'corretor-1',criado_em:at(0,9),tipo:'toque_whatsapp',texto:'Abriu o WhatsApp',proximo_contato:null},{id:'interacao-1',lead_id:'lead-1',autor_id:'corretor-1',criado_em:at(-3),tipo:'whatsapp',texto:base.ultima_interacao_texto,proximo_contato:at(-1)}],
  lead_eventos:leads.map((l,i)=>({id:'evento-'+i,lead_id:l.id,tipo:'criado',de:null,para:l.dono_id,detalhe:null,automatico:true,autor_id:l.dono_id,criado_em:at(0,9)})),
  metas_vgv:[{id:'meta-vgv',ano:now.getFullYear(),corretor_id:null,valor:10000000,updated_at:at(0)}],
  metas:[], horario_atendimento:[{dias:[0,1,2,3,4,5,6],inicio:'08:00',fim:'20:00',updated_at:at(-1)}],

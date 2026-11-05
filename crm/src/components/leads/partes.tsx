@@ -11,7 +11,7 @@ import {
   type Lead,
   type Temperatura,
 } from "@/lib/leads";
-import { seloSemContato } from "@/lib/followup";
+import { aDetalhar, seloSemContato, TOQUE } from "@/lib/followup";
 import { prazoDoLead, seloPrazo, type HorarioAtendimento } from "@/lib/prazo";
 import { BotaoMensagem } from "./mensagem";
 
@@ -131,10 +131,29 @@ export function PrazoPrimeiroContato({
   );
 }
 
+/** "hoje, 10:42", "ontem, 17:20" ou "em 29/10/2026, 10:42", para o meio de uma frase. */
+export function quandoNaFrase(iso: string, agora: Date): string {
+  const q = formatarQuando(iso, agora);
+  return /^d/.test(q) ? `em ${q}` : q.charAt(0).toLowerCase() + q.slice(1);
+}
+
+/** "! Abriu o WhatsApp hoje, 10:42": o toque que falta detalhar (sinal + palavra + cor). */
+export function SeloADetalhar({ lead, agora, className }: { lead: Lead; agora: Date; className?: string }) {
+  const t = aDetalhar(lead);
+  if (!t) return null;
+  return (
+    <span className={clsx("num font-semibold text-wa", className)}>
+      <span aria-hidden>! </span>
+      {TOQUE[t.tipo].texto} {quandoNaFrase(t.em, agora)}
+    </span>
+  );
+}
+
 /**
  * Card do lead nas listas: nome, temperatura, prazo do primeiro contato (lead
  * da empresa em "novo") ou próximo contato e dias sem contato, última interação e
- * WhatsApp. Com `onSemResposta`, mostra o "Sem resposta (+1)" de 1 toque.
+ * WhatsApp. Com `onToque` (Lista do dia), o Abrir no WhatsApp grava o toque, e o
+ * lead com toque sem detalhe mostra o toque e o botão Detalhar.
  */
 export function CardLead({
   lead,
@@ -142,7 +161,7 @@ export function CardLead({
   horario,
   dono,
   etapa,
-  onSemResposta,
+  onToque,
   destaque = false,
 }: {
   lead: Lead;
@@ -150,10 +169,11 @@ export function CardLead({
   horario: HorarioAtendimento;
   dono?: string;
   etapa?: string;
-  onSemResposta?: () => void;
+  onToque?: () => void;
   destaque?: boolean;
 }) {
   const prazo = prazoDoLead(lead, agora, horario);
+  const detalhar = !!onToque && !!aDetalhar(lead);
   return (
     <li className={clsx("card", destaque && "bar-brand")}>
       <div className="flex items-start justify-between gap-3">
@@ -170,6 +190,7 @@ export function CardLead({
             </>
           ) : (
             <>
+              {detalhar && <SeloADetalhar lead={lead} agora={agora} className="mt-1 block text-[13px]" />}
               <span className="mt-1 block text-[13px]">
                 <ProximoContato iso={lead.proximo_contato} agora={agora} />
               </span>
@@ -191,17 +212,28 @@ export function CardLead({
         )}
       </p>
       {lead.status === "descartado" && <p className="mt-2 text-[13px] font-semibold text-ink-soft">✕ Descartado</p>}
-      {onSemResposta ? (
+      {onToque ? (
         <>
           <span className="mt-2 block truncate text-[12px] text-ink-soft">{etapa}</span>
           <div className="mt-2 flex flex-wrap gap-2 [&>*]:flex-1">
-            <button type="button" className="btn btn-ghost focus-ring whitespace-nowrap" onClick={onSemResposta}>
-              Sem resposta (+1)
-            </button>
-            <Link href={`/leads/ficha/?id=${lead.id}`} className="btn btn-ghost focus-ring">
-              Abrir
-            </Link>
-            <BotaoMensagem lead={lead} destaque={destaque} />
+            {detalhar ? (
+              <>
+                <BotaoMensagem lead={lead} onAbrirWhatsapp={onToque} />
+                <Link
+                  href={`/leads/ficha/?id=${lead.id}#registrar`}
+                  className={clsx("btn focus-ring", destaque ? "btn-red" : "btn-ghost")}
+                >
+                  Detalhar
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href={`/leads/ficha/?id=${lead.id}`} className="btn btn-ghost focus-ring">
+                  Abrir
+                </Link>
+                <BotaoMensagem lead={lead} destaque={destaque} onAbrirWhatsapp={onToque} />
+              </>
+            )}
           </div>
         </>
       ) : (

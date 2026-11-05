@@ -53,3 +53,38 @@ export function sugerirProximaTentativa(agora: Date): Date {
 /** Na 3ª tentativa seguida sem resposta, a ficha sugere descartar como "Sem retorno". */
 export const sugereDescarte = (l: Pick<Lead, "status" | "tentativas">) =>
   l.status === "ativo" && l.tentativas >= LIMITE_TENTATIVAS;
+
+// ---------- Toque em WhatsApp e Ligar, e o Sem resposta em "Como foi" (04/11/2026) ----------
+
+export type TipoToque = "toque_whatsapp" | "toque_ligacao";
+export const TIPOS_TOQUE: readonly TipoToque[] = ["toque_whatsapp", "toque_ligacao"];
+export const ehToque = (tipo: string): tipo is TipoToque => (TIPOS_TOQUE as readonly string[]).includes(tipo);
+/** O texto gravado no registro automático e o tipo que Registrar interação já traz marcado. */
+export const TOQUE: Record<TipoToque, { texto: string; tipoDetalhe: "whatsapp" | "ligacao" }> = {
+  toque_whatsapp: { texto: "Abriu o WhatsApp", tipoDetalhe: "whatsapp" },
+  toque_ligacao: { texto: "Ligou", tipoDetalhe: "ligacao" },
+};
+
+type LeadToque = Pick<Lead, "status" | "ultima_interacao_em"> & {
+  ultimo_toque_em?: string | null;
+  ultimo_toque_tipo?: string | null;
+};
+
+/**
+ * "A detalhar": o último registro do lead é um toque (WhatsApp ou Ligar) sem
+ * interação detalhada depois. O toque não mexe em ultima_interacao_em, então
+ * basta comparar as duas datas. Sem resposta, anotação e visita contam como detalhe.
+ */
+export function aDetalhar(l: LeadToque): { tipo: TipoToque; em: string } | null {
+  if (l.status !== "ativo" || !l.ultimo_toque_em || !l.ultimo_toque_tipo || !ehToque(l.ultimo_toque_tipo)) return null;
+  if (l.ultima_interacao_em && new Date(l.ultima_interacao_em).getTime() >= new Date(l.ultimo_toque_em).getTime())
+    return null;
+  return { tipo: l.ultimo_toque_tipo, em: l.ultimo_toque_em };
+}
+
+/**
+ * Sem resposta aparece em "Como foi" só com 2 dias de calendário ou mais desde
+ * a última interação detalhada (ou do cadastro): anteontem ou antes. O toque não conta.
+ */
+export const podeSemResposta = (l: LeadFollowUp, agora: Date) =>
+  l.status === "ativo" && diasSemContato(l, agora) >= DIAS_FOLLOW_UP;

@@ -566,6 +566,14 @@ create table if not exists public.leads (
 -- tentativas: "Sem resposta" seguidas; só o gatilho das interações mexe nela.
 alter table public.leads add column if not exists tentativas smallint not null default 0;
 alter table public.leads add column if not exists email text;
+-- Toque em WhatsApp ou Ligar (ajustes da ficha, 04/11/2026): o gatilho das
+-- interações grava aqui o último toque. "A detalhar" é derivado no app:
+-- ultimo_toque_em depois de ultima_interacao_em (que o toque não mexe).
+alter table public.leads add column if not exists ultimo_toque_em timestamptz;
+alter table public.leads add column if not exists ultimo_toque_tipo text;
+alter table public.leads drop constraint if exists leads_ultimo_toque_tipo_check;
+alter table public.leads add constraint leads_ultimo_toque_tipo_check
+  check (ultimo_toque_tipo is null or ultimo_toque_tipo in ('toque_whatsapp', 'toque_ligacao'));
 alter table public.leads drop constraint if exists leads_email_check;
 alter table public.leads add constraint leads_email_check check (email is null or email ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
@@ -586,21 +594,34 @@ create table if not exists public.lead_interacoes (
   proximo_contato  timestamptz
 );
 
--- Tipo da interação. "tentativa" é o "Sem resposta (+1)"; "mensagem" é a
+-- Tipo da interação. "tentativa" é o "Sem resposta"; "mensagem" é a
 -- mensagem original colada no Cadastro Mágico. Conversa de verdade (whatsapp,
 -- ligacao, email, visita) zera as tentativas e tira o lead de "novo".
+-- "toque_whatsapp" e "toque_ligacao" são o registro automático do toque em
+-- Abrir no WhatsApp e em Ligar: tiram de "novo" (encerram o prazo de 15 min),
+-- mas não mexem no último contato, no próximo contato nem nas tentativas.
 alter table public.lead_interacoes add column if not exists tipo text not null default 'nota';
 alter table public.lead_interacoes drop constraint if exists lead_interacoes_tipo_check;
 alter table public.lead_interacoes add constraint lead_interacoes_tipo_check
-  check (tipo in ('whatsapp', 'ligacao', 'email', 'visita', 'nota', 'tentativa', 'mensagem'));
+  check (tipo in ('whatsapp', 'ligacao', 'email', 'visita', 'nota', 'tentativa', 'mensagem',
+                  'toque_whatsapp', 'toque_ligacao'));
 
--- Toda interação termina com o próximo contato (dia e hora), menos a mensagem original.
+-- Toda interação termina com o próximo contato (dia e hora), menos a mensagem
+-- original e o toque, que não pede nada ao corretor (e nunca traz um).
 alter table public.lead_interacoes alter column proximo_contato drop not null;
 alter table public.lead_interacoes drop constraint if exists lead_interacoes_pede_proximo_contato;
 alter table public.lead_interacoes add constraint lead_interacoes_pede_proximo_contato
-  check (tipo = 'mensagem' or proximo_contato is not null);
+  check (tipo in ('mensagem', 'toque_whatsapp', 'toque_ligacao') or proximo_contato is not null);
+alter table public.lead_interacoes drop constraint if exists lead_interacoes_toque_sem_proximo_contato;
+alter table public.lead_interacoes add constraint lead_interacoes_toque_sem_proximo_contato
+  check (tipo not in ('toque_whatsapp', 'toque_ligacao') or proximo_contato is null);
 
 create index if not exists lead_interacoes_lead_idx on public.lead_interacoes (lead_id, criado_em desc);
+-- Um toque por tipo por dia (dia de São Paulo). O gatilho lead_interacao_toque_unico
+-- descarta o repetido sem erro; o índice segura duas gravações ao mesmo tempo.
+create unique index if not exists lead_interacoes_toque_dia_idx
+  on public.lead_interacoes (lead_id, tipo, ((criado_em at time zone 'America/Sao_Paulo')::date))
+  where tipo in ('toque_whatsapp', 'toque_ligacao');
 
 -- Histórico automático: cada mudança de etapa, temperatura, status e dono vira
 -- uma linha, gravada só pelo gatilho lead_registra_eventos. Ninguém escreve
@@ -694,6 +715,8 @@ begin
     new.criado_por := coalesce(v_eu, new.criado_por);
     new.ultima_interacao_em := null;
     new.ultima_interacao_texto := null;
+    new.ultimo_toque_em := null;
+    new.ultimo_toque_tipo := null;
     new.tentativas := 0;
     new.created_at := now();
     if v_eu is not null and new.dono_id <> v_eu then
@@ -708,6 +731,11 @@ begin
 
   new.criado_por := old.criado_por;
   new.created_at := old.created_at;
+  -- O toque do corretor anterior não fica "a detalhar" para quem recebe o lead.
+  if new.dono_id is distinct from old.dono_id then
+    new.ultimo_toque_em := null;
+    new.ultimo_toque_tipo := null;
+  end if;
   -- Sem usuário logado (SQL Editor) ou vindo de outro gatilho (a interação
   -- atualizando o lead): as regras de quem pode o quê já foram checadas.
   if v_eu is null or pg_trigger_depth() > 1 then
@@ -716,8 +744,8 @@ begin
 
   -- Quem não é o dono só pode trocar o dono (atribuir), nada mais.
   if old.dono_id <> v_eu
-     and (to_jsonb(new) - 'dono_id' - 'updated_at' - 'atribuido_por' - 'atribuido_em')
-         is distinct from (to_jsonb(old) - 'dono_id' - 'updated_at' - 'atribuido_por' - 'atribuido_em') then
+     and (to_jsonb(new) - 'dono_id' - 'updated_at' - 'atribuido_por' - 'atribuido_em' - 'ultimo_toque_em' - 'ultimo_toque_tipo')
+         is distinct from (to_jsonb(old) - 'dono_id' - 'updated_at' - 'atribuido_por' - 'atribuido_em' - 'ultimo_toque_em' - 'ultimo_toque_tipo') then
     raise exception 'Só o corretor dono do lead altera os dados dele.' using errcode = '42501';
   end if;
 
@@ -773,9 +801,36 @@ drop trigger if exists lead_interacao_carimbo on public.lead_interacoes;
 create trigger lead_interacao_carimbo before insert on public.lead_interacoes
   for each row execute function public.lead_interacao_carimbo();
 
+-- Um toque por tipo por dia: o repetido é descartado sem erro (o app grava sem
+-- esperar a resposta). Roda depois do carimbo (ordem alfabética dos gatilhos),
+-- com o lead já travado e a hora já definida.
+create or replace function public.lead_interacao_toque_unico()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.tipo in ('toque_whatsapp', 'toque_ligacao')
+     and exists (select 1 from public.lead_interacoes i
+                  where i.lead_id = new.lead_id and i.tipo = new.tipo
+                    and i.tipo in ('toque_whatsapp', 'toque_ligacao')
+                    and (i.criado_em at time zone 'America/Sao_Paulo')::date
+                        = (new.criado_em at time zone 'America/Sao_Paulo')::date) then
+    return null;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists lead_interacao_toque_unico on public.lead_interacoes;
+create trigger lead_interacao_toque_unico before insert on public.lead_interacoes
+  for each row execute function public.lead_interacao_toque_unico();
+
 -- A interação atualiza o lead: última interação e próximo contato. Também
 -- conta as tentativas sem resposta (zera na conversa de verdade) e tira o lead
--- de "novo" na primeira conversa. A etapa nunca volta.
+-- de "novo" na primeira conversa. A etapa nunca volta. O toque só tira de
+-- "novo" e marca o último toque.
 create or replace function public.lead_interacao_atualiza_lead()
 returns trigger
 language plpgsql
@@ -785,6 +840,14 @@ as $$
 declare
   v_conversa boolean := new.tipo in ('whatsapp', 'ligacao', 'email', 'visita');
 begin
+  if new.tipo in ('toque_whatsapp', 'toque_ligacao') then
+    update public.leads
+       set ultimo_toque_em = new.criado_em,
+           ultimo_toque_tipo = new.tipo,
+           etapa = case when etapa = 'novo' then 'em_contato' else etapa end
+     where id = new.lead_id;
+    return new;
+  end if;
   update public.leads
      set ultima_interacao_em = new.criado_em,
          ultima_interacao_texto = left(new.texto, 280),

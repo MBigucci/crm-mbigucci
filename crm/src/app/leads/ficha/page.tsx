@@ -10,6 +10,7 @@ import {
   CampoProximoContato,
   PrazoPrimeiroContato,
   EscolhaTemperatura,
+  quandoNaFrase,
   ProximoContato,
   SeloTemperatura,
   SemContato,
@@ -22,7 +23,6 @@ import { jaEstavaSalvo, mensagemErro } from "@/lib/erros";
 import {
   COLUNAS_EVENTO,
   COLUNAS_INTERACAO,
-  COLUNAS_LEAD,
   deCampos,
   formatarQuando,
   formatarWhatsapp,
@@ -36,9 +36,27 @@ import {
   type MotivoDescarte,
   type TipoInteracao,
 } from "@/lib/leads";
-import { LIMITE_TENTATIVAS, seloSemContato, sugereDescarte } from "@/lib/followup";
+import {
+  aDetalhar,
+  ehToque,
+  LIMITE_TENTATIVAS,
+  podeSemResposta,
+  seloSemContato,
+  sugereDescarte,
+  sugerirProximaTentativa,
+  TEXTO_SEM_RESPOSTA,
+  TOQUE,
+  type TipoToque,
+} from "@/lib/followup";
 import { descreverEvento, montarHistorico } from "@/lib/historico";
-import { alterarLead, registrarSemResposta, useCatalogos, useCorretores, useHorarioAtendimento } from "@/lib/leads-dados";
+import {
+  alterarLead,
+  lerComToque,
+  registrarToque,
+  useCatalogos,
+  useCorretores,
+  useHorarioAtendimento,
+} from "@/lib/leads-dados";
 import { aguardaPrimeiroContato, prazoDoLead, type HorarioAtendimento } from "@/lib/prazo";
 import { COLUNAS_VISITA, estaAberta, type Visita } from "@/lib/visitas";
 import { AgendarVisita, ListaVisitas } from "@/components/visitas/visitas";
@@ -82,7 +100,8 @@ function Ficha({ id }: { id: string }) {
   const refVenda = useRef<HTMLElement>(null);
   const [nomes, setNomes] = useState<Map<string, string>>(new Map());
   const [erro, setErro] = useState<string | null>(null);
-  const [tentativa, setTentativa] = useState<{ n: number; proximo: string } | null>(null);
+  // O toque acabou de acontecer nesta tela: marca o tipo já, sem esperar a gravação.
+  const [toqueLocal, setToqueLocal] = useState<{ tipo: TipoToque; em: string } | null>(null);
   const [agora, setAgora] = useState(() => new Date());
   const [desfazer, setDesfazer] = useState<{ texto: string; anterior: Partial<Lead>; novo: Partial<Lead> } | null>(null);
   const fecharDesfazer = useCallback(() => setDesfazer(null), []);
@@ -96,7 +115,7 @@ function Ficha({ id }: { id: string }) {
 
   const carregar = useCallback(async () => {
     const [l, h, e, v, s] = await Promise.all([
-      db().from("leads").select(COLUNAS_LEAD).eq("id", id).maybeSingle(),
+      lerComToque((colunas) => db().from("leads").select(colunas).eq("id", id).maybeSingle()),
       db().from("lead_interacoes").select(COLUNAS_INTERACAO).eq("lead_id", id).order("criado_em", { ascending: false }),
       db().from("lead_eventos").select(COLUNAS_EVENTO).eq("lead_id", id).order("criado_em", { ascending: false }),
       db().from("visitas").select(COLUNAS_VISITA).eq("lead_id", id).order("inicio", { ascending: false }),
@@ -118,6 +137,13 @@ function Ficha({ id }: { id: string }) {
   useEffect(() => {
     carregar();
   }, [carregar]);
+
+  // "Detalhar" na Lista do dia abre a ficha em Registrar interação.
+  const temLead = !!lead;
+  useEffect(() => {
+    if (temLead && window.location.hash === "#registrar")
+      document.getElementById("registrar")?.scrollIntoView({ block: "start" });
+  }, [temLead]);
 
   // Nomes do dono, dos autores e de quem recebeu o lead (o RLS de profiles já limita ao que a pessoa vê).
   useEffect(() => {
@@ -210,13 +236,14 @@ function Ficha({ id }: { id: string }) {
     return null;
   }
 
-  async function semResposta() {
-    if (!lead) return;
-    setErro(null);
-    const { proximo, erro: e } = await registrarSemResposta(id);
-    if (e) return setErro(e);
-    setTentativa({ n: lead.tentativas + 1, proximo });
-    await carregar();
+  /** Toque em Abrir no WhatsApp ou em Ligar: grava sem esperar e recarrega quando terminar. */
+  function tocar(tipo: TipoToque) {
+    setToqueLocal({ tipo, em: new Date().toISOString() });
+    // Depois de gravar, quem decide é o banco (o toque repetido no dia é descartado).
+    registrarToque(id, tipo).then(async () => {
+      await carregar();
+      setToqueLocal(null);
+    });
   }
 
   /** A etapa Venda vem do registro da venda: escolher Venda abre o registro. */
@@ -228,10 +255,17 @@ function Ficha({ id }: { id: string }) {
 
   const historico = montarHistorico(interacoes, eventos);
   const nomeEtapa = (slug: string) => catalogos?.etapas.find((x) => x.slug === slug)?.nome ?? slug;
+  // O toque que falta detalhar: o desta tela (antes de o banco responder) ou o gravado.
+  const podeTocar = ehDono && lead.status === "ativo";
+  const toque = podeTocar ? (toqueLocal ?? aDetalhar(lead)) : null;
 
+  // No celular, uma coluna na ordem de sempre (order-[n]). No computador (lg),
+  // duas colunas: à esquerda o que se faz; à direita andamento, Radar e histórico
+  // (ou Atribuir e histórico, para o gerente). Nada fica fixo ao rolar (04/11/2026).
   return (
-    <div className="grid max-w-[760px] gap-4 pb-8">
-      <section className="card bar-brand">
+    <div className="flex max-w-[760px] flex-col gap-4 pb-8 lg:grid lg:max-w-none lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:gap-5">
+      <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-4">
+      <section className="card bar-brand order-[1]">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <span className="eyebrow text-[12px] text-ink-soft">{etapa?.nome ?? lead.etapa}</span>
@@ -265,6 +299,14 @@ function Ficha({ id }: { id: string }) {
               )}
             </Linha>
           )}
+          {toque && (
+            <Linha rotulo="A detalhar">
+              <span className="num font-semibold text-wa">
+                <span aria-hidden>! </span>
+                {TOQUE[toque.tipo].texto} {quandoNaFrase(toque.em, agora)}
+              </span>
+            </Linha>
+          )}
           <Linha rotulo="Origem">
             {origem?.nome ?? lead.origem}
             {lead.campanha && ` · ${lead.campanha}`}
@@ -294,29 +336,34 @@ function Ficha({ id }: { id: string }) {
           </p>
         )}
         <div className="mt-4 flex flex-wrap gap-2">
-          <BotaoMensagem lead={lead} destaque className="btn-lg flex-1 md:flex-none" />
-          <BotaoLigar numero={lead.whatsapp} className="btn-lg flex-1 md:flex-none" />
-          {ehDono && lead.status === "ativo" && (
-            <button type="button" className="btn btn-ghost btn-lg focus-ring flex-1 md:flex-none" onClick={semResposta}>
-              Sem resposta (+1)
-            </button>
-          )}
-        </div>
-        {tentativa && lead.status === "ativo" && (
-          <MudarProximoContato
-            key={tentativa.proximo}
-            n={tentativa.n}
-            proximo={tentativa.proximo}
-            agora={agora}
-            onSalvar={(iso) => alterar({ proximo_contato: iso })}
+          <BotaoMensagem
+            lead={lead}
+            destaque
+            className="btn-lg flex-1 md:flex-none"
+            onAbrirWhatsapp={podeTocar ? () => tocar("toque_whatsapp") : undefined}
           />
-        )}
+          <BotaoLigar
+            numero={lead.whatsapp}
+            className="btn-lg flex-1 md:flex-none"
+            onLigar={podeTocar ? () => tocar("toque_ligacao") : undefined}
+          />
+        </div>
       </section>
 
-      {ehDono && lead.status === "ativo" && <RegistrarInteracao leadId={id} onSalvo={carregar} />}
+      {ehDono && lead.status === "ativo" && (
+        <RegistrarInteracao
+          leadId={id}
+          toque={toque}
+          semResposta={{ pode: podeSemResposta(lead, agora), n: lead.tentativas + 1 }}
+          onSalvo={async () => {
+            setToqueLocal(null);
+            await carregar();
+          }}
+        />
+      )}
 
       {ehDono && sugereDescarte(lead) && (
-        <section className="card" aria-labelledby="sugere-descarte">
+        <section className="card order-[3]" aria-labelledby="sugere-descarte">
           <h2 id="sugere-descarte" className="titulo-card">
             ! {lead.tentativas} tentativas sem resposta
           </h2>
@@ -334,7 +381,7 @@ function Ficha({ id }: { id: string }) {
       )}
 
       {(ehDono || !!visitas?.length || erroVisitas) && (
-        <section className="card grid gap-3" aria-labelledby="visitas-titulo">
+        <section className="card order-[4] grid gap-3" aria-labelledby="visitas-titulo">
           <h2 id="visitas-titulo" className="eyebrow">
             Visitas
           </h2>
@@ -357,7 +404,7 @@ function Ficha({ id }: { id: string }) {
       )}
 
       {(ehDono || !!vendas?.length || erroVendas) && (
-        <section ref={refVenda} className="card grid scroll-mt-[72px] gap-3" aria-labelledby="vendas-titulo">
+        <section ref={refVenda} className="card order-[5] grid scroll-mt-[72px] gap-3" aria-labelledby="vendas-titulo">
           <h2 id="vendas-titulo" className="eyebrow">
             Venda
           </h2>
@@ -393,7 +440,57 @@ function Ficha({ id }: { id: string }) {
 
       {ehDono && lead.status === "ativo" && (
         <>
-          <section className="card">
+          {(perfil || erroPerfil) && (
+            <div className="order-[7] min-w-0">
+              <PerfilCliente
+                key={perfil ? "ampliado" : "basico"}
+                lead={lead}
+                perfil={perfil}
+                erroPerfil={erroPerfil}
+                aberto={perfilAberto}
+                onAlternar={setPerfilAberto}
+                onSalvar={salvarPerfil}
+              />
+            </div>
+          )}
+          <div className="order-[9] min-w-0">
+            <DocumentosDoLead leadId={id} podeEnviar podeRemover onMudou={carregar} />
+          </div>
+          <div className="order-[10] min-w-0">
+            <Descartar key={lead.status} onDescartar={descartar} />
+          </div>
+        </>
+      )}
+
+      {!ehDono && (
+        <div className="order-[11] min-w-0">
+          <DadosDoCliente lead={leadCompleto} />
+        </div>
+      )}
+      {!(ehDono && lead.status === "ativo") && (
+        <div className="order-[12] min-w-0">
+          <DocumentosDoLead leadId={id} podeEnviar={false} podeRemover={ehDono} onMudou={carregar} />
+        </div>
+      )}
+
+      {ehDono && lead.status === "descartado" && (
+        <section className="card order-[13]">
+          <p className="text-ink-soft">O lead descartado continua guardado com o histórico.</p>
+          <button
+            type="button"
+            className="btn btn-ghost focus-ring mt-3"
+            onClick={() => alterar({ status: "ativo", motivo_descarte: null })}
+          >
+            Reativar lead
+          </button>
+        </section>
+      )}
+      </div>
+
+      <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-4">
+      {ehDono && lead.status === "ativo" && (
+        <>
+          <section className="card order-[6]">
             <span className="eyebrow">Andamento</span>
             <div className="mt-3 grid gap-4">
               <div>
@@ -425,54 +522,26 @@ function Ficha({ id }: { id: string }) {
               </div>
             </div>
           </section>
-
-          {(perfil || erroPerfil) && (
-            <PerfilCliente
-              key={perfil ? "ampliado" : "basico"}
-              lead={lead}
-              perfil={perfil}
-              erroPerfil={erroPerfil}
-              aberto={perfilAberto}
-              onAlternar={setPerfilAberto}
-              onSalvar={salvarPerfil}
-            />
-          )}
-          <RadarDoLead lead={leadCompleto} />
-          <DocumentosDoLead leadId={id} podeEnviar podeRemover onMudou={carregar} />
-          <Descartar key={lead.status} onDescartar={descartar} />
+          <div className="order-[8] min-w-0">
+            <RadarDoLead lead={leadCompleto} />
+          </div>
         </>
       )}
 
-      {!ehDono && <DadosDoCliente lead={leadCompleto} />}
-      {!(ehDono && lead.status === "ativo") && (
-        <DocumentosDoLead leadId={id} podeEnviar={false} podeRemover={ehDono} onMudou={carregar} />
-      )}
-
-      {ehDono && lead.status === "descartado" && (
-        <section className="card">
-          <p className="text-ink-soft">O lead descartado continua guardado com o histórico.</p>
-          <button
-            type="button"
-            className="btn btn-ghost focus-ring mt-3"
-            onClick={() => alterar({ status: "ativo", motivo_descarte: null })}
-          >
-            Reativar lead
-          </button>
-        </section>
-      )}
-
       {!ehDono && pode("leads.atribuir") && (
-        <Atribuir
-          lead={lead}
-          horario={horario}
-          agora={agora}
-          nomeDe={(u) => nomes.get(u)}
-          onAtribuir={(dono) => alterar({ dono_id: dono })}
-          onPerdido={marcarPerdido}
-        />
+        <div className="order-[14] min-w-0">
+          <Atribuir
+            lead={lead}
+            horario={horario}
+            agora={agora}
+            nomeDe={(u) => nomes.get(u)}
+            onAtribuir={(dono) => alterar({ dono_id: dono })}
+            onPerdido={marcarPerdido}
+          />
+        </div>
       )}
 
-      <section className="card">
+      <section className="card order-[15]">
         <span className="eyebrow">Histórico</span>
         {historico.length ? (
           <ol className="mt-3 grid gap-3">
@@ -504,9 +573,10 @@ function Ficha({ id }: { id: string }) {
                   <p className="num text-[12px] text-ink-soft">
                     <span className="font-semibold text-ink-soft">{nomeTipoInteracao(h.tipo)}</span> ·{" "}
                     {formatarQuando(h.criado_em, agora)}
+                    {ehToque(h.tipo) ? " · automático" : ""}
                     {autor(h.autor_id)}
                   </p>
-                  <p className="mt-1 whitespace-pre-line break-words">{h.texto}</p>
+                  {!ehToque(h.tipo) && <p className="mt-1 whitespace-pre-line break-words">{h.texto}</p>}
                   {h.proximo_contato && (
                     <p className="num mt-1 text-[12px] text-ink-soft">
                       → Próximo contato: {formatarQuando(h.proximo_contato, agora)}
@@ -520,6 +590,7 @@ function Ficha({ id }: { id: string }) {
           <p className="mt-2 text-ink-soft">Nenhuma interação ainda.</p>
         )}
       </section>
+      </div>
 
       {desfazer && (
         <AvisoDesfazer
@@ -545,57 +616,23 @@ function Linha({ rotulo, children }: { rotulo: string; children: React.ReactNode
   );
 }
 
-/** Depois do "Sem resposta (+1)": mostra o próximo contato sugerido e deixa mudar o dia. */
-function MudarProximoContato({
-  n,
-  proximo,
-  agora,
-  onSalvar,
+/**
+ * Toda interação tem um tipo (1 toque) e termina com o próximo contato: dia e hora.
+ * Depois do toque em WhatsApp ou Ligar, o tipo já vem marcado. "Sem resposta"
+ * só aparece com 2 dias ou mais desde a última interação detalhada; escolhê-lo
+ * preenche o texto padrão e o próximo contato em 2 dias, e grava ao Registrar.
+ */
+function RegistrarInteracao({
+  leadId,
+  toque,
+  semResposta,
+  onSalvo,
 }: {
-  n: number;
-  proximo: string;
-  agora: Date;
-  onSalvar: (iso: string) => Promise<string | null>;
+  leadId: string;
+  toque: { tipo: TipoToque; em: string } | null;
+  semResposta: { pode: boolean; n: number };
+  onSalvo: () => Promise<void>;
 }) {
-  const [aberto, setAberto] = useState(false);
-  const [campos, setCampos] = useState(() => paraCampos(new Date(proximo)));
-  const [erro, setErro] = useState<string | null>(null);
-  const [salvo, setSalvo] = useState<string | null>(null);
-
-  async function salvar() {
-    const iso = deCampos(campos.data, campos.hora);
-    if (!iso) return setErro("Confira o dia e a hora do próximo contato.");
-    setErro(null);
-    const e = await onSalvar(iso);
-    if (e) return setErro(e);
-    setSalvo(iso);
-    setAberto(false);
-  }
-
-  return (
-    <div className="mt-3 border-t border-line pt-3" role="status">
-      <p className="aviso-ok">
-        ✓ Tentativa {n} registrada. Próximo contato: {formatarQuando(salvo ?? proximo, agora)}.
-      </p>
-      {!aberto ? (
-        <button type="button" className="link-acao mt-2" onClick={() => setAberto(true)}>
-          Mudar o dia
-        </button>
-      ) : (
-        <div className="mt-3 grid gap-3">
-          <CampoProximoContato idBase="tentativa-contato" {...campos} onChange={setCampos} />
-          {erro && <p className="aviso-erro">! {erro}</p>}
-          <button type="button" className="btn btn-ghost focus-ring justify-self-start" onClick={salvar}>
-            Salvar próximo contato
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** Toda interação tem um tipo (1 toque) e termina com o próximo contato: dia e hora. */
-function RegistrarInteracao({ leadId, onSalvo }: { leadId: string; onSalvo: () => Promise<void> }) {
   const [tipo, setTipo] = useState<TipoInteracao>("whatsapp");
   const [texto, setTexto] = useState("");
   const [contato, setContato] = useState({ data: "", hora: "" });
@@ -604,6 +641,8 @@ function RegistrarInteracao({ leadId, onSalvo }: { leadId: string; onSalvo: () =
   // Mesmo id até gravar: se a resposta se perder e a pessoa tocar de novo, não duplica.
   const idEnvio = useRef<string | null>(null);
   const restauradoRef = useRef(false);
+  // O texto e a data de antes de escolher Sem resposta, para voltar se trocar de tipo.
+  const antesDoSemResposta = useRef<{ texto: string; contato: { data: string; hora: string } } | null>(null);
 
   useEffect(() => {
     const r = lerRascunho<{ tipo?: TipoInteracao; texto?: string; contato?: { data: string; hora: string } }>(
@@ -617,6 +656,14 @@ function RegistrarInteracao({ leadId, onSalvo }: { leadId: string; onSalvo: () =
     restauradoRef.current = true;
   }, [leadId]);
 
+  // Depois do toque, Registrar interação já vem com o tipo marcado (WhatsApp ou Ligação).
+  const toqueEm = toque?.em;
+  const toqueTipo = toque?.tipo;
+  useEffect(() => {
+    if (toqueEm && toqueTipo) escolher(TOQUE[toqueTipo].tipoDetalhe);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toqueEm, toqueTipo]);
+
   useEffect(() => {
     if (!restauradoRef.current) return;
     const vazio = !texto.trim() && !contato.data && !contato.hora && tipo === "whatsapp";
@@ -626,6 +673,26 @@ function RegistrarInteracao({ leadId, onSalvo }: { leadId: string; onSalvo: () =
       salvarRascunho(chaveRascunhoInteracao(leadId), { tipo, texto, contato });
     }
   }, [leadId, tipo, texto, contato]);
+
+  function escolher(novo: TipoInteracao) {
+    if (novo === tipo) return;
+    if (novo === "tentativa") {
+      antesDoSemResposta.current = { texto, contato };
+      setTexto(TEXTO_SEM_RESPOSTA);
+      setContato(paraCampos(sugerirProximaTentativa(new Date())));
+    } else if (tipo === "tentativa" && antesDoSemResposta.current) {
+      setTexto(antesDoSemResposta.current.texto);
+      setContato(antesDoSemResposta.current.contato);
+      antesDoSemResposta.current = null;
+    }
+    setTipo(novo);
+  }
+
+  // Sem resposta some se deixou de valer (ex.: registrou uma conversa agora), a não ser que já esteja marcado.
+  const tipos = [
+    ...TIPOS_INTERACAO,
+    ...(semResposta.pode || tipo === "tentativa" ? [{ slug: "tentativa" as const, nome: "Sem resposta" }] : []),
+  ];
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
@@ -642,26 +709,36 @@ function RegistrarInteracao({ leadId, onSalvo }: { leadId: string; onSalvo: () =
     setSalvando(false);
     if (error && !jaEstavaSalvo(error)) return setErro(mensagemErro(error));
     idEnvio.current = null;
+    antesDoSemResposta.current = null;
     limparRascunho(chaveRascunhoInteracao(leadId));
+    setTipo("whatsapp");
     setTexto("");
     setContato({ data: "", hora: "" });
     await onSalvo();
   }
 
+  const nTentativa = Math.min(semResposta.n, LIMITE_TENTATIVAS);
+
   return (
-    <form onSubmit={salvar} className="card grid gap-3" noValidate>
+    <form id="registrar" onSubmit={salvar} className="card order-[2] grid scroll-mt-[72px] gap-3" noValidate>
       <h2 className="titulo-secao">Registrar interação</h2>
+      {toque && (
+        <p className="text-[13px] text-ink-soft">
+          → Você {toque.tipo === "toque_whatsapp" ? "abriu o WhatsApp" : "ligou"} {quandoNaFrase(toque.em, new Date())}.
+          Conte como foi.
+        </p>
+      )}
       <fieldset>
         <legend className="field-label">Como foi</legend>
-        <div className="grid grid-cols-3 gap-2 md:grid-cols-5">
-          {TIPOS_INTERACAO.map((t) => {
+        <div className={clsx("grid grid-cols-3 gap-2", tipos.length > 5 ? "md:grid-cols-6" : "md:grid-cols-5")}>
+          {tipos.map((t) => {
             const marcado = tipo === t.slug;
             return (
               <button
                 key={t.slug}
                 type="button"
                 aria-pressed={marcado}
-                onClick={() => setTipo(t.slug)}
+                onClick={() => escolher(t.slug)}
                 className={clsx(
                   "focus-ring rounded-sm border px-1 py-2 text-[13px] font-semibold transition-colors",
                   marcado ? "border-ink bg-ink text-surface" : "border-line bg-surface text-ink hover:border-ink",
@@ -691,7 +768,11 @@ function RegistrarInteracao({ leadId, onSalvo }: { leadId: string; onSalvo: () =
       </div>
       {erro && <p className="aviso-erro">! {erro}</p>}
       <button type="submit" className="btn btn-red btn-lg focus-ring" disabled={salvando}>
-        {salvando ? "Salvando…" : "Registrar"}
+        {salvando
+          ? "Salvando…"
+          : tipo === "tentativa"
+            ? `Registrar tentativa ${nTentativa} de ${LIMITE_TENTATIVAS}`
+            : "Registrar"}
       </button>
     </form>
   );

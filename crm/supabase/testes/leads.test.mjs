@@ -279,6 +279,65 @@ test("avanço automático: a primeira conversa tira o lead de novo, e a etapa nu
   assert.equal((await linhas(`select etapa from public.leads where id = '${a1}'`))[0].etapa, "proposta");
 });
 
+test("toque em WhatsApp e Ligar: tira de novo, não mexe no contato nem nas tentativas, um por tipo por dia", async () => {
+  await como(GA, () => db.exec(lead(CA, "Toque 1").replace("'plantao'", "'empresa'")));
+  const t = await idDe("Toque 1");
+  await como(CA, () => db.exec(interacao(t, "tentativa")));
+  const antes = (await linhas(`select ultima_interacao_em, ultima_interacao_texto, proximo_contato from public.leads where id = '${t}'`))[0];
+  const toque = (tipo) => `insert into public.lead_interacoes (id, lead_id, tipo, texto) values (gen_random_uuid(), '${t}', '${tipo}', 'Abriu o WhatsApp')`;
+
+  await como(CA, () => db.exec(toque("toque_whatsapp")));
+  let [l] = await linhas(
+    `select etapa, tentativas, ultima_interacao_em, ultima_interacao_texto, proximo_contato, ultimo_toque_tipo,
+            ultimo_toque_em > ultima_interacao_em as a_detalhar
+       from public.leads where id = '${t}'`,
+  );
+  assert.equal(l.etapa, "em_contato"); // encerra o prazo de 15 min
+  assert.equal(l.tentativas, 1); // não zera
+  assert.deepEqual(
+    { ultima_interacao_em: l.ultima_interacao_em, ultima_interacao_texto: l.ultima_interacao_texto, proximo_contato: l.proximo_contato },
+    antes,
+  );
+  assert.equal(l.ultimo_toque_tipo, "toque_whatsapp");
+  assert.equal(l.a_detalhar, true);
+  const [ev] = (await eventos(t)).filter((e) => e.tipo === "etapa");
+  assert.deepEqual(ev, { tipo: "etapa", de: "novo", para: "em_contato", detalhe: null, automatico: true, autor_id: id(CA) });
+
+  // Um por tipo por dia: o repetido some sem erro; o outro tipo entra.
+  await como(CA, () => db.exec(toque("toque_whatsapp")));
+  await como(CA, () => db.exec(toque("toque_ligacao")));
+  await como(CA, () => db.exec(toque("toque_ligacao")));
+  const n = await linhas(`select tipo, count(*)::int n from public.lead_interacoes where lead_id = '${t}' and tipo like 'toque_%' group by 1 order by 1`);
+  assert.deepEqual(n, [{ tipo: "toque_ligacao", n: 1 }, { tipo: "toque_whatsapp", n: 1 }]);
+  // O dia é o de São Paulo: 02h30 UTC de 10/01 ainda é 09/01 em SP; 12h30 e 23h59 UTC são o mesmo 10/01.
+  for (const quando of ["2026-01-10 02:30+00", "2026-01-10 12:30+00", "2026-01-10 23:59+00"])
+    await db.exec(`insert into public.lead_interacoes (lead_id, tipo, texto, criado_em) values ('${t}', 'toque_whatsapp', 'x', '${quando}')`);
+  const dias = await linhas(
+    `select (criado_em at time zone 'America/Sao_Paulo')::date::text dia from public.lead_interacoes
+      where lead_id = '${t}' and tipo = 'toque_whatsapp' and criado_em < '2026-02-01' order by 1`,
+  );
+  assert.deepEqual(dias.map((d) => d.dia), ["2026-01-09", "2026-01-10"]);
+
+  // O toque não traz próximo contato; o corretor não grava o último toque direto.
+  // (num dia sem toque, senão o gatilho descarta a linha antes da checagem)
+  await assert.rejects(
+    db.exec(`insert into public.lead_interacoes (lead_id, tipo, texto, proximo_contato, criado_em)
+             values ('${t}', 'toque_ligacao', 'x', now(), '2026-02-01 12:00+00')`),
+    /lead_interacoes_toque_sem_proximo_contato/,
+  );
+  await falha(CA, `update public.leads set ultimo_toque_em = null where id = '${t}'`, "permission denied");
+
+  // A interação detalhada encerra o "a detalhar" e zera as tentativas.
+  await como(CA, () => db.exec(interacao(t, "whatsapp")));
+  [l] = await linhas(`select tentativas, ultimo_toque_em > ultima_interacao_em as a_detalhar from public.leads where id = '${t}'`);
+  assert.deepEqual(l, { tentativas: 0, a_detalhar: false });
+
+  // Reatribuir limpa o toque de quem tinha o lead.
+  await como(GA, () => db.exec(`update public.leads set dono_id = '${id(CA2)}' where id = '${t}'`));
+  [l] = await linhas(`select ultimo_toque_em, ultimo_toque_tipo from public.leads where id = '${t}'`);
+  assert.deepEqual(l, { ultimo_toque_em: null, ultimo_toque_tipo: null });
+});
+
 test("mensagem original: sem próximo contato; o gerente só guarda a do lead que cadastrou", async () => {
   await como(CA, () => db.exec(lead(CA, "Mágico 1")));
   const m1 = await idDe("Mágico 1");

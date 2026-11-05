@@ -26,6 +26,7 @@ export function BotaoMensagem({
   modelo,
   visita,
   destaque = false,
+  onAbrirWhatsapp,
 }: {
   lead: LeadDaMensagem;
   className?: string;
@@ -37,6 +38,8 @@ export function BotaoMensagem({
   visita?: string;
   /** Uma ação principal por grupo; as demais continuam secundárias. */
   destaque?: boolean;
+  /** Chamado ao tocar em Abrir no WhatsApp (o registro automático do toque). Abrir a caixa ou Copiar não chama. */
+  onAbrirWhatsapp?: () => void;
 }) {
   const [aberto, setAberto] = useState(false);
   return (
@@ -49,17 +52,27 @@ export function BotaoMensagem({
       >
         {rotulo}
       </button>
-      {aberto && <DialogoMensagem lead={lead} modelo={modelo} visita={visita} onFechar={() => setAberto(false)} />}
+      {aberto && (
+        <DialogoMensagem
+          lead={lead}
+          modelo={modelo}
+          visita={visita}
+          onFechar={() => setAberto(false)}
+          onAbrirWhatsapp={onAbrirWhatsapp}
+        />
+      )}
     </>
   );
 }
 
-export function BotaoLigar({ numero, className }: { numero: string; className?: string }) {
+/** Ligar: com `onLigar`, o toque grava o registro automático "Ligou" sem segurar o discador. */
+export function BotaoLigar({ numero, className, onLigar }: { numero: string; className?: string; onLigar?: () => void }) {
   return (
     <a
       href={linkLigar(numero)}
       className={clsx("btn btn-ghost focus-ring", className)}
       aria-label={`Ligar para ${formatarWhatsapp(numero)}`}
+      onClick={onLigar}
     >
       Ligar
     </a>
@@ -76,11 +89,13 @@ export function DialogoMensagem({
   modelo,
   visita,
   onFechar,
+  onAbrirWhatsapp,
 }: {
   lead: LeadDaMensagem;
   modelo?: string;
   visita?: string;
   onFechar: () => void;
+  onAbrirWhatsapp?: () => void;
 }) {
   const eu = usePerfil();
   const modelos = useModelosMensagem();
@@ -201,7 +216,10 @@ export function DialogoMensagem({
             target="_blank"
             rel="noopener noreferrer"
             className="btn btn-red btn-lg focus-ring flex-1"
-            onClick={() => ref.current?.close()}
+            onClick={() => {
+              onAbrirWhatsapp?.();
+              ref.current?.close();
+            }}
           >
             Abrir no WhatsApp →
           </a>

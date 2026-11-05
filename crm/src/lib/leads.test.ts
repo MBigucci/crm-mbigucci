@@ -6,6 +6,7 @@ import {
   formatarQuando,
   formatarWhatsapp,
   grupoDoLead,
+  grupoNaListaDoDia,
   montarListaDoDia,
   normalizarWhatsapp,
   ordenarListaDoDia,
@@ -141,4 +142,32 @@ test("datas: hoje, amanhã, ontem e dd/mm/aaaa", () => {
   assert.equal(formatarQuando("2026-10-02T09:00:00-03:00", agora), "02/10/2026, 09:00");
   assert.equal(deCampos("2026-10-30", "09:00"), "2026-10-30T12:00:00.000Z");
   assert.equal(deCampos("", "09:00"), null);
+});
+
+test("lista do dia: o lead com toque sem detalhe vai só para Detalhe o contato, logo abaixo do primeiro contato", () => {
+  const toque = (nome: string, temp: Temperatura | null, proximo: string | null, em: string, ultima: string | null = null) => ({
+    ...l(nome, temp, proximo),
+    etapa: "em_contato",
+    origem: "plantao",
+    ultima_interacao_em: ultima,
+    ultimo_toque_em: em,
+    ultimo_toque_tipo: "toque_whatsapp",
+  });
+  const leads = [
+    toque("atrasado com toque", "morno", "2026-10-28T09:00:00-03:00", "2026-10-29T08:00:00-03:00"),
+    toque("semana que vem com toque", "quente", "2026-11-05T09:00:00-03:00", "2026-10-29T09:00:00-03:00"),
+    toque("detalhado", "quente", "2026-10-29T08:00:00-03:00", "2026-10-29T07:00:00-03:00", "2026-10-29T07:30:00-03:00"),
+    { ...l("novo da empresa", null, null), etapa: "novo", origem: "empresa" },
+  ];
+  const g = montarListaDoDia(leads, agora);
+  assert.deepEqual(
+    g.map((x) => [x.grupo, x.leads.map((y) => y.nome)]),
+    [
+      ["primeiro_contato", ["novo da empresa"]],
+      ["detalhar", ["semana que vem com toque", "atrasado com toque"]],
+      ["atrasados", ["detalhado"]],
+    ],
+  );
+  assert.equal(grupoNaListaDoDia(leads[1], agora), "detalhar");
+  assert.equal(grupoDoLead(leads[0], agora), "atrasados"); // fora da lista do dia, o atraso continua contando
 });

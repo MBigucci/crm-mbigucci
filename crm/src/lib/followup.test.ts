@@ -2,7 +2,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  aDetalhar,
   diasCorridos,
+  podeSemResposta,
   seloSemContato,
   sugereDescarte,
   sugerirProximaTentativa,
@@ -91,4 +93,28 @@ test("texto dos eventos", () => {
   assert.equal(t(ev("dono", "u2", "u1", "x", { detalhe: "perdido" })), "! Lead perdido por Carla. Passado para Ana");
   assert.equal(t(ev("documento", null, "identidade", "x")), "Documento anexado: RG ou CNH");
   assert.equal(t(ev("documento_removido", "renda", null, "x")), "Documento removido: Comprovante de renda");
+});
+
+test("Sem resposta em Como foi: só com 2 dias de calendário ou mais desde a última interação", () => {
+  assert.equal(podeSemResposta(lead("2026-10-29T08:00:00-03:00"), agora), false); // hoje
+  assert.equal(podeSemResposta(lead("2026-10-28T08:00:00-03:00"), agora), false); // ontem
+  assert.equal(podeSemResposta(lead("2026-10-27T23:00:00-03:00"), agora), true); // anteontem
+  assert.equal(podeSemResposta(lead(null), agora), true); // sem interação: conta do cadastro (20/10)
+  assert.equal(podeSemResposta(lead(null, {}), new Date("2026-10-21T10:00:00-03:00")), false);
+  assert.equal(podeSemResposta(lead("2026-10-20T08:00:00-03:00", { status: "descartado" }), agora), false);
+});
+
+test("a detalhar: toque depois da última interação detalhada", () => {
+  const t = (ultima: string | null, toque: string | null, tipo: string | null = "toque_whatsapp", status: "ativo" | "descartado" = "ativo") =>
+    aDetalhar({ status, ultima_interacao_em: ultima, ultimo_toque_em: toque, ultimo_toque_tipo: tipo });
+  assert.deepEqual(t("2026-10-27T10:00:00-03:00", "2026-10-29T09:00:00-03:00"), {
+    tipo: "toque_whatsapp",
+    em: "2026-10-29T09:00:00-03:00",
+  });
+  assert.deepEqual(t(null, "2026-10-29T09:00:00-03:00", "toque_ligacao")?.tipo, "toque_ligacao");
+  assert.equal(t("2026-10-29T09:30:00-03:00", "2026-10-29T09:00:00-03:00"), null); // detalhou depois
+  assert.equal(t("2026-10-27T10:00:00-03:00", null, null), null); // nunca tocou
+  assert.equal(t("2026-10-27T10:00:00-03:00", undefined as unknown as null, undefined as unknown as null), null); // SQL não rodou
+  assert.equal(t(null, "2026-10-29T09:00:00-03:00", "whatsapp"), null);
+  assert.equal(t(null, "2026-10-29T09:00:00-03:00", "toque_whatsapp", "descartado"), null);
 });

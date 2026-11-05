@@ -5,8 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { db } from "@/lib/supabase";
 import { usePerfil } from "@/lib/sessao";
 import { mensagemErro } from "@/lib/erros";
-import { COLUNAS_LEAD, fimDoDia, formatarQuando, grupoDoLead, montarListaDoDia, TITULOS_GRUPO, type Lead } from "@/lib/leads";
-import { registrarSemResposta, useCatalogos, useHorarioAtendimento } from "@/lib/leads-dados";
+import { fimDoDia, grupoNaListaDoDia, montarListaDoDia, TITULOS_GRUPO, type Lead } from "@/lib/leads";
+import { lerComToque, registrarToque, useCatalogos, useHorarioAtendimento } from "@/lib/leads-dados";
 import { CardLead, RodapeAcao } from "./partes";
 import { visitasDoDia } from "@/lib/visitas";
 import { COLUNAS_VISITA_COM_LEAD, type VisitaComLead } from "@/lib/visitas-dados";
@@ -23,7 +23,7 @@ type Aniversariante = Pick<Lead, "id" | "nome" | "whatsapp" | "empreendimento" |
 
 const diaDaSemana = new Intl.DateTimeFormat("pt-BR", { weekday: "long" });
 
-/** Início do corretor: aguardando primeiro contato, atrasados, hoje (quentes, mornos, frios) e os sem próximo contato. */
+/** Início do corretor: aguardando primeiro contato, detalhe o contato, atrasados, hoje (quentes, mornos, frios) e os sem próximo contato. */
 export function ListaDoDia() {
   const eu = usePerfil();
   const { catalogos } = useCatalogos();
@@ -32,13 +32,12 @@ export function ListaDoDia() {
   const [visitas, setVisitas] = useState<VisitaComLead[]>([]);
   const [comNascimento, setComNascimento] = useState<Aniversariante[]>([]);
   const [erro, setErro] = useState<string | null>(null);
-  const [aviso, setAviso] = useState<{ id: string; texto: string } | null>(null);
   const [agora, setAgora] = useState(() => new Date());
 
   const carregar = useCallback(async () => {
     const agoraLeitura = new Date();
     const [l, v, n] = await Promise.all([
-      db().from("leads").select(COLUNAS_LEAD).eq("dono_id", eu.id).eq("status", "ativo"),
+      lerComToque((colunas) => db().from("leads").select(colunas).eq("dono_id", eu.id).eq("status", "ativo")),
       // Visitas abertas até o fim de hoje: as de hoje e as que passaram sem baixa.
       db()
         .from("visitas")
@@ -65,27 +64,22 @@ export function ListaDoDia() {
     return () => clearInterval(t);
   }, [carregar]);
 
-  async function semResposta(l: Lead) {
-    setErro(null);
-    const { proximo, erro: e } = await registrarSemResposta(l.id);
-    if (e) return setErro(e);
-    const n = l.tentativas + 1;
-    setAviso({
-      id: l.id,
-      texto: `Sem resposta registrado para ${l.nome} (tentativa ${n}). Próximo contato: ${formatarQuando(proximo, new Date())}.`,
-    });
-    await carregar();
-  }
+  /** Abrir no WhatsApp grava o toque; quando a gravação termina, a lista recarrega e o lead vai para Detalhe o contato. */
+  const tocar = (l: Lead) => () => {
+    registrarToque(l.id, "toque_whatsapp").then(carregar);
+  };
 
   const grupos = useMemo(() => montarListaDoDia(leads ?? [], agora, horario), [leads, agora, horario]);
   const doDia = useMemo(() => visitasDoDia(visitas, agora), [visitas, agora]);
   const aniversarios = useMemo(() => aniversariantesDeHoje(comNascimento, agora), [comNascimento, agora]);
   const comVisitas = doDia.hoje.length + doDia.aguardandoBaixa.length > 0;
-  const depois = (leads ?? []).filter((l) => grupoDoLead(l, agora) === null).length;
+  const depois = (leads ?? []).filter((l) => grupoNaListaDoDia(l, agora) === null).length;
   const nomeEtapa = (slug: string) => catalogos?.etapas.find((e) => e.slug === slug)?.nome ?? slug;
   const hoje = `${diaDaSemana.format(agora)}, ${agora.toLocaleDateString("pt-BR")}`;
-  const urgentes = grupos.filter((g) => g.grupo === "primeiro_contato" || g.grupo === "atrasados");
-  const demais = grupos.filter((g) => g.grupo !== "primeiro_contato" && g.grupo !== "atrasados");
+  const ehUrgente = (g: (typeof grupos)[number]) =>
+    g.grupo === "primeiro_contato" || g.grupo === "detalhar" || g.grupo === "atrasados";
+  const urgentes = grupos.filter(ehUrgente);
+  const demais = grupos.filter((g) => !ehUrgente(g));
 
   const mostrarGrupo = (g: (typeof grupos)[number]) => (
     <section key={g.grupo} id={`grupo-${g.grupo}`} aria-labelledby={`titulo-${g.grupo}`} className="scroll-mt-24">
@@ -95,7 +89,7 @@ export function ListaDoDia() {
       <ul className="grid gap-3 md:grid-cols-2">
         {g.leads.map((l, i) => (
           <CardLead key={l.id} lead={l} agora={agora} horario={horario} etapa={nomeEtapa(l.etapa)}
-            destaque={i === 0} onSemResposta={() => semResposta(l)} />
+            destaque={i === 0} onToque={tocar(l)} />
         ))}
       </ul>
     </section>
@@ -113,14 +107,6 @@ export function ListaDoDia() {
       </div>
 
       {erro && <p className="aviso-erro">! {erro}</p>}
-      {aviso && (
-        <p className="aviso-ok" role="status">
-          ✓ {aviso.texto}{" "}
-          <Link href={`/leads/ficha/?id=${aviso.id}`} className="link-acao">
-            Mudar na ficha
-          </Link>
-        </p>
-      )}
       {!leads && !erro && <p className="text-concrete">Carregando…</p>}
 
       {leads && !leads.length && (

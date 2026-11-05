@@ -456,3 +456,15 @@ O arquivo [auditoria.json](revisao-visual/temas/auditoria.json) registra os pare
 ### Verificações desta entrega
 
 Antes do commit local: `npm run typecheck`, `npm test` (**171 aprovados**) e `npm run build` em `crm/`. Exportação estática concluída, sem servidor de desenvolvimento ligado. Validações adicionais de contraste e navegador concluídas. Item 18 marcado em `docs/referencia-crm-bruna.md`. Sem push.
+
+## Ajustes da ficha (04/11/2026)
+
+Capturas da prévia fictícia (`crm/scripts/visual-preview.mjs`, lead "Ana Exemplo" com toque no WhatsApp hoje e sem detalhe), em 375 e 1440, claro e escuro, em `revisao-visual/ajustes-ficha/`. As de antes são cópias das capturas de temas de 30/10/2026, guardadas em `revisao-visual/ajustes-ficha/antes/`.
+
+| Tela | 375 claro | 1440 claro | 375 escuro | 1440 escuro |
+| --- | --- | --- | --- | --- |
+| Ficha | [captura](revisao-visual/ajustes-ficha/ficha-375-claro.jpg) | [captura](revisao-visual/ajustes-ficha/ficha-1440-claro.jpg) | [captura](revisao-visual/ajustes-ficha/ficha-375-escuro.jpg) | [captura](revisao-visual/ajustes-ficha/ficha-1440-escuro.jpg) |
+| Lista do dia | [captura](revisao-visual/ajustes-ficha/lista-do-dia-375-claro.jpg) | [captura](revisao-visual/ajustes-ficha/lista-do-dia-1440-claro.jpg) | [captura](revisao-visual/ajustes-ficha/lista-do-dia-375-escuro.jpg) | [captura](revisao-visual/ajustes-ficha/lista-do-dia-1440-escuro.jpg) |
+
+- No computador, a ficha tem duas colunas (740px + 380px na largura de 1440); em 375 continua uma coluna, sem rolagem lateral.
+- "Detalhe o contato" aparece logo abaixo de "Aguardando primeiro contato", e nenhum card tem mais o Sem resposta (+1).

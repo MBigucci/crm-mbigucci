@@ -2,6 +2,7 @@
 // ser testado com `node --test`). Regras de negócio em docs/leads.md.
 
 import { aguardaPrimeiroContato, fimDoPrazo, HORARIO_PADRAO, inicioDoPrazo, type HorarioAtendimento } from "./prazo.ts";
+import { aDetalhar } from "./followup.ts";
 
 export type Temperatura = "quente" | "morno" | "frio";
 export type StatusLead = "ativo" | "descartado";
@@ -38,13 +39,25 @@ export type Lead = {
   atribuido_por: string | null;
   atribuido_em: string | null;
   created_at: string;
+  /** Último toque em WhatsApp ou Ligar (o gatilho grava). Ausente se o SQL de 04/11/2026 ainda não rodou. */
+  ultimo_toque_em?: string | null;
+  ultimo_toque_tipo?: string | null;
 };
 export const COLUNAS_LEAD =
   "id, dono_id, nome, whatsapp, email, origem, campanha, empreendimento, temperatura, etapa, proximo_contato, " +
   "status, motivo_descarte, valor, dormitorios, regiao, finalidade, ultima_interacao_em, ultima_interacao_texto, " +
   "tentativas, atribuido_por, atribuido_em, created_at";
 
-export type TipoInteracao = "whatsapp" | "ligacao" | "email" | "visita" | "nota" | "tentativa" | "mensagem";
+export type TipoInteracao =
+  | "whatsapp"
+  | "ligacao"
+  | "email"
+  | "visita"
+  | "nota"
+  | "tentativa"
+  | "mensagem"
+  | "toque_whatsapp"
+  | "toque_ligacao";
 
 /** Os tipos que o corretor escolhe ao registrar; "tentativa" e "mensagem" têm botão e fluxo próprios. */
 export const TIPOS_INTERACAO: { slug: TipoInteracao; nome: string }[] = [
@@ -62,6 +75,8 @@ const NOME_TIPO: Record<TipoInteracao, string> = {
   nota: "Anotação",
   tentativa: "Sem resposta",
   mensagem: "Mensagem original",
+  toque_whatsapp: "Abriu o WhatsApp",
+  toque_ligacao: "Ligou",
 };
 export const nomeTipoInteracao = (t: TipoInteracao) => NOME_TIPO[t] ?? t;
 
@@ -75,6 +90,9 @@ export type Interacao = {
   /** Vazio só na mensagem original do Cadastro Mágico. */
   proximo_contato: string | null;
 };
+/** Lidas à parte de COLUNAS_LEAD: a tela continua de pé se o SQL do toque ainda não rodou (leads-dados.ts). */
+export const COLUNAS_TOQUE = "ultimo_toque_em, ultimo_toque_tipo";
+
 export const COLUNAS_INTERACAO = "id, lead_id, autor_id, criado_em, tipo, texto, proximo_contato";
 
 /** Linha do histórico automático (tabela lead_eventos, gravada só pelo gatilho). */
@@ -137,16 +155,17 @@ export const MOTIVOS_DESCARTE: { slug: MotivoDescarte; nome: string }[] = [
 
 // ---------- Lista do dia ----------
 
-export type Grupo = "primeiro_contato" | "atrasados" | "hoje" | "sem_data";
+export type Grupo = "primeiro_contato" | "detalhar" | "atrasados" | "hoje" | "sem_data";
 export const TITULOS_GRUPO: Record<Grupo, string> = {
   primeiro_contato: "Aguardando primeiro contato",
+  detalhar: "Detalhe o contato",
   atrasados: "Atrasados",
   hoje: "Hoje",
   sem_data: "Sem próximo contato",
 };
 
 type LeadDoDia = Pick<Lead, "status" | "temperatura" | "proximo_contato" | "created_at"> &
-  Partial<Pick<Lead, "etapa" | "atribuido_em" | "origem">>;
+  Partial<Pick<Lead, "etapa" | "atribuido_em" | "origem" | "ultima_interacao_em" | "ultimo_toque_em" | "ultimo_toque_tipo">>;
 
 const pesoTemperatura = (t: Temperatura | null) => (t === "quente" ? 0 : t === "morno" ? 1 : t === "frio" ? 2 : 3);
 
@@ -174,7 +193,21 @@ export function grupoDoLead(l: LeadDoDia, agora: Date): Grupo | null {
 }
 
 /**
- * A lista do dia: aguardando primeiro contato (lead da empresa), atrasados, os de hoje e os sem
+ * O grupo na lista do dia: como grupoDoLead, mas o lead com toque sem detalhe
+ * (aDetalhar) vai só para "Detalhe o contato", logo abaixo do primeiro contato,
+ * e sai de Atrasados, Hoje e Sem próximo contato até ser detalhado. Fora da
+ * lista do dia (resumo do gerente) continua valendo grupoDoLead.
+ */
+export function grupoNaListaDoDia(l: LeadDoDia, agora: Date): Grupo | null {
+  const g = grupoDoLead(l, agora);
+  if (g === "primeiro_contato") return g;
+  if (aDetalhar({ status: l.status, ultima_interacao_em: l.ultima_interacao_em ?? null, ultimo_toque_em: l.ultimo_toque_em, ultimo_toque_tipo: l.ultimo_toque_tipo }))
+    return "detalhar";
+  return g;
+}
+
+/**
+ * A lista do dia: aguardando primeiro contato (lead da empresa), detalhe o contato, atrasados, os de hoje e os sem
  * próximo contato. Os que aguardam vão pelo fim do prazo, então os estourados
  * vêm primeiro. Nos outros grupos: quentes, mornos, frios e sem temperatura.
  * Empatando, o contato mais antigo vem antes (atrasados e hoje) e o lead mais
@@ -185,9 +218,9 @@ export function montarListaDoDia<T extends LeadDoDia>(
   agora: Date,
   horario: HorarioAtendimento = HORARIO_PADRAO,
 ): { grupo: Grupo; leads: T[] }[] {
-  const grupos: Record<Grupo, T[]> = { primeiro_contato: [], atrasados: [], hoje: [], sem_data: [] };
+  const grupos: Record<Grupo, T[]> = { primeiro_contato: [], detalhar: [], atrasados: [], hoje: [], sem_data: [] };
   for (const l of leads) {
-    const g = grupoDoLead(l, agora);
+    const g = grupoNaListaDoDia(l, agora);
     if (g) grupos[g].push(l);
   }
   const porContato = (a: T, b: T) =>
@@ -198,10 +231,16 @@ export function montarListaDoDia<T extends LeadDoDia>(
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   const fimDoPrazoDe = new Map(grupos.primeiro_contato.map((l) => [l, fimDoPrazo(inicioDoPrazo(l), horario).getTime()]));
   grupos.primeiro_contato.sort((a, b) => fimDoPrazoDe.get(a)! - fimDoPrazoDe.get(b)!);
+  // Detalhe o contato: quentes primeiro; empatando, o toque mais antigo antes.
+  grupos.detalhar.sort(
+    (a, b) =>
+      pesoTemperatura(a.temperatura) - pesoTemperatura(b.temperatura) ||
+      new Date(a.ultimo_toque_em!).getTime() - new Date(b.ultimo_toque_em!).getTime(),
+  );
   grupos.atrasados.sort(porContato);
   grupos.hoje.sort(porContato);
   grupos.sem_data.sort(porCadastro);
-  return (["primeiro_contato", "atrasados", "hoje", "sem_data"] as const)
+  return (["primeiro_contato", "detalhar", "atrasados", "hoje", "sem_data"] as const)
     .map((grupo) => ({ grupo, leads: grupos[grupo] }))
     .filter((g) => g.leads.length > 0);
 }

@@ -25,6 +25,16 @@ Suposições a confirmar com o Felipe no mockup:
 - Na Lista do dia, o grupo se chama "Detalhe o contato" e fica logo abaixo do prazo de 15 min.
 - O WhatsApp da mensagem pronta (no card da Lista do dia e na ficha) também grava o toque.
 
+### Decisões do mockup (04/11/2026, `docs/mockups/ficha-ajustes.html`)
+- **Nada fica fixo ao rolar** no computador: as duas colunas rolam juntas.
+- **O toque não conta como "último contato"**: `ultima_interacao_em`, o "Sem contato há N dias" e a regra do Sem resposta só olham a interação detalhada.
+- **Sem resposta em "Como foi" preenche o formulário** (texto padrão e próximo contato em 2 dias, editáveis) e grava ao tocar em "Registrar tentativa n de 3".
+- **"Mais de 1 dia" = 2 dias de calendário ou mais** (anteontem ou antes), o mesmo critério do `DIAS_FOLLOW_UP`.
+- **"Detalhe o contato"** fica logo abaixo de "Aguardando primeiro contato" e entra na faixa preta de atenção. O lead aparece só nele (sai de Atrasados e Hoje até ser detalhado). Sem resposta conta como detalhe.
+- **O WhatsApp grava o toque em "Abrir no WhatsApp"**, na ficha e na Lista do dia. Abrir a caixa ou Copiar não grava.
+- **O toque não zera as tentativas.**
+- **Gerente vendo lead de outro corretor**, no computador: Atribuir / Lead perdido no topo da coluna da direita.
+
 ## Decisões técnicas
 - **Tipos novos** em `lead_interacoes`: `toque_whatsapp` e `toque_ligacao` (nomes a seu critério, documentados). Ampliar `lead_interacoes_tipo_check` e o check do `proximo_contato` (o toque não tem). No gatilho, o toque conta como conversa para o prazo e para sair de "Novo", mas não zera `tentativas` nem mexe em `proximo_contato`.
 - **Um por tipo por dia:** índice único parcial (lead, tipo, dia em São Paulo) só para os tipos de toque, com insert que ignora conflito. Id gerado no aparelho, como no resto.

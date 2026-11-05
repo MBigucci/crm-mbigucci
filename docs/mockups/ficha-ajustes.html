@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup: ajustes da ficha</title>
+<style>
+@font-face{font-family:"Bricolage Grotesque";src:url("../../crm/src/app/fonts/BricolageGrotesque-latin.woff2") format("woff2");font-weight:400 800}
+@font-face{font-family:"Inter";src:url("../../crm/src/app/fonts/Inter-latin.woff2") format("woff2");font-weight:400 700}
+:root{--paper:#f7f6f2;--surface:#fff;--ink:#0d0e11;--soft:#4a4b52;--conc:#6f6b63;--line:#e5e3dd;--ctl:#76736c;--brand:#e11119;--brand-d:#b90d14;--ok:#1f7a45;--wa:#925600;--tint:#fff6f6;--band:#0d0e11}
+*{box-sizing:border-box}
+body{margin:0;background:#dcdad3;font:14px/1.45 Inter,sans-serif;color:var(--ink)}
+h1,h2,h3{font-family:"Bricolage Grotesque",sans-serif;letter-spacing:-.01em;margin:0}
+.nota{max-width:1700px;margin:0 auto;padding:20px 24px 0}
+.nota h1{font-size:24px}.nota p{margin:4px 0 0;color:var(--soft);max-width:820px}
+.secao{max-width:1700px;margin:0 auto;padding:24px 24px 0}
+.secao>h2{font-size:19px}
+.secao>p{margin:4px 0 0;color:var(--soft);max-width:820px}
+.mesa{display:flex;gap:28px;flex-wrap:wrap;justify-content:center;padding:20px 24px}
+.tela{width:375px}
+.rot{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#4a4b52;margin:0 0 6px}
+.fone{height:760px;overflow:auto;background:var(--paper);border:1px solid var(--ctl);border-radius:4px;position:relative}
+.desk{width:1240px;height:820px;overflow:auto;background:var(--paper);border:1px solid var(--ctl);border-radius:4px;position:relative}
+.topo{position:sticky;top:0;background:rgba(247,246,242,.92);padding:12px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;z-index:5;min-height:58px}
+.logo{font:800 17px "Bricolage Grotesque";color:var(--brand)}
+.menu{font-size:13px;font-weight:600}
+.menu span{margin-left:18px;color:var(--soft)}.menu span.on{color:var(--ink);text-decoration:underline;text-underline-offset:4px}
+.corpo{padding:16px 16px 100px}
+.dcorpo{max-width:1180px;margin:0 auto;padding:24px 20px 64px}
+.eyebrow{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--conc)}
+.tp{font:800 28px/1.05 "Bricolage Grotesque";margin:0 0 16px}
+.tc{font:700 17px/1.15 "Bricolage Grotesque"}
+.ts{font:700 16px/1.2 "Bricolage Grotesque";margin:0 0 10px}
+.num{font-family:"Bricolage Grotesque";font-variant-numeric:tabular-nums}
+.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:16px 18px 16px 21px;margin-top:12px}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--ink)}
+.card.b::before{background:var(--brand)}
+.card:first-child{margin-top:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:2px;font:600 13px/1.2 Inter;padding:9px 16px;cursor:pointer;background:none;color:var(--ink);white-space:nowrap}
+.red{background:var(--brand);color:#fff}
+.ghost{border-color:var(--ctl);background:var(--surface)}
+.lg{font-size:15px;padding:13px 20px}
+.lab{display:block;margin:12px 0 5px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--soft)}
+.in{width:100%;border:1px solid var(--ctl);background:var(--paper);border-radius:2px;padding:11px 12px;font:16px/1.3 Inter;color:var(--ink)}
+.in.ta{min-height:80px;color:var(--soft)}
+.selo{display:inline-block;border:1px solid currentColor;border-radius:2px;padding:2px 6px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+.ok{color:var(--ok);font-weight:600}.wa{color:var(--wa);font-weight:600}.er{color:var(--brand);font-weight:600}
+.lin{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.sm{font-size:13px;color:var(--soft)}
+.aux{font-size:12px;color:var(--conc)}
+dl{margin:12px 0 0;display:grid;gap:4px;font-size:13px}
+dl div{display:flex;gap:8px}dt{width:118px;flex-shrink:0;color:var(--soft)}dd{margin:0}
+.acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.fone .acoes .btn{flex:1}
+.tipos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.desk .tipos{grid-template-columns:repeat(6,1fr)}
+.desk .tipos.cinco{grid-template-columns:repeat(5,1fr)}
+.tipo{border:1px solid var(--line);background:var(--surface);border-radius:2px;padding:9px 2px;font-size:13px;font-weight:600;text-align:center}
+.tipo.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tipo.sr{border-color:var(--ctl);border-style:dashed}
+.temps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:20px;align-items:start}
+.col{display:grid;gap:12px}
+.col>.card{margin-top:0}
+.fixo{position:sticky;top:76px;z-index:2}
+.marca-fixo{position:absolute;right:10px;top:-9px;background:var(--ink);color:#fff;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:2px}
+.hist{list-style:none;margin:10px 0 0;padding:0}
+.hist li{border-top:1px solid var(--line);padding:10px 0 0;margin-top:10px}
+.hist li:first-child{border:0;padding:0;margin:0}
+.hist .q{font-size:12px;color:var(--soft)}
+.hist p{margin:3px 0 0}
+.aviso-ok{border-left:4px solid var(--ok);background:var(--surface);padding:8px 10px;font-weight:600;color:var(--ok);margin:0}
+.aviso-wa{border-left:4px solid var(--wa);padding:8px 10px;margin:0;background:var(--paper)}
+.band{background:var(--band);color:#fff;border-left:4px solid var(--brand);border-radius:3px;padding:14px;margin-top:14px}
+.band h3{font-size:17px}
+.band a{display:flex;align-items:baseline;gap:10px;color:#fff;margin-top:10px}
+.band b{font:800 30px/1 "Bricolage Grotesque"}
+.band span{text-decoration:underline;text-underline-offset:4px}
+.grupo{margin-top:20px}
+.lista{list-style:none;margin:0;padding:0}
+.radar li{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+.radar li:first-child{border:0}
+.legenda{max-width:1240px;margin:0 auto;padding:4px 24px 40px;color:var(--soft);font-size:13px}
+.legenda li{margin-bottom:4px}
+.pergunta{border-left:4px solid var(--brand);background:var(--surface);padding:10px 14px;margin:8px 0;max-width:820px}
+.dlg{position:absolute;inset:0;background:rgba(13,14,17,.5);display:flex;align-items:flex-end;z-index:9}
+.dlg .caixa{background:var(--paper);width:100%;padding:16px;border-top:4px solid var(--brand)}
+</style>
+</head>
+<body>
+<div class="nota">
+  <h1>Ajustes da ficha do lead: mockup</h1>
+  <p>Pedido de 04/11/2026. No MBigucci Design System, com dados fictícios. Role cada tela. As perguntas para você estão no fim e repetidas na conversa.</p>
+</div>
+
+<!-- ================= 1. DESKTOP ================= -->
+<div class="secao">
+  <h2>1. Ficha no computador: duas colunas</h2>
+  <p>À esquerda, o que se faz. À direita, temperatura e etapa, Radar de Match e histórico. Nada fica fixo: as duas colunas rolam juntas com a página (decisão de 04/11/2026).</p>
+</div>
+<div class="mesa">
+<div>
+  <p class="rot">Ficha · computador (1280px) · logo depois do toque em WhatsApp</p>
+  <div class="desk">
+    <div class="topo"><span class="logo">MBigucci</span><span class="menu"><span class="on">Lista do dia</span><span>Leads</span><span>Quadro</span><span>Agenda</span><span>Empreendimentos</span><span>Minha conta</span></span></div>
+    <div class="dcorpo">
+      <h1 class="tp">Ficha do lead</h1>
+      <div class="grid2">
+        <!-- ESQUERDA -->
+        <div class="col">
+          <section class="card b">
+            <div class="lin">
+              <div>
+                <span class="eyebrow" style="color:var(--soft)">Em contato</span>
+                <h2 class="tc" style="font-size:24px;margin-top:4px">Mariana Albuquerque</h2>
+                <p class="num sm" style="margin:4px 0 0">(11) 98765-4321</p>
+              </div>
+              <span class="selo" style="color:var(--brand)">Quente</span>
+            </div>
+            <dl>
+              <div><dt>Próximo contato</dt><dd class="num">Hoje, 15h00</dd></div>
+              <div><dt>Último contato</dt><dd class="num">Há 3 dias · Tentativa 1 de 3 sem resposta</dd></div>
+              <div><dt>Contato</dt><dd><span class="wa">! A detalhar:</span> abriu o WhatsApp hoje, 10h42</dd></div>
+              <div><dt>Origem</dt><dd>Site · Campanha Unique Hub</dd></div>
+              <div><dt>Empreendimento</dt><dd>Unique Hub</dd></div>
+              <div><dt>Cadastrado</dt><dd class="num">28/10/2026</dd></div>
+            </dl>
+            <div class="acoes">
+              <span class="btn red lg">WhatsApp →</span>
+              <span class="btn ghost lg">Ligar</span>
+            </div>
+            <p class="aux" style="margin:8px 0 0">Sem o botão Sem resposta (+1): ele passou para "Como foi".</p>
+          </section>
+
+          <form class="card">
+            <h2 class="ts">Registrar interação</h2>
+            <p class="aviso-wa sm" style="margin-bottom:10px">→ Você abriu o WhatsApp às 10h42. Conte como foi.</p>
+            <span class="lab" style="margin-top:0">Como foi</span>
+            <div class="tipos">
+              <span class="tipo on">WhatsApp</span><span class="tipo">Ligação</span><span class="tipo">E-mail</span><span class="tipo">Visita</span><span class="tipo">Anotação</span><span class="tipo sr">Sem resposta</span>
+            </div>
+            <span class="lab">O que aconteceu</span>
+            <div class="in ta">Ex.: Falou que quer visitar no sábado</div>
+            <span class="lab">Próximo contato</span>
+            <div style="display:flex;gap:8px"><div class="in num">dd/mm/aaaa</div><div class="in num" style="width:140px">--:--</div></div>
+            <div style="margin-top:14px"><span class="btn red lg" style="width:100%">Registrar</span></div>
+          </form>
+
+          <section class="card">
+            <span class="eyebrow">Visitas</span>
+            <p class="sm" style="margin:8px 0 0">Nenhuma visita ainda.</p>
+            <span class="btn ghost lg" style="margin-top:10px">+ Agendar visita</span>
+          </section>
+          <section class="card">
+            <span class="eyebrow">Venda</span>
+            <p class="sm" style="margin:8px 0 0">Nenhuma venda registrada. Quando o cliente assinar, registre aqui.</p>
+            <span class="btn ghost lg" style="margin-top:10px">+ Registrar venda</span>
+          </section>
+          <section class="card">
+            <div class="lin"><span class="eyebrow">Perfil do cliente</span><span class="sm">+</span></div>
+            <p class="sm" style="margin:6px 0 0">2 dormitórios · até R$ 450.000 · usa FGTS</p>
+          </section>
+          <section class="card">
+            <span class="eyebrow">Documentos</span>
+            <p class="sm" style="margin:8px 0 0">Nenhum documento enviado.</p>
+            <span class="btn ghost" style="margin-top:10px">+ Enviar documento</span>
+          </section>
+          <section class="card"><span class="btn ghost">✕ Descartar lead</span></section>
+        </div>
+
+        <!-- DIREITA -->
+        <div class="col">
+          <section class="card">
+            <span class="eyebrow">Andamento</span>
+            <span class="lab">Temperatura</span>
+            <div class="temps"><span class="tipo on">Quente</span><span class="tipo">Morno</span><span class="tipo">Frio</span></div>
+            <span class="lab">Etapa</span>
+            <div class="in">Em contato ▾</div>
+          </section>
+
+          <section class="card">
+            <span class="eyebrow">Radar de Match</span>
+            <ul class="lista radar" style="margin-top:8px">
+              <li><span><b>Unique Hub</b><br><span class="sm">2 dorm. · 52 m² · Rudge Ramos</span></span><span class="num ok">✓ 3 de 3</span></li>
+              <li><span><b>Vida Nova Paulicéia</b><br><span class="sm">2 dorm. · 48 m² · Paulicéia</span></span><span class="num wa">! 2 de 3</span></li>
+              <li><span><b>Parque das Artes</b><br><span class="sm">2 dorm. · 61 m² · Centro</span></span><span class="num wa">! 2 de 3</span></li>
+            </ul>
+          </section>
+
+          <section class="card">
+            <span class="eyebrow">Histórico</span>
+            <ol class="hist">
+              <li><p class="q num"><b>Abriu o WhatsApp</b> · Hoje, 10h42 · automático</p><p class="wa sm">! Falta detalhar</p></li>
+              <li><p class="q num"><b>Sem resposta</b> · 01/11, 16h10</p><p>Tentei contato, sem retorno.</p><p class="q num">→ Próximo contato: 03/11, 16h00</p></li>
+              <li><p class="q num"><b>WhatsApp</b> · 29/10, 11h05</p><p>Pediu tabela do Unique Hub, mandei. Quer ver o decorado.</p><p class="q num">→ Próximo contato: 01/11, 16h00</p></li>
+              <li><p class="q num"><b>Ligou</b> · 29/10, 10h50 · automático</p><p class="sm">Detalhado em seguida.</p></li>
+              <li><p class="q num">28/10, 18h22 · automático</p><p class="sm">Lead criado pelo site e atribuído a você.</p></li>
+              <li><p class="q num"><b>Anotação</b> · 28/10, 18h30</p><p>Cliente indicada pela tia, que comprou no Vida Nova.</p></li>
+              <li><p class="q num">28/10, 18h22 · automático</p><p class="sm">Etapa: Novo.</p></li>
+            </ol>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ================= 2. CELULAR ================= -->
+<div class="secao">
+  <h2>2. Ficha no celular: uma coluna, na ordem de hoje</h2>
+  <p>Nada muda de lugar no celular, só o Sem resposta (+1) sai do topo.</p>
+</div>
+<div class="mesa">
+
+<div class="tela">
+  <p class="rot">2a. Ficha · celular · topo</p>
+  <div class="fone">
+    <div class="topo"><span class="logo">MBigucci</span><span class="menu">Menu</span></div>
+    <div class="corpo">
+      <h1 class="tp" style="font-size:25px">Ficha do lead</h1>
+      <section class="card b">
+        <div class="lin">
+          <div>
+            <span class="eyebrow" style="color:var(--soft)">Em contato</span>
+            <h2 class="tc" style="font-size:22px;margin-top:4px">Mariana Albuquerque</h2>
+            <p class="num sm" style="margin:4px 0 0">(11) 98765-4321</p>
+          </div>
+          <span class="selo" style="color:var(--brand)">Quente</span>
+        </div>
+        <dl>
+          <div><dt>Próximo contato</dt><dd class="num">Hoje, 15h00</dd></div>
+          <div><dt>Último contato</dt><dd class="num">Há 3 dias</dd></div>
+          <div><dt>Contato</dt><dd><span class="wa">! A detalhar</span></dd></div>
+          <div><dt>Origem</dt><dd>Site</dd></div>
+        </dl>
+        <div class="acoes"><span class="btn red lg">WhatsApp →</span><span class="btn ghost lg">Ligar</span></div>
+      </section>
+      <form class="card">
+        <h2 class="ts">Registrar interação</h2>
+        <span class="lab" style="margin-top:0">Como foi</span>
+        <div class="tipos">
+          <span class="tipo">WhatsApp</span><span class="tipo">Ligação</span><span class="tipo">E-mail</span><span class="tipo">Visita</span><span class="tipo">Anotação</span><span class="tipo sr">Sem resposta</span>
+        </div>
+        <span class="lab">O que aconteceu</span>
+        <div class="in ta">Ex.: Falou que quer visitar no sábado</div>
+        <span class="lab">Próximo contato</span>
+        <div style="display:flex;gap:8px"><div class="in num">dd/mm/aaaa</div><div class="in num" style="width:110px">--:--</div></div>
+        <div style="margin-top:14px"><span class="btn red lg" style="width:100%">Registrar</span></div>
+      </form>
+      <section class="card"><span class="eyebrow">Visitas</span><p class="sm" style="margin:6px 0 0">Nenhuma visita ainda.</p></section>
+      <section class="card"><span class="eyebrow">Venda</span><p class="sm" style="margin:6px 0 0">Nenhuma venda registrada.</p></section>
+      <section class="card"><span class="eyebrow">Andamento</span><span class="lab">Temperatura</span><div class="temps"><span class="tipo on">Quente</span><span class="tipo">Morno</span><span class="tipo">Frio</span></div><span class="lab">Etapa</span><div class="in">Em contato ▾</div></section>
+      <section class="card"><span class="eyebrow">Perfil do cliente</span></section>
+      <section class="card"><span class="eyebrow">Radar de Match</span><p class="sm" style="margin:6px 0 0">Unique Hub ✓ 3 de 3 · Vida Nova ! 2 de 3</p></section>
+      <section class="card"><span class="eyebrow">Documentos</span></section>
+      <section class="card"><span class="btn ghost">✕ Descartar lead</span></section>
+      <section class="card"><span class="eyebrow">Histórico</span><ol class="hist"><li><p class="q num"><b>Abriu o WhatsApp</b> · Hoje, 10h42 · automático</p><p class="wa sm">! Falta detalhar</p></li></ol></section>
+    </div>
+  </div>
+</div>
+
+<div class="tela">
+  <p class="rot">2b. Toque em WhatsApp → mensagem pronta</p>
+  <div class="fone">
+    <div class="topo"><span class="logo">MBigucci</span><span class="menu">Menu</span></div>
+    <div class="corpo" style="opacity:.35"><h1 class="tp" style="font-size:25px">Ficha do lead</h1><section class="card b"><h2 class="tc">Mariana Albuquerque</h2></section></div>
+    <div class="dlg"><div class="caixa">
+      <span class="eyebrow">Mensagem para</span>
+      <h2 class="tc" style="margin-top:2px">Mariana Albuquerque</h2>
+      <span class="lab">Texto</span>
+      <div class="in" style="min-height:150px;font-size:14px">Oi, Mariana. Aqui é o Carlos, da MBigucci. Separei a tabela do Unique Hub para você. Quer ver o decorado no sábado?</div>
+      <div style="display:flex;gap:8px;margin-top:12px"><span class="btn ghost lg">Copiar</span><span class="btn red lg" style="flex:1">Abrir no WhatsApp →</span></div>
+      <p class="aux" style="margin:10px 0 0">O registro "Abriu o WhatsApp" é gravado ao tocar em <b>Abrir no WhatsApp</b>, sem esperar a resposta do servidor. Abrir a caixa ou tocar em Copiar não grava. Ligar grava "Ligou" no toque.</p>
+    </div></div>
+  </div>
+</div>
+
+</div>
+
+<!-- ================= 3. COMO FOI ================= -->
+<div class="secao">
+  <h2>3. "Como foi": com e sem Sem resposta</h2>
+  <p>Sem resposta só aparece quando a última interação detalhada foi há 2 dias ou mais (anteontem ou antes). O toque automático não conta para essa regra.</p>
+</div>
+<div class="mesa">
+
+<div class="tela">
+  <p class="rot">3a. Última interação ontem: sem a opção</p>
+  <div class="fone" style="height:auto">
+    <div class="corpo" style="padding-bottom:16px">
+      <form class="card">
+        <h2 class="ts">Registrar interação</h2>
+        <span class="lab" style="margin-top:0">Como foi</span>
+        <div class="tipos">
+          <span class="tipo on">WhatsApp</span><span class="tipo">Ligação</span><span class="tipo">E-mail</span><span class="tipo">Visita</span><span class="tipo">Anotação</span>
+        </div>
+        <span class="lab">O que aconteceu</span>
+        <div class="in ta">Ex.: Falou que quer visitar no sábado</div>
+        <span class="lab">Próximo contato</span>
+        <div style="display:flex;gap:8px"><div class="in num">dd/mm/aaaa</div><div class="in num" style="width:110px">--:--</div></div>
+        <div style="margin-top:14px"><span class="btn red lg" style="width:100%">Registrar</span></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="tela">
+  <p class="rot">3b. Há 3 dias: a opção aparece</p>
+  <div class="fone" style="height:auto">
+    <div class="corpo" style="padding-bottom:16px">
+      <form class="card">
+        <h2 class="ts">Registrar interação</h2>
+        <span class="lab" style="margin-top:0">Como foi</span>
+        <div class="tipos">
+          <span class="tipo on">WhatsApp</span><span class="tipo">Ligação</span><span class="tipo">E-mail</span><span class="tipo">Visita</span><span class="tipo">Anotação</span><span class="tipo">Sem resposta</span>
+        </div>
+        <span class="lab">O que aconteceu</span>
+        <div class="in ta">Ex.: Falou que quer visitar no sábado</div>
+        <span class="lab">Próximo contato</span>
+        <div style="display:flex;gap:8px"><div class="in num">dd/mm/aaaa</div><div class="in num" style="width:110px">--:--</div></div>
+        <div style="margin-top:14px"><span class="btn red lg" style="width:100%">Registrar</span></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="tela">
+  <p class="rot">3c. Tocou em Sem resposta: preenche o formulário</p>
+  <div class="fone" style="height:auto">
+    <div class="corpo" style="padding-bottom:16px">
+      <form class="card">
+        <h2 class="ts">Registrar interação</h2>
+        <span class="lab" style="margin-top:0">Como foi</span>
+        <div class="tipos">
+          <span class="tipo">WhatsApp</span><span class="tipo">Ligação</span><span class="tipo">E-mail</span><span class="tipo">Visita</span><span class="tipo">Anotação</span><span class="tipo on">Sem resposta</span>
+        </div>
+        <span class="lab">O que aconteceu</span>
+        <div class="in ta" style="color:var(--ink)">Tentei contato, sem retorno.</div>
+        <span class="lab">Próximo contato</span>
+        <div style="display:flex;gap:8px"><div class="in num" style="color:var(--ink)">06/11/2026</div><div class="in num" style="width:110px;color:var(--ink)">10:00</div></div>
+        <div style="margin-top:14px"><span class="btn red lg" style="width:100%">Registrar tentativa 2 de 3</span></div>
+        <p class="aux" style="margin:12px 0 0">Texto e data já vêm preenchidos (próximo contato em 2 dias) e podem ser mudados. Grava ao tocar no botão e soma a tentativa. Trocar para outro tipo devolve o texto e a data que estavam antes. Na 3ª, aparece o card "! 3 tentativas sem resposta" com Descartar: sem retorno.</p>
+      </form>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- ================= 4. LISTA DO DIA ================= -->
+<div class="secao">
+  <h2>4. Lista do dia: grupo "Detalhe o contato"</h2>
+  <p>Logo abaixo de "Aguardando primeiro contato". O lead aparece em um grupo só: enquanto falta detalhar, ele sai de Atrasados e de Hoje. Os cards perdem o Sem resposta (+1).</p>
+</div>
+<div class="mesa">
+
+<div class="tela">
+  <p class="rot">4a. Lista do dia · topo</p>
+  <div class="fone">
+    <div class="topo"><span class="logo">MBigucci</span><span class="menu">Menu</span></div>
+    <div class="corpo">
+      <h1 class="tp" style="font-size:25px">Lista do dia</h1>
+      <p class="num sm" style="margin:0">Quarta-feira, 04/11/2026</p>
+      <section class="band">
+        <h3>Contatos que precisam de atenção</h3>
+        <a><b class="num">1</b><span>Aguardando primeiro contato →</span></a>
+        <a><b class="num">2</b><span>Detalhe o contato →</span></a>
+        <a><b class="num">3</b><span>Atrasados →</span></a>
+      </section>
+
+      <div class="grupo">
+        <h2 class="ts">Aguardando primeiro contato · <span class="num">1</span></h2>
+        <ul class="lista"><li class="card b">
+          <div class="lin"><div><span class="tc">Rafael Toledo</span><span class="num" style="display:block;font-size:13px;font-weight:600;margin-top:4px">! Responder em 9 min</span></div><span class="selo" style="color:var(--soft)">Sem temp.</span></div>
+          <p class="sm" style="margin:8px 0 0">Nenhuma interação registrada.</p>
+          <div class="acoes" style="margin-top:10px"><span class="btn ghost">Abrir</span><span class="btn red">WhatsApp →</span></div>
+        </li></ul>
+      </div>
+
+      <div class="grupo">
+        <h2 class="ts">Detalhe o contato · <span class="num">2</span></h2>
+        <ul class="lista">
+          <li class="card b">
+            <div class="lin"><div><span class="tc">Mariana Albuquerque</span><span class="num" style="display:block;font-size:13px;margin-top:4px"><span class="wa">! Abriu o WhatsApp hoje, 10h42</span></span><span class="num" style="display:block;font-size:13px;margin-top:2px">Próximo contato: hoje, 15h00</span></div><span class="selo" style="color:var(--brand)">Quente</span></div>
+            <p class="sm" style="margin:8px 0 0"><span class="num">01/11 · </span>Tentei contato, sem retorno.</p>
+            <div class="acoes" style="margin-top:10px"><span class="btn ghost">WhatsApp →</span><span class="btn red">Detalhar</span></div>
+          </li>
+          <li class="card">
+            <div class="lin"><div><span class="tc">João Pedro Lima</span><span class="num" style="display:block;font-size:13px;margin-top:4px"><span class="wa">! Ligou ontem, 17h20</span></span><span class="num" style="display:block;font-size:13px;margin-top:2px">Próximo contato: 10/11, 10h00</span></div><span class="selo" style="color:var(--wa)">Morno</span></div>
+            <p class="sm" style="margin:8px 0 0"><span class="num">30/10 · </span>Vai falar com a esposa sobre o Parque das Artes.</p>
+            <div class="acoes" style="margin-top:10px"><span class="btn ghost">WhatsApp →</span><span class="btn ghost">Detalhar</span></div>
+          </li>
+        </ul>
+        <p class="aux" style="margin:8px 0 0">Detalhar abre a ficha em Registrar interação, já com o tipo marcado (WhatsApp ou Ligação).</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tela">
+  <p class="rot">4b. Card dos outros grupos, sem Sem resposta</p>
+  <div class="fone" style="height:auto">
+    <div class="corpo" style="padding-bottom:16px">
+      <h2 class="ts">Atrasados · <span class="num">3</span></h2>
+      <ul class="lista">
+        <li class="card b">
+          <div class="lin"><div><span class="tc">Beatriz Nogueira</span><span class="num er" style="display:block;font-size:13px;margin-top:4px">! Próximo contato: ontem, 14h00</span><span class="num" style="display:block;font-size:13px;margin-top:2px;font-weight:600;color:var(--soft)">! Sem contato há 2 dias</span></div><span class="selo" style="color:var(--wa)">Morno</span></div>
+          <p class="sm" style="margin:8px 0 0"><span class="num">02/11 · </span>Mandei a planta do 2 dorm.</p>
+          <span class="aux" style="display:block;margin-top:8px">Em contato</span>
+          <div class="acoes" style="margin-top:8px"><span class="btn ghost">Abrir</span><span class="btn red">WhatsApp →</span></div>
+        </li>
+      </ul>
+      <p class="aux" style="margin:10px 0 0">Antes: [Sem resposta (+1)] [Abrir] [WhatsApp →]. Agora: [Abrir] [WhatsApp →]. O WhatsApp da mensagem pronta daqui também grava o toque.</p>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- ================= REGRAS E PERGUNTAS ================= -->
+<div class="secao"><h2>Regras deste mockup</h2></div>
+<ul class="legenda">
+  <li><b>Toque</b>: tocar em "Abrir no WhatsApp" grava "Abriu o WhatsApp"; tocar em Ligar grava "Ligou". Um por tipo por dia (horário de São Paulo). Não pede nada e não atrasa a abertura; sem internet, o WhatsApp abre do mesmo jeito.</li>
+  <li><b>O toque conta como primeiro contato</b>: encerra o prazo de 15 min e tira de "Novo". <b>Não</b> muda o próximo contato e <b>não</b> zera as tentativas.</li>
+  <li><b>"Último contato" e "Sem contato há N dias" ignoram o toque</b>: só a interação detalhada conta. Assim, tocar em WhatsApp não esconde o atraso e não esconde o Sem resposta.</li>
+  <li><b>A detalhar</b>: o último registro do lead é um toque, sem interação detalhada depois. Sem resposta conta como detalhe.</li>
+  <li><b>Sem resposta</b> aparece em "Como foi" com 2 dias de calendário ou mais desde a última interação detalhada (ou do cadastro, se nunca houve). Ontem às 23h conta 1 dia.</li>
+  <li><b>Gerente vendo lead de outro corretor</b> no computador: à direita fica Atribuir (ou Lead perdido), no lugar de Andamento, e depois o histórico.</li>
+</ul>
+</body>
+</html>
