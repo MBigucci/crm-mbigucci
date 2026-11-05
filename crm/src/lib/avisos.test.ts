@@ -568,7 +568,7 @@ test("VAPID: JWT ES256 com o serviço de push como público, assinado pela chave
   const publica = paraBase64Url(new Uint8Array(await subtle.exportKey("raw", par.publicKey)));
   const privada = (await subtle.exportKey("jwk", par.privateKey)).d!;
   const agora = new Date("2026-11-03T12:00:00Z");
-  const h = await cabecalhoVapid("https://fcm.googleapis.com/fcm/send/abc", publica, privada, "https://vendas.base360.mbigucci.com.br/", agora);
+  const h = await cabecalhoVapid("https://fcm.googleapis.com/fcm/send/abc", publica, privada, "https://base360.mbigucci.com.br/vendas/", agora);
   const m = /^vapid t=([^.]+)\.([^.]+)\.([^,]+), k=(.+)$/.exec(h);
   assert.ok(m);
   assert.equal(m[4], publica);
@@ -576,7 +576,7 @@ test("VAPID: JWT ES256 com o serviço de push como público, assinado pela chave
   assert.deepEqual(JSON.parse(new TextDecoder().decode(deBase64Url(m[2]))), {
     aud: "https://fcm.googleapis.com",
     exp: agora.getTime() / 1000 + 12 * 3600,
-    sub: "https://vendas.base360.mbigucci.com.br/",
+    sub: "https://base360.mbigucci.com.br/vendas/",
   });
   const ok = await subtle.verify({ name: "ECDSA", hash: "SHA-256" }, par.publicKey, deBase64Url(m[3]), utf8(`${m[1]}.${m[2]}`));
   assert.equal(ok, true);

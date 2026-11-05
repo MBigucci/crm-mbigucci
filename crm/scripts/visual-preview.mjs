@@ -9,13 +9,13 @@ const dest = join(root, '.visual-preview');
 if (process.argv.includes('--serve')) {
   const types = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', '.woff2':'font/woff2', '.png':'image/png', '.json':'application/json' };
   createServer((req,res) => {
-    let path = resolve(dest, 'out', '.' + decodeURIComponent(new URL(req.url, 'http://localhost').pathname).replace(/^\/base360\/vendas/, ''));
+    let path = resolve(dest, 'out', '.' + decodeURIComponent(new URL(req.url, 'http://localhost').pathname).replace(/^\/vendas/, ''));
     if (!path.startsWith(join(dest,'out') + '\\') && path !== join(dest,'out')) { res.writeHead(403).end(); return; }
     if (existsSync(path) && statSync(path).isDirectory()) path = join(path,'index.html');
     if (!existsSync(path)) { res.writeHead(404).end(); return; }
     res.writeHead(200, {'Content-Type': types[extname(path)] || 'application/octet-stream', 'Cache-Control':'no-store'});
     res.end(readFileSync(path));
-  }).listen(4173, '127.0.0.1', () => console.log('Prévia fictícia: http://127.0.0.1:4173/'));
+  }).listen(4173, '127.0.0.1', () => console.log('Prévia fictícia: http://127.0.0.1:4173/vendas/'));
 } else {
   mkdirSync(dest, {recursive:true});
   for (const name of ['src','public','next.config.mjs','tailwind.config.ts','postcss.config.mjs','tsconfig.json','next-env.d.ts','package.json']) cpSync(join(root,name), join(dest,name), {recursive:true});
@@ -33,7 +33,7 @@ import { profiles } from './visual-fixtures';
 const Context = createContext({estado: {fase:'carregando'} as any, pode: (_:string) => false, sair:async()=>{}, recarregar:async()=>{}});
 export function SessaoProvider({children}:{children:React.ReactNode}) {
  const [estado,setEstado]=useState<any>({fase:'carregando'});
- useEffect(()=>{const path=location.pathname; if(path==='/entrar/') {setEstado({fase:'deslogado'}); return;} const gerente=path==='/leads/' || path==='/painel/'; const geral=new URLSearchParams(location.search).get('qa')==='geral' || ['/configuracoes/','/equipes/','/usuarios/','/empreendimentos/editar/','/empreendimentos/importar/','/faixas/','/programa/','/programa/aprovacao/'].includes(path);
+ useEffect(()=>{const path=location.pathname; if(path==='/vendas/entrar/') {setEstado({fase:'deslogado'}); return;} const gerente=path==='/vendas/leads/' || path==='/vendas/painel/'; const geral=new URLSearchParams(location.search).get('qa')==='geral' || ['/vendas/configuracoes/','/vendas/equipes/','/vendas/usuarios/','/vendas/empreendimentos/editar/','/vendas/empreendimentos/importar/','/vendas/faixas/','/vendas/programa/','/vendas/programa/aprovacao/'].includes(path);
  const perfil=geral?{...profiles[0],perfil:'gerente_geral'}:gerente?{...profiles[0],id:'gerente',perfil:'gerente'}:profiles[0];
  const permissoes=gerente?['dados.ver_equipe','leads.atribuir']:['leads.cadastrar'];
  setEstado({fase:'pronto',perfil,permissoes});},[]);

@@ -10,10 +10,10 @@ Deploy estático · Modelo de permissões · RLS · Fim do sigilo do programa de
 - **Stack:** Next.js 15, React 19, Tailwind 3, Supabase e zod.
 - **Exportação estática:**
   - `output: "export"`, sem rotas de API nem server components dinâmicos.
-  - `npm run build` gera `out/`, que vai por FTP para a raiz do site próprio `vendas.base360.mbigucci.com.br` (decisão de 05/11/2026; antes era a pasta `crm/` do site institucional).
-  - **Por que subdomínio:** isolamento de origem. Na mesma origem do WordPress, qualquer script do site (plugin, falha de XSS) poderia ler a sessão do Supabase guardada no navegador. Cada módulo do Base360 é um site separado (o Repasse da Roberta é um app Node em outro subdomínio), sem proxy entre eles.
-  - `BASE_PATH` fica vazio (padrão). A pasta do repositório continua `crm/`.
-  - A tela de escolha do módulo, em `base360.mbigucci.com.br`, é a página estática `portal/index.html` (gerada por `node portal/gerar.mjs`, sem Next e sem login, só links). O endereço antigo `mbigucci.com.br/crm/` leva ao novo pelo `crm-redirecionamento/` (`.htaccess` 301 e um `index.html` de reserva).
+  - `npm run build` gera `out/`, que vai por FTP para a pasta `vendas/` do site próprio `base360.mbigucci.com.br` (decisão de 05/11/2026; antes era a pasta `crm/` do site institucional).
+  - **Por que um site próprio:** isolamento de origem. Na mesma origem do WordPress, qualquer script do site (plugin, falha de XSS) poderia ler a sessão do Supabase guardada no navegador. O site `base360` só tem o portal e o Vendas, ambos estáticos e nossos. O Repasse da Roberta é um app Node em outro subdomínio; `base360.mbigucci.com.br/repasse` só redireciona para ele, sem proxy. A Hostinger não aceita dois níveis de subdomínio (`vendas.base360…`), e juntar o Repasse no mesmo app sai caro (Felipe, 05/11/2026). Se um dia os módulos forem unificados, o Repasse passa a morar em `/repasse` de verdade.
+  - `BASE_PATH` é `/vendas` (padrão). A pasta do repositório continua `crm/`.
+  - A tela de escolha do módulo, na raiz de `base360.mbigucci.com.br`, é a página estática `portal/index.html`, gerada por `node portal/gerar.mjs` junto com o `.htaccess` e o `repasse/index.html` que levam `/repasse` ao Repasse (302, porque o endereço dele muda na migração). O endereço antigo `mbigucci.com.br/crm/` leva a `/vendas/` pelo `crm-redirecionamento/` (`.htaccess` 301 e um `index.html` de reserva).
   - `trailingSlash: true`, para o Apache servir `pasta/index.html`.
 - **Dados e segurança:**
   - Todo dado e todo login vêm do Supabase, pelo navegador, com a chave anon.
@@ -126,10 +126,10 @@ As regras de negócio estão em `docs/empreendimentos.md`, seção 12.
 
 ## PWA (29/10/2026)
 
-- **Manifest estático:** `crm/public/manifest.webmanifest`, e não um `app/manifest.ts`. Todos os caminhos dentro dele são **relativos** (`./`, `icons/...`), então resolvem para a raiz do subdomínio de Vendas a partir da URL do manifest, com qualquer `BASE_PATH`. Nome e nome curto "Base360" (05/11/2026; antes "CRM MBigucci" e "CRM"), `display: standalone`, fundo e tema `paper` #f7f6f2.
+- **Manifest estático:** `crm/public/manifest.webmanifest`, e não um `app/manifest.ts`. Todos os caminhos dentro dele são **relativos** (`./`, `icons/...`), então resolvem para `/vendas/` a partir da URL do manifest, com qualquer `BASE_PATH`. Nome e nome curto "Base360" (05/11/2026; antes "CRM MBigucci" e "CRM"), `display: standalone`, fundo e tema `paper` #f7f6f2.
 - **Ícones:** `crm/public/icons/` (192, 512, maskable 512, apple-touch-icon 180, favicon 32 e SVG), o símbolo Base360 (paredes brancas e giro vermelho sobre o grafite `#16181c`). Os PNG ficam no git e saem de `node scripts/gerar-icones.mjs` (sharp que vem com o Next), a partir de `docs/marca-base360/icone.svg`, `icone-maskable.svg` e `favicon.svg`. O `icon.svg` é cópia do `favicon.svg`.
-- **`layout.tsx`:** o Next não prefixa o `basePath` nos links de `metadata.manifest` e `metadata.icons`, então eles usam `NEXT_PUBLIC_BASE_PATH` à mão. Confira no `out/index.html` que saem na raiz (`/manifest.webmanifest`, `/icons/...`) com o `BASE_PATH` vazio, sem prefixo dobrado.
-- **Service worker só de avisos:** `crm/public/sw.js` (item 15), com escopo `/` (a raiz de `vendas.base360.mbigucci.com.br`; antes `/crm/`), sem handler de `fetch`, sem cache e sem fila offline. O Chrome no Android oferece "Instalar app" só com o manifest e HTTPS.
+- **`layout.tsx`:** o Next não prefixa o `basePath` nos links de `metadata.manifest` e `metadata.icons`, então eles usam `NEXT_PUBLIC_BASE_PATH` à mão. Confira no `out/index.html` que saem como `/vendas/...`, sem prefixo dobrado.
+- **Service worker só de avisos:** `crm/public/sw.js` (item 15), com escopo `/vendas/` (em `base360.mbigucci.com.br`; antes `/crm/`), sem handler de `fetch`, sem cache e sem fila offline. O Chrome no Android oferece "Instalar app" só com o manifest e HTTPS.
 - **Sem internet:** `components/aviso-offline.tsx`, dentro do cabeçalho fixo, mostra "! Sem internet. O que você fizer agora pode não ser salvo." pelos eventos `online`/`offline`. Não sincroniza nada.
 - **Instalação:** card "Instalar no celular" em `/conta/`, com o passo a passo de Android e iPhone.
 - **WordPress:** se o Apache servir `.webmanifest` com tipo errado, o Chrome ainda aceita. Se quiser o tipo certo: `AddType application/manifest+json .webmanifest` no `.htaccess`.

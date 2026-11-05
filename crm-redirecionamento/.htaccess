@@ -1,14 +1,14 @@
 # Redirecionamento do endereço antigo do CRM (mbigucci.com.br/crm) para o módulo
-# de Vendas do Base360, que mora no próprio subdomínio (vendas.base360.mbigucci.com.br).
+# de Vendas do Base360, que mora no próprio site do Base360 (base360.mbigucci.com.br/vendas).
 # Vai por FTP para /crm/ do site institucional, no lugar dos arquivos antigos.
 # Mantém o resto do caminho e a consulta:
-# /crm/leads/ficha/?id=x → https://vendas.base360.mbigucci.com.br/leads/ficha/?id=x
+# /crm/leads/ficha/?id=x → https://base360.mbigucci.com.br/vendas/leads/ficha/?id=x
 # (o Apache repassa a consulta sozinho quando a regra não escreve uma nova). 301 = mudou de vez.
 <IfModule mod_rewrite.c>
 RewriteEngine On
 # Dentro do .htaccess de /crm/, o padrão vê o caminho sem o "crm/" do começo.
-RewriteRule ^(.*)$ https://vendas.base360.mbigucci.com.br/$1 [R=301,L]
+RewriteRule ^(.*)$ https://base360.mbigucci.com.br/vendas/$1 [R=301,L]
 </IfModule>
 <IfModule !mod_rewrite.c>
-RedirectMatch 301 ^/crm/?(.*)$ https://vendas.base360.mbigucci.com.br/$1
+RedirectMatch 301 ^/crm/?(.*)$ https://base360.mbigucci.com.br/vendas/$1
 </IfModule>

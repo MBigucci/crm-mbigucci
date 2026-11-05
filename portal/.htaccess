@@ -1,0 +1,6 @@
+# Gerado por portal/gerar.mjs. Não edite à mão.
+# /repasse leva ao módulo Repasse (app próprio em outro subdomínio), mantendo o resto do caminho.
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteRule ^repasse/?(.*)$ https://repasse.mbigucci.com.br/$1 [R=302,L]
+</IfModule>

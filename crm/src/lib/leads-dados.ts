@@ -171,6 +171,6 @@ export const esquecerModelosMensagem = () => {
   cacheModelos = null;
 };
 
-/** Origem do site publicado com o basePath, para links que vão por WhatsApp ("https://vendas.base360.mbigucci.com.br"). */
+/** Origem do site publicado com o basePath, para links que vão por WhatsApp ("https://base360.mbigucci.com.br/vendas"). */
 export const enderecoDoCrm = () =>
   typeof window === "undefined" ? "" : `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}`;

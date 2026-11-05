@@ -1,6 +1,6 @@
 # Brief: aplicar o logo Base360 no CRM (módulo de Vendas) e no DS
 
-> **Atualização de 05/11/2026, depois deste brief:** os endereços passaram a ser subdomínios, pelo isolamento de origem e porque o Repasse é um app Node em outro site. Vendas fica na raiz de `vendas.base360.mbigucci.com.br` (`BASE_PATH` vazio), o portal em `base360.mbigucci.com.br` e `mbigucci.com.br/crm` redireciona para o subdomínio. Onde abaixo se lê `/base360/vendas` e `/base360`, valem esses endereços. Veja `docs/crm-arquitetura.md`.
+> **Atualização de 05/11/2026, depois deste brief:** o Base360 ganhou um site estático próprio, `base360.mbigucci.com.br` (fora do WordPress, pelo isolamento de origem): o portal na raiz, o Vendas em `/vendas` (`BASE_PATH=/vendas`) e `/repasse` redirecionando para o Repasse, que é um app Node em outro subdomínio. `mbigucci.com.br/crm` redireciona para `/vendas`. Onde abaixo se lê `/base360/vendas` e `/base360`, valem esses endereços. Veja `docs/crm-arquitetura.md`.
 
 ## Leia antes
 - `CLAUDE.md`, `docs/design-system.md` (seção "Tema e navegação do CRM — 05/11/26") e a skill `.claude/skills/tela-ds-mbigucci/SKILL.md`.
