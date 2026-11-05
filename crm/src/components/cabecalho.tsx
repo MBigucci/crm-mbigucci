@@ -344,7 +344,7 @@ export function BarraLateral({ itens }: { itens: ItemMenu[] }) {
         onBlur={() => setDica(null)}
         className="item-menu item-lateral foco-escuro mb-3 w-full text-left"
       >
-        <IconeMenu nome={recolhida ? "expandir" : "recolher"} />
+        <IconeMenu nome="sanduiche" />
         <span className="rotulo-menu">{rotuloBotao}</span>
       </button>
       {/* Só a lista rola: o controle de recolher fica sempre à vista no topo. */}

@@ -220,20 +220,12 @@ const desenhos: Record<string, React.ReactNode> = {
       <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
     </>
   ),
-  // panel-left-close (recolher a lateral)
-  recolher: (
+  // Sanduíche do site: três traços, o do meio mais curto (controle da lateral).
+  sanduiche: (
     <>
-      <rect width="18" height="18" x="3" y="3" rx="2" />
-      <path d="M9 3v18" />
-      <path d="m16 15-3-3 3-3" />
-    </>
-  ),
-  // panel-left-open (expandir a lateral)
-  expandir: (
-    <>
-      <rect width="18" height="18" x="3" y="3" rx="2" />
-      <path d="M9 3v18" />
-      <path d="m14 9 3 3-3 3" />
+      <path d="M3 6h18" />
+      <path d="M3 12h12" />
+      <path d="M3 18h18" />
     </>
   ),
   // circle (destino sem ícone próprio)
