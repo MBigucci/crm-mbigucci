@@ -204,7 +204,15 @@ export function RegistrarVenda({
         <button type="submit" className="btn btn-red btn-lg focus-ring flex-1 md:flex-none" disabled={salvando}>
           {salvando ? "Registrando…" : "Registrar venda"}
         </button>
-        <button type="button" className="btn btn-ghost btn-lg focus-ring flex-1 md:flex-none" onClick={onCancelar}>
+        <button
+          type="button"
+          className="btn btn-ghost btn-lg focus-ring flex-1 md:flex-none"
+          onClick={() => {
+            // Cancelar descarta o rascunho: senão a ficha reabriria o formulário na próxima visita.
+            limparRascunho(chaveRascunhoVenda(lead.id));
+            onCancelar();
+          }}
+        >
           Cancelar
         </button>
       </div>

@@ -48,7 +48,7 @@ import { NomeEmpreendimento, RadarDoLead } from "@/components/empreendimentos/pa
 import { DadosDoCliente, DocumentosDoLead, PerfilCliente, ResumoDoPerfil } from "@/components/leads/perfil";
 import { usePerfilDoLead } from "@/lib/perfil-dados";
 import type { PerfilAmpliado } from "@/lib/perfil";
-import { chaveRascunhoInteracao, lerRascunho, limparRascunho, salvarRascunho } from "@/lib/rascunho";
+import { chaveRascunhoInteracao, chaveRascunhoVenda, lerRascunho, limparRascunho, salvarRascunho } from "@/lib/rascunho";
 
 export default function FichaPage() {
   return (
@@ -88,6 +88,11 @@ function Ficha({ id }: { id: string }) {
   const fecharDesfazer = useCallback(() => setDesfazer(null), []);
   const { perfil, erro: erroPerfil, recarregar: recarregarPerfil } = usePerfilDoLead(id);
   const [perfilAberto, setPerfilAberto] = useState(false);
+
+  // Venda começada e não registrada (a aba recarregou, a sessão caiu): reabre o formulário com o rascunho.
+  useEffect(() => {
+    if (id && lerRascunho(chaveRascunhoVenda(id))) setRegistrando(true);
+  }, [id]);
 
   const carregar = useCallback(async () => {
     const [l, h, e, v, s] = await Promise.all([
