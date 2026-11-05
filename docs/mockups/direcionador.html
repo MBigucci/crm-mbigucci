@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap">
 <style>
-/* Protótipo do Base360 Marketing no MBigucci Design System: casca do Vendas (cabeçalho em vidro, lateral grafite),
+/* Protótipo do direcionador de leads no MBigucci Design System: casca do Vendas (cabeçalho em vidro, lateral grafite),
    cards com barra de 4px, uma ação vermelha por grupo, sinais ✓ ! ✕ – → +, sem sombra. Tokens de docs/design-system.md. */
 :root{
   --paper:#f7f6f2;--surface:#ffffff;--ink:#0d0e11;--ink-soft:#4a4b52;--concrete:#6f6b63;--line:#e5e3dd;--control:#76736c;
@@ -139,7 +139,7 @@ label.lab,.lab{font-size:11px;font-weight:600;text-transform:uppercase;letter-sp
 .s.ok{color:var(--ok)}.s.nao{color:var(--neutral)}.s.er{color:var(--brand)}
 .nota{font-size:12px;color:var(--concrete);margin:10px 0 0}
 
-/* destino externo */
+/* distribuição manual */
 .par{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:12px 0 0;font-size:13px}
 .par dt{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--concrete);padding-top:2px}
 .par dd{margin:0;color:var(--ink)}
@@ -231,15 +231,15 @@ legend{padding:0;margin-bottom:6px}
 <div class="moldura" id="moldura">
 <div class="app" id="app">
   <header class="cab">
-    <a class="marca" href="#" aria-label="Base360 Marketing, início">
+    <a class="marca" href="#" aria-label="Base360, início">
       <svg viewBox="0 0 100 100" aria-hidden="true"><path d="M20 20H50V22A28 28 0 0 1 22 50H20Z" fill="var(--brand)"/><path fill="var(--ink)" fill-rule="evenodd" d="M8 8H92V92H8ZM22 22H78V78H22Z"/></svg>
-      <b>Base360</b><i></i><span>Marketing</span>
+      <b>Base360</b>
     </a>
     <button class="conta" type="button">Felipe ▾</button>
     <button class="hamb" id="hamb" type="button" aria-expanded="false" aria-controls="lat" aria-label="Abrir menu"><i></i><i></i><i></i></button>
   </header>
   <div class="corpo">
-    <nav class="lat" id="lat" aria-label="Marketing">
+    <nav class="lat" id="lat" aria-label="Direcionador">
       <a href="#" aria-current="page">Direcionador</a>
       <div class="rod">MBigucci</div>
     </nav>
@@ -291,17 +291,15 @@ legend{padding:0;margin-bottom:6px}
           </section>
 
           <section class="card" aria-labelledby="t-ext">
-            <span class="eyebrow">Destino externo</span>
-            <h2 class="tc" id="t-ext"></h2>
+            <span class="eyebrow">Para onde vai</span>
+            <h2 class="tc" id="t-ext">Distribuição manual</h2>
             <dl class="par">
-              <dt>Apelido</dt><dd id="d-apelido"></dd>
               <dt>Entrega</dt><dd>Por e-mail, sem cópia em Enviados</dd>
               <dt>Endereço</dt><dd class="num" id="d-end">e••••@example.com</dd>
               <dt>Porta</dt><dd><span class="sinal-wa">! Ainda não configurada.</span> Quando existir, passa a ser a entrega, e o e-mail fica de reserva.</dd>
               <dt>Registro</dt><dd><span class="sinal-ok">✓ Nada fica gravado.</span> Se a entrega falhar, o lead vai na hora para o Base360 Vendas, para não ficar sem atendimento.</dd>
             </dl>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-              <button class="btn" type="button" id="b-apelido">Trocar apelido</button>
               <button class="btn" type="button" id="b-end">Trocar endereço</button>
             </div>
           </section>
@@ -334,7 +332,7 @@ legend{padding:0;margin-bottom:6px}
       <fieldset><legend class="lab">Mandar para</legend>
         <div class="radio">
           <label><input type="radio" name="f-dest" value="vendas" id="f-dest-v"> → Base360 Vendas</label>
-          <label><input type="radio" name="f-dest" value="externo" id="f-dest-e"> <span id="f-dest-e-txt">→ Destino externo</span></label>
+          <label><input type="radio" name="f-dest" value="manual" id="f-dest-e"> <span id="f-dest-e-txt">→ Distribuição manual</span></label>
         </div>
       </fieldset>
       <label class="chip"><input type="checkbox" id="f-ativa"><span>Regra ligada</span></label>
@@ -356,12 +354,11 @@ legend{padding:0;margin-bottom:6px}
   const DIAS_LONGO=["domingo","segunda","terça","quarta","quinta","sexta","sábado"];
   const estado={
     geral:true,
-    apelido:"Externo A",
     regras:[
       {id:1,nome:"Torre Horizonte, pelo site",ativa:true,produtos:["Torre Horizonte"],fontes:["Site MBigucci"],dias:[0,1,2,3,4,5,6],ini:"09:00",fim:"18:00",destino:"vendas"},
-      {id:2,nome:"Fim de semana, portais",ativa:true,produtos:[],fontes:["ZAP Imóveis","Viva Real","OLX"],dias:[0,6],ini:"00:00",fim:"00:00",destino:"externo"},
-      {id:3,nome:"Noite, Parque Ipê",ativa:true,produtos:["Parque Ipê"],fontes:[],dias:[1,2,3,4,5],ini:"19:00",fim:"09:00",destino:"externo"},
-      {id:4,nome:"Imovelweb, horário comercial",ativa:false,produtos:[],fontes:["Imovelweb"],dias:[1,2,3,4,5],ini:"09:00",fim:"18:00",destino:"externo"}
+      {id:2,nome:"Fim de semana, portais",ativa:true,produtos:[],fontes:["ZAP Imóveis","Viva Real","OLX"],dias:[0,6],ini:"00:00",fim:"00:00",destino:"manual"},
+      {id:3,nome:"Noite, Parque Ipê",ativa:true,produtos:["Parque Ipê"],fontes:[],dias:[1,2,3,4,5],ini:"19:00",fim:"09:00",destino:"manual"},
+      {id:4,nome:"Imovelweb, horário comercial",ativa:false,produtos:[],fontes:["Imovelweb"],dias:[1,2,3,4,5],ini:"09:00",fim:"18:00",destino:"manual"}
     ]
   };
   let proxId=5, editando=null;
@@ -409,7 +406,7 @@ legend{padding:0;margin-bottom:6px}
     if(r.ini===r.fim) return "Dia inteiro";
     return `${h(r.ini)} às ${h(r.fim)}${min(r.ini)>min(r.fim)?" do dia seguinte":""}`;
   }
-  const destTxt=d=>d==="externo"?`→ Destino externo · ${estado.apelido}`:"→ Base360 Vendas";
+  const destTxt=d=>d==="manual"?"→ Distribuição manual":"→ Base360 Vendas";
   const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
   /* ---------- desenho ---------- */
@@ -419,11 +416,8 @@ legend{padding:0;margin-bottom:6px}
     $("#geral").classList.toggle("desl",!estado.geral);
     $("#geral").classList.toggle("destaque",!estado.geral);
     $("#geral-txt").textContent=estado.geral?"As regras abaixo valem a cada lead que chega.":"Tudo vai para o Base360 Vendas. As regras ficam guardadas, sem valer.";
-    $("#t-ext").textContent=estado.apelido;
-    $("#d-apelido").textContent=estado.apelido;
-    $("#f-dest-e-txt").textContent=`→ Destino externo · ${estado.apelido}`;
     const ol=$("#lista");
-    if(!estado.regras.length){ol.innerHTML=`<li class="vazio">Nenhuma regra. Tudo vai para o Base360 Vendas. Toque em + Nova regra para mandar um tipo de lead para o destino externo.</li>`;return simular()}
+    if(!estado.regras.length){ol.innerHTML=`<li class="vazio">Nenhuma regra. Tudo vai para o Base360 Vendas. Toque em + Nova regra para mandar um tipo de lead para a distribuição manual.</li>`;return simular()}
     ol.innerHTML=estado.regras.map((r,k)=>`
       <li class="card regra${r.ativa&&estado.geral?"":" apagada"}">
         <span class="ordem">${k+1}</span>
@@ -434,7 +428,7 @@ legend{padding:0;margin-bottom:6px}
             <div><dt>Fonte</dt><dd>${esc(listaTxt(r.fontes,"Qualquer"))}</dd></div>
             <div><dt>Quando</dt><dd>${diasTxt(r.dias)} · ${horaTxt(r)}</dd></div>
           </dl>
-          <div class="destino ${r.destino==="externo"?"ext":""}">${esc(destTxt(r.destino))}</div>
+          <div class="destino ${r.destino==="manual"?"ext":""}">${esc(destTxt(r.destino))}</div>
         </div>
         <div class="acoes">
           <button class="chave" type="button" role="switch" data-liga="${r.id}" aria-label="Regra ${k+1}, ${esc(r.nome)}"><span class="trilho"></span><span class="txt"></span></button>
@@ -519,7 +513,7 @@ legend{padding:0;margin-bottom:6px}
   function marcar(n,lista,todosSe){document.querySelectorAll(`[name="${n}"]`).forEach(c=>{c.checked=c.value==="*"?todosSe:lista.includes(+c.value)})}
   function abrir(r){
     editando=r||null;
-    const base=r||{nome:"",ativa:true,produtos:[],fontes:[],dias:[0,1,2,3,4,5,6],ini:"09:00",fim:"18:00",destino:"externo"};
+    const base=r||{nome:"",ativa:true,produtos:[],fontes:[],dias:[0,1,2,3,4,5,6],ini:"09:00",fim:"18:00",destino:"manual"};
     $("#ed-eyebrow").textContent=r?`Regra ${estado.regras.indexOf(r)+1}`:"Nova regra";
     $("#ed-titulo").textContent=r?"Editar regra":"Criar regra";
     $("#f-nome").value=base.nome;
@@ -557,8 +551,7 @@ legend{padding:0;margin-bottom:6px}
     ed.close();desenhar();
   });
 
-  /* ---------- destino externo (só na tela) ---------- */
-  $("#b-apelido").addEventListener("click",()=>{estado.apelido=estado.apelido==="Externo A"?"Externo B":"Externo A";desenhar();aviso(`✓ Apelido trocado: ${estado.apelido}`)});
+  /* ---------- distribuição manual (só na tela) ---------- */
   $("#b-end").addEventListener("click",()=>aviso("No app, abre o campo do endereço. Ele é guardado no cofre e volta mascarado."));
 
   /* ---------- controles do protótipo ---------- */

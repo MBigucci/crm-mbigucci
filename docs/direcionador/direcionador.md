@@ -1,8 +1,14 @@
-# Módulo de Marketing do Base360, etapa 1: direcionador de leads (estudo)
+# Direcionador de leads do Base360 (estudo)
 
-> Estudo de 05/11/2026 para o Felipe aprovar antes do código. Brief: `docs/codex-marketing-direcionador.md`. Protótipo: `docs/mockups/marketing-direcionador.html`. Especificação da porta de entrada: `docs/marketing/porta-de-entrada-leads.md`.
+> Estudo de 05/11/2026, aprovado pelo Felipe. Nasceu como etapa 1 do módulo de Marketing (brief `docs/codex-marketing-direcionador.md`), mas **ficou fora do Marketing**: é uma ferramenta à parte, só do gerente geral. Protótipo: `docs/mockups/direcionador.html`. Especificação da porta de entrada: `docs/direcionador/porta-de-entrada-leads.md`. O substituto do RD Station segue no Marketing, em `docs/marketing/roteiro.md`.
 >
-> **Sigilo:** o destino para onde parte dos leads vai nunca é nomeado. Aqui, no código, no banco e nas telas ele é sempre **"destino externo"**, com o apelido que o Felipe define na tela.
+> **Sigilo:** para onde parte dos leads vai nunca é nomeado. Aqui, no código, no banco e nas telas, esse destino se chama sempre **"distribuição manual"**, sem apelido.
+
+## Segunda rodada (Felipe, 05/11/2026)
+
+- **Nome:** o destino passa a se chamar **"Distribuição manual"** em todo lugar (antes "destino externo").
+- **Sem apelido:** sai o campo de apelido da tela e do banco.
+- **Fora do Marketing:** o direcionador não é do módulo de Marketing. Fica numa **pasta à parte, de nome neutro, protegida por senha do servidor** (`.htaccess` com usuário e senha do Apache), além do login do Base360. Sem a senha, o servidor nem entrega os arquivos da tela. A pasta não aparece em menu, link nem portal, e o nome dela é escolhido pelo Felipe na publicação (`BASE_PATH`, fora do Git). Isso substitui a decisão 7 abaixo.
 
 ## Decisões do Felipe (05/11/2026)
 
@@ -12,11 +18,11 @@ Respostas às perguntas da seção 13. **Onde o texto abaixo diverge, valem esta
 | --- | --- | --- |
 | 1 | Onde o lead espera uma nova tentativa | Na origem, nada no banco |
 | 2 | Entrada na fase 1 | E-mail lido pela Graph numa caixa compartilhada interna; webhooks depois |
-| 3 | Prazo X | **Sem novas tentativas.** Se a entrega ao destino externo falhar, o lead vai na hora para o Base360 Vendas, como um lead sem regra, para não ficar sem atendimento. Não há fila nem prazo X |
+| 3 | Prazo X | **Sem novas tentativas.** Se a entrega à distribuição manual falhar, o lead vai na hora para o Base360 Vendas, como um lead sem regra, para não ficar sem atendimento. Não há fila nem prazo X |
 | 4 | Onde cai o lead no Vendas | **Roleta automática**, estudada numa frente própria. **O direcionador só vai ao ar junto com a roleta** |
 | 5 | A mesma pessoa chega de novo | **As regras sempre decidem**, mesmo com lead ativo no Vendas |
 | 6 | O e-mail original na caixa do Felipe | **Uma regra do Outlook apaga** depois de redirecionar |
-| 7 | Onde ficam as telas | O Base360 é um site só, `base360.mbigucci.com.br` (commit `0d9f7dc`): o substituto do RD Station fica em `/marketing`. **O direcionador é um app pequeno à parte**, numa pasta de nome neutro que não aparece em menu, link nem portal, escolhida pelo Felipe na publicação (`BASE_PATH`, fora do Git). Só o login do Base360, sem senha do servidor |
+| 7 | Onde ficam as telas | O Base360 é um site só, `base360.mbigucci.com.br` (commit `0d9f7dc`): o substituto do RD Station fica em `/marketing`. **O direcionador é um app pequeno à parte**, numa pasta de nome neutro. Na segunda rodada, ganhou também a **senha do servidor** (acima) |
 | 8 | Regra de produto com produto não reconhecido | Não vale |
 | 9 | Histórico de mudanças das regras | Não guardar |
 | 10 | Contar os envios externos | Não contar por enquanto |
@@ -39,10 +45,10 @@ Respostas às perguntas da seção 13. **Onde o texto abaixo diverge, valem esta
 8. O lead que vai para o Vendas
 9. Como o produto é reconhecido
 10. Site do módulo: pasta própria ou telas no Vendas
-11. Porta de entrada do destino externo
+11. Porta de entrada da distribuição manual
 12. O que o Felipe e o TI precisam fazer
 13. Perguntas ao Felipe
-14. Esboço do roadmap do Marketing (substituto do RD Station)
+14. O Marketing (substituto do RD Station)
 15. Pesquisado e suposição, com as fontes
 
 ---
@@ -50,11 +56,11 @@ Respostas às perguntas da seção 13. **Onde o texto abaixo diverge, valem esta
 ## 1. Resumo da recomendação
 
 - **Entrada, fase 1: tudo por e-mail, lido pela Microsoft Graph numa caixa só de entrada.** Uma regra do Outlook do Felipe **redireciona** os e-mails de lead (site e portais) para uma **caixa compartilhada interna** (por exemplo `entrada-leads@`). Redirecionar dentro da empresa não é bloqueado pelo Microsoft 365. Um app registrado pelo TI lê e escreve **só nessa caixa** (RBAC para aplicativos do Exchange). A Edge Function `entrada-leads` passa a cada minuto, aplica as regras e entrega. É a opção (b), com a regra de (a) só para dentro da empresa.
-- **Sem fila no banco.** O lead que vai ao destino externo **nunca é gravado no Supabase**. Uma tentativa só: se a entrega falhar, o lead vai para o Vendas (decisão de 05/11/2026, acima).
-- **Entrega no destino externo:** por e-mail, saindo da mesma caixa, para o endereço que o Felipe digita na tela, sem cópia em Itens Enviados. Quando a porta de entrada daquele sistema existir, passa a ser um POST JSON (seção 11), com o e-mail como reserva.
+- **Sem fila no banco.** O lead que vai à distribuição manual **nunca é gravado no Supabase**. Uma tentativa só: se a entrega falhar, o lead vai para o Vendas (decisão de 05/11/2026, acima).
+- **Entrega na distribuição manual:** por e-mail, saindo da mesma caixa, para o endereço que o Felipe digita na tela, sem cópia em Itens Enviados. Quando a porta de entrada daquele sistema existir, passa a ser um POST JSON (seção 11), com o e-mail como reserva.
 - **Fase 2: webhooks.** ZAP e Viva Real (Grupo OLX), Chaves na Mão e talvez Imovelweb mandam o lead direto para a função. O formulário do site também. Isso tira o atraso de 1 minuto e os e-mails do caminho, mas depende de homologação em cada portal. Não é preciso para começar.
-- **Banco:** regras, destinos e a chave geral em tabelas que só passam por `is_gerente_geral()`, fora do esquema exposto pela API. Os endereços do destino externo ficam no **Vault**, e a tela mostra só uma versão mascarada.
-- **Site:** app próprio e pequeno, com a casca do Vendas, numa pasta de nome neutro de `base360.mbigucci.com.br` que não aparece em lugar nenhum (decisão de 05/11/2026). **Não** como telas dentro do Vendas nem do Marketing: o código desses apps é baixável por quem abre o endereço, e qualquer tela ou texto do direcionador ali revelaria que ele existe.
+- **Banco:** regras, destinos e a chave geral em tabelas que só passam por `is_gerente_geral()`, fora do esquema exposto pela API. Os endereços da distribuição manual ficam no **Vault**, e a tela mostra só uma versão mascarada.
+- **Site:** app próprio e pequeno, com a casca do Vendas, numa pasta de nome neutro de `base360.mbigucci.com.br`, protegida por senha do servidor e que não aparece em lugar nenhum (decisões de 05/11/2026). **Não** como telas dentro do Vendas nem do Marketing: o código desses apps é baixável por quem abre o endereço, e qualquer tela ou texto do direcionador ali revelaria que ele existe.
 
 ## 2. O que chega hoje: o site e os 4 portais (pesquisa)
 
@@ -103,7 +109,7 @@ flowchart TD
   G -->|sim| R{Primeira regra ativa que casa}
   R -->|nenhuma| V[Base360 Vendas]
   R -->|destino Vendas| V
-  R -->|destino externo| X[Entrega no destino externo]
+  R -->|distribuição manual| X[Entrega na distribuição manual]
   V --> V1[Grava lead da empresa para a roleta, com a mensagem original]
   V1 --> OK[Apaga o e-mail da caixa de entrada]
   X -->|fase 1: e-mail sem cópia em Enviados| OK
@@ -113,12 +119,12 @@ flowchart TD
 
 - **Nada é gravado antes da decisão.** A função lê, normaliza e decide só em memória.
 - **Vendas:** grava o lead e a mensagem original como primeira interação (seção 8). O e-mail só é apagado depois de o lead estar no banco. Se a gravação falhar, o e-mail fica na caixa e volta na passada seguinte.
-- **Destino externo:** uma tentativa. Entregou, apaga o e-mail. Falhou, o lead segue para o Vendas na mesma passada (decisão de 05/11/2026).
+- **Distribuição manual:** uma tentativa. Entregou, apaga o e-mail. Falhou, o lead segue para o Vendas na mesma passada (decisão de 05/11/2026).
 - **Webhook (fase 2):** o mesmo. Se nem o Vendas gravar, a função responde erro e o portal tenta de novo (o Grupo OLX tenta 3 vezes e guarda por 14 dias).
 
 ## 5. Como as regras decidem
 
-**Campos de uma regra:** nome (só para o Felipe), produtos (um ou mais do catálogo, ou "qualquer produto"), fontes (uma ou mais, ou "qualquer fonte"), dias da semana, hora de início e de fim, destino (Base360 Vendas ou o destino externo), ativa sim/não e a ordem (prioridade).
+**Campos de uma regra:** nome (só para o Felipe), produtos (um ou mais do catálogo, ou "qualquer produto"), fontes (uma ou mais, ou "qualquer fonte"), dias da semana, hora de início e de fim, destino (Base360 Vendas ou a distribuição manual), ativa sim/não e a ordem (prioridade).
 
 **Como decide:**
 1. Com a **chave geral** desligada, tudo vai para o Vendas, e as regras nem são lidas.
@@ -140,31 +146,31 @@ flowchart TD
 
 **Precedente:** Faixas de VGV, só do gerente geral por regra fixa no banco (`docs/crm-arquitetura.md`). Aqui vale o mesmo, mais forte.
 
-**Tabelas** (num arquivo SQL próprio, por exemplo `marketing/supabase/direcionador.sql`, idempotente):
+**Tabelas** (num arquivo SQL próprio, por exemplo `direcionador/supabase/direcionador.sql`, idempotente):
 
 | Tabela | O que guarda | Dados de cliente |
 | --- | --- | --- |
 | `direcionador_config` (uma linha) | `ativo` (a chave geral), quem mudou e quando | Nenhum |
-| `direcionador_destinos` | `id`, `tipo` (`vendas` ou `externo`), `apelido`, `modo` (`email` ou `porta`), `ativo` | Nenhum. **Os endereços não ficam aqui** |
+| `direcionador_destinos` | `id`, `tipo` (`vendas` ou `manual`), `modo` (`email` ou `porta`), `ativo` | Nenhum. **Os endereços não ficam aqui** |
 | `direcionador_regras` | `id`, `nome`, `ativa`, `ordem`, `produtos` (ids do catálogo, vazio = qualquer), `fontes` (vazio = qualquer), `dias` (0 = domingo … 6), `hora_inicio`, `hora_fim`, `destino_id`, carimbos | Nenhum |
 | `direcionador_regras_historico` (por gatilho) | Quem mudou qual regra, quando, de/para | Nenhum. Opcional (pergunta 9) |
 | `lead_fontes` | Catálogo das fontes (site, ZAP, Viva Real, OLX, Imovelweb, Chaves na Mão, outra) e como reconhecer cada uma no e-mail | Nenhum |
 
-**Segredos no Vault** (nunca em tabela, nunca no código): o endereço de e-mail do destino externo, e depois o endereço e a chave da porta de entrada. Duas funções `security definer`, as duas conferindo `is_gerente_geral()`:
+**Segredos no Vault** (nunca em tabela, nunca no código): o endereço de e-mail da distribuição manual, e depois o endereço e a chave da porta de entrada. Duas funções `security definer`, as duas conferindo `is_gerente_geral()`:
 - uma grava o endereço no Vault;
 - outra devolve só a versão mascarada (`c••••@e••••.com`). A tela nunca recebe o endereço inteiro de volta.
 
 **RLS e exposição:**
 - Toda tabela do direcionador: `for all to authenticated using (public.is_gerente_geral()) with check (public.is_gerente_geral())`. Sem permissão no catálogo, sem `has_permission`.
 - `revoke all ... from anon`. A Edge Function lê com a chave de serviço, que só existe nos Secrets.
-- **Esquema fora da API:** o PostgREST publica em `/rest/v1/` a lista das tabelas do esquema exposto. Para nem os nomes aparecerem a um corretor curioso, as tabelas ficam num esquema que não está em "Exposed schemas" (por exemplo `marketing`), e a tela usa funções RPC que conferem `is_gerente_geral()`. **Os nomes dessas funções continuam aparecendo na lista**, porque ficam no esquema exposto. Por isso elas têm nomes neutros do Marketing (por exemplo `mkt_config_ler` e `mkt_config_salvar`), sem "direcionador", "destino" ou "externo". A confirmar no painel do Supabase quanto essa lista mostra hoje para um usuário logado.
+- **Esquema fora da API:** o PostgREST publica em `/rest/v1/` a lista das tabelas do esquema exposto. Para nem os nomes aparecerem a um corretor curioso, as tabelas ficam num esquema que não está em "Exposed schemas" (por exemplo `interno`), e a tela usa funções RPC que conferem `is_gerente_geral()`. **Os nomes dessas funções continuam aparecendo na lista**, porque ficam no esquema exposto. Por isso elas têm nomes neutros (por exemplo `cfg_ler` e `cfg_salvar`), sem "direcionador", "destino" ou "distribuição". A confirmar no painel do Supabase quanto essa lista mostra hoje para um usuário logado.
 - **Nenhum aviso, menu ou texto** de outro perfil cita o direcionador. O aviso de "entrega falhou" vai só para o gerente geral.
 
 **Testes** (no padrão de `crm/supabase/testes/`): cada perfil (corretor, gerente, operacional, recepção, desativado, anônimo) recebe zero linhas e erro ao gravar; só o gerente geral lê e grava; a função de endereço nunca devolve o valor inteiro.
 
 ## 7. "Não fica registrado": onde o dado ainda pode ficar
 
-No desenho recomendado, o lead que vai ao destino externo **nunca entra no banco do Base360**. Ainda assim há lugares, fora do Base360 ou de infraestrutura, onde algo pode ficar. Cada um tem o que fazemos e o que sobra:
+No desenho recomendado, o lead que vai à distribuição manual **nunca entra no banco do Base360**. Ainda assim há lugares, fora do Base360 ou de infraestrutura, onde algo pode ficar. Cada um tem o que fazemos e o que sobra:
 
 | Onde | O que fazemos | O que sobra |
 | --- | --- | --- |
@@ -188,7 +194,7 @@ No desenho recomendado, o lead que vai ao destino externo **nunca entra no banco
 
 **X proposto: 24 horas.** Cobre uma noite e um domingo de queda do outro lado sem segurar dado por dias. Depois de X, o e-mail é apagado e o gerente geral recebe "Um contato não foi entregue em 24 h e foi descartado", sem nome nem telefone. Alternativas na pergunta 3.
 
-**O que vai no e-mail e no POST ao destino externo:** só os dados do contato, o produto, a fonte e a data. **Nunca** o nome da regra, o id da regra, o apelido do destino ou qualquer coisa interna. Assunto fixo e neutro: "Novo contato". O e-mail traz no corpo o mesmo `id` do lead que iria no POST: se o envio der certo e a exclusão da caixa falhar, a passada seguinte manda de novo, e o outro lado reconhece a repetição pelo `id`.
+**O que vai no e-mail e no POST à distribuição manual:** só os dados do contato, o produto, a fonte e a data. **Nunca** o nome da regra, o id da regra ou qualquer coisa interna. Assunto fixo e neutro: "Novo contato". O e-mail traz no corpo o mesmo `id` do lead que iria no POST: se o envio der certo e a exclusão da caixa falhar, a passada seguinte manda de novo, e o outro lado reconhece a repetição pelo `id`.
 
 ## 8. O lead que vai para o Vendas
 
@@ -208,23 +214,20 @@ No desenho recomendado, o lead que vai ao destino externo **nunca entra no banco
 - **Fase 2:** uma tabela de códigos de anúncio por portal → empreendimento, preenchida pelo operacional ou pelo marketing, para o webhook casar pelo código.
 - **Não reconhecido:** o produto fica vazio e o lead segue só pelas regras de "qualquer produto" (seção 5). No Vendas, entra sem empreendimento e com a mensagem original, como hoje.
 
-## 10. Site do módulo: pasta própria ou telas no Vendas
+## 10. Onde a tela fica
 
-**O que decide é que o código do Vendas é público.** O `out/` do Vendas é baixado por qualquer corretor que abra o app. Uma tela do direcionador ali, mesmo escondida do menu, deixaria no JavaScript as rotas, os textos ("Destino externo", "Chave geral") e as chamadas. Foi o mesmo problema do sigilo do programa de verba (`docs/historico.md`).
+**O que decide é que o código de um site estático é público.** Os arquivos de uma pasta do site são entregues a quem digita o endereço; o login só é conferido depois, no navegador. Uma tela do direcionador dentro do Vendas ou do Marketing, mesmo escondida do menu, deixaria no JavaScript as rotas, os textos ("Distribuição manual", "Chave geral") e as chamadas. Foi o mesmo problema do sigilo do programa de verba (`docs/historico.md`).
 
-| | **Pasta própria `marketing/`** (recomendada) | Telas dentro do Vendas |
-| --- | --- | --- |
-| Sigilo | ✓ Nada do direcionador no código do Vendas | ✕ Qualquer corretor acha o código |
-| Login | Mesmo Supabase e mesma conta. Por ser outro subdomínio, o Felipe entra uma vez em cada site | Um login só |
-| Casca | Mesma casca (cabeçalho, lateral, tema) pelos tokens de `marca/tokens/` e cópia dos componentes. Depois vale extrair um pacote comum | Já pronta |
-| Custo agora | Um app Next estático pequeno, uma tela | Uma rota |
-| Depois | Cresce para formulários, e-mail marketing e automações sem pesar no Vendas | O Vendas carrega o Marketing inteiro |
+**Como ficou (Felipe, 05/11/2026):**
+- **App à parte:** um app Next estático pequeno, só com a tela do direcionador, numa pasta própria do repositório (por exemplo `direcionador/`). Nada dele entra no app do Vendas nem no do Marketing.
+- **Pasta de nome neutro** em `base360.mbigucci.com.br`, escolhida pelo Felipe na publicação (`BASE_PATH`, fora do Git). Não aparece em menu, link nem na tela de escolha do portal.
+- **Senha do servidor:** um `.htaccess` com usuário e senha do Apache na pasta. Sem a senha, o servidor nem entrega os arquivos. O arquivo de senhas (`.htpasswd`) fica fora da pasta publicada e fora do Git.
+- **Login do Base360 por cima:** a mesma origem do Vendas, então a sessão do Supabase é a mesma. Os dados continuam protegidos pela regra fixa `is_gerente_geral()` no banco.
+- **Casca:** a mesma do Vendas (cabeçalho, lateral, tema), pelos tokens de `marca/tokens/`, com o logo "Base360" sem nome de módulo.
 
-**Mais uma camada, enquanto só o Felipe usa o Marketing:** proteger `marketing.base360.mbigucci.com.br` no próprio servidor (senha do Apache por `.htaccess`), para o código nem ser baixado por quem não tem a senha. Quando outras pessoas usarem o Marketing (e-mail marketing, relatórios), o direcionador passa a ser uma rota só do gerente geral, e essa camada sai (pergunta 7). O cartão Marketing **não** aparece na tela de escolha do portal enquanto for só do Felipe.
+## 11. Porta de entrada da distribuição manual
 
-## 11. Porta de entrada do destino externo
-
-A especificação completa e neutra, para entregar ao dono daquele sistema, está em `docs/marketing/porta-de-entrada-leads.md`. Em resumo:
+A especificação completa e neutra, para entregar ao dono daquele sistema, está em `docs/direcionador/porta-de-entrada-leads.md`. Em resumo:
 
 - `POST` HTTPS com corpo JSON, um lead por chamada, chave no cabeçalho `Authorization: Bearer`.
 - Campos: `versao`, `id` (UUID, chave de idempotência), datas em ISO 8601 com fuso, contato (nome, telefone em E.164, e-mail, mensagem), interesse (produto) e origem (fonte).
@@ -240,7 +243,7 @@ Até a porta existir, a entrega é por e-mail para o endereço configurado. Quan
 2. Criar a regra do Outlook: mensagens dos remetentes dos portais e do site → **Redirecionar para** a caixa de entrada. Manter a cópia na caixa dele.
 3. Mandar **um e-mail de cada fonte, com nome, telefone e e-mail do cliente trocados**, para o leitor ser feito sobre o formato real.
 4. Rodar o SQL do direcionador no Supabase, pôr os segredos da Graph nos Secrets da função e publicar a função (como foi com a `avisos`).
-5. Na tela: digitar o apelido e o endereço do destino externo, criar as regras e ligar a chave geral.
+5. Na tela: digitar o endereço da distribuição manual, criar as regras e ligar a chave geral.
 6. Mandar ao dono do outro sistema a especificação da porta de entrada.
 
 **TI (fase 1):**
@@ -288,24 +291,13 @@ Respondidas em 05/11/2026: as decisões estão no topo deste arquivo. As opçõe
 9. **Histórico de mudanças das regras** (quem ligou ou desligou, quando, sem dados de cliente):
    - **(a) Guardar, visível só para você** (recomendada).
    - (b) Não guardar nada.
-10. **Contar os envios ao destino externo**, só o número por dia, sem dados (o brief deixou para depois):
+10. **Contar os envios à distribuição manual**, só o número por dia, sem dados (o brief deixou para depois):
     - **(a) Não contar por enquanto** (recomendada).
     - (b) Contar, visível só para você.
 
-## 14. Esboço do roadmap do Marketing (substituto do RD Station)
+## 14. O Marketing (substituto do RD Station)
 
-Sem implementar. Cada etapa com estudo e protótipo próprios, como esta.
-
-| Etapa | O que entra | Dependências e cuidados |
-| --- | --- | --- |
-| 1. Direcionador (esta) | Regras, entrada por e-mail, entrega ao Vendas e ao destino externo | Caixa e app do TI; lead sem dono no Vendas |
-| 2. Entrada direta | Webhooks dos portais e do site | Homologação em cada portal |
-| 3. Base de contatos | Contato único por pessoa (e-mail e telefone), consentimento LGPD com data e texto, descadastro, origem e campanha (UTM) de cada entrada | O lead externo continua fora da base (decisão do brief) |
-| 4. Formulários e landing pages | Formulários próprios no `marketing/` ou embutidos no WordPress, landing pages estáticas por empreendimento, UTM gravada | Substitui o CF7 aos poucos |
-| 5. E-mail marketing | Listas por segmento, modelo no DS, envio, descadastro em um clique, relatório de abertura e clique | Precisa de um serviço de envio em massa com domínio autenticado (SPF, DKIM, DMARC). A Graph não serve para envio em massa |
-| 6. Automações e nutrição | Sequências por gatilho (entrou, visitou, sem resposta há N dias), pausa quando o corretor conversa | `pg_cron` e a função de envio |
-| 7. Relatórios de origem e campanha | Leads, visitas e vendas por fonte, campanha e produto, ligados ao Vendas (`docs/vendas-metas.md`) | Base de contatos e UTM |
-| 8. Saída do RD Station | Migrar contatos com consentimento, desligar formulários e automações do RD | Levantar o que o Felipe usa hoje no RD |
+Saiu deste arquivo: o roteiro do Marketing está em `docs/marketing/roteiro.md`. O lead que vai para a distribuição manual nunca entra na base de contatos do Marketing.
 
 ## 15. Pesquisado e suposição, com as fontes
 
