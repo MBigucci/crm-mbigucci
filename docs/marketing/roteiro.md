@@ -1,6 +1,6 @@
 # Módulo de Marketing do Base360: roteiro (substituto do RD Station)
 
-> Esboço de 05/11/2026, sem implementar. O Marketing fica em `base360.mbigucci.com.br/marketing`. Cada etapa terá estudo e protótipo próprios, para o Felipe aprovar antes do código. O direcionador de leads nasceu aqui, mas ficou fora do Marketing (`docs/direcionador/direcionador.md`).
+> Esboço de 05/11/2026, sem implementar. O Marketing fica em `base360.mbigucci.com.br/marketing`. Cada etapa terá estudo e protótipo próprios, para o Felipe aprovar antes do código. A primeira tela do Marketing é o direcionador de leads (`docs/direcionador/direcionador.md`), que manda cada lead para o Vendas ou para um destino cadastrado.
 
 | Etapa | O que entra | Dependências e cuidados |
 | --- | --- | --- |

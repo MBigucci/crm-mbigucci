@@ -1,10 +1,27 @@
 # Direcionador de leads do Base360 (estudo)
 
-> Estudo de 05/11/2026, aprovado pelo Felipe. Nasceu como etapa 1 do módulo de Marketing (brief `docs/codex-marketing-direcionador.md`), mas **ficou fora do Marketing**: é uma ferramenta à parte, só do gerente geral. Protótipo: `docs/mockups/direcionador.html`. Especificação da porta de entrada: `docs/direcionador/porta-de-entrada-leads.md`. O substituto do RD Station segue no Marketing, em `docs/marketing/roteiro.md`.
+> Estudo de 05/11/2026, aprovado pelo Felipe. É a etapa 1 do módulo de Marketing (brief `docs/codex-marketing-direcionador.md`) e fica em `base360.mbigucci.com.br/marketing`, só para o gerente geral. Protótipo: `docs/mockups/direcionador.html`. Especificação da porta de entrada: `docs/direcionador/porta-de-entrada-leads.md`. O resto do Marketing (substituto do RD Station) está em `docs/marketing/roteiro.md`.
 >
-> **Sigilo:** para onde parte dos leads vai nunca é nomeado. Aqui, no código, no banco e nas telas, esse destino se chama sempre **"distribuição manual"**, sem apelido.
+> **Sigilo:** para onde parte dos leads vai nunca é nomeado. Esse destino se chama **"Distribuição manual"**, e o nome é um dado do banco, não um texto do código.
+
+## Terceira rodada: vários destinos, de volta ao Marketing (Felipe, 05/11/2026)
+
+**Vale sobre a segunda rodada e a decisão 7.**
+
+- **Em `/marketing`:** o direcionador é uma tela do Marketing, em `base360.mbigucci.com.br/marketing`, só com o login do Base360. Sem pasta à parte e sem senha do servidor.
+- **Vários destinos externos:** além do Vendas, o Felipe cadastra quantos destinos quiser. Exemplo do Felipe: uma imobiliária parceira que trabalha no stand, tem CRM próprio, não acessa o Base360 e recebe leads daqui. Cada destino tem **nome**, **entrega** (e-mail ou porta de entrada, pela mesma especificação neutra) e **endereço** (no Vault, mostrado mascarado).
+- **Por que o sigilo melhora:** os destinos são linhas do banco, lidas só por `is_gerente_geral()`. O código da tela só conhece "uma lista de destinos" e não tem nenhum nome escrito. Quem baixar o código do `/marketing` vê, no máximo, que existe uma tela de destinos. "Distribuição manual" é só o nome que o Felipe dá a uma dessas linhas.
+- **Registro por destino:** cada destino tem a chave **"Registrar os envios"**. Ligada, o Base360 guarda quem foi enviado, quando e para qual destino, para medir a parceria e cobrar retorno. Desligada, nada fica. Decisão do Felipe: **ligada nos parceiros, desligada na Distribuição manual**. Quem vê os envios registrados e onde: a definir no brief do código (proposta: só o gerente geral, numa aba do destino).
+- **Falha na entrega:** igual para todo destino. Uma tentativa; falhou, o lead vai para o Vendas.
+
+**O que muda no banco (seção 6):**
+- `direcionador_destinos` ganha `nome` e `registrar_envios` (booleano). O `tipo` passa a ser `vendas` ou `externo` de novo, porque agora há vários externos.
+- Nova tabela `direcionador_envios` (destino, data, nome, telefone, e-mail, produto, fonte), gravada **só** quando o destino tem `registrar_envios` ligado. Só o gerente geral lê.
+- Um endereço no Vault por destino.
 
 ## Segunda rodada (Felipe, 05/11/2026)
+
+Superada em parte pela terceira rodada: o nome "Distribuição manual" e o fim do apelido continuam valendo; a pasta à parte com senha do servidor não.
 
 - **Nome:** o destino passa a se chamar **"Distribuição manual"** em todo lugar (antes "destino externo").
 - **Sem apelido:** sai o campo de apelido da tela e do banco.
@@ -30,7 +47,7 @@ Respostas às perguntas da seção 13. **Onde o texto abaixo diverge, valem esta
 **O que muda no desenho:**
 - **Entrega:** uma tentativa só, pelo modo configurado (e-mail agora, a porta de entrada depois). Falhou (erro, recusa ou tempo esgotado), o lead segue para o Vendas na mesma passada, e o e-mail sai da caixa de entrada. Não há aviso de "entrega descartada". Se a resposta não chega por tempo esgotado, o outro lado pode ter recebido mesmo assim: nesse caso raro o lead fica nos dois lugares.
 - **Sem fila:** não há tabela temporária, contagem de tentativas nem propriedade estendida no e-mail. A seção 7 vale só pela tabela de onde o dado ainda pode ficar.
-- **Mesmo login:** o Vendas e o direcionador ficam na mesma origem, então a sessão do Supabase é a mesma. O código do direcionador não entra no app do Vendas nem no do Marketing.
+- **Mesmo login:** o Vendas e o Marketing ficam na mesma origem, então a sessão do Supabase é a mesma. O código do direcionador não entra no app do Vendas.
 - **Sem histórico de regras:** sai a tabela `direcionador_regras_historico`.
 - **Próxima frente:** o estudo da roleta automática do lead da empresa, de que o direcionador depende para ir ao ar.
 
@@ -60,7 +77,7 @@ Respostas às perguntas da seção 13. **Onde o texto abaixo diverge, valem esta
 - **Entrega na distribuição manual:** por e-mail, saindo da mesma caixa, para o endereço que o Felipe digita na tela, sem cópia em Itens Enviados. Quando a porta de entrada daquele sistema existir, passa a ser um POST JSON (seção 11), com o e-mail como reserva.
 - **Fase 2: webhooks.** ZAP e Viva Real (Grupo OLX), Chaves na Mão e talvez Imovelweb mandam o lead direto para a função. O formulário do site também. Isso tira o atraso de 1 minuto e os e-mails do caminho, mas depende de homologação em cada portal. Não é preciso para começar.
 - **Banco:** regras, destinos e a chave geral em tabelas que só passam por `is_gerente_geral()`, fora do esquema exposto pela API. Os endereços da distribuição manual ficam no **Vault**, e a tela mostra só uma versão mascarada.
-- **Site:** app próprio e pequeno, com a casca do Vendas, numa pasta de nome neutro de `base360.mbigucci.com.br`, protegida por senha do servidor e que não aparece em lugar nenhum (decisões de 05/11/2026). **Não** como telas dentro do Vendas nem do Marketing: o código desses apps é baixável por quem abre o endereço, e qualquer tela ou texto do direcionador ali revelaria que ele existe.
+- **Site:** tela do Marketing, em `base360.mbigucci.com.br/marketing`, só do gerente geral. Os nomes dos destinos ficam só no banco, nunca no código, que é baixável por quem abre o endereço (terceira rodada, seção 10).
 
 ## 2. O que chega hoje: o site e os 4 portais (pesquisa)
 
@@ -216,14 +233,14 @@ No desenho recomendado, o lead que vai à distribuição manual **nunca entra no
 
 ## 10. Onde a tela fica
 
-**O que decide é que o código de um site estático é público.** Os arquivos de uma pasta do site são entregues a quem digita o endereço; o login só é conferido depois, no navegador. Uma tela do direcionador dentro do Vendas ou do Marketing, mesmo escondida do menu, deixaria no JavaScript as rotas, os textos ("Distribuição manual", "Chave geral") e as chamadas. Foi o mesmo problema do sigilo do programa de verba (`docs/historico.md`).
+**O que decide é que o código de um site estático é público.** Os arquivos de uma pasta do site são entregues a quem digita o endereço; o login só é conferido depois, no navegador. Por isso nenhum nome de destino pode estar escrito no código. Foi o mesmo problema do sigilo do programa de verba (`docs/historico.md`).
 
-**Como ficou (Felipe, 05/11/2026):**
-- **App à parte:** um app Next estático pequeno, só com a tela do direcionador, numa pasta própria do repositório (por exemplo `direcionador/`). Nada dele entra no app do Vendas nem no do Marketing.
-- **Pasta de nome neutro** em `base360.mbigucci.com.br`, escolhida pelo Felipe na publicação (`BASE_PATH`, fora do Git). Não aparece em menu, link nem na tela de escolha do portal.
-- **Senha do servidor:** um `.htaccess` com usuário e senha do Apache na pasta. Sem a senha, o servidor nem entrega os arquivos. O arquivo de senhas (`.htpasswd`) fica fora da pasta publicada e fora do Git.
-- **Login do Base360 por cima:** a mesma origem do Vendas, então a sessão do Supabase é a mesma. Os dados continuam protegidos pela regra fixa `is_gerente_geral()` no banco.
-- **Casca:** a mesma do Vendas (cabeçalho, lateral, tema), pelos tokens de `marca/tokens/`, com o logo "Base360" sem nome de módulo.
+**Como ficou (terceira rodada, Felipe, 05/11/2026):**
+- **No Marketing:** a tela Direcionador fica no app do Marketing (`marketing/` no repositório), publicado em `base360.mbigucci.com.br/marketing`, só com o login do Base360. Nada dela entra no app do Vendas.
+- **Nomes só no banco:** os destinos (inclusive a Distribuição manual) são linhas de `direcionador_destinos`, que só o gerente geral lê. O código, os textos fixos e o build não têm nome de destino nenhum. A busca de sigilo antes de publicar confere o `out/` do Marketing.
+- **Menu:** o item Direcionador aparece só para o gerente geral. Para os outros perfis, nem o item nem a rota mostram dados.
+- **Mesma origem do Vendas:** a sessão do Supabase é a mesma, um login só.
+- **Casca:** a mesma do Vendas (cabeçalho, lateral, tema), pelos tokens de `marca/tokens/`, com o logo "Base360 · Marketing".
 
 ## 11. Porta de entrada da distribuição manual
 

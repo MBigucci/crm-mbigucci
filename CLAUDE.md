@@ -60,7 +60,7 @@ O CRM de corretores da MBigucci (construtora em São Bernardo do Campo). O usuá
 - `docs/candidatos-automacao.md`: abra ao criar testes, hooks ou skills, ou quando um hook bloquear algo e você precisar entender por quê.
 - `docs/teste-carga.md`: abra ao mexer em RLS, gatilhos, gravações do app (salvar, cadastrar, Desfazer) ou no plano do Supabase. Tem o teste de carga (`npm run test:carga`), o id gerado no aparelho contra duplicados e o que ficou pendente.
 - `docs/marketing/roteiro.md`: abra ao mexer no módulo de Marketing (substituto do RD Station).
-- `docs/direcionador/direcionador.md`: abra ao mexer no direcionador de leads (entrada por e-mail e Graph, regras, sigilo da distribuição manual). Fica fora do Marketing, numa pasta à parte com senha do servidor. Decisões do Felipe no topo. A especificação para o outro sistema está em `docs/direcionador/porta-de-entrada-leads.md`.
+- `docs/direcionador/direcionador.md`: abra ao mexer no direcionador de leads, a primeira tela do Marketing (entrada por e-mail e Graph, regras, destinos, sigilo da distribuição manual). Decisões do Felipe no topo, em rodadas. A especificação para os sistemas de destino está em `docs/direcionador/porta-de-entrada-leads.md`.
 - `docs/apresentacao/`: o deck da reunião de novembro (Artifact Slides, fontes em `project/`). Abra ao mexer na apresentação ou ao conferir o que foi anunciado a corretores e gerentes.
 
 ## Automação ativa
