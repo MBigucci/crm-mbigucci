@@ -278,3 +278,113 @@ export function gravarStandDoAparelho(id: string | null) {
     // Armazenamento bloqueado: vale só nesta página.
   }
 }
+
+// ---------- Painel e relatório ----------
+
+export type NumerosStand = { clientes: number; novos: number; indicacoes: number; retornos: number; atendeuDeOutro: number };
+export const standZerado = (): NumerosStand => ({ clientes: 0, novos: 0, indicacoes: 0, retornos: 0, atendeuDeOutro: 0 });
+export type AtendimentoPainel = {
+  corretor_id: string | null;
+  anunciado_id: string | null;
+  anunciado_papel: PapelAnunciado | null;
+  tipo: TipoCliente;
+  status: "ativo" | "cancelado";
+  registrado_em: string;
+};
+
+/**
+ * Clientes do stand no período, por corretor. O cliente conta para o corretor
+ * do vínculo (o dono do lead: o da vez, quem indicou ou o do retorno); o
+ * cliente de parceiro não tem corretor. "Atendeu de outro" é o colega que
+ * atendeu a indicação de alguém fora do stand. Desfeitos ficam fora.
+ */
+export function contarStand(xs: AtendimentoPainel[], p: { ini: Date; fim: Date }): Map<string, NumerosStand> {
+  const r = new Map<string, NumerosStand>();
+  const de = (id: string) => r.get(id) ?? (r.set(id, standZerado()), r.get(id)!);
+  for (const a of xs) {
+    const t = new Date(a.registrado_em).getTime();
+    if (a.status !== "ativo" || t < p.ini.getTime() || t >= p.fim.getTime()) continue;
+    if (a.corretor_id) {
+      const n = de(a.corretor_id);
+      n.clientes++;
+      if (a.tipo === "novo") n.novos++;
+      else if (a.tipo === "indicacao_corretor") n.indicacoes++;
+      else if (a.tipo === "retorno") n.retornos++;
+    }
+    if (a.anunciado_papel === "colega" && a.anunciado_id) de(a.anunciado_id).atendeuDeOutro++;
+  }
+  return r;
+}
+
+export const somarStand = (xs: NumerosStand[]): NumerosStand =>
+  xs.reduce(
+    (s, x) => ({
+      clientes: s.clientes + x.clientes,
+      novos: s.novos + x.novos,
+      indicacoes: s.indicacoes + x.indicacoes,
+      retornos: s.retornos + x.retornos,
+      atendeuDeOutro: s.atendeuDeOutro + x.atendeuDeOutro,
+    }),
+    standZerado(),
+  );
+
+export type AtendimentoRelatorio = {
+  plantao_id: string;
+  tipo: TipoCliente;
+  antes_da_vez: boolean;
+  midias: string[];
+  empreendimento: string | null;
+  corretor_id: string | null;
+  especialista_id: string | null;
+  parceiro_id: string | null;
+  gerente_id: string | null;
+  status: "ativo" | "cancelado";
+  registrado_em: string;
+};
+export type Contagem = { chave: string; n: number }[];
+
+/** Ordena a contagem: o maior primeiro, empate pelo nome. */
+const ordenar = (m: Map<string, number>): Contagem =>
+  [...m].map(([chave, n]) => ({ chave, n })).sort((a, b) => b.n - a.n || a.chave.localeCompare(b.chave, "pt-BR"));
+const soma = (m: Map<string, number>, k: string) => m.set(k, (m.get(k) ?? 0) + 1);
+
+/**
+ * Relatório do stand no período (todos os stands ou um): clientes por tipo,
+ * por como conheceu (cada marcação conta), por empreendimento, por corretor
+ * do vínculo, por especialista e por parceiro. Desfeitos ficam fora.
+ */
+export function resumoStand(xs: AtendimentoRelatorio[], p: { ini: Date; fim: Date }, stand?: string | null) {
+  const validos = xs.filter((a) => {
+    const t = new Date(a.registrado_em).getTime();
+    return a.status === "ativo" && t >= p.ini.getTime() && t < p.fim.getTime() && (!stand || a.plantao_id === stand);
+  });
+  const tipos = new Map<TipoCliente, number>(TIPOS_CLIENTE.map((t) => [t.slug, 0]));
+  const midias = new Map<string, number>();
+  const empreendimentos = new Map<string, number>();
+  const corretores = new Map<string, number>();
+  const especialistas = new Map<string, number>();
+  const parceiros = new Map<string, number>();
+  let antes = 0;
+  let semMidia = 0;
+  for (const a of validos) {
+    tipos.set(a.tipo, (tipos.get(a.tipo) ?? 0) + 1);
+    if (a.antes_da_vez) antes++;
+    if (a.midias.length) a.midias.forEach((m) => soma(midias, m));
+    else semMidia++;
+    soma(empreendimentos, a.empreendimento?.trim() || "–");
+    if (a.corretor_id) soma(corretores, a.corretor_id);
+    if (a.especialista_id) soma(especialistas, a.especialista_id);
+    if (a.parceiro_id) soma(parceiros, a.parceiro_id);
+  }
+  return {
+    total: validos.length,
+    tipos: TIPOS_CLIENTE.map((t) => ({ chave: t.slug, n: tipos.get(t.slug) ?? 0 })),
+    antesDaVez: antes,
+    semMidia,
+    midias: ordenar(midias),
+    empreendimentos: ordenar(empreendimentos),
+    corretores: ordenar(corretores),
+    especialistas: ordenar(especialistas),
+    parceiros: ordenar(parceiros),
+  };
+}

@@ -32,6 +32,9 @@ import { useMetasVgv, useVendas, useVendasDoAno, type VendaComLead } from "@/lib
 import type { MetaVgv } from "@/lib/metas";
 import { CartaoMetaAnual, MetasDoCorretor, TabelaMetaAnual } from "@/components/metas/metas";
 import { ResumoVendas } from "@/components/vendas/vendas";
+import { StandDoCorretor, TabelaStand } from "@/components/recepcao/painel-stand";
+import { useStandPainel } from "@/lib/recepcao-dados";
+import { standZerado } from "@/lib/recepcao";
 
 export default function PainelPage() {
   const { pode } = useSessao();
@@ -74,6 +77,7 @@ function Painel() {
 
   const { dados, erro } = usePainel(per);
   const visitas = useVisitasPainel(per);
+  const stand = useStandPainel(per);
   // Vendas pela data da assinatura: as do período e as do ano (meta anual).
   const ano = per.ini.getFullYear();
   const { vendas: vendasPeriodo } = useVendas(dataIso(per.ini), dataIso(per.fim));
@@ -133,6 +137,7 @@ function Painel() {
             setSel={setSel}
             voltar={veOutros ? () => ir({ c: null }) : undefined}
             visitas={visitas ? (visitas.get(corretorId) ?? visitasZeradas()) : null}
+            stand={stand ? (stand.get(corretorId) ?? standZerado()) : null}
             vendas={vendasPeriodo ? somarVendas(vendasPeriodo.filter((v) => v.corretor_id === corretorId)) : null}
             vendasLista={vendasPeriodo?.filter((v) => v.corretor_id === corretorId) ?? null}
             meta={metasVgv && vendasAno ? { ano, linhas: metasVgv, vendas: vendasAno } : null}
@@ -175,6 +180,7 @@ function Painel() {
         />
       )}
       {dados && visitas && linhas.length > 0 && <TabelaVisitas linhas={linhas.map((x) => x.corretor)} numeros={visitas} nomes={nomes} />}
+      {dados && stand && linhas.length > 0 && <TabelaStand linhas={linhas.map((x) => x.corretor)} numeros={stand} nomes={nomes} />}
       {dados && vendasPeriodo && linhas.length > 0 && (
         <TabelaVendas linhas={linhas.map((x) => x.corretor)} vendas={vendasPeriodo} nomes={nomes} />
       )}
@@ -806,6 +812,7 @@ function RelatorioCorretor({
   setSel,
   voltar,
   visitas,
+  stand,
   vendas,
   vendasLista,
   meta,
@@ -821,6 +828,7 @@ function RelatorioCorretor({
   setSel: (s: Selecao | null) => void;
   voltar?: () => void;
   visitas: NumerosVisita | null;
+  stand: import("@/lib/recepcao").NumerosStand | null;
   vendas: Totais | null;
   vendasLista: VendaComLead[] | null;
   meta: { ano: number; linhas: MetaVgv[]; vendas: VendaComLead[] } | null;
@@ -915,6 +923,7 @@ function RelatorioCorretor({
       <Conversao linhas={conversaoPorOrigem(x, dados.leads, campanha)} abrir={setSel} campanha={campanha} vendas={vendasLista} />
 
       {visitas && <VisitasDoCorretor numeros={visitas} />}
+      {stand && <StandDoCorretor numeros={stand} />}
 
       {vendas && (
         <section aria-labelledby="r-vendas" className="grid gap-2">

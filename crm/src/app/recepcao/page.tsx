@@ -242,6 +242,11 @@ function TelaDoStand({ stand, onTrocar }: { stand: Stand; onTrocar: () => void }
           <div className="text-right text-[12px] text-concrete">
             Agora <b className="num text-ink">{hora(agora)}</b>
             <span className="block">Atalhos: Alt+N, C, P, R tipo · Alt+V Pôr na vez · Alt+K cliente</span>
+            {pode("plantao.atendimentos_ver") && (
+              <Link href="/recepcao/relatorio/" className="link-acao mt-1 mr-3 inline-block">
+                Relatório do stand
+              </Link>
+            )}
             {pode("plantoes.gerenciar") && (
               <Link href="/recepcao/stands/" className="link-acao mt-1 inline-block">
                 Stands e especialistas

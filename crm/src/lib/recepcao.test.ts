@@ -105,3 +105,48 @@ test("busca de pessoas: apelido primeiro, sem acento, só do papel", () => {
   assert.deepEqual(buscarPessoas(pessoas, "mar", "especialista").map((x) => x.nome), ["Marina"]);
   assert.deepEqual(buscarPessoas(pessoas, "  ", "corretor"), []);
 });
+
+test("painel: clientes do stand por corretor do vínculo, sem os desfeitos e fora do período", async () => {
+  const { contarStand, somarStand } = await import("./recepcao.ts");
+  const a = (corretor: string | null, tipo: "novo" | "indicacao_corretor" | "indicacao_parceiro" | "retorno", hhmm = "10:00", extra = {}) => ({
+    corretor_id: corretor, anunciado_id: corretor, anunciado_papel: "corretor" as const, tipo, status: "ativo" as const,
+    registrado_em: `2026-11-05T${hhmm}:00-03:00`, ...extra,
+  });
+  const r = contarStand(
+    [
+      a("beto", "novo"), a("beto", "indicacao_corretor"), a("beto", "retorno"), a(null, "indicacao_parceiro"),
+      a("beto", "novo", "11:00", { status: "cancelado" }), a("beto", "novo", "23:59"), a("beto", "novo", "08:00"),
+      a("duda", "indicacao_corretor", "10:00", { anunciado_id: "beto", anunciado_papel: "colega" }),
+    ],
+    { ini: new Date("2026-11-05T09:00:00-03:00"), fim: new Date("2026-11-05T23:00:00-03:00") },
+  );
+  assert.deepEqual(r.get("beto"), { clientes: 3, novos: 1, indicacoes: 1, retornos: 1, atendeuDeOutro: 1 });
+  assert.deepEqual(r.get("duda"), { clientes: 1, novos: 0, indicacoes: 1, retornos: 0, atendeuDeOutro: 0 });
+  assert.equal(somarStand([...r.values()]).clientes, 4);
+});
+
+test("relatório do stand: por tipo, como conheceu, empreendimento e pessoas, filtrando o stand", async () => {
+  const { resumoStand } = await import("./recepcao.ts");
+  const a = (stand: string, tipo: "novo" | "indicacao_corretor" | "indicacao_parceiro" | "retorno", extra = {}) => ({
+    plantao_id: stand, tipo, antes_da_vez: false, midias: ["passagem"], empreendimento: "Life", corretor_id: "beto",
+    especialista_id: "marina", parceiro_id: null, gerente_id: null, status: "ativo" as const, registrado_em: "2026-11-05T10:00:00-03:00", ...extra,
+  });
+  const xs = [
+    a("mz", "novo", { midias: ["passagem", "instagram"] }),
+    a("mz", "novo", { antes_da_vez: true, empreendimento: null }),
+    a("mz", "indicacao_parceiro", { corretor_id: null, parceiro_id: "ana", midias: [] }),
+    a("mz", "retorno", { status: "cancelado" }),
+    a("easy", "novo", { corretor_id: "duda" }),
+  ];
+  const per = { ini: new Date("2026-11-05T00:00:00-03:00"), fim: new Date("2026-11-06T00:00:00-03:00") };
+  const mz = resumoStand(xs, per, "mz");
+  assert.equal(mz.total, 3);
+  assert.deepEqual(mz.tipos.map((t) => t.n), [2, 0, 1, 0]);
+  assert.equal(mz.antesDaVez, 1);
+  assert.equal(mz.semMidia, 1);
+  assert.deepEqual(mz.midias, [{ chave: "passagem", n: 2 }, { chave: "instagram", n: 1 }]);
+  assert.deepEqual(mz.empreendimentos, [{ chave: "Life", n: 2 }, { chave: "–", n: 1 }]);
+  assert.deepEqual(mz.corretores, [{ chave: "beto", n: 2 }]);
+  assert.deepEqual(mz.parceiros, [{ chave: "ana", n: 1 }]);
+  assert.equal(resumoStand(xs, per).total, 4, "todos os stands");
+});

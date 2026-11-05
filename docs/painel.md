@@ -51,6 +51,10 @@ O botão "Imprimir" abre a impressão do navegador. No papel saem o título ("Pa
 
 A tabela "Visitas no período, por corretor" (agendadas, realizadas, não compareceu e aguardando baixa) e os mesmos números no relatório do corretor contam pela data da visita, direto da tabela `visitas` (`contarVisitas` em `crm/src/lib/visitas.ts`). Regras em `docs/visitas.md`.
 
+## 5b. Clientes no stand (05/11/2026)
+
+A tabela "Clientes no stand, por corretor · pela recepção" e os mesmos números no relatório do corretor contam os clientes registrados pela recepção no período, pelo corretor do vínculo (`contarStand` em `crm/src/lib/recepcao.ts`). O relatório do stand fica em `/recepcao/relatorio/`. Regras em `docs/recepcao.md`, seção 5.
+
 ## 6. Programa de verba e campanha
 
 O painel não mostra verba, pontos nem ranking: eles ficam nas telas do programa (`docs/pontuacao-verba.md`). **Atualizado em 29/10/2026:** a conversão por origem entrou no painel e no relatório, e a linha por campanha aparece só com a permissão `painel.campanha`, que no padrão é do corretor e não do gerente (`docs/vendas-metas.md`, seção 5; mantido com o fim do sigilo, em 04/11/2026). A conversão tem também leads, lead → venda, ticket médio e ciclo médio; o tempo médio de resposta ficou de fora.

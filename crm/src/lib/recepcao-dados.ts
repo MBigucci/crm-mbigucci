@@ -4,7 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { db } from "./supabase";
 import { mensagemErro } from "./erros";
 import {
+  contarStand,
   erroRecepcao,
+  type AtendimentoPainel,
+  type NumerosStand,
   type AchadoRetorno,
   type ClienteHoje,
   type LinhaVez,
@@ -172,3 +175,39 @@ export const entrarParceiro = (a: {
     p_procurado: a.procurado ?? null,
     p_escolhido: a.escolhido ?? null,
   });
+
+/**
+ * Clientes do stand no período, por corretor (painel e relatório). O RLS
+ * limita: gerente com plantao.atendimentos_ver vê a equipe; o corretor, os
+ * dele. Se a leitura falhar (recepcao.sql ainda não rodou), devolve null.
+ */
+export function useStandPainel(p: { ini: Date; fim: Date }) {
+  const [numeros, setNumeros] = useState<Map<string, NumerosStand> | null>(null);
+  const ini = p.ini.toISOString();
+  const fim = p.fim.toISOString();
+  useEffect(() => {
+    let vivo = true;
+    setNumeros(null);
+    (async () => {
+      const xs: AtendimentoPainel[] = [];
+      for (let de = 0; ; de += 1000) {
+        const { data, error } = await db()
+          .from("plantao_atendimentos")
+          .select("corretor_id, anunciado_id, anunciado_papel, tipo, status, registrado_em")
+          .gte("registrado_em", ini)
+          .lt("registrado_em", fim)
+          .order("registrado_em")
+          .order("id")
+          .range(de, de + 999);
+        if (error) return;
+        xs.push(...((data ?? []) as AtendimentoPainel[]));
+        if (!data || data.length < 1000) break;
+      }
+      if (vivo) setNumeros(contarStand(xs, { ini: new Date(ini), fim: new Date(fim) }));
+    })();
+    return () => {
+      vivo = false;
+    };
+  }, [ini, fim]);
+  return numeros;
+}
