@@ -220,6 +220,8 @@ h1 { margin: 0; }
 .card {
   position: relative;
   height: 100%;
+  /* Coluna com o botão no pé: os botões dos cartões ficam na mesma linha. */
+  display: flex; flex-direction: column; align-items: flex-start;
   border: 1px solid rgb(var(--line));
   border-radius: 3px;
   background: rgb(var(--surface));
@@ -233,10 +235,10 @@ h1 { margin: 0; }
 .card.bar-brand { --mb-bar: rgb(var(--brand)); }
 .card.bar-neutra { --mb-bar: rgb(var(--concrete)); }
 .titulo-card { margin: 0; font-size: 19px; font-weight: 700; line-height: 1.15; }
-.card p { margin: 6px 0 0; color: rgb(var(--ink-soft)); }
+.card p { margin: 6px 0 16px; color: rgb(var(--ink-soft)); }
 .btn {
   display: inline-flex; align-items: center; justify-content: center;
-  min-height: 44px; margin-top: 16px; padding: 9px 16px;
+  min-height: 44px; margin-top: auto; padding: 9px 16px;
   border: 1px solid transparent; border-radius: 2px;
   font-size: 15px; font-weight: 600; line-height: 1.2; text-decoration: none;
 }
