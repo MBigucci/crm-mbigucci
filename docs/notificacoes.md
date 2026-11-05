@@ -19,7 +19,8 @@
 
 - **Entrou:** service worker só para avisos (`crm/public/sw.js`, escopo `/crm/`, sem cache), card "Avisos neste aparelho" em Minha conta (ligar, desligar, tipos, enviar teste), tabelas `push_assinaturas` e `push_log` com RLS, a Edge Function `avisos` (montagem, envio e criptografia sem dependências), o agendador a cada 5 min e o gatilho de lead atribuído (`crm/supabase/agendar-avisos.sql`).
 - **Avisos:** próximo contato, visita 1 hora antes, visitas aguardando baixa no fim do dia, lead da empresa atribuído, prazo de 15 min (faltando 5 e estourado) e resumo do dia.
-- **Ficou de fora:** aviso para o gerente (prazo estourado na equipe, lead perdido), lista dos aparelhos para remover um celular perdido (cada um só vê os próprios; o aparelho sai sozinho em 60 dias sem abrir o CRM), religar sozinho ao entrar de novo na mesma conta (a Bruna faz; aqui a pessoa liga de novo em Minha conta) e qualquer aviso do programa de pontuação.
+- **Depois (04/11/2026, item 28):** o tipo **Equipe**, para o gerente: o prazo de 15 min estourado num lead da empresa da equipe, na hora, e no fim do dia as visitas da equipe aguardando baixa.
+- **Ficou de fora:** lista dos aparelhos para remover um celular perdido (cada um só vê os próprios; o aparelho sai sozinho em 60 dias sem abrir o CRM), religar sozinho ao entrar de novo na mesma conta (a Bruna faz; aqui a pessoa liga de novo em Minha conta) e qualquer aviso do programa de pontuação.
 - **Programa de pontuação:** os avisos não tratam de pontos, verba nem ranking. Até 04/11/2026 era regra de sigilo, com teste; o sigilo acabou e o teste saiu, mas os textos ficaram como estavam.
 
 ## 2. Como funciona
@@ -48,10 +49,13 @@ Por que assim: o site é exportação estática no WordPress, sem servidor. Na B
 | Lead da empresa (`atribuido`) | Na hora, dentro do horário de atendimento; fora dele, na abertura. Só se o prazo ainda não venceu. | "Lead novo para você" · "Ana Souza · Marco Zero One. Responda em até 15 min." | Ficha do lead |
 | Prazo de 15 min (`prazo`) | Faltando de 1 a 6 min | "Faltam 5 min para responder" · "Ana Souza · Marco Zero One aguarda o primeiro contato." | Ficha do lead |
 | Prazo de 15 min (`prazo`) | Quando estoura, até 30 min depois | "Prazo de 15 min estourado" · "Ana Souza · Marco Zero One ainda está sem primeiro contato. Fale agora." | Ficha do lead |
+| Equipe (`equipe`), só para o gerente | Prazo de 15 min estourado num lead da empresa de um corretor da equipe, na hora, até 30 min depois. Mais de 3 na mesma rodada viram um aviso só. | "Prazo de 15 min estourado na equipe" · "Ana Souza · Marco Zero One, com Bruno Lima, está sem primeiro contato. Veja o Lead perdido." / "4 prazos estourados na equipe" · "Bruno, Caio e Dani. Veja o painel." | Ficha do lead (onde está o Lead perdido) / Painel |
+| Equipe (`equipe`), só para o gerente | No fim do atendimento (19h no padrão), até 1 h depois, se houver visita da equipe aberta que já passou | "3 visitas da equipe aguardando baixa" · "Bruno (2) e Caio (1). Cobre a baixa." | Agenda |
 | Resumo do dia (`resumo`) | Na abertura do atendimento (9h no padrão), até 1 h depois, nos dias de atendimento. Dia sem pendências não manda nada; dia só com aniversário manda. | "Seu dia no CRM" · "1 aguardando primeiro contato · 2 atrasados · 1 contato para hoje · 2 visitas (10h, 15h30) · aniversário de Ana Souza" | Lista do dia |
 
 - **Aniversários (item 16, `docs/leads.md`, seção 17):** `avisos_dados` manda só o dia e o mês (`dia_mes`, "MM-DD") dos leads ativos de quem tem aparelho, nunca o ano. A função decide com `ehAniversarioHoje`, a mesma regra da ficha: quem nasceu em 29/02 aparece em 28/02 nos anos que não são bissextos. Sem o SQL do item 16, o resumo sai como antes. Depois de mudar o `index.ts`, publique a função de novo (`crm/README.md`, seção 9).
 - **Quem recebe:** o dono do lead e o corretor da visita. O lead da empresa só avisa quando quem atribuiu não é o próprio dono.
+- **Equipe (item 28, Felipe, 04/11/2026):** vai para quem tem `dados.ver_equipe` em `role_permissions` (no padrão, o gerente) e é gerente de uma equipe (`teams.gerente_id`), sobre os corretores ativos dela, mesmo os que não têm aparelho. O gerente geral não recebe: ele vê todas as equipes e não é gerente de nenhuma. `avisos_dados` manda a lista `equipes` (gerente e corretores) só de quem tem o tipo Equipe ligado. O corretor continua recebendo o aviso dele do prazo, com outra chave. Sem o SQL do item 28, a função funciona como antes.
 - **Lead da empresa em "novo":** fica só com os avisos do prazo e de atribuição. O de próximo contato não vale para ele, como na lista do dia.
 - **Mesmo lead, vários avisos:** usam a mesma `tag` (`lead-<id>`), então o mais novo substitui o anterior na bandeja do celular.
 - **Validade no serviço de push:** 1 h (30 min para o prazo e 4 h para o resumo). Celular desligado por mais tempo não recebe aviso velho.
@@ -70,7 +74,7 @@ Por que assim: o site é exportação estática no WordPress, sem servidor. Na B
 
 ## 5. Não repetir
 
-- Cada aviso tem uma chave por pessoa no `push_log`: `contato:<lead>:<hora marcada>`, `visita:<visita>:<início>`, `baixa:<corretor>:<dia>`, `atribuido:<lead>:<atribuído em>`, `prazo5:<lead>:<fim do prazo>`, `prazo:<lead>:<fim do prazo>` e `resumo:<pessoa>:<dia>`.
+- Cada aviso tem uma chave por pessoa no `push_log`: `contato:<lead>:<hora marcada>`, `visita:<visita>:<início>`, `baixa:<corretor>:<dia>`, `atribuido:<lead>:<atribuído em>`, `prazo5:<lead>:<fim do prazo>`, `prazo:<lead>:<fim do prazo>`, `resumo:<pessoa>:<dia>` e, para o gerente, `equipe_prazo:<lead>:<fim do prazo>` e `equipe_baixa:<gerente>:<dia>`. O Lead perdido muda o fim do prazo (o prazo recomeça para quem recebeu), então o gerente é avisado de novo se o novo corretor também estourar.
 - `avisos_registrar` grava com `on conflict do nothing` e devolve só as linhas novas. Duas chamadas ao mesmo tempo (o gatilho e o agendador) não mandam em dobro.
 - **Remarcar muda a chave:** o contato remarcado, a visita remarcada e o lead reatribuído voltam a avisar.
 - **Falha:** se o aviso não chegou a nenhum aparelho por falha do serviço (não por aparelho removido), ele sai do log e volta na próxima rodada. A janela de 30 min limita as tentativas.
@@ -99,7 +103,7 @@ Minha conta (`/conta/`), card **Avisos neste aparelho**, entre "Seu WhatsApp" e 
 
 - texto curto e a explicação do iPhone (Tela de Início, iOS 16.4);
 - estado com sinal: "✓ Ligados neste aparelho" ou "– Desligados neste aparelho";
-- "O que avisar": os 5 tipos, com nome e explicação, marcados por padrão. Com os avisos ligados, desmarcar grava na hora;
+- "O que avisar": os 5 tipos, com nome e explicação, marcados por padrão. Quem tem `dados.ver_equipe` vê também o sexto, **Equipe** ("Quando um lead da empresa estoura o prazo de 15 min e, no fim do dia, as visitas da equipe que aguardam baixa."), pelo campo `exige` de `TIPOS_AVISO` (`tiposDoAparelho`). Quem não vê nunca grava esse tipo. Com os avisos ligados, desmarcar grava na hora;
 - desligado: "Ligar avisos" (a ação vermelha do card). Ligado: "Enviar teste" e "Desligar neste aparelho";
 - bloqueado: o passo a passo para permitir, no iPhone, no Android ou no computador;
 - sem a chave no build: "! Os avisos ainda não foram configurados no CRM."
@@ -110,15 +114,16 @@ Conferido em 375px em 29/10/2026 com o Supabase falso (`sqltest/fake-supabase-av
 
 - **Intervalo da rodada:** em `agendar-avisos.sql`, `'*/5 * * * *'`. Rode o arquivo de novo.
 - **Janelas e textos:** constantes no topo de `crm/supabase/functions/avisos/index.ts` (`VISITA_ANTES_MIN`, `PRAZO_AVISO_MIN`, `ATRASO_MAX_MIN`, `CONTATOS_JUNTOS`). Depois, cole o arquivo de novo no editor da função e faça o deploy.
-- **Tipo novo:** some em `TIPOS_AVISO` da função e de `crm/src/lib/avisos.ts`, no check `push_assinaturas_tipos` e no `v_todos` de `push_assinar`. O teste compara as listas.
+- **Tipo novo:** some em `TIPOS_AVISO` da função e de `crm/src/lib/avisos.ts`, no check `push_assinaturas_tipos` e no `v_aceitos` de `push_assinar` (a última versão, no trecho do item 28 no fim do `schema.sql`). O teste compara as listas.
+- **Ordem para ligar o item 28:** primeiro o `schema.sql` (aceita o tipo Equipe e manda as equipes), depois a função `avisos` de novo (`crm/README.md`, seção 9), depois o site. Com o site novo e o banco velho, o gerente que tentar ligar o tipo Equipe recebe "Tipo de aviso inválido"; o corretor não é afetado. O `agendar-avisos.sql` não muda.
 - **Horários:** vêm de Configurações (horário de atendimento). Nada para mudar no código.
 
 ## 10. Testes
 
-- **`npm test`** (`crm/src/lib/avisos.test.ts`, 21 testes): cada aviso e suas janelas, remarcar gera chave nova, lead da empresa fora do horário, prazo de 5 min e estourado, resumo com as 4 contagens, dia sem pendências e dia sem atendimento, não repetir (`soNovos`), preferências por aparelho, juntar contatos, tentar de novo só na falha, tipos iguais na tela e na função, endereços de push, cifra que o aparelho decifra (RFC 8291) e o JWT do VAPID verificado com a chave pública.
-- **`npm run test:banco`** (`crm/supabase/testes/avisos.test.mjs`, 12 testes no PGlite): `push_assinar` com tipos padrão e escolhidos, RLS (cada um vê e apaga só os próprios; gerente e gerente geral não veem os da equipe; sem gravar direto), recusas (endereço, tipo, anônimo, desativado), aparelho que troca de conta, funções fechadas para o app, `avisos_dados` só de quem tem aparelho e conta ativa e com o fim do prazo, `avisos_registrar` sem repetir, `avisos_desmarcar`, `push_esquecer`, `avisos_limpar`, segredo no Vault e o gatilho de atribuição com um `pg_net` falso (chama só para o lead da empresa atribuído e não quebra o cadastro sem `pg_net`).
+- **`npm test`** (`crm/src/lib/avisos.test.ts`, 28 testes): do item 28, o prazo estourado na equipe (na hora, uma vez, ficha; só corretores da equipe e lead da empresa em novo; Lead perdido gera chave nova; mais de 3 viram um aviso que abre o painel), a baixa da equipe às 19h (contagem por corretor, uma por dia, nada sem visita), só para o aparelho com o tipo Equipe, e o tipo Equipe só na tela de quem vê a equipe. Antes: cada aviso e suas janelas, remarcar gera chave nova, lead da empresa fora do horário, prazo de 5 min e estourado, resumo com as 4 contagens, dia sem pendências e dia sem atendimento, não repetir (`soNovos`), preferências por aparelho, juntar contatos, tentar de novo só na falha, tipos iguais na tela e na função, endereços de push, cifra que o aparelho decifra (RFC 8291) e o JWT do VAPID verificado com a chave pública.
+- **`npm run test:banco`** (`crm/supabase/testes/avisos.test.mjs`, 13 testes no PGlite): do item 28, `avisos_dados` com a equipe do gerente que ligou o tipo Equipe (corretores ativos, leads e visitas do corretor sem aparelho), sem o corretor que marcou Equipe e sem o gerente que perdeu `dados.ver_equipe` no catálogo, o tipo aceito e o padrão sem ele. Antes: `push_assinar` com tipos padrão e escolhidos, RLS (cada um vê e apaga só os próprios; gerente e gerente geral não veem os da equipe; sem gravar direto), recusas (endereço, tipo, anônimo, desativado), aparelho que troca de conta, funções fechadas para o app, `avisos_dados` só de quem tem aparelho e conta ativa e com o fim do prazo, `avisos_registrar` sem repetir, `avisos_desmarcar`, `push_esquecer`, `avisos_limpar`, segredo no Vault e o gatilho de atribuição com um `pg_net` falso (chama só para o lead da empresa atribuído e não quebra o cadastro sem `pg_net`).
 - **Criptografia:** além do teste, conferida uma vez contra a biblioteca `http_ece` (a que o `web-push` usa): ela decifrou a mensagem da função.
-- **Ainda não validado:** o envio num Supabase real e num celular de verdade (Android e iPhone instalado), e o toque no aviso abrindo a tela certa.
+- **Ainda não validado:** o card com o tipo Equipe na tela, os avisos do gerente num celular de verdade, o envio num Supabase real e num celular de verdade (Android e iPhone instalado), e o toque no aviso abrindo a tela certa.
 
 ## 11. Da Bruna: o que veio, o que foi adaptado e o que ficou de fora
 

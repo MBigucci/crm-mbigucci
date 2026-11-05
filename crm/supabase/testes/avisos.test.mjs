@@ -229,6 +229,58 @@ test("gatilho de atribuição: chama a função na hora só para o lead da empre
   assert.equal((await linhas(`select count(*)::int n from public.leads where nome = 'Fábio Luz'`))[0].n, 1);
 });
 
+test("item 28: avisos_dados traz a equipe do gerente com o tipo Equipe, e os leads e visitas dos corretores dela", async () => {
+  // corretor A3, da equipe A, sem aparelho, com um lead da empresa em novo e uma visita que passou sem baixa
+  const CA3 = 8;
+  await db.query(`insert into auth.users (id, email, raw_user_meta_data) values ($1, 'u8@x.com', $2)`, [id(CA3), { nome: "Corretor A3" }]);
+  await db.exec(`update public.profiles set ativo = true, equipe_id = (select id from public.teams where nome = 'A') where id = '${id(CA3)}'`);
+  await como(GA, () =>
+    db.exec(`insert into public.leads (nome, whatsapp, origem, dono_id) values ('Dani Melo', '5511987654324', 'empresa', '${id(CA3)}')`));
+  // a visita é de outro lead: agendar tira o lead de "novo" e encerra o prazo
+  await como(CA3, () =>
+    db.exec(`insert into public.leads (nome, whatsapp, origem) values ('Edu Paz', '5511987654325', 'plantao')`));
+  const [{ lead }] = await linhas(`select id as lead from public.leads where nome = 'Edu Paz'`);
+  // gravada pelo dono do banco com a sessão do corretor (o teste é dos avisos, não do RLS das visitas)
+  await db.exec(`select set_config('request.jwt.claim.sub', '${id(CA3)}', false);
+    insert into public.visitas (lead_id, corretor_id, empreendimento, inicio) values ('${lead}', '${id(CA3)}', 'Mirai', now() + interval '1 day');
+    select set_config('request.jwt.claim.sub', '', false);`);
+  // a visita passa do horário (como em visitas.test.mjs): aguarda baixa
+  await db.exec(`update public.visitas set inicio = now() - interval '2 hours' where lead_id = '${lead}'`);
+  const dados = async () => (await como("servico", () => linhas(`select public.avisos_dados() d`)))[0].d;
+
+  // sem ninguém com o tipo Equipe: nada da equipe
+  let d = await dados();
+  assert.deepEqual(d.equipes, []);
+  assert.ok(!d.leads.some((l) => l.nome === "Dani Melo"));
+
+  // corretor com "equipe" no aparelho não vira gerente: não tem dados.ver_equipe
+  await como(CA, () => db.exec(assinar(FCM("ca-equipe"), "'{equipe}'")));
+  assert.deepEqual((await dados()).equipes, []);
+
+  // o gerente liga o tipo Equipe: vem a equipe dele, com os corretores ativos (o desativado fica fora)
+  await como(GA, () => db.exec(assinar(FCM("ga-celular"), "'{contato,equipe}'")));
+  d = await dados();
+  assert.equal(d.equipes.length, 1);
+  assert.equal(d.equipes[0].gerente_id, id(GA));
+  assert.deepEqual(d.equipes[0].membros.map((m) => m.nome), ["Corretor A", "Corretor A2", "Corretor A3"]);
+  const dani = d.leads.find((l) => l.nome === "Dani Melo");
+  assert.ok(dani && dani.fim_prazo, "o lead da empresa do corretor sem aparelho entra, com o fim do prazo");
+  assert.ok(d.visitas.some((v) => v.corretor_id === id(CA3)), "a visita do corretor sem aparelho entra");
+  assert.ok(!d.assinaturas.some((a) => a.usuario_id === id(CA3)));
+
+  // sem a permissão no catálogo, o gerente sai da lista (a permissão vem de role_permissions)
+  await db.exec(`delete from public.role_permissions where perfil = 'gerente' and permissao = 'dados.ver_equipe'`);
+  assert.deepEqual((await dados()).equipes, []);
+  await db.exec(`insert into public.role_permissions (perfil, permissao) values ('gerente', 'dados.ver_equipe')`);
+
+  // tipos: "equipe" é aceito; sem tipos, o aparelho novo continua com os 5 de sempre
+  await como(GA, () => db.exec(assinar(FCM("ga-tablet"))));
+  assert.deepEqual((await linhas(`select tipos from public.push_assinaturas where endpoint = $1`, [FCM("ga-tablet")]))[0].tipos,
+    ["contato", "visita", "atribuido", "prazo", "resumo"]);
+  await falha(GA, assinar(FCM("ga-x"), "'{equipe,outro}'"), "Tipo de aviso inválido");
+  await db.exec(`delete from public.push_assinaturas where endpoint in ('${FCM("ca-equipe")}', '${FCM("ga-celular")}', '${FCM("ga-tablet")}')`);
+});
+
 test("schema roda de novo com assinaturas e log gravados", async () => {
   await db.exec(schema);
   assert.ok((await linhas(`select count(*)::int n from public.push_log`))[0].n > 0);

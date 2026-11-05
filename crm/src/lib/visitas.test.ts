@@ -4,6 +4,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   agendaDaSemana,
+  clientesParaVisita,
+  MAX_CLIENTES,
+  retornosDaSemana,
+  textoDoDia,
   comprovanteValido,
   contarVisitas,
   dataHoraVisita,
@@ -179,4 +183,63 @@ test("histórico: agendada, confirmada, baixa, correção com motivo, remarcaç�
   assert.equal(d(ev("visita_comprovante", "https://x", null)), "Comprovante da visita removido");
   // Sem a visita carregada (outro corretor, por exemplo), o texto continua legível.
   assert.equal(descreverEvento(ev("visita", null, "agendada"), (s) => s, () => undefined), "Visita agendada");
+});
+
+// ---------- Agenda: retornos e Agendar visita (item 29) ----------
+
+const ld = (o: Partial<{ id: string; nome: string; whatsapp: string; proximo_contato: string | null; status: string; ultima_interacao_em: string | null; created_at: string; empreendimento: string | null }> = {}) => ({
+  id: "l1",
+  nome: "Ana Souza",
+  whatsapp: "5511987654321",
+  email: null,
+  empreendimento: "Marco Zero One" as string | null,
+  campanha: null,
+  regiao: null,
+  status: "ativo",
+  proximo_contato: null as string | null,
+  ultima_interacao_em: null as string | null,
+  created_at: "2026-10-01T10:00:00-03:00",
+  ...o,
+});
+
+test("retornos da semana: leads ativos pelo dia e pela hora do próximo contato", () => {
+  const segunda = inicioDaSemana(agora); // 26/10
+  const leads = [
+    ld({ id: "tarde", proximo_contato: "2026-10-29T16:00:00-03:00" }),
+    ld({ id: "manha", proximo_contato: "2026-10-29T09:30:00-03:00" }), // já passou: ficou sem contato
+    ld({ id: "domingo", proximo_contato: "2026-11-01T23:30:00-03:00" }),
+    ld({ id: "outra-semana", proximo_contato: "2026-11-02T10:00:00-03:00" }),
+    ld({ id: "descartado", proximo_contato: "2026-10-29T11:00:00-03:00", status: "descartado" }),
+    ld({ id: "sem-data" }),
+  ];
+  const dias = retornosDaSemana(leads, segunda);
+  assert.equal(dias.length, 7);
+  assert.deepEqual(dias[3].map((l) => l.id), ["manha", "tarde"]); // quinta
+  assert.deepEqual(dias[6].map((l) => l.id), ["domingo"]);
+  assert.equal(dias.flat().length, 3);
+});
+
+test("texto do dia da Agenda: visitas e retornos", () => {
+  assert.equal(textoDoDia(1, 2), "1 visita e 2 retornos");
+  assert.equal(textoDoDia(3, 0), "3 visitas");
+  assert.equal(textoDoDia(0, 1), "1 retorno");
+  assert.equal(textoDoDia(0, 0), "nada marcado");
+});
+
+test("Agendar visita pela Agenda: busca sem acento e por telefone, só ativos, conversa recente primeiro", () => {
+  const leads = [
+    ld({ id: "joao", nome: "João Lima", whatsapp: "5511912345678", ultima_interacao_em: "2026-10-20T10:00:00-03:00" }),
+    ld({ id: "joana", nome: "Joana Reis", whatsapp: "5511987650000", ultima_interacao_em: "2026-10-28T10:00:00-03:00" }),
+    ld({ id: "jose", nome: "José Paz", status: "descartado" }),
+  ];
+  assert.deepEqual(clientesParaVisita(leads, "").lista.map((l) => l.id), ["joana", "joao"]);
+  assert.deepEqual(clientesParaVisita(leads, "joao").lista.map((l) => l.id), ["joao"]);
+  assert.deepEqual(clientesParaVisita(leads, "(11) 91234-5678").lista.map((l) => l.id), ["joao"]);
+  assert.deepEqual(clientesParaVisita(leads, "+55 11 98765").lista.map((l) => l.id), ["joana"]);
+  assert.deepEqual(clientesParaVisita(leads, "jose").lista, []); // descartado não agenda
+  // lista longa: mostra o máximo e conta o total
+  const muitos = Array.from({ length: MAX_CLIENTES + 5 }, (_, i) => ld({ id: `l${i}`, nome: `Cliente ${i}` }));
+  const r = clientesParaVisita(muitos, "cliente");
+  assert.equal(r.lista.length, MAX_CLIENTES);
+  assert.equal(r.total, MAX_CLIENTES + 5);
 });

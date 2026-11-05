@@ -6,7 +6,23 @@ import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { AvisoOffline } from "./aviso-offline";
 
-export type ItemMenu = { href: string; rotulo: string };
+/** externo: endereço fora do CRM, abre em outra aba (o rótulo leva "→"). */
+export type ItemMenu = { href: string; rotulo: string; externo?: boolean };
+
+/** Item do menu: link do app, ou link externo em outra aba. */
+function LinkDoMenu({ item, className, atual }: { item: ItemMenu; className: string; atual: boolean }) {
+  if (item.externo)
+    return (
+      <a href={item.href} target="_blank" rel="noopener" className={className}>
+        {item.rotulo}
+      </a>
+    );
+  return (
+    <Link href={item.href} aria-current={atual ? "page" : undefined} className={className}>
+      {item.rotulo}
+    </Link>
+  );
+}
 
 /** Logo do DS (ou "MBigucci" em brand se a imagem faltar) + nome da ferramenta. */
 function Marca() {
@@ -57,17 +73,15 @@ export function Cabecalho({ itens, onSair, nome }: { itens?: ItemMenu[]; onSair?
           <>
             <nav className="hidden min-w-0 flex-1 flex-wrap items-center justify-end gap-x-5 gap-y-2 md:flex" aria-label="Menu principal">
               {itens.map((i) => (
-                <Link
+                <LinkDoMenu
                   key={i.href}
-                  href={i.href}
-                  aria-current={ativo(i.href) ? "page" : undefined}
+                  item={i}
+                  atual={ativo(i.href)}
                   className={clsx(
                     "focus-ring whitespace-nowrap text-[13px] font-semibold transition-colors",
                     ativo(i.href) ? "text-brand" : "text-ink-soft hover:text-ink",
                   )}
-                >
-                  {i.rotulo}
-                </Link>
+                />
               ))}
               {onSair && (
                 <button type="button" onClick={onSair} className="btn btn-ghost focus-ring">
@@ -91,17 +105,15 @@ export function Cabecalho({ itens, onSair, nome }: { itens?: ItemMenu[]; onSair?
         <nav id="menu-celular" className="border-t border-line bg-paper md:hidden" aria-label="Menu principal">
           {nome && <span className="eyebrow px-5 pb-1 pt-3">{nome}</span>}
           {itens.map((i) => (
-            <Link
+            <LinkDoMenu
               key={i.href}
-              href={i.href}
-              aria-current={ativo(i.href) ? "page" : undefined}
+              item={i}
+              atual={ativo(i.href)}
               className={clsx(
                 "focus-ring block border-b border-l-bar border-line px-5 py-[14px] text-[15px] font-semibold",
                 ativo(i.href) ? "border-l-brand text-brand" : "border-l-transparent text-ink",
               )}
-            >
-              {i.rotulo}
-            </Link>
+            />
           ))}
           {onSair && (
             <button

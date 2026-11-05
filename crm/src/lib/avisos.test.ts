@@ -26,7 +26,7 @@ import {
   type LeadAviso,
   type VisitaAviso,
 } from "../../supabase/functions/avisos/index.ts";
-import { TIPOS_AVISO } from "./avisos.ts";
+import { TIPOS_AVISO, tiposDoAparelho } from "./avisos.ts";
 import { fazAniversarioHoje } from "./perfil.ts";
 
 const CORRETOR = "c1";
@@ -285,6 +285,101 @@ test("muitos contatos na mesma rodada viram um aviso só, com todas as chaves", 
   assert.equal(listaDeNomes(["Ana Souza", "Bruno Lima"]), "Ana e Bruno");
 });
 
+// ---------- Item 28: avisos ao gerente (tipo "equipe") ----------
+
+const equipe = (membros: [string, string][] = [[CORRETOR, "Bruno Lima"]]) => [
+  { gerente_id: GERENTE, membros: membros.map(([id, nome]) => ({ id, nome })) },
+];
+const daEquipe = (avisos: ReturnType<typeof montarAvisos>) => avisos.filter((a) => a.tipo === "equipe");
+
+test("equipe: prazo estourado avisa o gerente na hora, uma vez por lead, e abre a ficha", () => {
+  const l = daEmpresa("2026-11-03T14:00", "2026-11-03T14:15", { nome: "Ana Souza" });
+  const d = dados({ leads: [l], equipes: equipe() });
+  assert.equal(daEquipe(montarAvisos(d, sp("2026-11-03T14:14"))).length, 0); // ainda no prazo
+  const [a] = daEquipe(montarAvisos(d, sp("2026-11-03T14:15")));
+  assert.equal(a.usuario_id, GERENTE);
+  assert.equal(a.titulo, "Prazo de 15 min estourado na equipe");
+  assert.equal(a.corpo, "Ana Souza · Marco Zero One, com Bruno Lima, está sem primeiro contato. Veja o Lead perdido.");
+  assert.equal(a.url, "leads/ficha/?id=l1");
+  // a rodada seguinte gera a mesma chave (o banco não repete); 30 min depois, nada
+  const [b] = daEquipe(montarAvisos(d, sp("2026-11-03T14:40")));
+  assert.deepEqual(b.chaves, a.chaves);
+  assert.equal(daEquipe(montarAvisos(d, sp("2026-11-03T14:45"))).length, 0);
+  // o corretor continua recebendo o dele, com outra chave
+  const doCorretor = montarAvisos(d, sp("2026-11-03T14:15")).filter((x) => x.tipo === "prazo");
+  assert.equal(doCorretor[0].usuario_id, CORRETOR);
+  assert.notDeepEqual(doCorretor[0].chaves, a.chaves);
+});
+
+test("equipe: só leads de corretores da equipe, só da empresa em novo; reatribuído vira outra chave", () => {
+  const fora = daEmpresa("2026-11-03T14:00", "2026-11-03T14:15", { id: "l2", dono_id: "outro" });
+  const comContato = daEmpresa("2026-11-03T14:00", "2026-11-03T14:15", { id: "l3", etapa: "em_contato" });
+  const plantao = lead({ id: "l4", proximo_contato: iso("2026-11-03T14:15") });
+  const d = dados({ leads: [fora, comContato, plantao], equipes: equipe() });
+  assert.equal(daEquipe(montarAvisos(d, sp("2026-11-03T14:20"))).length, 0);
+  // sem o SQL do item 28 (sem equipes), nada para o gerente
+  const l = daEmpresa("2026-11-03T14:00", "2026-11-03T14:15");
+  assert.equal(daEquipe(montarAvisos(dados({ leads: [l] }), sp("2026-11-03T14:20"))).length, 0);
+  // Lead perdido: o prazo recomeça para quem recebeu, e o aviso volta a valer
+  const antes = daEquipe(montarAvisos(dados({ leads: [l], equipes: equipe() }), sp("2026-11-03T14:20")))[0];
+  const novo = daEmpresa("2026-11-03T14:25", "2026-11-03T14:40");
+  const depois = daEquipe(montarAvisos(dados({ leads: [novo], equipes: equipe() }), sp("2026-11-03T14:41")))[0];
+  assert.notDeepEqual(depois.chaves, antes.chaves);
+});
+
+test("equipe: mais de 3 prazos estourados na mesma rodada viram um aviso só, que abre o painel", () => {
+  const membros: [string, string][] = [["c1", "Bruno Lima"], ["c2", "Caio Reis"], ["c3", "Dani Melo"]];
+  const leads = ["c1", "c2", "c3", "c1"].map((dono, i) =>
+    daEmpresa("2026-11-03T14:00", "2026-11-03T14:15", { id: `l${i}`, dono_id: dono }),
+  );
+  const juntos = juntarContatos(montarAvisos(dados({ leads, equipes: equipe(membros) }), sp("2026-11-03T14:16")));
+  const doGerente = juntos.filter((a) => a.usuario_id === GERENTE);
+  assert.equal(doGerente.length, 1);
+  assert.equal(doGerente[0].titulo, "4 prazos estourados na equipe");
+  assert.equal(doGerente[0].corpo, "Bruno, Caio e Dani. Veja o painel.");
+  assert.equal(doGerente[0].url, "painel/");
+  assert.equal(doGerente[0].chaves.length, 4);
+  // os avisos dos corretores não se misturam com o do gerente
+  assert.equal(juntos.filter((a) => a.tipo === "prazo").length, 4);
+  // 3 ou menos continuam separados
+  const tres = juntarContatos(montarAvisos(dados({ leads: leads.slice(0, 3), equipes: equipe(membros) }), sp("2026-11-03T14:16")));
+  assert.equal(tres.filter((a) => a.usuario_id === GERENTE).length, 3);
+});
+
+test("equipe: às 19h, as visitas da equipe aguardando baixa, um resumo por gerente e por dia", () => {
+  const membros: [string, string][] = [["c1", "Bruno Lima"], ["c2", "Caio Reis"]];
+  const vs = [
+    visita({ id: "v1", corretor_id: "c2", inicio: iso("2026-11-03T10:00") }),
+    visita({ id: "v2", corretor_id: "c1", inicio: iso("2026-11-03T11:00") }),
+    visita({ id: "v3", corretor_id: "c1", inicio: iso("2026-11-02T15:00") }), // de ontem, ainda sem baixa
+    visita({ id: "v4", corretor_id: "c1", inicio: iso("2026-11-03T20:00") }), // ainda não aconteceu
+    visita({ id: "v5", corretor_id: "outro", inicio: iso("2026-11-03T10:00") }), // de outra equipe
+  ];
+  const d = dados({ visitas: vs, equipes: equipe(membros) });
+  assert.equal(daEquipe(montarAvisos(d, sp("2026-11-03T18:55"))).length, 0);
+  const [a] = daEquipe(montarAvisos(d, sp("2026-11-03T19:00")));
+  assert.equal(a.usuario_id, GERENTE);
+  assert.equal(a.titulo, "3 visitas da equipe aguardando baixa");
+  assert.equal(a.corpo, "Bruno (2) e Caio (1). Cobre a baixa.");
+  assert.equal(a.url, "agenda/");
+  assert.deepEqual(a.chaves, ["equipe_baixa:g1:2026-11-03"]);
+  assert.deepEqual(daEquipe(montarAvisos(d, sp("2026-11-03T19:55")))[0].chaves, a.chaves); // mesma chave: sai uma vez
+  assert.equal(daEquipe(montarAvisos(d, sp("2026-11-03T20:00"))).length, 0);
+  const uma = daEquipe(montarAvisos(dados({ visitas: [vs[0]], equipes: equipe(membros) }), sp("2026-11-03T19:00")));
+  assert.equal(uma[0].titulo, "1 visita da equipe aguardando baixa");
+  assert.equal(uma[0].corpo, "Caio (1). Cobre a baixa.");
+  // sem visita aguardando, não manda nada
+  assert.equal(daEquipe(montarAvisos(dados({ visitas: [vs[3]], equipes: equipe(membros) }), sp("2026-11-03T19:00"))).length, 0);
+});
+
+test("equipe: só vai para o aparelho do gerente com o tipo Equipe ligado", () => {
+  const ass = (tipos: string[]): Assinatura => ({ endpoint: "https://fcm.googleapis.com/g", usuario_id: GERENTE, p256dh: "", auth: "", tipos });
+  const l = daEmpresa("2026-11-03T14:00", "2026-11-03T14:15");
+  const avisos = montarAvisos(dados({ leads: [l], equipes: equipe() }), sp("2026-11-03T14:15"));
+  assert.equal(comDestino(avisos, [ass(["contato", "visita", "atribuido", "prazo", "resumo"])]).length, 0);
+  assert.deepEqual(comDestino(avisos, [ass(["equipe"])]).map((a) => a.tipo), ["equipe"]);
+});
+
 test("falha em todos os aparelhos volta para a próxima rodada; aparelho removido não", () => {
   const [a, b, c] = montarAvisos(
     dados({ leads: ["a", "b", "c"].map((id) => lead({ id, proximo_contato: iso("2026-11-03T14:00") })) }),
@@ -301,6 +396,9 @@ test("falha em todos os aparelhos volta para a próxima rodada; aparelho removid
 
 test("os tipos de Minha conta são os mesmos da função", () => {
   assert.deepEqual(TIPOS_AVISO.map((t) => t.slug).sort(), [...TIPOS_DA_FUNCAO].sort());
+  // "Equipe" só aparece para quem vê a equipe
+  assert.equal(tiposDoAparelho(() => false).some((t) => t.slug === "equipe"), false);
+  assert.equal(tiposDoAparelho((p) => p === "dados.ver_equipe").some((t) => t.slug === "equipe"), true);
 });
 
 test("só endereços de serviços de push de verdade", () => {

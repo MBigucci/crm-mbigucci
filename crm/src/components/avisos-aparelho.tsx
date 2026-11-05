@@ -13,10 +13,11 @@ import {
   esteAparelho,
   ligarAvisos,
   salvarTipos,
-  TIPOS_AVISO,
   type Disponibilidade,
   type TipoAviso,
 } from "@/lib/push";
+import { tiposDoAparelho } from "@/lib/avisos";
+import { useSessao } from "@/lib/sessao";
 
 type Nota = { ok: boolean; texto: string };
 
@@ -29,9 +30,13 @@ function comoDesbloquear() {
 }
 
 export function AvisosNesteAparelho() {
+  const { pode } = useSessao();
+  // "Equipe" só para quem vê a equipe (item 28); quem não vê nunca grava esse tipo.
+  const visiveis = tiposDoAparelho(pode);
+  const soVisiveis = (ts: TipoAviso[]) => ts.filter((t) => visiveis.some((v) => v.slug === t));
   const [disp, setDisp] = useState<Disponibilidade | null>(null);
   const [ligado, setLigado] = useState(false);
-  const [tipos, setTipos] = useState<TipoAviso[]>(TIPOS_AVISO.map((t) => t.slug));
+  const [tipos, setTipos] = useState<TipoAviso[]>(() => visiveis.map((t) => t.slug));
   // Os tipos atuais num ref: dois toques rápidos não se perdem (a versão com closure perde).
   const tiposRef = useRef(tipos);
   const [ocupado, setOcupado] = useState(false);
@@ -70,7 +75,7 @@ export function AvisosNesteAparelho() {
     setTipos(novo);
     if (ligado) {
       void rodar(async () => {
-        await salvarTipos(novo);
+        await salvarTipos(soVisiveis(novo));
       });
     }
   }
@@ -106,7 +111,7 @@ export function AvisosNesteAparelho() {
           </p>
           <fieldset className="mt-3 grid gap-3" disabled={ocupado}>
             <legend className="field-label">O que avisar</legend>
-            {TIPOS_AVISO.map((t) => (
+            {visiveis.map((t) => (
               <label key={t.slug} className="flex items-start gap-3">
                 <input
                   type="checkbox"
@@ -169,7 +174,7 @@ export function AvisosNesteAparelho() {
                 disabled={ocupado || tipos.length === 0}
                 onClick={() =>
                   rodar(async () => {
-                    await ligarAvisos(tipos);
+                    await ligarAvisos(soVisiveis(tipos));
                     setLigado(true);
                     return { ok: true, texto: "Avisos ligados. Use Enviar teste para conferir." };
                   })

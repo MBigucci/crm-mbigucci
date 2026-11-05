@@ -67,6 +67,7 @@ export function Casca({
   }
   // O catálogo é lido por todo usuário ativo.
   itens.push({ href: "/empreendimentos/", rotulo: "Empreendimentos" });
+  itens.push({ href: "https://mbigucci.com.br/ferramentas", rotulo: "Simulador →", externo: true });
   // Tela só do gerente geral, por regra fixa no banco (não é permissão do catálogo).
   if (ehGG) itens.push({ href: "/faixas/", rotulo: "Faixas de VGV" });
   // Programa de pontuação: pelas permissões (o banco filtra o resto).

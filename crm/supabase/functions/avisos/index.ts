@@ -20,8 +20,8 @@
 // Regras: quem recebe o quê, e quando
 // ====================================================================
 
-export type TipoAviso = "contato" | "visita" | "atribuido" | "prazo" | "resumo";
-export const TIPOS_AVISO: TipoAviso[] = ["contato", "visita", "atribuido", "prazo", "resumo"];
+export type TipoAviso = "contato" | "visita" | "atribuido" | "prazo" | "resumo" | "equipe";
+export const TIPOS_AVISO: TipoAviso[] = ["contato", "visita", "atribuido", "prazo", "resumo", "equipe"];
 
 export type HorarioAvisos = { dias: number[]; inicio: string; fim: string };
 export const HORARIO_PADRAO: HorarioAvisos = { dias: [0, 1, 2, 3, 4, 5, 6], inicio: "09:00", fim: "19:00" };
@@ -53,6 +53,12 @@ export type VisitaAviso = {
 /** Aniversário de hoje (item 16): só o dia e o mês, nunca o ano. */
 export type AniversarioAviso = { lead_id: string; dono_id: string; nome: string; dia_mes: string };
 
+/**
+ * Item 28: o gerente que tem a permissão de ver a equipe e um aparelho com o
+ * tipo "equipe" ligado, com os corretores ativos das equipes dele.
+ */
+export type EquipeAviso = { gerente_id: string; membros: { id: string; nome: string }[] };
+
 export type Assinatura = { endpoint: string; usuario_id: string; p256dh: string; auth: string; tipos: string[] };
 
 /** O que avisos_dados() devolve. */
@@ -63,6 +69,8 @@ export type DadosAvisos = {
   visitas: VisitaAviso[];
   /** Vem do SQL do item 16; sem ele, o resumo sai sem os aniversários. */
   aniversarios?: AniversarioAviso[];
+  /** Vem do SQL do item 28; sem ele, o gerente não recebe os avisos da equipe. */
+  equipes?: EquipeAviso[];
 };
 
 export type Aviso = {
@@ -78,6 +86,8 @@ export type Aviso = {
   tag: string;
   /** Nome do cliente, para juntar vários contatos num aviso só. */
   nome?: string;
+  /** Prazo estourado na equipe: o corretor do lead, para juntar vários num aviso só. */
+  corretor?: string;
 };
 
 /** Lead da empresa: o único com prazo de primeiro contato (docs/leads.md, seção 4). */
@@ -88,7 +98,7 @@ export const VISITA_ANTES_MIN = 65;
 export const PRAZO_AVISO_MIN = 6;
 /** Contato, prazo estourado: só se a hora passou há pouco. Depois disso, a lista do dia mostra. */
 export const ATRASO_MAX_MIN = 30;
-/** Mais que isso de contatos na mesma rodada vira um aviso só. */
+/** Mais que isso de contatos (ou de prazos estourados na equipe) na mesma rodada vira um aviso só. */
 export const CONTATOS_JUNTOS = 3;
 /** Resumo do dia e aguardando baixa: janela depois da hora, para uma rodada perdida não perder o aviso. */
 const JANELA_DIA_MIN = 60;
@@ -178,6 +188,7 @@ const aguardaPrimeiroContato = (l: LeadAviso) => l.origem === ORIGEM_COM_PRAZO &
  *   dele, sai na abertura, quando o prazo começa a correr.
  * - Prazo de 15 min: faltando 5 min e quando estoura (até 30 min depois).
  * - Resumo do dia: na abertura do atendimento (9h no padrão), nos dias de atendimento.
+ * - Equipe (item 28, para o gerente): avisosDaEquipe, logo abaixo.
  */
 export function montarAvisos(d: DadosAvisos, agora: Date): Aviso[] {
   const horario = d.horario && horarioValido(d.horario) ? d.horario : HORARIO_PADRAO;
@@ -328,7 +339,74 @@ export function montarAvisos(d: DadosAvisos, agora: Date): Aviso[] {
     }
   }
 
+  avisos.push(...avisosDaEquipe(d, agora, horario));
   return avisos;
+}
+
+/**
+ * Item 28, para o gerente (tipo "equipe"):
+ * - prazo de 15 min estourado num lead da empresa de um corretor da equipe,
+ *   na hora (até 30 min depois), um aviso por lead. É a hora do Lead perdido;
+ * - no fim do atendimento, um resumo das visitas da equipe que aguardam baixa,
+ *   um por gerente e por dia, só se houver alguma.
+ */
+function avisosDaEquipe(d: DadosAvisos, agora: Date, horario: HorarioAvisos): Aviso[] {
+  const t = agora.getTime();
+  const sp = emSP(agora);
+  const fimDoDia = minutosDoDia(horario.fim);
+  const naHoraDaBaixa = sp.minutos >= fimDoDia && sp.minutos < fimDoDia + JANELA_DIA_MIN;
+  const avisos: Aviso[] = [];
+
+  for (const eq of d.equipes ?? []) {
+    const nomes = new Map(eq.membros.filter((m) => m.id !== eq.gerente_id).map((m) => [m.id, m.nome]));
+
+    for (const l of d.leads) {
+      const corretor = nomes.get(l.dono_id);
+      if (!corretor || !aguardaPrimeiroContato(l)) continue;
+      const passou = (t - new Date(l.fim_prazo!).getTime()) / MIN;
+      if (passou < 0 || passou >= ATRASO_MAX_MIN) continue;
+      avisos.push({
+        usuario_id: eq.gerente_id,
+        tipo: "equipe",
+        chaves: [`equipe_prazo:${l.id}:${epoch(l.fim_prazo!)}`],
+        titulo: "Prazo de 15 min estourado na equipe",
+        corpo: `${comEmpreendimento(l.nome, l.empreendimento)}, com ${corretor}, está sem primeiro contato. Veja o Lead perdido.`,
+        url: fichaUrl(l.id),
+        tag: `equipe-lead-${l.id}`,
+        corretor,
+      });
+    }
+
+    if (!naHoraDaBaixa) continue;
+    const porCorretor = new Map<string, number>();
+    for (const v of d.visitas) {
+      if (!nomes.has(v.corretor_id) || new Date(v.inicio).getTime() > t) continue;
+      porCorretor.set(v.corretor_id, (porCorretor.get(v.corretor_id) ?? 0) + 1);
+    }
+    const total = [...porCorretor.values()].reduce((s, n) => s + n, 0);
+    if (!total) continue;
+    const linhas = [...porCorretor]
+      .map(([id, n]) => ({ nome: primeiroNome(nomes.get(id)!), n }))
+      .sort((a, b) => b.n - a.n || a.nome.localeCompare(b.nome, "pt-BR"))
+      .map((x) => `${x.nome} (${x.n})`);
+    avisos.push({
+      usuario_id: eq.gerente_id,
+      tipo: "equipe",
+      chaves: [`equipe_baixa:${eq.gerente_id}:${sp.data}`],
+      titulo: total === 1 ? "1 visita da equipe aguardando baixa" : `${total} visitas da equipe aguardando baixa`,
+      corpo: `${juntarComE(linhas)}. Cobre a baixa.`,
+      url: "agenda/",
+      tag: "equipe-baixa",
+    });
+  }
+  return avisos;
+}
+
+/** "Bruno (2), Caio (1) e Dani (1)", ou "… e mais 2" com mais de 3. */
+function juntarComE(itens: string[], max = 3): string {
+  if (itens.length <= 1) return itens.join("");
+  if (itens.length <= max) return `${itens.slice(0, -1).join(", ")} e ${itens[itens.length - 1]}`;
+  return `${itens.slice(0, max).join(", ")} e mais ${itens.length - max}`;
 }
 
 /** Só os avisos de quem tem ao menos um aparelho com aquele tipo ligado. */
@@ -352,22 +430,48 @@ export function soNovos(avisos: Aviso[], registrados: { usuario_id: string; chav
     .filter((a) => a.chaves.length > 0);
 }
 
-/** Mais de CONTATOS_JUNTOS contatos da mesma pessoa na mesma rodada viram um aviso só. */
+/**
+ * Mais de CONTATOS_JUNTOS contatos da mesma pessoa na mesma rodada viram um
+ * aviso só. O mesmo vale para os prazos estourados na equipe, para o gerente.
+ */
 export function juntarContatos(avisos: Aviso[]): Aviso[] {
-  const contatos = new Map<string, Aviso[]>();
-  for (const a of avisos) if (a.tipo === "contato") contatos.set(a.usuario_id, [...(contatos.get(a.usuario_id) ?? []), a]);
-  const out = avisos.filter((a) => a.tipo !== "contato" || (contatos.get(a.usuario_id)?.length ?? 0) <= CONTATOS_JUNTOS);
-  for (const [usuario, cs] of contatos) {
+  const grupoDe = (a: Aviso) =>
+    a.tipo === "contato" ? "contato" : a.tipo === "equipe" && a.tag.startsWith("equipe-lead-") ? "equipe" : null;
+  const grupos = new Map<string, { grupo: "contato" | "equipe"; usuario: string; avisos: Aviso[] }>();
+  for (const a of avisos) {
+    const grupo = grupoDe(a);
+    if (!grupo) continue;
+    const k = `${grupo}|${a.usuario_id}`;
+    const g = grupos.get(k) ?? { grupo, usuario: a.usuario_id, avisos: [] };
+    g.avisos.push(a);
+    grupos.set(k, g);
+  }
+  const juntos = new Set([...grupos.values()].filter((g) => g.avisos.length > CONTATOS_JUNTOS).flatMap((g) => g.avisos));
+  const out = avisos.filter((a) => !juntos.has(a));
+  for (const { grupo, usuario, avisos: cs } of grupos.values()) {
     if (cs.length <= CONTATOS_JUNTOS) continue;
-    out.push({
-      usuario_id: usuario,
-      tipo: "contato",
-      chaves: cs.flatMap((c) => c.chaves),
-      titulo: `${cs.length} contatos para agora`,
-      corpo: `${listaDeNomes(cs.map((c) => c.nome ?? ""))}. Veja a lista do dia.`,
-      url: "",
-      tag: "contatos",
-    });
+    const chaves = cs.flatMap((c) => c.chaves);
+    if (grupo === "contato") {
+      out.push({
+        usuario_id: usuario,
+        tipo: "contato",
+        chaves,
+        titulo: `${cs.length} contatos para agora`,
+        corpo: `${listaDeNomes(cs.map((c) => c.nome ?? ""))}. Veja a lista do dia.`,
+        url: "",
+        tag: "contatos",
+      });
+    } else {
+      out.push({
+        usuario_id: usuario,
+        tipo: "equipe",
+        chaves,
+        titulo: `${cs.length} prazos estourados na equipe`,
+        corpo: `${listaDeNomes([...new Set(cs.map((c) => primeiroNome(c.corretor ?? "")))])}. Veja o painel.`,
+        url: "painel/",
+        tag: "equipe-prazos",
+      });
+    }
   }
   return out;
 }
@@ -506,7 +610,7 @@ export async function cabecalhoVapid(
 export type Vapid = { publica: string; privada: string; assunto: string };
 
 /** Por quanto tempo o serviço de push guarda o aviso se o aparelho estiver desligado. */
-const VALIDADE: Record<TipoAviso, number> = { contato: 3600, visita: 3600, atribuido: 3600, prazo: 1800, resumo: 4 * 3600 };
+const VALIDADE: Record<TipoAviso, number> = { contato: 3600, visita: 3600, atribuido: 3600, prazo: 1800, resumo: 4 * 3600, equipe: 1800 };
 
 /** Manda um aviso para um aparelho. "removido": o aparelho não existe mais e sai do banco. */
 export async function enviar(

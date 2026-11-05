@@ -5,6 +5,7 @@
 // textos. Regras em docs/visitas.md.
 
 import { fimDoDia } from "./leads.ts";
+import { criarBusca } from "./busca.ts";
 
 export type StatusVisita = "agendada" | "confirmada" | "realizada" | "nao_compareceu" | "cancelada";
 
@@ -238,4 +239,52 @@ export function descreverEventoVisita(
     default:
       return `Visita${qual}`;
   }
+}
+
+// ---------- Agenda: retornos e escolha do cliente ----------
+
+/** O mínimo de um lead para os retornos da Agenda. */
+type LeadDoRetorno = { status: string; proximo_contato: string | null };
+
+/**
+ * Retornos da semana (Felipe, 04/11/2026): os leads ativos com o próximo
+ * contato marcado em cada um dos 7 dias que começam em `segunda`, pela hora.
+ * Dia que já passou mostra os que ficaram sem contato: quando o corretor fala
+ * com o cliente, o próximo contato muda de data e o lead sai dali.
+ */
+export function retornosDaSemana<T extends LeadDoRetorno>(leads: T[], segunda: Date): T[][] {
+  const ativos = leads.filter((l) => l.status === "ativo" && l.proximo_contato);
+  const hora = (l: T) => new Date(l.proximo_contato!).getTime();
+  return Array.from({ length: 7 }, (_, i) => {
+    const dia = new Date(segunda.getFullYear(), segunda.getMonth(), segunda.getDate() + i);
+    return ativos.filter((l) => mesmoDia(new Date(l.proximo_contato!), dia)).sort((a, b) => hora(a) - hora(b));
+  });
+}
+
+/** "1 visita e 2 retornos", "3 visitas", "1 retorno" ou "nada marcado". */
+export function textoDoDia(visitas: number, retornos: number): string {
+  const v = visitas ? `${visitas} ${visitas === 1 ? "visita" : "visitas"}` : "";
+  const r = retornos ? `${retornos} ${retornos === 1 ? "retorno" : "retornos"}` : "";
+  return [v, r].filter(Boolean).join(" e ") || "nada marcado";
+}
+
+type LeadDaEscolha = Parameters<ReturnType<typeof criarBusca>>[0] & {
+  status: string;
+  ultima_interacao_em: string | null;
+  created_at: string;
+};
+
+/** Quantos clientes a escolha do "Agendar visita" mostra de cada vez. */
+export const MAX_CLIENTES = 40;
+
+/**
+ * "Agendar visita" pela Agenda (item 29, do lead-picker da Bruna): os leads
+ * ativos que batem com a busca (sem acento, telefone em qualquer formato, a
+ * mesma de /leads/), com a conversa mais recente primeiro.
+ */
+export function clientesParaVisita<T extends LeadDaEscolha>(leads: T[], consulta: string): { lista: T[]; total: number } {
+  const bate = criarBusca(consulta);
+  const quando = (l: T) => new Date(l.ultima_interacao_em ?? l.created_at).getTime();
+  const todos = leads.filter((l) => l.status === "ativo" && bate(l)).sort((a, b) => quando(b) - quando(a));
+  return { lista: todos.slice(0, MAX_CLIENTES), total: todos.length };
 }

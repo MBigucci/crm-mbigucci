@@ -502,9 +502,22 @@ function Corrigir({
  * Agendar a visita a partir da ficha: dia e hora (padrão amanhã, 10h),
  * empreendimento (vem o do lead), local e observação opcionais. A visita
  * agendada aparece logo acima, com a confirmação pelo WhatsApp.
+ *
+ * Na Agenda (item 29), o formulário já abre aberto depois de escolher o
+ * cliente, e "Voltar" volta para a escolha (onVoltar).
  */
-export function AgendarVisita({ lead, onAgendada }: { lead: LeadDaVisita; onAgendada: () => void }) {
-  const [aberto, setAberto] = useState(false);
+export function AgendarVisita({
+  lead,
+  onAgendada,
+  abertoDeInicio = false,
+  onVoltar,
+}: {
+  lead: LeadDaVisita;
+  onAgendada: (v: Pick<Visita, "inicio" | "empreendimento">) => void;
+  abertoDeInicio?: boolean;
+  onVoltar?: () => void;
+}) {
+  const [aberto, setAberto] = useState(abertoDeInicio);
   const [campos, setCampos] = useState(() => paraCampos(sugerirHorarioVisita(new Date())));
   const [empreendimento, setEmpreendimento] = useState(lead.empreendimento ?? "");
   const [local, setLocal] = useState("");
@@ -533,7 +546,7 @@ export function AgendarVisita({ lead, onAgendada }: { lead: LeadDaVisita; onAgen
     setLocal("");
     setObservacao("");
     setCampos(paraCampos(sugerirHorarioVisita(new Date())));
-    onAgendada();
+    onAgendada(d);
   }
 
   if (!aberto)
@@ -595,7 +608,11 @@ export function AgendarVisita({ lead, onAgendada }: { lead: LeadDaVisita; onAgen
         <button type="submit" className="btn btn-red btn-lg focus-ring flex-1 md:flex-none" disabled={salvando}>
           {salvando ? "Agendando…" : "Agendar visita"}
         </button>
-        <button type="button" className="focus-ring px-3 text-[13px] font-semibold text-ink-soft" onClick={() => setAberto(false)}>
+        <button
+          type="button"
+          className="focus-ring px-3 text-[13px] font-semibold text-ink-soft"
+          onClick={() => (onVoltar ? onVoltar() : setAberto(false))}
+        >
           Voltar
         </button>
       </div>

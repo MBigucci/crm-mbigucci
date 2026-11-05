@@ -3313,3 +3313,129 @@ as $$
                        and to_char(l.nascimento, 'MM-DD') in (to_char(now() at time zone 'America/Sao_Paulo', 'MM-DD'), '02-29'))
   );
 $$;
+
+-- =====================================================================
+-- Avisos ao gerente (item 28, 04/11/2026). Regras em docs/notificacoes.md.
+-- Tipo novo "equipe": o prazo de 15 min estourado num lead da empresa de um
+-- corretor da equipe, na hora, e às 19h (fim do atendimento) as visitas da
+-- equipe que aguardam baixa. Só para quem tem dados.ver_equipe em
+-- role_permissions e é gerente de uma equipe (teams.gerente_id); o gerente
+-- escolhe em Avisos neste aparelho. Sem este trecho, a função continua igual.
+-- =====================================================================
+
+alter table public.push_assinaturas drop constraint if exists push_assinaturas_tipos;
+alter table public.push_assinaturas add constraint push_assinaturas_tipos
+  check (tipos <@ '{contato,visita,atribuido,prazo,resumo,equipe}'::text[]);
+
+-- Aceita "equipe". Sem tipos, o aparelho novo continua com os 5 de sempre:
+-- o "equipe" só entra quando o app manda (o card só mostra para quem vê a equipe).
+create or replace function public.push_assinar(
+  p_endpoint text, p_p256dh text, p_auth text, p_tipos text[] default null, p_aparelho text default null)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_aceitos constant text[] := '{contato,visita,atribuido,prazo,resumo,equipe}';
+  v_padrao constant text[] := '{contato,visita,atribuido,prazo,resumo}';
+begin
+  if public.current_perfil() is null then
+    raise exception 'Entre com uma conta ativa para ligar os avisos.' using errcode = '42501';
+  end if;
+  if not public.push_endereco_ok(p_endpoint)
+     or coalesce(length(p_p256dh), 0) not between 1 and 200
+     or coalesce(length(p_auth), 0) not between 1 and 64
+     or length(coalesce(p_aparelho, '')) > 100 then
+    raise exception 'Assinatura de aviso inválida.';
+  end if;
+  if p_tipos is not null and not (p_tipos <@ v_aceitos) then
+    raise exception 'Tipo de aviso inválido.';
+  end if;
+  insert into public.push_assinaturas (endpoint, usuario_id, p256dh, auth, tipos, aparelho)
+  values (p_endpoint, auth.uid(), p_p256dh, p_auth, coalesce(p_tipos, v_padrao), p_aparelho)
+  on conflict (endpoint) do update set
+    tipos = case when public.push_assinaturas.usuario_id = auth.uid()
+                 then coalesce(p_tipos, public.push_assinaturas.tipos)
+                 else coalesce(p_tipos, v_padrao) end,
+    usuario_id = auth.uid(),
+    p256dh = excluded.p256dh,
+    auth = excluded.auth,
+    aparelho = coalesce(excluded.aparelho, public.push_assinaturas.aparelho),
+    visto_em = now();
+end;
+$$;
+revoke all on function public.push_assinar(text, text, text, text[], text) from public, anon;
+grant execute on function public.push_assinar(text, text, text, text[], text) to authenticated;
+
+-- Nova versão de avisos_dados, com "equipes": cada gerente com o tipo "equipe"
+-- ligado, a permissão de ver a equipe e conta ativa, e os corretores ativos das
+-- equipes dele. Os leads e as visitas desses corretores entram também (mesmo
+-- sem aparelho), para o prazo estourado e a baixa da equipe. Os privilégios
+-- do item 15 continuam valendo (create or replace não mexe neles).
+create or replace function public.avisos_dados()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  with quem as (
+    select distinct a.usuario_id
+    from public.push_assinaturas a
+    join public.profiles p on p.id = a.usuario_id and p.ativo
+  ),
+  gerentes as (
+    select distinct g.id
+    from public.push_assinaturas a
+    join public.profiles g on g.id = a.usuario_id and g.ativo
+    where 'equipe' = any (a.tipos)
+      and exists (select 1 from public.role_permissions rp where rp.perfil = g.perfil and rp.permissao = 'dados.ver_equipe')
+  ),
+  membros as (
+    select distinct t.gerente_id, m.id, m.nome
+    from gerentes g
+    join public.teams t on t.gerente_id = g.id
+    join public.profiles m on m.equipe_id = t.id and m.ativo and m.id <> g.id
+  ),
+  alvo as (
+    select usuario_id from quem
+    union
+    select id from membros
+  )
+  select jsonb_build_object(
+    'agora', now(),
+    'horario', (select jsonb_build_object('dias', h.dias, 'inicio', to_char(h.inicio, 'HH24:MI'), 'fim', to_char(h.fim, 'HH24:MI'))
+                from public.horario_atendimento h where h.id),
+    'assinaturas', (select coalesce(jsonb_agg(jsonb_build_object(
+                      'endpoint', a.endpoint, 'usuario_id', a.usuario_id, 'p256dh', a.p256dh, 'auth', a.auth, 'tipos', a.tipos)), '[]')
+                    from public.push_assinaturas a where a.usuario_id in (select usuario_id from quem)),
+    'leads', (select coalesce(jsonb_agg(jsonb_build_object(
+                'id', l.id, 'dono_id', l.dono_id, 'nome', l.nome, 'origem', l.origem, 'etapa', l.etapa,
+                'empreendimento', l.empreendimento, 'proximo_contato', l.proximo_contato,
+                'atribuido_em', l.atribuido_em, 'atribuido_por', l.atribuido_por,
+                'fim_prazo', case when l.origem = 'empresa' and l.etapa = 'novo'
+                                  then private.fim_do_prazo(greatest(l.created_at, coalesce(l.atribuido_em, l.created_at))) end)), '[]')
+              from public.leads l
+              where l.status = 'ativo'
+                and l.dono_id in (select usuario_id from alvo)
+                and (l.proximo_contato <= now() + interval '1 day' or (l.origem = 'empresa' and l.etapa = 'novo'))),
+    'visitas', (select coalesce(jsonb_agg(jsonb_build_object(
+                  'id', v.id, 'corretor_id', v.corretor_id, 'lead_id', v.lead_id, 'lead_nome', l.nome,
+                  'empreendimento', v.empreendimento, 'inicio', v.inicio, 'local', v.local)), '[]')
+                from public.visitas v
+                join public.leads l on l.id = v.lead_id
+                where v.status in ('agendada', 'confirmada')
+                  and v.corretor_id in (select usuario_id from alvo)
+                  and v.inicio between now() - interval '30 days' and now() + interval '1 day'),
+    'aniversarios', (select coalesce(jsonb_agg(jsonb_build_object(
+                       'lead_id', l.id, 'dono_id', l.dono_id, 'nome', l.nome, 'dia_mes', to_char(l.nascimento, 'MM-DD'))), '[]')
+                     from public.leads l
+                     where l.status = 'ativo'
+                       and l.dono_id in (select usuario_id from quem)
+                       and to_char(l.nascimento, 'MM-DD') in (to_char(now() at time zone 'America/Sao_Paulo', 'MM-DD'), '02-29')),
+    'equipes', (select coalesce(jsonb_agg(jsonb_build_object('gerente_id', e.gerente_id, 'membros', e.membros)), '[]')
+                from (select gerente_id, jsonb_agg(jsonb_build_object('id', id, 'nome', nome) order by nome) membros
+                      from membros group by gerente_id) e)
+  );
+$$;
