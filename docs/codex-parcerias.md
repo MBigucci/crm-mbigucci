@@ -29,7 +29,7 @@ Sumário: Leia antes · O que o Felipe pediu · Decisões técnicas · Etapas ·
 11. **Faixas do prazo (04/11/2026, mockup aprovado):** ✓ no 1º mês (até 30 dias), ! no 2º (31 a 60), ✕ no 3º (61 a 90). Suposições abaixo e aviso aos 80 dias aprovados ("de resto aprovado").
 
 12. **Cadastro manual do gerente (04/11/2026):** parceiro novo cadastrado à mão por um gerente **fica com ele**, sem roleta (como no `[TROCA a]` padrão de `parcerias.sql`). Coerente com o estudo da recepção: "procurou um gerente, fica com ele".
-14. **Fila da roleta visível (04/11/2026):** todos os gerentes veem a ordem (próximo da vez) e o último a receber, só com gerente, data e tag (Estande, Link, 90 dias). Nome do parceiro só para o dono e o gerente geral. Exige função no banco que devolve a fila sem dados do parceiro.
+14. **Fila da roleta visível (04/11/2026):** todos os gerentes veem a ordem (próximo da vez) e o último a receber, só com gerente, data e tag (Estande, Link, 90 dias). Nome do parceiro só para o dono e o gerente geral. Exige função no banco que devolve a fila sem dados do parceiro. **Discreta (04/11/2026):** na lista, só a linha "→ Você é o próximo da roleta de parceiros" para quem está na vez, e o link "Ver fila da roleta" no fim da lista abre a ordem completa.
 15. **Rodada 1 do estudo de referências (04/11/2026, `docs/parcerias-referencias.md`):**
    - Envio de material **e** evento em lote **reiniciam** os 90 dias (opção c). Entram como tipos de registro novos.
    - Entram junto com a etapa 3 as propostas 1 (resumo da carteira e estágio calculado), 4a (registrar pela lista) e 6 (linha do tempo com interações e eventos).
