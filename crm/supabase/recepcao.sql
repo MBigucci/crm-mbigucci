@@ -77,6 +77,13 @@ from (values ('recepcao', 'plantao.confirmar'), ('operacional', 'plantao.confirm
 join novas n on n.slug = v.permissao and n.nova
 on conflict do nothing;
 
+-- Felipe, 05/11/2026: o operacional também vê os dias anteriores e o relatório
+-- do stand (com plantoes.gerenciar, lê todos os atendimentos; ver a função
+-- private.recepcao_pode_ler_atendimento).
+insert into public.role_permissions (perfil, permissao)
+values ('operacional', 'plantao.atendimentos_ver')
+on conflict do nothing;
+
 -- ---------------------------------------------------------------------
 -- 2. Stands e especialistas
 -- ---------------------------------------------------------------------
@@ -773,7 +780,9 @@ as $$
   select public.is_gerente_geral()
       or (public.has_permission('plantao.atendimentos') and p_dia = private.recepcao_hoje())
       or (public.current_perfil() is not null and auth.uid() in (p_corretor, p_anunciado, p_gerente))
-      or (public.has_permission('plantao.atendimentos_ver') and p_corretor is not null and public.pode_ver_dados_de(p_corretor));
+      or (public.has_permission('plantao.atendimentos_ver') and p_corretor is not null and public.pode_ver_dados_de(p_corretor))
+      -- Quem configura os stands e vê os atendimentos (o operacional) lê todos.
+      or (public.has_permission('plantao.atendimentos_ver') and public.has_permission('plantoes.gerenciar'));
 $$;
 
 drop policy if exists "le atendimentos" on public.plantao_atendimentos;

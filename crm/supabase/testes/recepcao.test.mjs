@@ -90,7 +90,8 @@ test("prepara o banco: schema e recepcao.sql três vezes (idempotente)", async (
   assert.equal((await linhas(`select count(*)::int n from public.plantoes`))[0].n, 4, "os 4 stands, sem duplicar");
   const perms = await linhas(`select perfil, permissao from public.role_permissions where permissao like 'plant%' and permissao <> 'plantao.registrar' order by 1, 2`);
   assert.deepEqual(perms.map((r) => `${r.perfil}:${r.permissao}`), [
-    "gerente:plantao.atendimentos_ver", "operacional:plantao.atendimentos", "operacional:plantao.confirmar",
+    "gerente:plantao.atendimentos_ver", "operacional:plantao.atendimentos", "operacional:plantao.atendimentos_ver",
+    "operacional:plantao.confirmar",
     "operacional:plantoes.gerenciar", "recepcao:plantao.atendimentos", "recepcao:plantao.confirmar"]);
 });
 
@@ -506,6 +507,7 @@ test("clientes de hoje e quem lê os atendimentos", async () => {
   const total = (await linhas(`select count(*)::int n from public.plantao_atendimentos where dia = '${DIA}'`))[0].n;
   assert.equal(await conta(REC), total);
   assert.equal(await conta(GG), total);
+  assert.equal(await conta(OP), total, "operacional: todos os atendimentos (Felipe, 05/11/2026)");
   const doCA = (await linhas(`select count(*)::int n from public.plantao_atendimentos where dia = '${DIA}' and '${id(CA)}' in (corretor_id, anunciado_id)`))[0].n;
   assert.equal(await conta(CA), doCA);
   assert.ok((await conta(GA)) > doCA, "gerente A: a equipe A e os clientes do parceiro dele");
@@ -520,6 +522,7 @@ test("clientes de hoje e quem lê os atendimentos", async () => {
   // No dia seguinte, a recepção não vê mais; a busca do retorno acha.
   await hora("09:00", "2026-11-07");
   assert.equal(await conta(REC), 0);
+  assert.equal(await conta(OP), total, "operacional: também os dias anteriores");
   assert.deepEqual(await rpc(REC, `select * from public.recepcao_clientes_hoje($1)`, [MZ]), []);
   assert.ok((await rpc(REC, `select * from public.recepcao_procurar_retorno('rodrigo')`)).length >= 1);
 });

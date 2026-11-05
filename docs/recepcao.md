@@ -69,7 +69,7 @@
   - o corretor, os atendimentos dele (vínculo ou anunciado);
   - o gerente, os da equipe (com `plantao.atendimentos_ver`) e os dos parceiros dele;
   - o gerente geral, tudo, inclusive a auditoria.
-- **Permissões novas:** `plantao.confirmar` e `plantao.atendimentos` (recepção, operacional), `plantao.atendimentos_ver` (gerente), `plantoes.gerenciar` (operacional).
+- **Permissões novas:** `plantao.confirmar` e `plantao.atendimentos` (recepção, operacional), `plantao.atendimentos_ver` (gerente e operacional), `plantoes.gerenciar` (operacional). Quem tem `plantao.atendimentos_ver` e `plantoes.gerenciar` (o operacional) lê todos os atendimentos, de qualquer dia (Felipe, 05/11/2026).
 - **Apelido obrigatório** para corretor ativo, único entre os ativos. O banco cobra ao ativar, e `/usuarios` tem os campos Apelido e CRECI.
 - **Id gerado no aparelho:** repetir o mesmo envio devolve a mesma resposta, sem duplicar. Duas telas no mesmo stand esperam uma pela outra (trava por stand, dia, turno e papel).
 
@@ -131,6 +131,6 @@ Se o CRM cair, a recepção anota numa planilha em branco com as mesmas colunas:
 
 - `crm/supabase/verificar-rls.sql` ainda não lista as tabelas da recepção (o RLS delas está coberto nos testes por perfil).
 - Visita realizada pendente da primeira visita de indicação de corretor (decisão 14 do estudo): precisa de uma linha em `visitas` ou mudar o schema de `lancamentos_pontos`.
-- O operacional registra e corrige, mas não lê os atendimentos de dias anteriores (não tem `plantao.atendimentos_ver`). Se precisar do relatório do stand, conceder a permissão em Configurações → Permissões.
+- ✓ Resolvido em 05/11/2026: o operacional vê os dias anteriores e o relatório do stand (decisão do Felipe).
 - Exportação CSV e relatórios para o Felipe e o marketing: sessão própria.
 - Aviso no celular para quem é anunciado: depois (decisão 21 do estudo).
