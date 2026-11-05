@@ -14,6 +14,7 @@ Regras de uso do logo do Base360, o sistema da MBigucci. O CRM é o módulo de V
 9. O que não fazer
 10. Como os arquivos foram feitos
 11. Pendências
+12. Aplicação no módulo de Vendas
 
 ## 1. Decisões
 Todas do Felipe, em 05/11/2026, depois de nove rodadas:
@@ -36,8 +37,8 @@ O histórico completo está no estudo, na nota da sessão e na memória do proje
 | --- | --- |
 | `simbolo-claro.svg` / `simbolo-escuro.svg` | O símbolo sozinho, sobre `paper` ou `surface` |
 | `logotipo-claro.svg` / `logotipo-escuro.svg` | Só o nome "Base360" |
-| `lockup-base360-claro.svg` / `-escuro.svg` | Símbolo + nome, sem módulo: tela de entrar e materiais do sistema como um todo |
-| `lockup-vendas-claro.svg` / `-escuro.svg` | Cabeçalho do CRM |
+| `lockup-base360-claro.svg` / `-escuro.svg` | Símbolo + nome, sem módulo: tela de escolha do módulo (`/base360/`) e materiais do sistema como um todo |
+| `lockup-vendas-claro.svg` / `-escuro.svg` | Cabeçalho do CRM, inclusive na tela de entrar |
 | `lockup-repasse-claro.svg` / `-escuro.svg` | Cabeçalho do Base360 da Roberta |
 | `icone.svg` | Ícone do app (192, 512 e 180 da Apple) |
 | `icone-maskable.svg` | Ícone maskable do Android, dentro da zona segura de 80% |
@@ -153,5 +154,14 @@ O fundo grafite do ícone praticamente some sobre o `paper` escuro (1,02:1). Iss
 ## 11. Pendências
 - **Busca de anterioridade:** registro no INPI e logos parecidos. Não foi feita.
 - **Leitura no celular do Felipe e aprovação da diretoria.**
-- **Aplicar no CRM:** cabeçalho, ícones do PWA, favicon, logo MBigucci na lateral e no login. Fica para um brief próprio, fora desta etapa.
+- **Aplicar no CRM:** em andamento pelo brief `codex-aplicar-logo-base360.md` (veja a seção 12).
 - **`local/` no `.gitignore`:** feito em 05/11/2026.
+
+## 12. Aplicação no módulo de Vendas
+Implementado em 05/11/2026 (brief `codex-aplicar-logo-base360.md`), ainda sem publicar:
+- **Cabeçalho:** `crm/src/components/marca-base360.tsx` desenha o lockup Vendas inline, com os contornos de `lockup-vendas-*.svg` e as cores trocadas por tokens (`ink`, `brand`, `concrete`, `ink-soft`). Um só SVG serve aos dois temas. S = 24px no celular e 28px no computador.
+- **Tela de entrar:** o cabeçalho mostra "Base360 · Vendas", e não o lockup sem módulo, porque o login é só deste módulo (Felipe, 05/11/2026).
+- **Logo MBigucci:** rodapé da lateral aberta, fim do menu do celular e tela de entrar (seção 1).
+- **Ícones e favicon:** `crm/scripts/gerar-icones.mjs` gera os PNGs de `crm/public/icons/` a partir de `icone.svg`, `icone-maskable.svg` e `favicon.svg`, com a densidade alta de `gerar-png.mjs`. Os PNGs do app continuam no Git, porque o build só copia `public/`. O `icon.svg` do app é cópia do `favicon.svg`.
+- **Tela de escolha (`/base360/`):** `portal/index.html`, gerada por `node portal/gerar.mjs` com o `lockup-base360-claro.svg` (cores por token) e o CSS de `marca/tokens/`.
+- **Nome do app no celular:** "Base360". Nos textos, o sistema é "Base360 Vendas".

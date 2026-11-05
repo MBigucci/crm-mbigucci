@@ -1,6 +1,6 @@
 // Avisos no celular (Web Push), do lado do navegador. Adaptado do CRM da Bruna
 // (ref/CRM Bruna/src/lib/push.ts). O service worker fica em public/sw.js, com
-// escopo no BASE_PATH (/crm/). O envio é da Edge Function "avisos".
+// escopo no BASE_PATH (/base360/vendas/). O envio é da Edge Function "avisos".
 // Regras em docs/notificacoes.md.
 
 import { supabase } from "./supabase";
@@ -24,7 +24,7 @@ export function instalado() {
 }
 
 export function disponibilidade(): Disponibilidade {
-  // No iPhone só funciona com o CRM instalado na Tela de Início (iOS 16.4 ou mais novo).
+  // No iPhone só funciona com o Base360 instalado na Tela de Início (iOS 16.4 ou mais novo).
   if (ehIphone() && !instalado()) return "iphone-instalar";
   if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return "sem-suporte";
   if (!CHAVE_PUBLICA || !supabase) return "sem-chave";
@@ -86,7 +86,7 @@ async function apagarLinha(endpoint: string) {
 
 /** Pede a permissão, assina e grava este aparelho com os tipos escolhidos. */
 export async function ligarAvisos(tipos: TipoAviso[]) {
-  if (!CHAVE_PUBLICA || !supabase) throw new Error("Os avisos ainda não foram configurados no CRM.");
+  if (!CHAVE_PUBLICA || !supabase) throw new Error("Os avisos ainda não foram configurados no Base360 Vendas.");
   const permissao = await Notification.requestPermission();
   if (permissao !== "granted") throw new Error(permissao === "denied" ? "bloqueado" : "Permissão não concedida.");
   const reg = await registro();

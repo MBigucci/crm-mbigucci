@@ -1,7 +1,7 @@
 {
-  "name": "CRM MBigucci",
-  "short_name": "CRM",
-  "description": "CRM dos corretores MBigucci.",
+  "name": "Base360",
+  "short_name": "Base360",
+  "description": "Base360 Vendas, o sistema dos corretores MBigucci.",
   "id": "./",
   "start_url": "./",
   "scope": "./",

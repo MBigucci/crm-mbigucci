@@ -121,7 +121,7 @@ export function ListaDoDia() {
         <div className="card bar-brand">
           <h2 className="titulo-card">Cadastre seu primeiro lead</h2>
           <p className="mt-2 text-ink-soft">
-            Em Novo lead, toque em Colar mensagem e cole a conversa do WhatsApp ou o e-mail do cliente. O CRM preenche
+            Em Novo lead, toque em Colar mensagem e cole a conversa do WhatsApp ou o e-mail do cliente. O Base360 Vendas preenche
             nome, WhatsApp e empreendimento, e você só confere e escolhe a origem.
           </p>
           <Link href="/leads/novo/" className="link-acao mt-3 inline-block">

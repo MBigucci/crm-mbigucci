@@ -1,0 +1,13 @@
+# Redirecionamento do endereço antigo do CRM (mbigucci.com.br/crm) para o módulo
+# de Vendas do Base360 (mbigucci.com.br/base360/vendas). Vai por FTP para /crm/,
+# no lugar dos arquivos antigos. Mantém o resto do caminho e a consulta:
+# /crm/leads/ficha/?id=x → /base360/vendas/leads/ficha/?id=x (o Apache repassa a
+# consulta sozinho quando a regra não escreve uma nova). 301 = mudou de vez.
+<IfModule mod_rewrite.c>
+RewriteEngine On
+# Dentro do .htaccess de /crm/, o padrão vê o caminho sem o "crm/" do começo.
+RewriteRule ^(.*)$ /base360/vendas/$1 [R=301,L]
+</IfModule>
+<IfModule !mod_rewrite.c>
+RedirectMatch 301 ^/crm/?(.*)$ /base360/vendas/$1
+</IfModule>

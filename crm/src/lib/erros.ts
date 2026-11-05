@@ -18,7 +18,7 @@ export function mensagemErro(e: { message?: string } | null | undefined): string
   if (m.includes("leads_perfil_ampliado_check")) return "Confira os campos do perfil.";
   if (m.includes("lead_documentos_tamanho_check") || /exceeded the maximum allowed size/i.test(m)) return "O arquivo passa de 10 MB.";
   if (m.includes("lead_documentos_tipo_check") || /mime type .* is not supported/i.test(m)) return "Envie um PDF ou uma foto.";
-  if (/does not exist|schema cache|bucket not found/i.test(m)) return "Esta parte do CRM ainda não foi ativada. Avise o gerente geral.";
+  if (/does not exist|schema cache|bucket not found/i.test(m)) return "Esta parte do Base360 Vendas ainda não foi ativada. Avise o gerente geral.";
   if (m.includes("row-level security") || m.includes("permission denied")) return "Você não tem permissão para isso.";
   if (/failed to fetch|network|load failed/i.test(m)) return "Sem conexão com o servidor. Tente de novo.";
   // Auth: 150 entradas por 5 min por IP (rajada de 30). Com todo o plantão no mesmo Wi-Fi, pode acontecer às 9h.

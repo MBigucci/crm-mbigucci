@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import clsx from "clsx";
 import { AvisoOffline } from "./aviso-offline";
+import { LockupVendas, LogoMBigucci } from "./marca-base360";
 import { IconeMenu, nomeDoIcone } from "./icones-menu";
 import { assinarBarra, definirBarra, lerBarra } from "@/lib/barra";
 
@@ -77,30 +78,11 @@ function LinkDoMenu({
   );
 }
 
-/** Logo oficial (ou "MBigucci" em brand se a imagem faltar) + nome da ferramenta. */
+/** Logo "Base360 · Vendas", que leva ao início. O SVG é decorativo; o nome fica no link. */
 function Marca() {
-  const [semLogo, setSemLogo] = useState(false);
-  const img = useRef<HTMLImageElement>(null);
-  // O erro pode acontecer antes da hidratação, quando o onError ainda não existe.
-  useEffect(() => {
-    const el = img.current;
-    if (el && el.complete && el.naturalWidth === 0) setSemLogo(true);
-  }, []);
   return (
-    <Link href="/" className="focus-ring flex shrink-0 items-center gap-3 lg:gap-4">
-      {semLogo ? (
-        <span className="font-display text-[17px] font-extrabold text-brand">MBigucci</span>
-      ) : (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          ref={img}
-          src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/mbigucci-logo.png`}
-          alt="MBigucci Construtora"
-          className="marca-selo h-logo w-auto lg:h-[28px]"
-          onError={() => setSemLogo(true)}
-        />
-      )}
-      <span className="font-display text-[16px] font-bold leading-none text-ink lg:text-[20px]">CRM</span>
+    <Link href="/" aria-label="Base360 Vendas, início" className="focus-ring flex shrink-0 items-center">
+      <LockupVendas className="h-[24px] lg:h-[28px]" />
     </Link>
   );
 }
@@ -194,9 +176,9 @@ function MenuConta({ conta }: { conta: Conta }) {
 }
 
 /**
- * Barra do topo. No computador (lg): marca, atalhos externos e o menu da conta.
- * No celular: marca e Menu / Fechar, que abre o painel escuro logo abaixo com
- * os destinos, os atalhos e a conta.
+ * Barra do topo. No computador (lg): "Base360 · Vendas", atalhos externos e o
+ * menu da conta. No celular: o logo e Menu / Fechar, que abre o painel escuro
+ * logo abaixo com os destinos, os atalhos, a conta e, no fim, o logo MBigucci.
  */
 export function Cabecalho({ itens, conta }: { itens?: ItemMenu[]; conta?: Conta }) {
   const [aberto, setAberto] = useState(false);
@@ -292,6 +274,10 @@ export function Cabecalho({ itens, conta }: { itens?: ItemMenu[]; conta?: Conta 
                 </ul>
               </div>
             )}
+            {/* Logo MBigucci no fim do menu, depois da conta. */}
+            <div className="mt-2 divisoria-nav border-t px-5 pb-2 pt-4">
+              <LogoMBigucci sobreEscuro />
+            </div>
           </nav>
         )}
       </header>
@@ -305,8 +291,9 @@ export function Cabecalho({ itens, conta }: { itens?: ItemMenu[]; conta?: Conta 
 
 /**
  * Lateral escura do computador (lg): 180 px aberta, 64 px recolhida. Só os
- * destinos do CRM; atalhos e conta ficam no cabeçalho. Recolhida, mostra só os
- * ícones; o nome continua acessível e aparece numa dica no mouse e no foco.
+ * destinos do CRM; atalhos e conta ficam no cabeçalho. No rodapé, o logo
+ * MBigucci (só aberta). Recolhida, mostra só os ícones; o nome continua
+ * acessível e aparece numa dica no mouse e no foco.
  */
 export function BarraLateral({ itens }: { itens: ItemMenu[] }) {
   const { ativo } = useAtual();
@@ -360,6 +347,10 @@ export function BarraLateral({ itens }: { itens: ItemMenu[] }) {
           </li>
         ))}
       </ul>
+      {/* Fora da lista, para não rolar junto. Recolhida, a lateral esconde o logo. */}
+      <div className="rodape-lateral divisoria-nav">
+        <LogoMBigucci sobreEscuro />
+      </div>
       {dica && (
         <span aria-hidden className="dica-lateral" style={{ top: dica.topo }}>
           {dica.texto}

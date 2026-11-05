@@ -125,7 +125,7 @@ export function mensagemRepasse(d: {
   link: string;
 }): string {
   const linhas = [
-    `Oi, ${primeiroNome(d.corretor)}. Você recebeu um lead da empresa no CRM.`,
+    `Oi, ${primeiroNome(d.corretor)}. Você recebeu um lead da empresa no Base360 Vendas.`,
     "",
     `*${d.cliente.trim()}*`,
     d.whatsapp ? `WhatsApp: ${formatarWhatsapp(d.whatsapp)}` : "WhatsApp: sem telefone",

@@ -359,7 +359,7 @@ export function montarAvisos(d: DadosAvisos, agora: Date): Aviso[] {
         usuario_id: p,
         tipo: "resumo",
         chaves: [`resumo:${p}:${sp.data}`],
-        titulo: "Seu dia no CRM",
+        titulo: "Seu dia no Base360",
         corpo: partes.join(" · "),
         url: "",
         tag: "resumo",
@@ -841,7 +841,7 @@ async function rodada(amb: Ambiente) {
 /** "Enviar teste" em Minha conta: só para um aparelho da própria pessoa. */
 async function teste(amb: Ambiente, token: string, endpoint: string) {
   const u = await fetch(`${amb.url}/auth/v1/user`, { headers: { apikey: amb.anon, Authorization: `Bearer ${token}` } });
-  if (!u.ok) return resposta(401, { erro: "Entre de novo no CRM." });
+  if (!u.ok) return resposta(401, { erro: "Entre de novo no Base360." });
   const { id } = (await u.json()) as { id: string };
   const r = await fetch(
     `${amb.url}/rest/v1/push_assinaturas?select=endpoint,p256dh,auth&usuario_id=eq.${encodeURIComponent(id)}&endpoint=eq.${encodeURIComponent(endpoint)}`,
@@ -849,7 +849,7 @@ async function teste(amb: Ambiente, token: string, endpoint: string) {
   );
   const [s] = (r.ok ? await r.json() : []) as Assinatura[];
   if (!s) return resposta(404, { erro: "Este aparelho não está com os avisos ligados." });
-  const resultado = await enviar(s, { titulo: "Teste do CRM", corpo: "Os avisos chegam neste aparelho.", url: "conta/", tag: "teste" }, amb.vapid);
+  const resultado = await enviar(s, { titulo: "Teste do Base360", corpo: "Os avisos chegam neste aparelho.", url: "conta/", tag: "teste" }, amb.vapid);
   if (resultado === "removido") await rpc(amb, "push_esquecer", { p_endpoints: [s.endpoint] });
   return resposta(200, { resultado });
 }
@@ -869,7 +869,7 @@ if (deno?.serve) {
       vapid: {
         publica: deno.env.get("VAPID_PUBLIC_KEY") ?? "",
         privada: deno.env.get("VAPID_PRIVATE_KEY") ?? "",
-        assunto: deno.env.get("VAPID_SUBJECT") || "https://mbigucci.com.br/crm/",
+        assunto: deno.env.get("VAPID_SUBJECT") || "https://mbigucci.com.br/base360/vendas/",
       },
     };
     if (!amb.vapid.publica || !amb.vapid.privada) {

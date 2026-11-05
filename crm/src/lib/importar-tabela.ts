@@ -472,21 +472,21 @@ export function instrucoesImportacao(catalogo: Empreendimento[], hoje: Date): st
     .join("\n");
   const tipos = TIPOS_TIPOLOGIA.map((t) => `\`"${t.slug}"\``).join(", ");
   const fases = STATUS_EMPREENDIMENTO.map((s) => `\`"${s.slug}"\``).join(", ");
-  return `# Tabela de preços para o CRM MBigucci
+  return `# Tabela de preços para o Base360 Vendas
 
 > **Como usar:** mande este texto para uma IA (ChatGPT, Gemini ou Claude) junto com o PDF ou a foto da tabela de preços.
-> Ela responde com um bloco JSON. No CRM: **Empreendimentos → Importar tabela de preços → cole a resposta**, confira a prévia e aplique.
+> Ela responde com um bloco JSON. No Base360 Vendas: **Empreendimentos → Importar tabela de preços → cole a resposta**, confira a prévia e aplique.
 
 ---
 
 ## Instruções para a IA
 
-Você vai ler a tabela de preços mensal da construtora MBigucci (PDF ou foto) e devolver os preços num JSON que o CRM importa.
+Você vai ler a tabela de preços mensal da construtora MBigucci (PDF ou foto) e devolver os preços num JSON que o Base360 Vendas importa.
 
 ### Regras
 
 1. **Um item em \`empreendimentos\` por torre ou fase com nome próprio**, como no catálogo atual (no fim deste texto).
-2. **Use o mesmo \`id\` e o mesmo \`nome\` do catálogo atual** para os empreendimentos que já estão nele. Assim o CRM atualiza o preço em vez de duplicar. Só invente \`id\` para um empreendimento que não está na lista.
+2. **Use o mesmo \`id\` e o mesmo \`nome\` do catálogo atual** para os empreendimentos que já estão nele. Assim o Base360 Vendas atualiza o preço em vez de duplicar. Só invente \`id\` para um empreendimento que não está na lista.
 3. **Em \`tipologias\`, uma entrada por planta**: cada combinação de tipo, dormitórios e metragem. Não liste cada apartamento, andar ou final: agrupe e use o **menor preço** como "a partir de". Explique em \`preco_nota\` (ex.: \`"a partir de · finais 1 e 4 · tabela dez/2026"\`).
 4. **Use o mesmo \`rotulo\` do catálogo atual** quando a planta já estiver lá.
 5. **Use só o que está na tabela.** Nunca invente preço, metragem, vagas ou entrega: use \`null\` e escreva em \`avisos\` o que faltou.
@@ -500,7 +500,7 @@ Você vai ler a tabela de preços mensal da construtora MBigucci (PDF ou foto) e
 
 ### Formato da resposta
 
-Responda **somente com um bloco de código \`json\`**, sem texto antes ou depois. Se a tabela for grande demais para uma resposta, divida em vários blocos \`json\` no mesmo formato: o CRM junta todos.
+Responda **somente com um bloco de código \`json\`**, sem texto antes ou depois. Se a tabela for grande demais para uma resposta, divida em vários blocos \`json\` no mesmo formato: o Base360 Vendas junta todos.
 
 | Campo | Tipo | O que é |
 | --- | --- | --- |

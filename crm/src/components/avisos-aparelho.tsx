@@ -22,9 +22,9 @@ import { useSessao } from "@/lib/sessao";
 type Nota = { ok: boolean; texto: string };
 
 function comoDesbloquear() {
-  if (ehIphone()) return "Os avisos estão bloqueados. No iPhone: Ajustes > Notificações > CRM > Permitir Notificações. Depois tente de novo.";
+  if (ehIphone()) return "Os avisos estão bloqueados. No iPhone: Ajustes > Notificações > Base360 > Permitir Notificações. Depois tente de novo.";
   if (/Android/.test(navigator.userAgent)) {
-    return "Os avisos estão bloqueados. Segure o ícone do CRM > Informações do app > Notificações > Permitir. Depois tente de novo.";
+    return "Os avisos estão bloqueados. Segure o ícone do Base360 > Informações do app > Notificações > Permitir. Depois tente de novo.";
   }
   return "Os avisos estão bloqueados para este site. Toque no cadeado ao lado do endereço > Permissões > Notificações > Permitir. Depois tente de novo.";
 }
@@ -85,25 +85,25 @@ export function AvisosNesteAparelho() {
     <div className="card">
       <h2 className="titulo-card">Avisos neste aparelho</h2>
       <p className="mt-2 text-ink-soft">
-        O CRM avisa no celular, mesmo fechado, na hora de cada contato e de cada visita. Escolha o que quer receber. Vale
+        O Base360 Vendas avisa no celular, mesmo fechado, na hora de cada contato e de cada visita. Escolha o que quer receber. Vale
         só para este aparelho.
       </p>
       <p className="mt-3">
-        <span className="font-semibold">iPhone:</span> os avisos só funcionam com o CRM instalado na Tela de Início
-        (Safari &gt; Compartilhar &gt; Adicionar à Tela de Início), no iOS 16.4 ou mais novo. Depois, abra o CRM pelo ícone
+        <span className="font-semibold">iPhone:</span> os avisos só funcionam com o Base360 instalado na Tela de Início
+        (Safari &gt; Compartilhar &gt; Adicionar à Tela de Início), no iOS 16.4 ou mais novo. Depois, abra o Base360 pelo ícone
         e ligue aqui.
       </p>
 
       {disp === null && <p className="mt-4 text-concrete">Carregando…</p>}
       {disp === "iphone-instalar" && (
-        <p className="aviso-erro mt-4">! Abra o CRM pelo ícone da Tela de Início para ligar os avisos.</p>
+        <p className="aviso-erro mt-4">! Abra o Base360 pelo ícone da Tela de Início para ligar os avisos.</p>
       )}
       {disp === "sem-suporte" && (
         <p className="aviso-erro mt-4">
           ! {ehIphone() ? "Atualize o iPhone para o iOS 16.4 ou mais novo." : "Este navegador não aceita avisos. No celular, use o Chrome."}
         </p>
       )}
-      {disp === "sem-chave" && <p className="aviso-erro mt-4">! Os avisos ainda não foram configurados no CRM.</p>}
+      {disp === "sem-chave" && <p className="aviso-erro mt-4">! Os avisos ainda não foram configurados no Base360 Vendas.</p>}
 
       {disp === "ok" && (
         <>

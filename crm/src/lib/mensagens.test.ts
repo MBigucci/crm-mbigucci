@@ -92,7 +92,7 @@ test("links: WhatsApp com texto e Ligar", () => {
 });
 
 test("repasse: nome, WhatsApp, empreendimento, prazo e link da ficha", () => {
-  const link = "https://www.mbigucci.com.br/crm/leads/ficha/?id=1";
+  const link = "https://www.mbigucci.com.br/base360/vendas/leads/ficha/?id=1";
   assert.equal(
     mensagemRepasse({
       corretor: "Carla Souza",
@@ -103,7 +103,7 @@ test("repasse: nome, WhatsApp, empreendimento, prazo e link da ficha", () => {
       link,
     }),
     [
-      "Oi, Carla. Você recebeu um lead da empresa no CRM.",
+      "Oi, Carla. Você recebeu um lead da empresa no Base360 Vendas.",
       "",
       "*Ana Paula*",
       "WhatsApp: (11) 98765-4321",

@@ -17,7 +17,7 @@
 
 ## 1. O que entrou e o que ficou de fora
 
-- **Entrou:** service worker só para avisos (`crm/public/sw.js`, escopo `/crm/`, sem cache), card "Avisos neste aparelho" em Minha conta (ligar, desligar, tipos, enviar teste), tabelas `push_assinaturas` e `push_log` com RLS, a Edge Function `avisos` (montagem, envio e criptografia sem dependências), o agendador a cada 5 min e o gatilho de lead atribuído (`crm/supabase/agendar-avisos.sql`).
+- **Entrou:** service worker só para avisos (`crm/public/sw.js`, escopo `/base360/vendas/`, sem cache; antes de 05/11/2026 era `/crm/`), card "Avisos neste aparelho" em Minha conta (ligar, desligar, tipos, enviar teste), tabelas `push_assinaturas` e `push_log` com RLS, a Edge Function `avisos` (montagem, envio e criptografia sem dependências), o agendador a cada 5 min e o gatilho de lead atribuído (`crm/supabase/agendar-avisos.sql`).
 - **Avisos:** próximo contato, visita 1 hora antes, visitas aguardando baixa no fim do dia, lead da empresa atribuído, prazo de 15 min (faltando 5 e estourado) e resumo do dia.
 - **Depois (04/11/2026, item 28):** o tipo **Equipe**, para o gerente: o prazo de 15 min estourado num lead da empresa da equipe, na hora, e no fim do dia as visitas da equipe aguardando baixa.
 - **Ficou de fora:** lista dos aparelhos para remover um celular perdido (cada um só vê os próprios; o aparelho sai sozinho em 60 dias sem abrir o CRM), religar sozinho ao entrar de novo na mesma conta (a Bruna faz; aqui a pessoa liga de novo em Minha conta) e qualquer aviso do programa de pontuação.
@@ -25,7 +25,7 @@
 
 ## 2. Como funciona
 
-1. **Ligar:** em Minha conta, a pessoa toca em "Ligar avisos". O navegador pede a permissão, registra o `sw.js` com escopo `/crm/` (o `BASE_PATH`) e assina o serviço de push com a chave pública VAPID (`NEXT_PUBLIC_VAPID_PUBLIC_KEY`). A assinatura vai para o banco pela função `push_assinar`.
+1. **Ligar:** em Minha conta, a pessoa toca em "Ligar avisos". O navegador pede a permissão, registra o `sw.js` com escopo `/base360/vendas/` (o `BASE_PATH`) e assina o serviço de push com a chave pública VAPID (`NEXT_PUBLIC_VAPID_PUBLIC_KEY`). A assinatura vai para o banco pela função `push_assinar`.
 2. **Rodada:** a cada 5 min, o `pg_cron` chama a Edge Function `avisos` pelo `pg_net`, com o cabeçalho `x-avisos-segredo`. A função pergunta ao banco se o segredo confere (`avisos_segredo_ok`) e roda:
    - `avisos_limpar()`: tira o log com mais de 30 dias e os aparelhos sem abrir o CRM há 60;
    - `avisos_dados()`: devolve o horário de atendimento, as assinaturas, os leads e as visitas abertas de quem tem aparelho e conta ativa, com o fim do prazo já calculado por `private.fim_do_prazo` (a mesma conta do painel);
@@ -35,7 +35,7 @@
    - `push_esquecer()`: apaga os aparelhos que o serviço disse que não existem mais (404 ou 410);
    - `avisos_desmarcar()`: devolve ao log o aviso que falhou em todos os aparelhos, para a próxima rodada.
 3. **Na hora:** quando o gerente atribui um lead da empresa (no cadastro, na troca de dono ou no Lead perdido), um gatilho em `leads` chama a mesma função na hora. É a mesma rodada: o gatilho só adianta.
-4. **No aparelho:** o `sw.js` mostra o aviso e, no toque, abre a tela certa dentro de `/crm/` (a ficha do lead, a Agenda ou a lista do dia). Se o CRM já está aberto, ele vai para a tela nessa janela.
+4. **No aparelho:** o `sw.js` mostra o aviso e, no toque, abre a tela certa dentro de `/base360/vendas/` (a ficha do lead, a Agenda ou a lista do dia). Se o app já está aberto, ele vai para a tela nessa janela.
 
 Por que assim: o site é exportação estática no WordPress, sem servidor. Na Bruna o envio roda em rotas de API da Vercel; aqui ele roda numa Edge Function do Supabase, e o agendamento no `pg_cron`.
 
@@ -51,7 +51,7 @@ Por que assim: o site é exportação estática no WordPress, sem servidor. Na B
 | Prazo de 15 min (`prazo`) | Quando estoura, até 30 min depois | "Prazo de 15 min estourado" · "Ana Souza · Marco Zero One ainda está sem primeiro contato. Fale agora." | Ficha do lead |
 | Equipe (`equipe`), só para o gerente | Prazo de 15 min estourado num lead da empresa de um corretor da equipe, na hora, até 30 min depois. Mais de 3 na mesma rodada viram um aviso só. | "Prazo de 15 min estourado na equipe" · "Ana Souza · Marco Zero One, com Bruno Lima, está sem primeiro contato. Veja o Lead perdido." / "4 prazos estourados na equipe" · "Bruno, Caio e Dani. Veja o painel." | Ficha do lead (onde está o Lead perdido) / Painel |
 | Equipe (`equipe`), só para o gerente | No fim do atendimento (19h no padrão), até 1 h depois, se houver visita da equipe aberta que já passou | "3 visitas da equipe aguardando baixa" · "Bruno (2) e Caio (1). Cobre a baixa." | Agenda |
-| Resumo do dia (`resumo`) | Na abertura do atendimento (9h no padrão), até 1 h depois, nos dias de atendimento. Dia sem pendências não manda nada; dia só com aniversário manda. | "Seu dia no CRM" · "1 aguardando primeiro contato · 2 atrasados · 1 contato para hoje · 2 visitas (10h, 15h30) · aniversário de Ana Souza" | Lista do dia |
+| Resumo do dia (`resumo`) | Na abertura do atendimento (9h no padrão), até 1 h depois, nos dias de atendimento. Dia sem pendências não manda nada; dia só com aniversário manda. | "Seu dia no Base360" · "1 aguardando primeiro contato · 2 atrasados · 1 contato para hoje · 2 visitas (10h, 15h30) · aniversário de Ana Souza" | Lista do dia |
 
 - **Aniversários (item 16, `docs/leads.md`, seção 17):** `avisos_dados` manda só o dia e o mês (`dia_mes`, "MM-DD") dos leads ativos de quem tem aparelho, nunca o ano. A função decide com `ehAniversarioHoje`, a mesma regra da ficha: quem nasceu em 29/02 aparece em 28/02 nos anos que não são bissextos. Sem o SQL do item 16, o resumo sai como antes. Depois de mudar o `index.ts`, publique a função de novo (`crm/README.md`, seção 9).
 - **Quem recebe:** o dono do lead e o corretor da visita. O lead da empresa só avisa quando quem atribuiu não é o próprio dono.
@@ -131,7 +131,7 @@ Lido por inteiro em 29/10/2026: `ref/CRM Bruna/public/sw.js`, `src/lib/push.ts`,
 
 | Recurso da Bruna | Como ficou | Por quê |
 | --- | --- | --- |
-| `public/sw.js` só com push, sem cache | ✓ Trazido, com caminhos relativos ao escopo (`/crm/`) e navegação na janela aberta | O `basePath` muda tudo de lugar; o `postMessage` da Bruna dependia de um ouvinte no app |
+| `public/sw.js` só com push, sem cache | ✓ Trazido, com caminhos relativos ao escopo (`/base360/vendas/`) e navegação na janela aberta | O `basePath` muda tudo de lugar; o `postMessage` da Bruna dependia de um ouvinte no app |
 | Envio em rota de API da Vercel com `web-push` | ! Edge Function `avisos`, com Web Push em WebCrypto e sem dependências | Exportação estática não tem servidor; um arquivo só para colar no editor do Supabase |
 | `pg_cron` a cada 10 min chamando o app, segredo no Vault | ! A cada 5 min chamando a função; o segredo no Vault, conferido pelo banco | O prazo de 15 min pede rodada mais curta |
 | `push_due`: a lógica de quem recebe o quê em SQL, para todos | ! Em TypeScript puro na função, por dono, com os dados de `avisos_dados` | Testável no `npm test`; cada corretor só recebe o que é dele |

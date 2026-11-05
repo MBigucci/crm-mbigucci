@@ -10,8 +10,9 @@ Deploy estático · Modelo de permissões · RLS · Fim do sigilo do programa de
 - **Stack:** Next.js 15, React 19, Tailwind 3, Supabase e zod.
 - **Exportação estática:**
   - `output: "export"`, sem rotas de API nem server components dinâmicos.
-  - `npm run build` gera `out/`, que vai por FTP para a pasta `crm/` do WordPress.
-  - `BASE_PATH` define a pasta e tem `/crm` como padrão.
+  - `npm run build` gera `out/`, que vai por FTP para a pasta `base360/vendas/` do WordPress (05/11/2026; antes era `crm/`).
+  - `BASE_PATH` define a pasta e tem `/base360/vendas` como padrão. A pasta do repositório continua `crm/`.
+  - A tela de escolha do módulo, em `/base360/`, é a página estática `portal/index.html` (gerada por `node portal/gerar.mjs`, sem Next e sem login). O endereço antigo `/crm/` leva ao novo pelo `crm-redirecionamento/` (`.htaccess` 301 e um `index.html` de reserva).
   - `trailingSlash: true`, para o Apache servir `pasta/index.html`.
 - **Dados e segurança:**
   - Todo dado e todo login vêm do Supabase, pelo navegador, com a chave anon.
@@ -124,10 +125,10 @@ As regras de negócio estão em `docs/empreendimentos.md`, seção 12.
 
 ## PWA (29/10/2026)
 
-- **Manifest estático:** `crm/public/manifest.webmanifest`, e não um `app/manifest.ts`. Todos os caminhos dentro dele são **relativos** (`./`, `icons/...`), então resolvem para `/crm/` a partir da URL do manifest, com qualquer `BASE_PATH`. Nome "CRM MBigucci", nome curto "CRM", `display: standalone`, fundo e tema `paper` #f7f6f2.
-- **Ícones:** `crm/public/icons/` (192, 512, maskable 512, apple-touch-icon 180, favicon 32 e SVG), "MB" branco no vermelho `brand`. Os PNG ficam no git e saem de `node scripts/gerar-icones.mjs` (sharp que vem com o Next). Não são o logo oficial.
-- **`layout.tsx`:** o Next não prefixa o `basePath` nos links de `metadata.manifest` e `metadata.icons`, então eles usam `NEXT_PUBLIC_BASE_PATH` à mão. Confira no `out/index.html` que saem como `/crm/...`, sem prefixo dobrado.
-- **Service worker só de avisos:** `crm/public/sw.js` (item 15), com escopo `/crm/`, sem handler de `fetch`, sem cache e sem fila offline. O Chrome no Android oferece "Instalar app" só com o manifest e HTTPS.
+- **Manifest estático:** `crm/public/manifest.webmanifest`, e não um `app/manifest.ts`. Todos os caminhos dentro dele são **relativos** (`./`, `icons/...`), então resolvem para `/base360/vendas/` a partir da URL do manifest, com qualquer `BASE_PATH`. Nome e nome curto "Base360" (05/11/2026; antes "CRM MBigucci" e "CRM"), `display: standalone`, fundo e tema `paper` #f7f6f2.
+- **Ícones:** `crm/public/icons/` (192, 512, maskable 512, apple-touch-icon 180, favicon 32 e SVG), o símbolo Base360 (paredes brancas e giro vermelho sobre o grafite `#16181c`). Os PNG ficam no git e saem de `node scripts/gerar-icones.mjs` (sharp que vem com o Next), a partir de `docs/marca-base360/icone.svg`, `icone-maskable.svg` e `favicon.svg`. O `icon.svg` é cópia do `favicon.svg`.
+- **`layout.tsx`:** o Next não prefixa o `basePath` nos links de `metadata.manifest` e `metadata.icons`, então eles usam `NEXT_PUBLIC_BASE_PATH` à mão. Confira no `out/index.html` que saem como `/base360/vendas/...`, sem prefixo dobrado.
+- **Service worker só de avisos:** `crm/public/sw.js` (item 15), com escopo `/base360/vendas/` (o `BASE_PATH`; antes `/crm/`), sem handler de `fetch`, sem cache e sem fila offline. O Chrome no Android oferece "Instalar app" só com o manifest e HTTPS.
 - **Sem internet:** `components/aviso-offline.tsx`, dentro do cabeçalho fixo, mostra "! Sem internet. O que você fizer agora pode não ser salvo." pelos eventos `online`/`offline`. Não sincroniza nada.
 - **Instalação:** card "Instalar no celular" em `/conta/`, com o passo a passo de Android e iPhone.
 - **WordPress:** se o Apache servir `.webmanifest` com tipo errado, o Chrome ainda aceita. Se quiser o tipo certo: `AddType application/manifest+json .webmanifest` no `.htaccess`.

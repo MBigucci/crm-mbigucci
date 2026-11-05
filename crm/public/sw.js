@@ -1,6 +1,6 @@
-/* Service worker do CRM MBigucci: só os avisos no celular (Web Push).
+/* Service worker do Base360 Vendas: só os avisos no celular (Web Push).
    Não guarda páginas nem dados em cache e não intercepta nenhuma requisição.
-   Fica em /crm/sw.js, com escopo /crm/ (o BASE_PATH). Regras em docs/notificacoes.md. */
+   Fica em /base360/vendas/sw.js, com escopo /base360/vendas/ (o BASE_PATH). Regras em docs/notificacoes.md. */
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
@@ -24,7 +24,7 @@ self.addEventListener("push", (event) => {
     aviso = { corpo: event.data ? event.data.text() : "" };
   }
   event.waitUntil(
-    self.registration.showNotification(aviso.titulo || "CRM MBigucci", {
+    self.registration.showNotification(aviso.titulo || "Base360", {
       body: aviso.corpo || "",
       tag: aviso.tag || undefined,
       renotify: Boolean(aviso.tag),

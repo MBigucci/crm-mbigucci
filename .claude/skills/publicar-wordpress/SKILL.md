@@ -11,9 +11,13 @@ Os apps são exportação estática (`output: "export"`). O Felipe envia a pasta
 | App | Pasta no site | BASE_PATH |
 | --- | --- | --- |
 | `discovery/` (pesquisa) | mbigucci.com.br/pesquisa-crm | `/pesquisa-crm` |
-| `crm/` | a confirmar com o Felipe (padrão `/crm`) | `/crm` |
+| `crm/` (módulo de Vendas do Base360) | mbigucci.com.br/base360/vendas | `/base360/vendas` |
+| `portal/` (escolha do módulo) | mbigucci.com.br/base360 | não tem: é o `portal/index.html`, gerado por `node portal/gerar.mjs` |
+| `crm-redirecionamento/` | mbigucci.com.br/crm | não tem: `.htaccess` e `index.html` que levam `/crm/...` para `/base360/vendas/...` |
 
-Se a pasta for outra, pergunte antes. Um `BASE_PATH` errado quebra todos os arquivos `/_next/`.
+Se a pasta for outra, pergunte antes. Um `BASE_PATH` errado quebra todos os arquivos `/_next/`. O arquivo de ambiente local do `crm/` pode ter um `BASE_PATH` antigo: passe o valor na linha do comando, que vence o arquivo.
+
+Na troca de `/crm` para `/base360/vendas` (só depois do ok da diretoria e da busca no INPI): o build vai para `/base360/vendas/`, `portal/index.html` para `/base360/`, e o conteúdo de `crm-redirecionamento/` (com o `.htaccess`) substitui os arquivos antigos de `/crm/`. O `mbigucci-logo.png` também vai para `/base360/vendas/`.
 
 ## 2. Conferir o ambiente sem expor segredos
 - Confirme que o `.env.local` do app existe e tem as variáveis do `.env.example`. Leia só os **nomes** das variáveis e nunca repita os valores no chat.
@@ -24,6 +28,7 @@ Rode no diretório do app (ex.: `discovery/`). No Git Bash, defina a variável n
 ```bash
 BASE_PATH=/pesquisa-crm npm run build
 ```
+No `crm/`: `BASE_PATH=/base360/vendas npm run build`.
 Antes de entregar, confira:
 - O typecheck e o build terminaram sem erro.
 - `out/index.html` referencia `/<BASE_PATH>/_next/...`.

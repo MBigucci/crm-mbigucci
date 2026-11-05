@@ -49,7 +49,7 @@ export function AvisarCorretor({
   if (!numero)
     return (
       <p className="text-[13px] text-ink-soft">
-        ! {corretorNome} não tem WhatsApp no CRM. Peça para preencher em Minha conta.
+        ! {corretorNome} não tem WhatsApp no Base360 Vendas. Peça para preencher em Minha conta.
       </p>
     );
 

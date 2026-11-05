@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#151619" media="(prefers-color-scheme: dark)">
+<title>Base360</title>
+<!--{{AVISO}}-->
+<link rel="icon" type="image/svg+xml" href="{{FAVICON}}">
+<link rel="icon" type="image/png" sizes="32x32" href="{{VENDAS}}icons/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="{{VENDAS}}icons/apple-touch-icon.png">
+<style>
+/*{{TOKENS}}*/
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: rgb(var(--paper));
+  color: rgb(var(--ink));
+  font: 15px/1.5 Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+main { max-width: 760px; margin: 0 auto; padding: 56px 16px 48px; }
+h1 { margin: 0; }
+.lockup { display: block; height: 36px; width: auto; }
+.intro { margin: 20px 0 0; color: rgb(var(--ink-soft)); }
+.modulos { list-style: none; margin: 32px 0 0; padding: 0; display: grid; gap: 16px; }
+@media (min-width: 640px) { .modulos { grid-template-columns: 1fr 1fr; } }
+.card {
+  position: relative;
+  height: 100%;
+  border: 1px solid rgb(var(--line));
+  border-radius: 3px;
+  background: rgb(var(--surface));
+  padding: 16px 18px 18px 21px;
+}
+.card::before {
+  content: "";
+  position: absolute; top: 0; bottom: 0; left: 0; width: 4px;
+  background: var(--mb-bar, rgb(var(--ink)));
+}
+.card.bar-brand { --mb-bar: rgb(var(--brand)); }
+.card.bar-neutra { --mb-bar: rgb(var(--concrete)); }
+.titulo-card { margin: 0; font-size: 19px; font-weight: 700; line-height: 1.15; }
+.card p { margin: 6px 0 0; color: rgb(var(--ink-soft)); }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 44px; margin-top: 16px; padding: 9px 16px;
+  border: 1px solid transparent; border-radius: 2px;
+  font-size: 15px; font-weight: 600; line-height: 1.2; text-decoration: none;
+}
+.btn-red { background: rgb(var(--brand)); color: rgb(var(--on-brand)); }
+.btn-red:hover { background: rgb(var(--brand-dark)); }
+.btn:focus-visible, .btn-ghost:focus-visible { outline: 2px solid rgb(var(--brand)); outline-offset: 2px; }
+.btn-ghost {
+  background: rgb(var(--secondary)); color: rgb(var(--ink));
+  border-color: rgb(var(--secondary-edge));
+}
+.btn-ghost:hover { border-color: rgb(var(--ink)); }
+.selo {
+  display: inline-block; margin-top: 16px; padding: 2px 6px;
+  border: 1px solid rgb(var(--line)); border-radius: 2px;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  color: rgb(var(--ink-soft));
+}
+footer { margin-top: 40px; font-size: 13px; color: rgb(var(--concrete)); }
+</style>
+</head>
+<body>
+<main>
+  <h1>{{LOCKUP}}</h1>
+  <p class="intro">Escolha o módulo.</p>
+  <ul class="modulos">
+    <li>
+      <section class="card bar-brand" aria-labelledby="vendas">
+        <h2 class="titulo-card" id="vendas">Vendas</h2>
+        <p>Leads, lista do dia, visitas, vendas e o painel da equipe.</p>
+        <a class="btn btn-red" href="{{VENDAS}}">Abrir Vendas</a>
+      </section>
+    </li>
+    <li>
+      {{REPASSE}}
+    </li>
+  </ul>
+  <footer>MBigucci Construtora</footer>
+</main>
+</body>
+</html>

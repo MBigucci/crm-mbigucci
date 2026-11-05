@@ -513,7 +513,7 @@ function FormMeta({
     <form onSubmit={salvar} className="card grid gap-4" noValidate>
       <div>
         <span className="titulo-secao">{meta ? "Editar meta" : "Nova meta"}</span>
-        <p className="mt-1 text-[13px] text-ink-soft">Você escolhe o alvo; o progresso é calculado com o que já está registrado no CRM.</p>
+        <p className="mt-1 text-[13px] text-ink-soft">Você escolhe o alvo; o progresso é calculado com o que já está registrado no Base360 Vendas.</p>
       </div>
       <div>
         <label className="field-label" htmlFor="meta-metrica">

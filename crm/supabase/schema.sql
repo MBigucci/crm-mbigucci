@@ -1573,7 +1573,7 @@ set search_path = ''
 as $$
 begin
   if auth.uid() is null then
-    raise exception 'Entre no CRM para corrigir a visita.' using errcode = '42501';
+    raise exception 'Entre no Base360 Vendas para corrigir a visita.' using errcode = '42501';
   end if;
   if length(btrim(coalesce(p_motivo, ''))) < 3 then
     raise exception 'Escreva o motivo da correção.' using errcode = 'P0001';
@@ -1891,7 +1891,7 @@ set search_path = ''
 as $$
 begin
   if auth.uid() is null then
-    raise exception 'Entre no CRM para corrigir a venda.' using errcode = '42501';
+    raise exception 'Entre no Base360 Vendas para corrigir a venda.' using errcode = '42501';
   end if;
   if length(btrim(coalesce(p_motivo, ''))) < 3 then
     raise exception 'Escreva o motivo da correção.' using errcode = 'P0001';

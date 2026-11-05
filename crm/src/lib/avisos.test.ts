@@ -204,7 +204,7 @@ test("resumo do dia: na abertura, com atrasados, hoje, visitas e aguardando prim
   });
   assert.equal(montarAvisos(d, sp("2026-11-03T08:55")).filter((a) => a.tipo === "resumo").length, 0);
   const [r] = montarAvisos(d, sp("2026-11-03T09:00")).filter((a) => a.tipo === "resumo");
-  assert.equal(r.titulo, "Seu dia no CRM");
+  assert.equal(r.titulo, "Seu dia no Base360");
   assert.equal(r.corpo, "1 aguardando primeiro contato · 2 atrasados · 1 contato para hoje · 2 visitas (10h, 15h30)");
   assert.equal(r.url, "");
   assert.deepEqual(r.chaves, ["resumo:c1:2026-11-03"]);
@@ -568,7 +568,7 @@ test("VAPID: JWT ES256 com o serviço de push como público, assinado pela chave
   const publica = paraBase64Url(new Uint8Array(await subtle.exportKey("raw", par.publicKey)));
   const privada = (await subtle.exportKey("jwk", par.privateKey)).d!;
   const agora = new Date("2026-11-03T12:00:00Z");
-  const h = await cabecalhoVapid("https://fcm.googleapis.com/fcm/send/abc", publica, privada, "https://mbigucci.com.br/crm/", agora);
+  const h = await cabecalhoVapid("https://fcm.googleapis.com/fcm/send/abc", publica, privada, "https://mbigucci.com.br/base360/vendas/", agora);
   const m = /^vapid t=([^.]+)\.([^.]+)\.([^,]+), k=(.+)$/.exec(h);
   assert.ok(m);
   assert.equal(m[4], publica);
@@ -576,7 +576,7 @@ test("VAPID: JWT ES256 com o serviço de push como público, assinado pela chave
   assert.deepEqual(JSON.parse(new TextDecoder().decode(deBase64Url(m[2]))), {
     aud: "https://fcm.googleapis.com",
     exp: agora.getTime() / 1000 + 12 * 3600,
-    sub: "https://mbigucci.com.br/crm/",
+    sub: "https://mbigucci.com.br/base360/vendas/",
   });
   const ok = await subtle.verify({ name: "ECDSA", hash: "SHA-256" }, par.publicKey, deBase64Url(m[3]), utf8(`${m[1]}.${m[2]}`));
   assert.equal(ok, true);

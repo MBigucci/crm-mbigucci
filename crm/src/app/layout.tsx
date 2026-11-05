@@ -8,10 +8,10 @@ import "./globals.css";
 const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 export const metadata: Metadata = {
-  title: "CRM · MBigucci",
-  description: "CRM dos corretores MBigucci.",
+  title: "Base360",
+  description: "Base360 Vendas, o sistema dos corretores MBigucci.",
   robots: { index: false, follow: false },
-  applicationName: "CRM MBigucci",
+  applicationName: "Base360",
   manifest: `${base}/manifest.webmanifest`,
   icons: {
     icon: [
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     ],
     apple: { url: `${base}/icons/apple-touch-icon.png`, sizes: "180x180" },
   },
-  appleWebApp: { capable: true, title: "CRM", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "Base360", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {

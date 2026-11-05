@@ -512,7 +512,7 @@ function EditarUsuario({
         <span>
           Ativo
           <span className="block text-[12px] text-concrete">
-            {souEu ? "Você não pode desativar a própria conta." : "Desativado, não entra no CRM nem vê dados."}
+            {souEu ? "Você não pode desativar a própria conta." : "Desativado, não entra no Base360 Vendas nem vê dados."}
           </span>
         </span>
       </label>

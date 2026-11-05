@@ -79,7 +79,7 @@ function Inicio() {
         <div className="card">
           <h2 className="titulo-card">Em construção</h2>
           <p className="mt-2 text-ink-soft">
-            O CRM está sendo montado por etapas. As próximas telas aparecem aqui nas próximas versões.
+            O Base360 Vendas está sendo montado por etapas. As próximas telas aparecem aqui nas próximas versões.
           </p>
         </div>
       )}

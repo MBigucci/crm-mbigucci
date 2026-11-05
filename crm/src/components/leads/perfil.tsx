@@ -589,7 +589,7 @@ function ItemDocumento({
         </div>
       ) : (
         <div className="mt-2 grid gap-2">
-          <p className="text-[13px]">✕ Remover este arquivo? Ele sai do CRM e o histórico registra a remoção.</p>
+          <p className="text-[13px]">✕ Remover este arquivo? Ele sai do Base360 Vendas e o histórico registra a remoção.</p>
           <div className="flex gap-2">
             <button type="button" className="btn btn-red focus-ring" onClick={() => onRemover().finally(() => setConfirmando(false))}>
               Remover

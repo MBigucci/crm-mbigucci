@@ -353,7 +353,7 @@ function NovoLead() {
         <button type="button" className="card focus-ring text-left" onClick={() => setColando(true)}>
           <span className="titulo-card block">+ Colar mensagem</span>
           <span className="mt-1 block text-[13px] text-ink-soft">
-            Cole a conversa do WhatsApp ou o e-mail do lead, e o CRM preenche os campos.
+            Cole a conversa do WhatsApp ou o e-mail do lead, e o Base360 Vendas preenche os campos.
           </span>
         </button>
       )}

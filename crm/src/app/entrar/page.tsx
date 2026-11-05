@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { Cabecalho } from "@/components/cabecalho";
 import { SemConfiguracao } from "@/components/casca";
+import { LogoMBigucci } from "@/components/marca-base360";
 import { supabase } from "@/lib/supabase";
 import { useSessao } from "@/lib/sessao";
 import { mensagemErro } from "@/lib/erros";
@@ -48,7 +49,7 @@ export default function EntrarPage() {
           <SemConfiguracao />
         ) : (
           <form onSubmit={entrar} className="card bar-brand" noValidate>
-            <span className="eyebrow">CRM MBigucci</span>
+            <span className="eyebrow">Base360</span>
             <h1 className="titulo-pagina mt-1">Entrar</h1>
             <label className="field-label mt-6" htmlFor="email">
               E-mail
@@ -86,6 +87,10 @@ export default function EntrarPage() {
             </p>
           </form>
         )}
+        {/* O logo MBigucci fica abaixo do formulário; o cabeçalho mostra o Base360. */}
+        <div className="mt-10 flex justify-center">
+          <LogoMBigucci />
+        </div>
       </main>
     </>
   );

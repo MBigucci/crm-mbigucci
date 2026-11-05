@@ -146,7 +146,7 @@ function Relatorio() {
       </section>
 
       <div className="so-impressao">
-        <p className="eyebrow text-[12px] text-ink-soft">MBigucci · CRM</p>
+        <p className="eyebrow text-[12px] text-ink-soft">MBigucci · Base360 Vendas</p>
         <h2 className="titulo-impressao">Relatório do stand · {nomeStand}</h2>
         <p className="num">
           {TIPOS_PERIODO.find((t) => t.slug === per.tipo)?.nome}: {rotuloPeriodo(per)} · impresso em {impresso}

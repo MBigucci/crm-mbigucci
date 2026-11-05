@@ -233,6 +233,15 @@
   .marca-selo {
     display: block;
   }
+  /* "MBigucci" em texto quando falta o PNG, sobre a navegação grafite:
+     brand não tem contraste para texto pequeno ali, nav-marca tem. */
+  .marca-texto-nav {
+    color: rgb(var(--nav-marca));
+  }
+  /* Rodapé da lateral com o logo MBigucci: pequeno, abaixo dos destinos. */
+  .rodape-lateral {
+    @apply border-t px-[12px] pb-4 pt-4;
+  }
   .aviso-erro {
     @apply text-[13px] font-semibold text-brand;
   }
@@ -409,6 +418,10 @@
     display: none;
   }
   /* Recolhida: o rótulo sai da tela, mas continua sendo o nome acessível. */
+  /* Recolhida, o logo MBigucci do rodapé some: não cabe nos 64 px. */
+  :root[data-barra="recolhida"] .rodape-lateral {
+    display: none;
+  }
   :root[data-barra="recolhida"] .barra-lateral .rotulo-menu {
     position: absolute;
     width: 1px;

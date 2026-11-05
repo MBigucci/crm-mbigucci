@@ -34,7 +34,7 @@ export function Casca({
             <div className="card bar-brand max-w-[520px]">
               <h1 className="titulo-card">! Conta desativada</h1>
               <p className="mt-2 text-ink-soft">
-                A conta {estado.email} não está ativa no CRM. Fale com o gerente geral.
+                A conta {estado.email} não está ativa no Base360 Vendas. Fale com o gerente geral.
               </p>
               <button type="button" className="btn btn-ghost focus-ring mt-4" onClick={sair}>
                 Sair

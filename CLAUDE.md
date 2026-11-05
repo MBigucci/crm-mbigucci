@@ -13,7 +13,7 @@ O CRM de corretores da MBigucci (construtora em São Bernardo do Campo). O usuá
 - **Dados:** o CRM usa o Supabase (Postgres + Auth), com a segurança toda em **RLS**. A pesquisa grava numa Google Planilha via app da web do Apps Script (`discovery/apps-script/Code.gs`).
 
 ## Comandos não óbvios
-- `npm run build` gera `out/`, que é a pasta enviada por FTP para o WordPress. O `BASE_PATH` define a pasta do site (a pesquisa usa `/pesquisa-crm`). Confira os caminhos de `/_next/` no site publicado.
+- `npm run build` gera `out/`, que é a pasta enviada por FTP para o WordPress. O `BASE_PATH` define a pasta do site (a pesquisa usa `/pesquisa-crm`; o CRM, que é o módulo de Vendas do Base360, usa `/base360/vendas`, com `BASE_PATH=/base360/vendas npm run build`). Confira os caminhos de `/_next/` no site publicado.
 - Depois de editar o Apps Script, use Implantar > Gerenciar implantações > **Nova versão**. Uma implantação nova troca a URL.
 
 ## Convenções

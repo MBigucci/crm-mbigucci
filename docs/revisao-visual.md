@@ -355,7 +355,7 @@ npm --prefix .visual-preview run build
 node scripts/visual-preview.mjs --serve
 ```
 
-Abrir `http://127.0.0.1:4173/crm/`. Para a ficha, usar `/crm/leads/ficha/?id=lead-1`. Trocar o viewport entre 375 × 812 e 1440 × 900. Os perfis da cópia são escolhidos por rota, somente no adaptador de QA; código de autenticação/permissões do app permanece intacto. A cópia e seus builds são ignorados pelo Git e pelo typecheck do app.
+Abrir `http://127.0.0.1:4173/base360/vendas/` (antes de 05/11/2026, `/crm/`). Para a ficha, usar `/base360/vendas/leads/ficha/?id=lead-1`. Trocar o viewport entre 375 × 812 e 1440 × 900. Os perfis da cópia são escolhidos por rota, somente no adaptador de QA; código de autenticação/permissões do app permanece intacto. A cópia e seus builds são ignorados pelo Git e pelo typecheck do app.
 
 As capturas `antes/` preservam a interface anterior. As de `depois/` mostram os ajustes aplicados. Há comparações adicionais para o aviso de colagem incompleta: [375 antes](revisao-visual/antes/colar-incompleta-375.jpg), [375 depois](revisao-visual/depois/colar-incompleta-375.jpg), [desktop antes](revisao-visual/antes/colar-incompleta-1440.jpg), [desktop depois](revisao-visual/depois/colar-incompleta-1440.jpg).
 

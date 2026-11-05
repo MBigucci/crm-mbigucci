@@ -1,6 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="6" fill="#e11119"/>
-  <text x="50%" y="50%" dy="0.35em" text-anchor="middle" fill="#ffffff"
-    font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="31"
-    letter-spacing="-1.24">MB</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="32" height="32" role="img" aria-label="Base360"><rect width="100" height="100" rx="10" fill="#16181c"/><g transform="translate(50 50) scale(0.8) translate(-50 -50)"><path d="M20 20H50V22A28 28 0 0 1 22 50H20Z" fill="#e11119"/><path fill="#ffffff" fill-rule="evenodd" d="M8 8H92V92H8ZM22 22H78V78H22Z"/></g></svg>

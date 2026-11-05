@@ -1,10 +1,10 @@
 /**
  * Exportação estática: `npm run build` gera a pasta `out/`, que vai por FTP para o
- * servidor do WordPress. BASE_PATH é a pasta onde ela fica no site (padrão /crm).
+ * servidor do WordPress. BASE_PATH é a pasta onde ela fica no site (padrão /base360/vendas, o módulo de Vendas do Base360).
  * Não há servidor: login e dados vêm do Supabase pelo navegador, protegidos por RLS.
  * @type {import('next').NextConfig}
  */
-const basePath = process.env.BASE_PATH ?? "/crm";
+const basePath = process.env.BASE_PATH ?? "/base360/vendas";
 
 const nextConfig = {
   output: "export",

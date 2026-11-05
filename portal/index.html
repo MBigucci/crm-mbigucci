@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#151619" media="(prefers-color-scheme: dark)">
+<title>Base360</title>
+<!-- Gerado por portal/gerar.mjs a partir de portal/fonte.html. Não edite à mão. -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%20width%3D%2232%22%20height%3D%2232%22%20role%3D%22img%22%20aria-label%3D%22Base360%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2210%22%20fill%3D%22%2316181c%22%2F%3E%3Cg%20transform%3D%22translate(50%2050)%20scale(0.8)%20translate(-50%20-50)%22%3E%3Cpath%20d%3D%22M20%2020H50V22A28%2028%200%200%201%2022%2050H20Z%22%20fill%3D%22%23e11119%22%2F%3E%3Cpath%20fill%3D%22%23ffffff%22%20fill-rule%3D%22evenodd%22%20d%3D%22M8%208H92V92H8ZM22%2022H78V78H22Z%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
+<link rel="icon" type="image/png" sizes="32x32" href="/base360/vendas/icons/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/base360/vendas/icons/apple-touch-icon.png">
+<style>
+:root {
+  color-scheme: light;
+  --brand: 225 17 25;
+  --brand-dark: 185 13 20;
+  --on-brand: 255 255 255;
+  --ink: 13 14 17;
+  --ink-soft: 74 75 82;
+  --concrete: 111 107 99;
+  --paper: 247 246 242;
+  --line: 229 227 221;
+  --control: 118 115 108;
+  --secondary: 239 238 234;
+  --secondary-edge: 129 125 116;
+  --line-dark: rgba(255,255,255,0.14); /* cor completa, sem canais */
+  --ok: 31 122 69;
+  --wa: 146 86 0;
+  --no: 225 17 25;
+  --surface: 255 255 255;
+  --surface-disabled: 238 237 233;
+  --tint-brand: 255 246 246;
+  --neutral-mark: 90 91 96;
+  --band: 13 14 17;
+  --overlay: 13 14 17;
+  --nav: 22 24 28;
+  --nav-ativo: 43 45 50;
+  --nav-linha: 51 54 60;
+  --nav-marca: 255 107 112;
+  --nav-hover: rgba(255,255,255,0.07); /* cor completa, sem canais */
+  --on-dark: 255 255 255;
+  --on-dark-soft: 217 214 207;
+  --on-dark-muted: 183 179 172;
+  --on-dark-warn: 240 194 116;
+  --line-on-dark: rgba(255,255,255,0.28); /* cor completa, sem canais */
+  --line-on-dark-strong: rgba(255,255,255,0.35); /* cor completa, sem canais */
+  --warn-hover: rgba(240,194,116,0.12); /* cor completa, sem canais */
+  --header-glass: rgba(247,246,242,0.9); /* cor completa, sem canais */
+  --cabecalho-vidro: rgba(247,246,242,0.85); /* cor completa, sem canais */
+  --aviso-vidro: rgba(255,255,255,0.85); /* cor completa, sem canais */
+  --backdrop: rgba(13,14,17,0.5); /* cor completa, sem canais */
+  --print-ink: 0 0 0;
+  --print-muted: 85 85 85;
+  --print-soft: 51 51 51;
+  --print-border: 187 187 187;
+  --print-rule: 221 221 221;
+  --print-row: 227 227 227;
+  --print-band: 244 243 239;
+}
+
+:root[data-tema="escuro"] {
+  color-scheme: dark;
+  --brand: 255 107 112;
+  --brand-dark: 255 146 150;
+  --on-brand: 21 22 25;
+  --ink: 245 243 237;
+  --ink-soft: 196 193 186;
+  --concrete: 170 166 158;
+  --paper: 21 22 25;
+  --line: 66 68 76;
+  --control: 135 137 149;
+  --secondary: 48 49 56;
+  --secondary-edge: 135 137 149;
+  --line-dark: rgba(255,255,255,0.14); /* cor completa, sem canais */
+  --ok: 104 206 146;
+  --wa: 240 182 91;
+  --no: 255 107 112;
+  --surface: 32 33 38;
+  --surface-disabled: 48 49 56;
+  --tint-brand: 51 32 36;
+  --neutral-mark: 183 184 192;
+  --band: 13 14 17;
+  --overlay: 13 14 17;
+  --nav: 22 24 28;
+  --nav-ativo: 43 45 50;
+  --nav-linha: 51 54 60;
+  --nav-marca: 255 107 112;
+  --nav-hover: rgba(255,255,255,0.07); /* cor completa, sem canais */
+  --on-dark: 255 255 255;
+  --on-dark-soft: 217 214 207;
+  --on-dark-muted: 183 179 172;
+  --on-dark-warn: 240 194 116;
+  --line-on-dark: rgba(255,255,255,0.28); /* cor completa, sem canais */
+  --line-on-dark-strong: rgba(255,255,255,0.35); /* cor completa, sem canais */
+  --warn-hover: rgba(240,194,116,0.12); /* cor completa, sem canais */
+  --header-glass: rgba(21,22,25,0.9); /* cor completa, sem canais */
+  --cabecalho-vidro: rgba(21,22,25,0.85); /* cor completa, sem canais */
+  --aviso-vidro: rgba(32,33,38,0.85); /* cor completa, sem canais */
+  --backdrop: rgba(13,14,17,0.5); /* cor completa, sem canais */
+  --print-ink: 0 0 0;
+  --print-muted: 85 85 85;
+  --print-soft: 51 51 51;
+  --print-border: 187 187 187;
+  --print-rule: 221 221 221;
+  --print-row: 227 227 227;
+  --print-band: 244 243 239;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema]) {
+    color-scheme: dark;
+    --brand: 255 107 112;
+    --brand-dark: 255 146 150;
+    --on-brand: 21 22 25;
+    --ink: 245 243 237;
+    --ink-soft: 196 193 186;
+    --concrete: 170 166 158;
+    --paper: 21 22 25;
+    --line: 66 68 76;
+    --control: 135 137 149;
+    --secondary: 48 49 56;
+    --secondary-edge: 135 137 149;
+    --line-dark: rgba(255,255,255,0.14); /* cor completa, sem canais */
+    --ok: 104 206 146;
+    --wa: 240 182 91;
+    --no: 255 107 112;
+    --surface: 32 33 38;
+    --surface-disabled: 48 49 56;
+    --tint-brand: 51 32 36;
+    --neutral-mark: 183 184 192;
+    --band: 13 14 17;
+    --overlay: 13 14 17;
+    --nav: 22 24 28;
+    --nav-ativo: 43 45 50;
+    --nav-linha: 51 54 60;
+    --nav-marca: 255 107 112;
+    --nav-hover: rgba(255,255,255,0.07); /* cor completa, sem canais */
+    --on-dark: 255 255 255;
+    --on-dark-soft: 217 214 207;
+    --on-dark-muted: 183 179 172;
+    --on-dark-warn: 240 194 116;
+    --line-on-dark: rgba(255,255,255,0.28); /* cor completa, sem canais */
+    --line-on-dark-strong: rgba(255,255,255,0.35); /* cor completa, sem canais */
+    --warn-hover: rgba(240,194,116,0.12); /* cor completa, sem canais */
+    --header-glass: rgba(21,22,25,0.9); /* cor completa, sem canais */
+    --cabecalho-vidro: rgba(21,22,25,0.85); /* cor completa, sem canais */
+    --aviso-vidro: rgba(32,33,38,0.85); /* cor completa, sem canais */
+    --backdrop: rgba(13,14,17,0.5); /* cor completa, sem canais */
+    --print-ink: 0 0 0;
+    --print-muted: 85 85 85;
+    --print-soft: 51 51 51;
+    --print-border: 187 187 187;
+    --print-rule: 221 221 221;
+    --print-row: 227 227 227;
+    --print-band: 244 243 239;
+  }
+}
+
+:root {
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-10: 10px;
+  --space-12: 12px;
+  --space-14: 14px;
+  --space-16: 16px;
+  --space-18: 18px;
+  --space-20: 20px;
+  --space-21: 21px;
+  --space-22: 22px;
+  --space-26: 26px;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-round: 50%;
+  --hairline: 1px;
+  --bar: 4px;
+  --bar-aviso: 3px;
+  --rule: 2px;
+  --focus: 2px;
+  --bar-nav: 3px;
+  --content-max: 1180px;
+  --header-height: 58px;
+  --logo-height: 24px;
+  --mark: 30px;
+  --dialog-width: 420px;
+  --header-height-sistema: 64px;
+  --header-height-celular: 61px;
+  --sidebar-width: 180px;
+  --sidebar-width-collapsed: 64px;
+  --button-height: 36px;
+  --touch-target: 44px;
+  --nav-item-min: 40px;
+  --nav-icon: 17px;
+  --opacity-disabled: 0.45;
+  --opacity-disabled-dark: 0.4;
+  --opacity-glass: 0.85;
+  --opacity-overlay: 0.5;
+  --blur-glass: 12px;
+  --font-display: "Bricolage Grotesque", Inter, system-ui, Arial, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: rgb(var(--paper));
+  color: rgb(var(--ink));
+  font: 15px/1.5 Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+main { max-width: 760px; margin: 0 auto; padding: 56px 16px 48px; }
+h1 { margin: 0; }
+.lockup { display: block; height: 36px; width: auto; }
+.intro { margin: 20px 0 0; color: rgb(var(--ink-soft)); }
+.modulos { list-style: none; margin: 32px 0 0; padding: 0; display: grid; gap: 16px; }
+@media (min-width: 640px) { .modulos { grid-template-columns: 1fr 1fr; } }
+.card {
+  position: relative;
+  height: 100%;
+  border: 1px solid rgb(var(--line));
+  border-radius: 3px;
+  background: rgb(var(--surface));
+  padding: 16px 18px 18px 21px;
+}
+.card::before {
+  content: "";
+  position: absolute; top: 0; bottom: 0; left: 0; width: 4px;
+  background: var(--mb-bar, rgb(var(--ink)));
+}
+.card.bar-brand { --mb-bar: rgb(var(--brand)); }
+.card.bar-neutra { --mb-bar: rgb(var(--concrete)); }
+.titulo-card { margin: 0; font-size: 19px; font-weight: 700; line-height: 1.15; }
+.card p { margin: 6px 0 0; color: rgb(var(--ink-soft)); }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 44px; margin-top: 16px; padding: 9px 16px;
+  border: 1px solid transparent; border-radius: 2px;
+  font-size: 15px; font-weight: 600; line-height: 1.2; text-decoration: none;
+}
+.btn-red { background: rgb(var(--brand)); color: rgb(var(--on-brand)); }
+.btn-red:hover { background: rgb(var(--brand-dark)); }
+.btn:focus-visible, .btn-ghost:focus-visible { outline: 2px solid rgb(var(--brand)); outline-offset: 2px; }
+.btn-ghost {
+  background: rgb(var(--secondary)); color: rgb(var(--ink));
+  border-color: rgb(var(--secondary-edge));
+}
+.btn-ghost:hover { border-color: rgb(var(--ink)); }
+.selo {
+  display: inline-block; margin-top: 16px; padding: 2px 6px;
+  border: 1px solid rgb(var(--line)); border-radius: 2px;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  color: rgb(var(--ink-soft));
+}
+footer { margin-top: 40px; font-size: 13px; color: rgb(var(--concrete)); }
+</style>
+</head>
+<body>
+<main>
+  <h1><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 121.44 28" class="lockup" role="img" aria-label="Base360"><g transform="translate(0 0) scale(0.28)"><path d="M20 20H50V22A28 28 0 0 1 22 50H20Z" style="fill:rgb(var(--brand))"/><path style="fill:rgb(var(--ink))" fill-rule="evenodd" d="M8 8H92V92H8ZM22 22H78V78H22Z"/></g><path transform="translate(37 21.26)" style="fill:rgb(var(--ink))" d="M0.88 0L0.88 -14.52L6.73 -14.52Q8.07 -14.52 9.12 -14.28Q10.16 -14.04 10.9 -13.56Q11.64 -13.09 12.02 -12.39Q12.41 -11.68 12.41 -10.74Q12.41 -9.86 12.05 -9.15Q11.68 -8.45 10.88 -8.02Q10.08 -7.59 8.78 -7.48L8.78 -7.28Q11 -7.17 12 -6.25Q13 -5.32 13 -3.81Q13 -2.53 12.34 -1.69Q11.68 -0.86 10.42 -0.43Q9.15 0 7.28 0ZM4.44 -2.86L7.13 -2.86Q8.25 -2.86 8.87 -3.27Q9.48 -3.67 9.48 -4.42Q9.48 -5.26 8.79 -5.66Q8.1 -6.07 6.71 -6.07L4.44 -6.07ZM4.44 -8.49L6.36 -8.49Q7.61 -8.49 8.27 -8.91Q8.93 -9.33 8.93 -10.14Q8.93 -10.91 8.34 -11.3Q7.74 -11.68 6.56 -11.68L4.44 -11.68ZM16.79 0.31Q15.91 0.31 15.12 0Q14.33 -0.31 13.82 -1Q13.31 -1.69 13.31 -2.86Q13.31 -3.94 13.73 -4.61Q14.15 -5.28 14.85 -5.69Q15.56 -6.09 16.39 -6.3Q17.23 -6.51 18.04 -6.67Q19.19 -6.89 19.76 -7.02Q20.33 -7.15 20.54 -7.33Q20.75 -7.5 20.75 -7.81Q20.75 -8.45 20.28 -8.78Q19.8 -9.11 19.03 -9.11Q18.55 -9.11 18.07 -8.93Q17.58 -8.76 17.27 -8.3Q16.97 -7.85 16.99 -7.02L13.82 -7.24Q13.78 -8.62 14.24 -9.54Q14.7 -10.45 15.5 -10.97Q16.31 -11.48 17.26 -11.7Q18.22 -11.92 19.17 -11.92Q20.9 -11.92 22.03 -11.27Q23.15 -10.63 23.69 -9.4Q24.23 -8.18 24.23 -6.45L24.23 -4.38Q24.23 -3.65 24.23 -2.91Q24.23 -2.18 24.23 -1.45Q24.23 -0.73 24.23 0L21.15 0Q21.15 -0.79 21.15 -1.61Q21.15 -2.42 21.15 -3.32L21.01 -3.32Q20.93 -2.33 20.36 -1.51Q19.8 -0.68 18.89 -0.19Q17.98 0.31 16.79 0.31ZM18.26 -2.29Q18.64 -2.29 19.07 -2.43Q19.5 -2.57 19.88 -2.9Q20.27 -3.23 20.51 -3.82Q20.75 -4.4 20.75 -5.26L20.75 -5.79L21.34 -5.85Q21.17 -5.57 20.76 -5.39Q20.35 -5.21 19.85 -5.11Q19.34 -5.02 18.83 -4.92Q18.31 -4.82 17.87 -4.65Q17.43 -4.49 17.15 -4.21Q16.88 -3.94 16.88 -3.45Q16.88 -2.88 17.29 -2.58Q17.69 -2.29 18.26 -2.29ZM30.31 0.31Q29.15 0.31 28.15 0.08Q27.15 -0.15 26.41 -0.66Q25.67 -1.17 25.29 -2.01Q24.9 -2.86 24.97 -4.07L28.07 -4.33Q28.11 -3.61 28.4 -3.13Q28.69 -2.66 29.19 -2.44Q29.7 -2.22 30.42 -2.22Q31.11 -2.22 31.6 -2.45Q32.1 -2.68 32.1 -3.23Q32.1 -3.52 31.92 -3.71Q31.74 -3.89 31.27 -4.06Q30.8 -4.22 29.9 -4.44Q28.77 -4.73 27.87 -5.02Q26.97 -5.3 26.33 -5.7Q25.69 -6.09 25.36 -6.68Q25.03 -7.26 25.03 -8.12Q25.03 -9.33 25.68 -10.17Q26.33 -11.02 27.48 -11.47Q28.62 -11.92 30.12 -11.92Q31.46 -11.92 32.62 -11.51Q33.79 -11.09 34.46 -10.14Q35.13 -9.2 34.96 -7.63L31.92 -7.35Q31.99 -7.99 31.74 -8.44Q31.5 -8.89 31.04 -9.12Q30.58 -9.35 29.92 -9.35Q29.17 -9.35 28.76 -9.07Q28.36 -8.8 28.36 -8.38Q28.36 -8.05 28.61 -7.82Q28.86 -7.59 29.4 -7.42Q29.94 -7.26 30.8 -7.06Q31.55 -6.91 32.36 -6.67Q33.17 -6.42 33.88 -6.02Q34.58 -5.61 35.02 -4.95Q35.46 -4.29 35.46 -3.28Q35.46 -2.2 34.87 -1.39Q34.27 -0.57 33.13 -0.13Q31.99 0.31 30.31 0.31ZM41.69 0.31Q40.04 0.31 38.93 -0.16Q37.82 -0.64 37.14 -1.46Q36.46 -2.29 36.16 -3.34Q35.86 -4.4 35.86 -5.57Q35.86 -6.82 36.18 -7.96Q36.5 -9.11 37.17 -10Q37.84 -10.89 38.91 -11.41Q39.98 -11.92 41.47 -11.92Q42.97 -11.92 44.04 -11.41Q45.1 -10.89 45.74 -9.97Q46.38 -9.04 46.57 -7.83Q46.75 -6.62 46.51 -5.21L38.09 -5.08L38.09 -7.02L43.78 -7.13L43.32 -6.01Q43.45 -7.02 43.29 -7.71Q43.12 -8.4 42.68 -8.77Q42.24 -9.13 41.47 -9.13Q40.66 -9.13 40.18 -8.71Q39.69 -8.29 39.49 -7.53Q39.3 -6.78 39.3 -5.74Q39.3 -3.96 39.89 -3.15Q40.48 -2.33 41.72 -2.33Q42.24 -2.33 42.6 -2.46Q42.95 -2.6 43.17 -2.85Q43.39 -3.1 43.48 -3.46Q43.56 -3.83 43.54 -4.29L46.8 -4.11Q46.86 -3.39 46.66 -2.62Q46.45 -1.85 45.87 -1.19Q45.3 -0.53 44.28 -0.11Q43.26 0.31 41.69 0.31ZM52.84 0.31Q51.39 0.31 50.29 0.02Q49.19 -0.26 48.44 -0.82Q47.7 -1.39 47.33 -2.23Q46.97 -3.08 47.01 -4.22L50.36 -4.73Q50.34 -4.27 50.48 -3.86Q50.62 -3.45 50.95 -3.15Q51.28 -2.84 51.79 -2.66Q52.29 -2.49 53 -2.49Q53.7 -2.49 54.24 -2.69Q54.78 -2.9 55.08 -3.32Q55.37 -3.74 55.37 -4.38Q55.37 -5.28 54.81 -5.83Q54.25 -6.38 53.01 -6.56Q51.77 -6.73 49.74 -6.51L49.74 -8.6L53.97 -11.51L53.97 -11.59L47.74 -11.59L47.74 -14.54L58.21 -14.54L58.21 -11.75L53.5 -8.45L53.5 -8.34Q55.4 -8.45 56.63 -7.89Q57.86 -7.33 58.47 -6.32Q59.07 -5.32 59.07 -4.07Q59.07 -2.75 58.38 -1.77Q57.68 -0.79 56.31 -0.24Q54.93 0.31 52.84 0.31ZM65.8 0.31Q62.68 0.31 61.05 -1.62Q59.42 -3.54 59.42 -7.13Q59.42 -9.68 60.22 -11.38Q61.01 -13.09 62.43 -13.96Q63.85 -14.83 65.72 -14.83Q66.73 -14.83 67.65 -14.56Q68.58 -14.3 69.28 -13.74Q69.98 -13.18 70.37 -12.29Q70.75 -11.4 70.69 -10.14L67.37 -9.79Q67.37 -10.63 67.06 -11.08Q66.75 -11.53 66.32 -11.7Q65.89 -11.88 65.5 -11.88Q64.88 -11.88 64.4 -11.55Q63.91 -11.22 63.59 -10.63Q63.27 -10.03 63.11 -9.23Q62.94 -8.43 62.94 -7.5Q62.94 -6.95 63.01 -6.34Q63.08 -5.72 63.16 -5.13L63.25 -5.13Q63.21 -6.36 63.55 -7.13Q63.89 -7.9 64.45 -8.33Q65.01 -8.76 65.65 -8.91Q66.29 -9.06 66.84 -9.06Q68.05 -9.06 69.05 -8.57Q70.05 -8.07 70.67 -7.08Q71.28 -6.09 71.28 -4.64Q71.28 -3.78 71.01 -2.9Q70.73 -2.02 70.1 -1.3Q69.48 -0.57 68.42 -0.13Q67.37 0.31 65.8 0.31ZM65.69 -2.53Q66.16 -2.53 66.52 -2.67Q66.88 -2.82 67.16 -3.09Q67.43 -3.37 67.58 -3.74Q67.72 -4.11 67.72 -4.55Q67.72 -5.19 67.48 -5.64Q67.23 -6.09 66.79 -6.34Q66.35 -6.58 65.76 -6.58Q65.14 -6.58 64.68 -6.31Q64.22 -6.05 63.96 -5.58Q63.69 -5.1 63.69 -4.44Q63.69 -4 63.84 -3.65Q63.98 -3.3 64.23 -3.05Q64.48 -2.79 64.86 -2.66Q65.23 -2.53 65.69 -2.53ZM77.84 0.31Q76.41 0.31 75.31 -0.21Q74.21 -0.73 73.46 -1.69Q72.71 -2.66 72.34 -4.04Q71.96 -5.41 71.96 -7.13Q71.96 -9.59 72.66 -11.31Q73.35 -13.02 74.69 -13.93Q76.03 -14.83 77.97 -14.83Q79.88 -14.83 81.19 -13.94Q82.5 -13.05 83.17 -11.34Q83.84 -9.64 83.84 -7.22Q83.84 -5.48 83.46 -4.09Q83.07 -2.71 82.32 -1.73Q81.56 -0.75 80.43 -0.22Q79.31 0.31 77.84 0.31ZM77.95 -2.53Q78.54 -2.53 78.96 -2.8Q79.38 -3.08 79.64 -3.64Q79.91 -4.2 80.03 -5.06Q80.15 -5.92 80.15 -7.06Q80.15 -8.69 79.92 -9.78Q79.69 -10.87 79.19 -11.42Q78.7 -11.97 77.88 -11.97Q77.11 -11.97 76.62 -11.44Q76.12 -10.91 75.89 -9.86Q75.66 -8.8 75.66 -7.19Q75.66 -6.03 75.79 -5.16Q75.92 -4.29 76.21 -3.71Q76.5 -3.12 76.93 -2.83Q77.35 -2.53 77.95 -2.53Z"/></svg>
+</h1>
+  <p class="intro">Escolha o módulo.</p>
+  <ul class="modulos">
+    <li>
+      <section class="card bar-brand" aria-labelledby="vendas">
+        <h2 class="titulo-card" id="vendas">Vendas</h2>
+        <p>Leads, lista do dia, visitas, vendas e o painel da equipe.</p>
+        <a class="btn btn-red" href="/base360/vendas/">Abrir Vendas</a>
+      </section>
+    </li>
+    <li>
+      <section class="card bar-neutra" aria-labelledby="repasse">
+        <h2 class="titulo-card" id="repasse">Repasse</h2>
+        <p>Controle do repasse dos clientes.</p>
+        <span class="selo">Em breve</span>
+      </section>
+    </li>
+  </ul>
+  <footer>MBigucci Construtora</footer>
+</main>
+</body>
+</html>
