@@ -11,12 +11,14 @@
 - **Em `/marketing`:** o direcionador é uma tela do Marketing, em `base360.mbigucci.com.br/marketing`, só com o login do Base360. Sem pasta à parte e sem senha do servidor.
 - **Vários destinos externos:** além do Vendas, o Felipe cadastra quantos destinos quiser. Exemplo do Felipe: uma imobiliária parceira que trabalha no stand, tem CRM próprio, não acessa o Base360 e recebe leads daqui. Cada destino tem **nome**, **entrega** (e-mail ou porta de entrada, pela mesma especificação neutra) e **endereço** (no Vault, mostrado mascarado).
 - **Por que o sigilo melhora:** os destinos são linhas do banco, lidas só por `is_gerente_geral()`. O código da tela só conhece "uma lista de destinos" e não tem nenhum nome escrito. Quem baixar o código do `/marketing` vê, no máximo, que existe uma tela de destinos. "Distribuição manual" é só o nome que o Felipe dá a uma dessas linhas.
-- **Registro por destino:** cada destino tem a chave **"Registrar os envios"**. Ligada, o Base360 guarda quem foi enviado, quando e para qual destino, para medir a parceria e cobrar retorno. Desligada, nada fica. Decisão do Felipe: **ligada nos parceiros, desligada na Distribuição manual**. Quem vê os envios registrados e onde: a definir no brief do código (proposta: só o gerente geral, numa aba do destino).
+- **Registro por destino:** cada destino tem a chave **"Registrar os envios"**. Decisão do Felipe: **ligada nos parceiros, desligada na Distribuição manual**.
+  - **Ligada (parceiros):** o lead entra no **banco do Marketing** como contato, para controle, e o **histórico do lead na parte de Marketing** ganha o evento "Enviado ao parceiro <nome do destino>", com data, hora, produto e fonte. Serve para medir a parceria e cobrar retorno.
+  - **Desligada (Distribuição manual):** nada fica, nem contato nem evento.
 - **Falha na entrega:** igual para todo destino. Uma tentativa; falhou, o lead vai para o Vendas.
 
 **O que muda no banco (seção 6):**
 - `direcionador_destinos` ganha `nome` e `registrar_envios` (booleano). O `tipo` passa a ser `vendas` ou `externo` de novo, porque agora há vários externos.
-- Nova tabela `direcionador_envios` (destino, data, nome, telefone, e-mail, produto, fonte), gravada **só** quando o destino tem `registrar_envios` ligado. Só o gerente geral lê.
+- Quando o destino tem `registrar_envios` ligado, a função grava o contato na base do Marketing (a mesma do roteiro, etapa 2 de `docs/marketing/roteiro.md`) e um evento "enviado ao parceiro" no histórico dele, com o id do destino. Com a chave desligada, não grava nada. Quem vê o histórico do Marketing segue as permissões do Marketing, a definir no brief do código.
 - Um endereço no Vault por destino.
 
 ## Segunda rodada (Felipe, 05/11/2026)

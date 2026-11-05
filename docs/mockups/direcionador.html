@@ -415,7 +415,7 @@ legend{padding:0;margin-bottom:6px}
   /* ---------- desenho ---------- */
   function chave(el,on,lig,desl){el.setAttribute("aria-checked",on);el.querySelector(".txt").textContent=on?`✓ ${lig}`:`– ${desl}`}
   function desenhar(){
-    $("#dests").innerHTML=estado.destinos.filter(d=>d.id!=="vendas").map(d=>`<li><div><b>${esc(d.nome)}</b><dl class="par"><dt>Entrega</dt><dd>${esc(d.entrega)}</dd><dt>Endereço</dt><dd class="num">${esc(d.end)}</dd><dt>Registro</dt><dd>${d.registra?"<span class=\"sinal-ok\">✓ Registra os envios</span>":"<span class=\"s nao\">– Não registra nada</span>"}</dd></dl></div><button class="btn mini" type="button">Editar</button></li>`).join("");
+    $("#dests").innerHTML=estado.destinos.filter(d=>d.id!=="vendas").map(d=>`<li><div><b>${esc(d.nome)}</b><dl class="par"><dt>Entrega</dt><dd>${esc(d.entrega)}</dd><dt>Endereço</dt><dd class="num">${esc(d.end)}</dd><dt>Registro</dt><dd>${d.registra?"<span class=\"sinal-ok\">✓ Entra no Marketing, com o envio no histórico do lead</span>":"<span class=\"s nao\">– Não registra nada</span>"}</dd></dl></div><button class="btn mini" type="button">Editar</button></li>`).join("");
     chave($("#chave-geral"),estado.geral,"Ligado","Desligado");
     $("#geral").classList.toggle("desl",!estado.geral);
     $("#geral").classList.toggle("destaque",!estado.geral);
