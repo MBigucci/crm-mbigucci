@@ -73,6 +73,8 @@ export function Casca({
   // Programa de pontuação: pelas permissões (o banco filtra o resto).
   if (ehGG) itens.push({ href: "/programa/", rotulo: "Pontos" });
   if (pode("plantao.registrar") || pode("lancamentos.registrar")) itens.push({ href: "/plantao/", rotulo: "Plantão" });
+  // Parcerias: pelas permissões do catálogo (o banco filtra quais parceiros cada um vê).
+  if (pode("parceiros.cadastrar") || pode("parceiros.ver_todos")) itens.push({ href: "/parceiros/", rotulo: "Parceiros" });
   if (!ehGG && pode("leads.cadastrar")) itens.push({ href: "/meus-pontos/", rotulo: "Meus pontos" });
   itens.push({ href: "/ranking/", rotulo: "Ranking" });
   if (pode("usuarios.gerenciar")) itens.push({ href: "/usuarios/", rotulo: "Usuários" });

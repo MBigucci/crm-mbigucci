@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Casca, ehListaDoDia } from "@/components/casca";
 import { ListaDoDia } from "@/components/leads/lista-do-dia";
+import { ContatosDoDiaParceirosNoInicio } from "@/components/parceiros/contatos-do-dia";
 import { db } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
 import { nomePerfil, type Team } from "@/lib/tipos";
@@ -26,6 +27,8 @@ function Inicio() {
         <span className="eyebrow">{nomePerfil(perfil.perfil)}</span>
         <p className="mt-1 text-[16px]">Olá, {perfil.nome.split(" ")[0] || perfil.nome}.</p>
       </div>
+
+      {pode("parceiros.cadastrar") && <ContatosDoDiaParceirosNoInicio />}
 
       {ehGG || pode("usuarios.gerenciar") || pode("equipes.gerenciar") || verLeads ? (
         <div className="grid gap-4 md:grid-cols-3">
