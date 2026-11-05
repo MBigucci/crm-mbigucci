@@ -7,7 +7,8 @@ import assert from 'node:assert/strict';
 import { resultados } from './contraste-temas.mjs';
 const { chromium } = createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const base = 'http://127.0.0.1:4173/crm/';
-const destino = resolve('..', 'docs/revisao-visual/temas');
+const preSubida = process.argv.includes('--pre-subida');
+const destino = resolve('..', 'docs/revisao-visual', preSubida ? '2026-11-05' : 'temas');
 const chave = 'mbigucci-crm-aparencia';
 const telas = [
   ['lista-do-dia',''], ['ficha','leads/ficha/?id=lead-1'], ['cadastro','leads/novo/'],
@@ -38,7 +39,7 @@ async function capturar(page, tema, largura, nome) {
     await new Promise(requestAnimationFrame);
     await Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{})));
   });
-  const auditoria = await page.evaluate(() => {
+  const auditoria = await page.evaluate((incluirOpacidade) => {
     const rgb = c => c.match(/[\d.]+/g)?.map(Number) ?? [0,0,0,0];
     const lum = a => a.slice(0,3).map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((s,v,i)=>s+v*[.2126,.7152,.0722][i],0);
     const ratio = (a,b) => (Math.max(lum(a),lum(b))+.05)/(Math.min(lum(a),lum(b))+.05);
@@ -47,6 +48,20 @@ async function capturar(page, tema, largura, nome) {
       return chain.reduce((cor,p)=>{const c=rgb(getComputedStyle(p).backgroundColor),a=c[3]??1;return c.slice(0,3).map((v,i)=>v*a+cor[i]*(1-a));},[255,255,255]);
     };
     const falhas=[];
+    // Compõe cada grupo de pintura antes de aplicar a opacidade do ancestral.
+    function pixel(el, tinta) {
+      let cor=tinta || [0,0,0,0];
+      function sobre(frente,tras) {
+        const a=frente[3]??1,b=tras[3]??1,alpha=a+b*(1-a);
+        return [...frente.slice(0,3).map((v,i)=>alpha?(v*a+tras[i]*b*(1-a))/alpha:0),alpha];
+      }
+      for(let p=el;p;p=p.parentElement) {
+        const s=getComputedStyle(p);
+        cor=sobre(cor,rgb(s.backgroundColor));
+        cor[3]*=Number(s.opacity);
+      }
+      return sobre(cor,[255,255,255,1]);
+    }
     for(const el of document.querySelectorAll('body *')) {
       if(!el.checkVisibility({checkOpacity:true,checkVisibilityCSS:true}) || !el.getBoundingClientRect().width || el.closest(':disabled')) continue;
       if(![...el.childNodes].some(n=>n.nodeType===Node.TEXT_NODE && n.textContent.trim())) continue;
@@ -54,17 +69,21 @@ async function capturar(page, tema, largura, nome) {
       // Controles desabilitados são isentos; demais textos usam o tamanho/peso renderizado.
       if(el.closest('[disabled]')) continue;
       const min=parseFloat(s.fontSize)>=24 || (parseFloat(s.fontSize)>=18.66 && +s.fontWeight>=700) ? 3 : 4.5;
-      const valor=ratio(rgb(s.color),fundo(el));
+      const valor=incluirOpacidade ? ratio(pixel(el,rgb(s.color)),pixel(el)) : ratio(rgb(s.color),fundo(el));
       if(valor+.001<min) falhas.push({texto:el.textContent.trim().slice(0,80),classe:el.className,contraste:valor,min});
     }
     return {largura:innerWidth,conteudo:document.documentElement.scrollWidth,tema:document.documentElement.dataset.tema,falhas};
-  });
-  assert.equal(auditoria.tema,tema);
+  },preSubida);
+  if (nome !== 'cadastro-publico') assert.equal(auditoria.tema,tema);
   const path = `${tema}/${nome}-${largura}.jpg`;
   await page.screenshot({path:resolve(destino,path),fullPage:true,type:'jpeg',quality:80});
   capturas.push({arquivo:path,...auditoria});
 }
 try {
+  if (preSubida) {
+    const { revisar } = await import('./visual-rodada-novembro.mjs');
+    await revisar({browser, abrir, capturar, destino, telas, capturas, erros, resultados});
+  } else {
   for(const tema of ['claro','escuro']) for(const largura of [375,1440]) {
     mkdirSync(resolve(destino,tema),{recursive:true});
     const context=await browser.newContext({viewport:{width:largura,height:largura===375?812:900},colorScheme:tema==='escuro'?'dark':'light',timezoneId:'America/Sao_Paulo',locale:'pt-BR'});
@@ -159,4 +178,5 @@ try {
   assert.deepEqual(capturas.filter(c=>c.conteudo>c.largura).map(c=>c.arquivo),[],'Página ultrapassa o viewport');
   assert.deepEqual(capturas.filter(c=>c.falhas.length).map(c=>({arquivo:c.arquivo,falhas:c.falhas})),[],'Contraste do texto renderizado');
   console.log(`${capturas.length} capturas de tela aprovadas; relatório salvo em ${destino}.`);
+  }
 } finally {await browser.close();}

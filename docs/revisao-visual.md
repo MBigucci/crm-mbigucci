@@ -468,3 +468,123 @@ Capturas da prévia fictícia (`crm/scripts/visual-preview.mjs`, lead "Ana Exemp
 
 - No computador, a ficha tem duas colunas (740px + 380px na largura de 1440); em 375 continua uma coluna, sem rolagem lateral.
 - "Detalhe o contato" aparece logo abaixo de "Aguardando primeiro contato", e nenhum card tem mais o Sem resposta (+1).
+
+## Revisão de 05/11/2026 (antes de subir)
+
+**Corrigir antes de subir o CRM:** a confirmação de outra carteira fica fora da primeira tela do celular e a tabela da recepção corta a ação “Corrigir” quando entram as duas colunas. **Antes de publicar o cadastro público de parceiros:** corrigir o contraste do texto que explica o que a pessoa autoriza ao enviar.
+
+### O que bloqueia subir
+
+#### Recepção do stand
+
+| Severidade | Problema observado | Onde reproduzir | Ajuste proposto no Design System |
+| --- | --- | --- | --- |
+| Alta | Em 375 × 812, o aviso de outra carteira começa em y = 1.194. O rodapé continua oferecendo “Registrar cliente” em vermelho antes de a recepcionista ver “Trocar para Retorno” e “Registrar mesmo assim”. [Captura](revisao-visual/2026-11-05/claro/aviso-375.jpg) | `/recepcao/` · RegistrarCliente / Pergunta · `crm/src/components/recepcao/cliente.tsx` | Ao receber a pendência, levar o foco e a rolagem à pergunta. Enquanto ela estiver aberta, usar o rodapé para as respostas e reservar a ação principal para a escolha recomendada. |
+| Alta | A 900 px, a página ocupa 1.046 px. Na tabela Clientes de hoje, o botão “Corrigir” termina em x = 1.045. A recepcionista precisa deslocar a página inteira para alcançá-lo. [Captura](revisao-visual/2026-11-05/claro/recepcao-limiar-900.jpg) | `/recepcao/` · TelaDoStand / ClientesDeHoje · `crm/src/app/recepcao/page.tsx` · `crm/src/components/recepcao/clientes-hoje.tsx` | Manter as duas colunas a partir de 900 px. Quando a coluna direita for estreita, usar nela as linhas compactas de clientes do celular, com “Corrigir” junto do nome. |
+
+#### Cadastro público de parceiro
+
+| Severidade | Problema observado | Onde reproduzir | Ajuste proposto no Design System |
+| --- | --- | --- | --- |
+| Alta | A autorização de contato sob “Enviar cadastro” tem 13 px e contraste de 2,84:1. O parceiro precisa dessa informação para decidir se envia os dados. A indicação “se tiver” do CRECI usa o mesmo par. [Captura](revisao-visual/2026-11-05/claro/cadastro-publico-375.jpg) | `/corretores/ (avulsa local)` · bloco #mbParceiro · `crm/wordpress/corretores/src/estilo.css` | Aplicar o equivalente a ink-soft à autorização e à indicação opcional no tema do site. Conferir pelo menos 4,5:1 também nos exemplos dos campos. |
+
+### O que pode vir depois
+
+#### Menu do gerente geral
+
+| Severidade | Problema observado | Onde reproduzir | Ajuste proposto no Design System |
+| --- | --- | --- | --- |
+| Média | O menu aberto ultrapassa os 812 px. Depois de rolar 1.300 px, “Sair” ainda começa em y = 1.055. Só chega à área visível no fim da página de Início. O esforço para chegar aos últimos destinos depende do tamanho da página por trás. [Captura](revisao-visual/2026-11-05/claro/menu-375.jpg) | `/ (menu aberto)` · Cabecalho · `crm/src/components/cabecalho.tsx` | Limitar a lista à altura disponível abaixo de “Fechar” e permitir rolar dentro dela. Manter os alvos de toque atuais. |
+
+#### Lista do dia
+
+| Severidade | Problema observado | Onde reproduzir | Ajuste proposto no Design System |
+| --- | --- | --- | --- |
+| Média | A faixa de atenção permite ir a “Detalhe o contato” e aos atrasados, mas omite a visita de hoje. Com um lead em cada um dos três grupos de urgência, o título “Visitas de hoje” só aparece em y = 1.239 no celular. [Captura](revisao-visual/2026-11-05/claro/lista-do-dia-375.jpg) | `/` · ListaDoDia · `crm/src/components/leads/lista-do-dia.tsx` | Acrescentar à síntese um atalho neutro com quantidade e horário da próxima visita de hoje, preservando o primeiro contato estourado no topo. |
+
+#### Ficha do lead
+
+| Severidade | Problema observado | Onde reproduzir | Ajuste proposto no Design System |
+| --- | --- | --- | --- |
+| Baixa | Na ficha sem número, “– Sem telefone” aparece abaixo do nome. Depois de prazo, origem e perfil, o rótulo volta a dizer “Sem telefone. Digite quando o cliente der”, sem nomear o campo para o dono. [Captura](revisao-visual/2026-11-05/claro/sem-telefone-375.jpg) | `/leads/ficha/` · DigitarWhatsapp · `crm/src/app/leads/ficha/page.tsx` | Manter o estado no resumo e rotular o campo “WhatsApp com DDD”. Aproximar o campo do estado na versão de uma coluna. |
+
+#### Cadastro na recepção
+
+| Severidade | Problema observado | Onde reproduzir | Ajuste proposto no Design System |
+| --- | --- | --- | --- |
+| Média | “Telefone” aparece entre “Cliente” e “E-mail · opcional”. A diferença de rótulo sugere que o telefone é obrigatório, embora a recepção possa registrar o atendimento sem o número. [Captura](revisao-visual/2026-11-05/claro/registrar-cliente-375.jpg) | `/recepcao/` · RegistrarCliente · `crm/src/components/recepcao/cliente.tsx` | Usar “Telefone · se o cliente der”, no mesmo padrão de rótulos dos demais campos. |
+
+#### Relatório do stand impresso
+
+| Severidade | Problema observado | Onde reproduzir | Ajuste proposto no Design System |
+| --- | --- | --- | --- |
+| Média | O PDF começa com “Todos os stands” e a semana. O título “Relatório do stand”, visível na tela, some no papel. Uma folha solta perde a identificação do relatório. [Captura](revisao-visual/2026-11-05/claro/impressao-stand-1440.jpg) | `/recepcao/relatorio/` · Relatorio / estilo de impressão · `crm/src/app/recepcao/relatorio/page.tsx` · `crm/src/app/globals.css` | Incluir um cabeçalho de impressão com o título, o stand selecionado e o período. Usar a classe de título de impressão existente. |
+
+#### Painel da equipe
+
+| Severidade | Problema observado | Onde reproduzir | Ajuste proposto no Design System |
+| --- | --- | --- | --- |
+| Média | Na tabela “Clientes no stand, por corretor”, o nome e as cinco contagens exigem rolagem lateral interna em 375 px. Na ponta direita é preciso voltar à esquerda para conferir a quem pertence o número. [Captura](revisao-visual/2026-11-05/claro/painel-375.jpg) | `/painel/` · TabelaStand · `crm/src/components/recepcao/painel-stand.tsx` | Fixar a identificação da linha durante a rolagem ou apresentar cada corretor com total e detalhamento expansível no celular. |
+
+#### Relatório do corretor
+
+| Severidade | Problema observado | Onde reproduzir | Ajuste proposto no Design System |
+| --- | --- | --- | --- |
+| Baixa | No card do stand, o total de clientes e os quatro detalhamentos usam cartões e números do mesmo tamanho. No celular, o último indicador ocupa sozinho a terceira linha. [Captura](revisao-visual/2026-11-05/claro/relatorio-375.jpg) | `/painel/?c=corretor-1` · StandDoCorretor · `crm/src/components/recepcao/painel-stand.tsx` | Dar a primeira linha ao total e agrupar os quatro detalhamentos abaixo em duas colunas. |
+
+#### Lista e ficha de parceiros
+
+| Severidade | Problema observado | Onde reproduzir | Ajuste proposto no Design System |
+| --- | --- | --- | --- |
+| Média | Os nomes “Indicou” e “Vendeu” quase desaparecem na trilha de estágio. A lista também exibe as duas opções indisponíveis em texto esmaecido. A legenda da sequência perde legibilidade. [Captura](revisao-visual/2026-11-05/claro/parceiro-375.jpg) | `/parceiros/ e /parceiros/ficha/` · TrilhaEstagio e filtros da carteira · `crm/src/components/parceiros/partes.tsx` · `crm/src/app/parceiros/page.tsx` | Apresentar as etapas futuras como texto auxiliar legível, com indicação de indisponibilidade. Usar contorno ou preenchimento para distinguir o estágio atual. |
+
+#### Cadastro manual de parceiro
+
+| Severidade | Problema observado | Onde reproduzir | Ajuste proposto no Design System |
+| --- | --- | --- | --- |
+| Média | A regra de identificação fica dentro do campo CRECI, no exemplo “Opcional se tiver WhatsApp”. Ela desaparece durante o preenchimento. Os rótulos dos dois campos, lidos sozinhos, não explicam que basta um deles. [Captura](revisao-visual/2026-11-05/claro/parceiro-novo-375.jpg) | `/parceiros/novo/` · CamposCadastro · `crm/src/components/parceiros/partes.tsx` | Agrupar os dois campos sob a instrução persistente “Informe WhatsApp ou CRECI”, em ink-soft. |
+
+#### Início do gerente geral
+
+| Severidade | Problema observado | Onde reproduzir | Ajuste proposto no Design System |
+| --- | --- | --- | --- |
+| Baixa | O atalho de Configurações ainda promete “Chaves do sistema”. Na tela de destino aparecem horário, mensagens e permissões. A descrição orienta o gerente a procurar um ajuste retirado. [Captura](revisao-visual/2026-11-05/claro/inicio-geral-375.jpg) | `/` · Inicio / Atalho · `crm/src/app/page.tsx` | Descrever as três configurações disponíveis hoje no texto auxiliar do atalho. |
+
+### Auditoria de contraste
+
+Os 84 pares de tokens passaram no teste do projeto. A medição complementar usou as cores calculadas pelo Chrome, com composição dos fundos e da opacidade dos elementos e ancestrais. O limite de texto normal é 4,5:1 e o de texto grande é 3:1. A tabela distingue os resultados do CRM dos da página pública, que usa a paleta do site.
+
+| Texto e superfície renderizados | Claro | Escuro | Leitura |
+| --- | ---: | ---: | --- |
+| “Indicou” e “Vendeu”, na trilha ou na lista de parceiros | 2,34–2,42:1 | 3,29–3,47:1 | A opacidade de 60% reduz o contraste do texto auxiliar. As etapas são futuras, mas seus nomes fazem parte da legenda visível. |
+| Indicação do CRECI e autorização de contato, no card público branco | 2,84:1 | 2,84:1 | A página avulsa manteve a paleta clara nas duas preferências de sistema. |
+| Exemplos de WhatsApp e CRECI no formulário público | 2,61:1 | 2,61:1 | Medição adicional dos placeholders, em `#9d998f` sobre `#f6f5f1`. |
+| “+ Foto ou PDF”, sem categoria escolhida, na ficha do lead | 3,62:1 | Acima do limite | Controle desabilitado, isento. O auditor registra o rótulo externo ao input. |
+
+O arquivo de auditoria contém 38 ocorrências automáticas abaixo do limite, incluindo repetições por tema, largura e estado. Dessas, seis são o controle de arquivo desabilitado. Os exemplos dentro dos campos públicos foram medidos à parte. Nas 31 rotas, a largura da página coube em 375 e 1440 px. O transbordamento da Recepção ocorreu no teste adicional de 900 px. [Auditoria por captura](revisao-visual/2026-11-05/auditoria.json).
+
+### Cobertura, reprodução e limites
+
+Foram gerados **188 JPEGs e dois PDFs A4** com relógio fictício em 05/11/2026 às 12h, horário de São Paulo. A varredura cobriu as 31 rotas do CRM em **375 × 812 e 1440 × 900**, claro e escuro, além da página pública avulsa e dos estados da tabela abaixo. Cada PDF do stand tem uma página no cenário com um atendimento. [Capturas claras](revisao-visual/2026-11-05/claro/) · [Capturas escuras](revisao-visual/2026-11-05/escuro/) · [PDF partindo do claro](revisao-visual/2026-11-05/claro/stand.pdf) · [PDF partindo do escuro](revisao-visual/2026-11-05/escuro/stand.pdf).
+
+| Fluxo prioritário | Estado conferido |
+| --- | --- |
+| Lista e ficha do lead | Prazo estourado, “Detalhe o contato”, atraso, visita de hoje e baixa. Ficha com duas colunas no desktop e uma no celular, seleção de “Sem resposta” com a tentativa preenchida e campo de WhatsApp do dono sem telefone. [Tentativa](revisao-visual/2026-11-05/escuro/tentativa-1440.jpg) |
+| Recepção | Fila de corretor e especialista, cliente do dia, abas móveis, formulário, Anuncie com Desfazer, confirmação de outra carteira, manutenção dos stands e relatório. [Anuncie](revisao-visual/2026-11-05/claro/anuncie-375.jpg) |
+| Parcerias | Carteira, ficha com prazo em risco, formulário de interação, linha do tempo, cadastro manual, evento, contato de hoje no Início do gerente e cadastro público. [Ficha](revisao-visual/2026-11-05/escuro/parceiro-1440.jpg) |
+| Agenda, Usuários, Avisos e painel | Retornos do dia, seleção do lead e formulário de visita, edição com Apelido e CRECI, tipos de aviso de equipe e parceiros, tabela da equipe e card do corretor com um cliente de stand. [Agendar](revisao-visual/2026-11-05/claro/agenda-agendar-375.jpg) · [Avisos](revisao-visual/2026-11-05/escuro/avisos-375.jpg) |
+| Menu e programa | Recepção, Parceiros e Simulador → no menu, conteúdo de Meus pontos, Ranking, Pontos e Plantão com perfil habilitado. A busca no texto renderizado das capturas encontrou zero ocorrências de “Só você vê” e “Ligue a chave”. [Menu](revisao-visual/2026-11-05/claro/menu-375.jpg) · [Plantão](revisao-visual/2026-11-05/escuro/plantao-geral-375.jpg) |
+
+**Reprodução em `crm/`**, com o desenvolvimento parado e Playwright/Chrome nas variáveis descritas na revisão anterior:
+
+```sh
+node scripts/visual-preview.mjs
+node scripts/visual-pre-subida.mjs
+npm --prefix .visual-preview run build
+node scripts/contraste-temas.mjs
+node scripts/visual-temas.mjs --pre-subida
+```
+
+A preparação usa o adaptador fictício da revisão anterior. O roteiro de novembro acrescenta dados de recepção e parcerias e prepara na cópia os estados transitórios de Anuncie, confirmação e disponibilidade de avisos. O Chrome recebeu os arquivos de `.visual-preview/out/` por interceptação local, pois o isolamento do Windows bloqueou o servidor de loopback. O roteiro só atende leituras desse export, bloqueia as demais requisições e desativa os service workers.
+
+**Limites.** Os avisos na linha foram amostrados com o conflito de outra carteira. Repetição no dia, mudança concorrente da vez, demais tipos de anúncio, temporização real de Desfazer e retorno de gravação ficam para homologação funcional. A página pública é o HTML avulso de conferência da pasta WordPress. Tema instalado, envio do cadastro, entrega de push, WhatsApp externo e permissões reais ficam fora desta revisão. As medidas se referem aos dados fictícios e estados capturados.

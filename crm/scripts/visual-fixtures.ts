@@ -13,6 +13,7 @@ const leads = [
   {...base,id:'lead-2',nome:'Bruno Exemplo',origem:'empresa',etapa:'novo',ultima_interacao_em:null,ultima_interacao_texto:null,proximo_contato:null,atribuido_em:at(-1),atribuido_por:'gerente'},
   {...base,id:'lead-3',nome:'Clara Exemplo',temperatura:'morno',proximo_contato:at(0,23),nascimento:'1990-'+day.slice(5)},
   {...base,id:'lead-4',nome:'Daniel Exemplo',dono_id:'corretor-2',temperatura:'frio',etapa:'proposta',proximo_contato:null},
+  {...base,id:'sem-telefone',nome:'Rita Exemplo',whatsapp:null,proximo_contato:at(-1)},
 ];
 const visitas = [
   {id:'visita-1',lead_id:'lead-1',corretor_id:'corretor-1',empreendimento:base.empreendimento,inicio:at(0,23),local:'Plantão do residencial',status:'agendada',observacao:null,baixa_por:null,baixa_em:null,comprovante:null,created_at:at(-3),lead:leads[0]},
@@ -24,7 +25,23 @@ const vendas = [
 ];
 const empreendimento = {id:'empreendimento-1',slug:'residencial-exemplo',nome:base.empreendimento,condominio:null,variacoes:[],pede_contexto:false,marca:'MBigucci',tipo:'residencial',status:'em_obras',ativo:true,endereco:'Rua de Exemplo, 100',bairro:'Centro',cidade:'São Bernardo do Campo',uf:'SP',entrega_prevista:'2027-12-01',entrega_texto:'Dezembro de 2027',chamada:'Apartamentos de dois dormitórios',lazer:['Piscina','Salão de festas'],link_pagina:null,link_apresentacao:null,link_book:null,link_tour:null,link_maps:null,link_ficha:null,link_memorial:null,link_fotos:null,link_tabela:null,tabela_mes:day,preco_a_partir_de:650000,restricao_renda:null,observacao:null,avisos:[],ordem:1,atualizado_em:at(0),tipologias:[]};
 type Row = Record<string, any>;
+const stand = {id:'stand-qa',nome:'Stand Exemplo',ativo:true,tem_especialista:true,ordem:1};
+const cliente = {id:'at-1',plantao_id:stand.id,corretor_id:'corretor-1',especialista_id:'esp-1',tipo:'novo',status:'ativo',registrado_em:at(0,10),cliente_nome:'Ana Exemplo',midias:['placa'],empreendimento:base.empreendimento,corretor:'Marina Exemplo',especialista:'Lia Exemplo',veio_sozinho:true};
+const pessoas = [
+  {id:'corretor-1',papel:'corretor',nome:'Marina Exemplo',apelido:'Mari',equipe:'Equipe Exemplo'},
+  {id:'esp-1',papel:'especialista',nome:'Lia Exemplo',apelido:null,equipe:null},
+];
+const parceiro = {id:'par-1',gerente_id:'gerente',nome:'Alice Exemplo',empresa:'Imobiliária Exemplo',ativo:true,regioes:['centro'],creci:'12345-F',whatsapp_norm:'5511999990002',atribuido_em:at(-88),ultima_interacao_em:at(-86),entrada:'manual'};
+const leituras: Record<string, Row[]> = {
+ recepcao_clientes_hoje:[cliente],recepcao_pessoas:pessoas,
+ recepcao_dia:pessoas.map(p=>({...p,presenca_id:p.id,pessoa_id:p.papel==='corretor'?p.id:null,especialista_id:p.papel==='especialista'?p.id:null,turno:'manha',entrada_em:at(0,9),rodadas:1,estado:'presente',da_vez:true,ordem:1})),
+ parceiros_fila:[{posicao:1,gerente_id:'gerente',gerente_nome:'Gerente Exemplo'}],
+ parceiro_linha_do_tempo:[{quando:at(-86),tipo:'whatsapp',fonte:'interacao',titulo:'WhatsApp',resumo:'Combinou o próximo contato.',proximo_contato:day}],
+};
 const tables: Record<string, Row[]> = {
+ plantoes:[stand],plantao_atendimentos:[cliente],especialistas:[{...pessoas[1],ativo:true}],plantao_midias:[{slug:'placa',nome:'Placa',ordem:1,ativo:true}],
+ parceiros:[parceiro],parceiros_situacao:[{parceiro_id:parceiro.id,ativo:true,estagio:'contatado',dias_prazo:86,dias_restantes:4,faixa:'risco',proximo_contato:day}],
+ parceiro_regioes:[{codigo:'centro',nome:'Centro',cidade:'São Bernardo do Campo',ordem:1,ativo:true}],
  profiles, leads, visitas, vendas, empreendimentos:[empreendimento], tipologias:[],
  teams:[{id:'equipe-1',nome:'Equipe Exemplo',gerente_id:'gerente'}],
  lead_origens:['indicacao','anuncio_proprio','plantao','empresa'].map((slug,ordem)=>({slug,nome:['Indicação','Anúncio próprio','Plantão','Empresa'][ordem],ordem,ativo:true,pede_campanha:ordem===1,restrita:ordem===3})),
@@ -68,7 +85,7 @@ class Query implements PromiseLike<{data:any;error:any}> {
 }
 export const client = {
  from:(name:string)=>new Query(name),
- rpc:async(name:string)=> name==='ranking_pontos'
+ rpc:async(name:string)=> Object.hasOwn(leituras,name) ? {data:leituras[name],error:null} : name==='ranking_pontos'
      ? {data:profiles.map((p,i)=>({corretor_id:p.id,nome:p.nome,pontos:150-i*70})),error:null}
      : name==='plantao_corretores'
        ? {data:profiles.map(p=>({id:p.id,nome:p.nome,equipe:'Equipe Exemplo'})),error:null}
