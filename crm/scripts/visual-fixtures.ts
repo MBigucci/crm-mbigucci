@@ -3,7 +3,7 @@ const now = new Date();
 const at = (days: number, hour = 10) => new Date(now.getFullYear(), now.getMonth(), now.getDate() + days, hour).toISOString();
 const day = at(0).slice(0,10);
 export const profiles = [
-  {id:'corretor-1',nome:'Marina Exemplo',email:'marina@example.invalid',perfil:'corretor',equipe_id:'equipe-1',ativo:true,whatsapp:'5511999990000'},
+  {id:'corretor-1',nome:'Marina Exemplo',apelido:'Mari',email:'marina@example.invalid',perfil:'corretor',equipe_id:'equipe-1',ativo:true,whatsapp:'5511999990000'},
   {id:'corretor-2',nome:'Paulo Exemplo',email:'paulo@example.invalid',perfil:'corretor',equipe_id:'equipe-1',ativo:true,whatsapp:'5511999990001'},
 ];
 const base = {dono_id:'corretor-1',whatsapp:'5511999990010',email:null,origem:'indicacao',campanha:null,empreendimento:'Residencial Exemplo',temperatura:'quente',etapa:'em_contato',proximo_contato:at(-1),status:'ativo',motivo_descarte:null,valor:600000,dormitorios:2,regiao:'Centro',finalidade:'morar',ultima_interacao_em:at(-3),ultima_interacao_texto:'Quer conhecer a planta de dois dormitórios. Retornar para combinar a visita.',tentativas:2,atribuido_por:null,atribuido_em:null,created_at:at(-7),nascimento:null,telefone2:null,estado_civil:null,profissao:null,renda:null,entrada:null,fgts:null,composicao_renda:null,possui_imovel:null};

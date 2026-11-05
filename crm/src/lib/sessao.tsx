@@ -29,11 +29,10 @@ async function carregarPerfil(user: User | null): Promise<EstadoSessao> {
   if (!supabase) return { fase: "sem-config" };
   if (!user) return { fase: "deslogado" };
 
-  const { data: perfil, error } = await supabase
-    .from("profiles")
-    .select(COLUNAS_PROFILE)
-    .eq("id", user.id)
-    .maybeSingle<Profile>();
+  const ler = (colunas: string) => supabase!.from("profiles").select(colunas).eq("id", user.id).maybeSingle<Profile>();
+  // O apelido (recepcao.sql) só enfeita o cabeçalho: sem a coluna, a sessão carrega sem ele.
+  let { data: perfil, error } = await ler(`${COLUNAS_PROFILE}, apelido`);
+  if (error && /apelido/.test(error.message)) ({ data: perfil, error } = await ler(COLUNAS_PROFILE));
   if (error) return { fase: "erro", mensagem: error.message };
   if (!perfil || !perfil.ativo) return { fase: "desativado", email: user.email ?? "" };
 

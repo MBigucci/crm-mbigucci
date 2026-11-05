@@ -23,7 +23,7 @@ Leia `docs/design-system.md` primeiro. A fonte da verdade é o artifact citado l
 - [ ] O erro diz o que houve e o que fazer, começa com ✕ e tem a barra `brand`. O estado vazio diz o próximo passo.
 
 ## Estado e acessibilidade
-- [ ] Sem ícones nem emoji: use os sinais ✓ ! ✕ – → +. O estado é sempre **sinal + palavra + cor**.
+- [ ] Sem ícones nem emoji: use os sinais ✓ ! ✕ – → +. O estado é sempre **sinal + palavra + cor**. Única exceção no CRM: os ícones da navegação (lateral e menu do celular), em `crm/src/components/icones-menu.tsx`.
 - [ ] `concrete` só em texto auxiliar. O que o usuário precisa ler para decidir vai em `ink` ou `ink-soft`.
 - [ ] O foco usa `.focus-ring` (2px `brand`). Todo campo tem um `label for`.
 - [ ] A transição respeita `prefers-reduced-motion`.

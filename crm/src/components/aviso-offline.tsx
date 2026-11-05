@@ -12,8 +12,10 @@ function assinar(avisar: () => void) {
 }
 
 /**
- * Faixa sob o cabeçalho (fixa com ele) enquanto o navegador está sem internet.
- * Não há fila offline: cada ação grava direto no Supabase, então o aviso só avisa.
+ * Aviso flutuante enquanto o navegador está sem internet: no canto superior
+ * direito do conteúdo no computador e logo abaixo do cabeçalho no celular. Não
+ * desloca a tela nem toma o foco, e some quando a conexão volta. Não há fila
+ * offline: cada ação grava direto no Supabase, então o aviso só avisa.
  * A região `status` fica sempre montada para o leitor de tela anunciar a troca.
  */
 export function AvisoOffline() {
@@ -25,11 +27,8 @@ export function AvisoOffline() {
   return (
     <div role="status">
       {!online && (
-        <p className="border-t border-line bg-surface px-5 py-2 text-[13px] text-ink">
-          <span className="mx-auto block max-w-content">
-            <span className="font-semibold text-wa">! Sem internet.</span> O que você fizer agora pode não ser
-            salvo.
-          </span>
+        <p className="aviso-conexao sem-impressao">
+          <span className="text-wa">!</span> Sem conexão
         </p>
       )}
     </div>

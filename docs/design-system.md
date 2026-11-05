@@ -7,6 +7,7 @@
 1. [Onde os tokens já estão em código](#onde-os-tokens-já-estão-em-código)
 2. [Regras que mais aparecem](#regras-que-mais-aparecem)
 3. [Temas do CRM — item 18](#temas-do-crm--item-18)
+4. [Tema e navegação do CRM — 05/11/26](#tema-e-navegação-do-crm--051126)
 
 ## Onde os tokens já estão em código
 
@@ -23,7 +24,7 @@
 - **Fundo e cards:** fundo `paper`. Cards em `surface` (brancos no claro) com borda decorativa `line` e **barra de 4px à esquerda**, em `ink` por padrão ou `brand` no destaque. Uma barra vermelha por área de tela. Campos e botões usam `control`.
 - **Sem sombra:** bordas finas no lugar de sombras e raios pequenos.
 - **Vermelho:** só em **uma ação principal por grupo**, no destaque e no foco. O foco é um contorno sólido de 2px em `brand`, afastado 2px.
-- **Sem ícones e sem emoji:** sinais em glifos de texto (✓ ! ✕ – → +). O estado é sempre **sinal + palavra + cor**, nunca só cor.
+- **Sem ícones e sem emoji:** sinais em glifos de texto (✓ ! ✕ – → +). O estado é sempre **sinal + palavra + cor**, nunca só cor. **Exceção no CRM (aprovada em 05/11/2026):** a navegação, na lateral e no menu do celular, usa ícone + rótulo (veja [Tema e navegação](#tema-e-navegação-do-crm--051126)). Cards, estados e ações das telas continuam sem ícones.
 - **`concrete`:** só para eyebrow e texto auxiliar; no CRM foi ajustado para atingir 4,5:1 nos dois temas. O que precisa orientar uma decisão continua em `ink` ou `ink-soft`.
 - **Textos:** português do Brasil, frases curtas, imperativo, caixa de frase em títulos e botões, sem exclamação. Eyebrows ficam em caixa alta pelo CSS.
 - **Números:** `R$ 3.398.300`, `60,60%`, datas `dd/mm/aaaa`.
@@ -59,7 +60,7 @@ Paleta definida em 30/10/2026 a partir dos tokens claros versionados. O artifact
 | `on-brand` | `#ffffff` | `#151619` | Texto do botão principal |
 | `overlay` | `#0d0e11` | `#0d0e11` | Fundo de diálogo, com 50% de opacidade |
 
-`header-glass` usa `paper` com 90% de opacidade sobre o conteúdo. O PNG da logo (`/crm/mbigucci-logo.png`, enviado à parte para o site) já traz a própria moldura branca, então entra sem selo, sem fundo e sem filtro nos dois temas. Um selo branco extra dobrava a borda e foi retirado em 05/11/2026. Quando a imagem falta, o texto “MBigucci” usa `brand`. A cópia do CRM no Git não inclui o PNG, por isso as capturas usam esse fallback.
+O cabeçalho usa `surface` sólido com borda `line` (antes era `header-glass`, `paper` a 90%). O PNG da logo (`/crm/mbigucci-logo.png`, enviado à parte para o site) já traz a própria moldura branca, então entra sem selo, sem fundo e sem filtro nos dois temas. Um selo branco extra dobrava a borda e foi retirado em 05/11/2026. Quando a imagem falta, o texto “MBigucci” usa `brand`. A cópia do CRM no Git não inclui o PNG, por isso as capturas usam esse fallback.
 
 No claro, `concrete` passa de `#8b877f` para `#6f6b63`, e `wa` de `#b26a00` para `#925600`, para também suportarem texto pequeno. `line` permanece uma borda decorativa, sem função de identificar controles. O novo `control` cumpre essa função. Não escurecer todas as divisórias para resolver os campos.
 
@@ -113,7 +114,7 @@ O foco e a barra `brand` sobre `paper`, `surface` e `tint-brand` têm as mesmas 
 
 Contraste decorativo de `line`: claro sobre paper **1,19:1**, sobre surface **1,28:1**; escuro sobre paper **1,86:1**, sobre surface **1,65:1**. Não usar esse token como único contorno de controle. O fundo `band` não depende de contraste com o card: o texto `on-dark*`, o espaçamento e a barra brand identificam a síntese. O overlay é apenas uma camada de fundo, sem texto.
 
-Reproduzir os **84 pares** (incluindo foco nos três fundos): `node scripts/contraste-temas.mjs`, em `crm/`. A auditoria renderizada complementar e suas capturas estão em [Revisão visual — temas](revisao-visual.md#modo-escuro-item-18).
+Reproduzir os **106 pares** (incluindo foco nos três fundos): `node scripts/contraste-temas.mjs`, em `crm/`. A auditoria renderizada complementar e suas capturas estão em [Revisão visual — temas](revisao-visual.md#modo-escuro-item-18).
 
 ### Aplicação e preferência
 
@@ -124,3 +125,31 @@ Reproduzir os **84 pares** (incluindo foco nos três fundos): `node scripts/cont
 - O script autossuficiente de `src/lib/aparencia.ts` roda inline no `head`, antes do corpo e da hidratação. O tema salvo já está aplicado na primeira pintura. Eventos sincronizam o seletor, mudanças de sistema e outras abas; navegar no app mantém a escolha.
 - A meta `theme-color` acompanha o tema resolvido. O PNG nunca é recolorido. A faixa usa `band`, não `ink`, pois `ink` se torna claro no tema escuro.
 - `@media print` força a paleta clara e `color-scheme: light`; o relatório do gerente continua com fundo branco e texto/bordas pretos, sem menu e ações, independentemente da preferência.
+
+## Tema e navegação do CRM — 05/11/26
+
+Aprovado pelo Felipe em 05/11/2026 ([brief](codex-tema-crm-aprovado.md), [mockup](mockups/tema-crm-aprovado.html)), para o CRM e o Base360 ficarem reconhecíveis um no outro. O Base360 entra em outra etapa.
+
+**Botões** (`.btn` em `crm/src/app/globals.css`):
+
+| | Claro | Escuro | Regra |
+| --- | --- | --- | --- |
+| Primário `.btn-red`: fundo / texto / hover | `#e11119` / `#ffffff` / `#b90d14` | `#ff6b70` / `#151619` / `#ff9296` | Uma ação vermelha por grupo |
+| Secundário `.btn-ghost`: fundo `secondary` / contorno `secondary-edge` | `#efeeea` / `#817d74` | `#303138` / `#878995` | Hover troca o contorno para `ink` |
+
+Raio de 2px, sem sombra, 36px de altura no computador. Abaixo de 768px, todo `.btn` tem **44px de altura mínima**. Foco: contorno de 2px em `brand`, afastado 2px. Campos continuam com `control`; `secondary-edge` é só do botão.
+
+**Navegação** (`crm/src/components/cabecalho.tsx`, ícones em `icones-menu.tsx`, preferência em `src/lib/barra.ts`):
+
+- Os destinos do CRM, com rótulos, URLs, ordem e condições por perfil, continuam vindo de `casca.tsx`. A navegação só desenha. **Atalhos externos** (`ATALHOS` em `cabecalho.tsx`, iguais para todos): **Simulador ↗** (`mbigucci.com.br/ferramentas`), **Site MBigucci ↗** (`mbigucci.com.br`) e **Linktree ↗** (`linktr.ee/construtoraMBigucci`), sempre em nova aba, com "(abre em outra aba)" para o leitor de tela. **Conta:** apelido cadastrado ou, sem ele, o primeiro nome; o menu mostra nome completo, Minha conta e, por último, Sair. Atalhos e conta não se repetem na lateral.
+- **Cabeçalho no computador:** logo + CRM; depois de um divisor `line`, os três atalhos em `ink-soft`, 13px semibold (o mesmo tamanho dos itens da lateral); à direita, "Apelido ▾", que abre o menu da conta em `surface` opaco. Escape ou clique fora fecham, e o Escape devolve o foco ao botão.
+- **Menu do celular**, nesta ordem: destinos do CRM; depois de uma divisória, os atalhos com o mesmo tamanho dos demais itens; e, encerrando, o bloco da conta (nome, Minha conta, Sair).
+- **Aviso Sem conexão** (`aviso-offline.tsx`, `.aviso-conexao`): flutua no canto superior direito do conteúdo no computador e logo abaixo do cabeçalho no celular, com fundo `surface` a 85% e desfoque (o texto fica opaco). Não desloca o conteúdo, não toma o foco (`role="status"`) e some quando a conexão volta. Fica fora do `<header>`, porque o desfoque do cabeçalho viraria a referência do `position: fixed`.
+- **Cabeçalho fixo (`.cabecalho-vidro`), como o do site:** fundo do tema (`paper`) a 85%, desfoque de 12px e borda inferior `line` de 1px. Sem suporte a desfoque, o fundo fica opaco. A faixa escura e o menu aberto continuam opacos. O logo foi conferido com a faixa passando por trás, nos dois temas.
+- **A partir de 1024px:** cabeçalho de 64px com logo + "CRM", e a lateral escura fixa, de **180px aberta e 64px recolhida**. O controle fica **no topo da lateral, antes dos destinos**: aberta, ícone + **Recolher barra**; recolhida, o mesmo ícone no mesmo lugar, com nome acessível **Expandir barra** e dica. O botão é o mesmo elemento nos dois estados, então o foco fica nele ao alternar. Todos os ícones da lateral ficam no mesmo x (23px) aberta e recolhida.
+- A escolha fica no aparelho (`mbigucci-crm-barra` no `localStorage`, com `try/catch`) e é aplicada no `<html data-barra>` por um script no `head`, sem pulo de layout. Recolhida, mostra só os ícones: o rótulo sai da tela, mas continua sendo o nome acessível, e aparece numa dica ao passar o mouse ou focar pelo teclado. Só a lista de destinos rola, sem mostrar a barra de rolagem; o controle de recolher fica sempre à vista.
+- **Abaixo de 1024px:** botão **Menu / Fechar** à direita do cabeçalho; o controle da lateral não aparece. O painel escuro, de largura total, abre logo abaixo do cabeçalho, começa fechado, cabe na altura da tela e rola até o último item. Fecha ao navegar e no Escape, e o Escape devolve o foco ao botão.
+- **Cores da navegação**, iguais nos dois temas: `nav` `#211e20`, item atual `nav-ativo` `#493b3d` com barra de 3px `nav-marca` `#ff6b70`, texto `on-dark-soft` (atual em `on-dark`), foco em `nav-marca`.
+- **Ícones:** desenhos do Lucide (licença ISC, aviso no arquivo), 17px, traço de 2px, sempre `aria-hidden`. Ícone novo de destino entra em `icones-menu.tsx`; destino sem ícone recebe um círculo neutro.
+- `.area-principal` recua o conteúdo pela largura da lateral e leva junto os rodapés `fixed inset-x-0` das telas. Na impressão, a lateral some e o recuo zera.
+- Em 1366px a área principal mede 1186px com a lateral aberta e 1302px recolhida. A Lista do dia fica com 1140px úteis nos dois casos. Com a barra de rolagem clássica do Windows (15px), a lateral aberta deixa 1131px úteis.

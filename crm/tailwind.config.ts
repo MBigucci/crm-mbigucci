@@ -25,7 +25,6 @@ const config: Config = {
         overlay: "rgb(var(--overlay) / <alpha-value>)",
         "on-brand": "rgb(var(--on-brand) / <alpha-value>)",
         "on-dark": { DEFAULT: "rgb(var(--on-dark) / <alpha-value>)", soft: "rgb(var(--on-dark-soft) / <alpha-value>)", muted: "rgb(var(--on-dark-muted) / <alpha-value>)" },
-        "header-glass": "rgb(var(--paper) / 0.9)",
       },
       fontFamily: {
         display: ['"Bricolage Grotesque"', "Inter", "system-ui", "Arial", "sans-serif"],
@@ -34,7 +33,7 @@ const config: Config = {
       borderRadius: { sm: "2px", DEFAULT: "2px", md: "3px", lg: "4px" },
       borderWidth: { bar: "4px" },
       maxWidth: { content: "1180px" },
-      height: { header: "58px", logo: "24px" },
+      height: { logo: "24px" },
       letterSpacing: { eyebrow: "0.1em", cabecalho: "0.08em" },
     },
   },

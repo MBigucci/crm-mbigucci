@@ -215,6 +215,7 @@ Tamanho: **P** = até meia sessão, **M** = uma sessão, **G** = duas ou mais se
 | 33 | **Unidades disponíveis** lidas de uma planilha do comercial, só leitura, sem reserva | imóveis | M | — |
 | 34 ✓ | **Feito** (04/11/2026, `casca.tsx`). **Simulador no menu**: abre `mbigucci.com.br/ferramentas` em outra aba | base | P | — |
 | 35 | **Pós-venda até as chaves**: conversar bem no futuro. Hoje a empresa usa outro sistema, e a ideia é trazer tudo para o CRM. Proposta 7 | pós-venda | G | — |
+| 36 ✓ | **Implementado** (05/11/2026, brief `docs/codex-tema-crm-aprovado.md`). **Tema MBigucci e navegação**: lateral escura recolhível, cabeçalho translúcido com atalhos (Simulador, Site, Linktree) e menu da conta, menu escuro no celular, botões do padrão comum com o Base360, aviso Sem conexão flutuante. Falta subir e conferir no celular real. O Base360 fica para outra etapa | base | M | — |
 
 Os itens 1, 2 e 3 mexem no mesmo gatilho e nas mesmas telas (cadastro, ficha, `lead_interacoes`). Por isso convém fazê-los na mesma sessão ou em sequência, nunca em paralelo.
 

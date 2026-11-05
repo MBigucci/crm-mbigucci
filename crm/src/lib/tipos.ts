@@ -21,6 +21,8 @@ export type Profile = {
   perfil: Perfil;
   equipe_id: string | null;
   ativo: boolean;
+  /** Só a sessão lê o apelido (cabeçalho); as listas usam COLUNAS_PROFILE. */
+  apelido?: string | null;
 };
 export const COLUNAS_PROFILE = "id, email, nome, perfil, equipe_id, ativo";
 

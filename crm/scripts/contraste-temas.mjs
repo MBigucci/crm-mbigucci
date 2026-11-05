@@ -19,6 +19,11 @@ for (const fundo of ['paper','surface','tint-brand']) {
 for (const texto of ['ink','ink-soft','concrete']) pares.push([texto,'surface-disabled',4.5,'texto']);
 for (const fundo of ['brand','brand-dark']) pares.push(['on-brand',fundo,4.5,'botão principal']);
 for (const texto of ['on-dark','on-dark-soft','on-dark-muted']) pares.push([texto,'band',4.5,'faixa escura']);
+// Navegação escura (lateral e menu do celular) e botão secundário.
+for (const fundo of ['nav','nav-ativo']) for (const texto of ['on-dark','on-dark-soft']) pares.push([texto,fundo,4.5,'navegação']);
+pares.push(['on-dark-muted','nav',4.5,'navegação'],['nav-marca','nav',3,'item atual/foco'],['nav-marca','nav-ativo',3,'item atual/foco']);
+pares.push(['ink','secondary',4.5,'botão secundário']);
+for (const fundo of ['paper','surface','secondary']) pares.push(['secondary-edge',fundo,3,'contorno do secundário']);
 pares.push(['brand','band',3,'barra/foco'],['surface','ink',4.5,'seleção'],['ok','line',3,'progresso'],['ink','line',3,'progresso']);
 export const resultados = pares.map(([frente,fundo,minimo,uso]) => ({frente,fundo,minimo,uso,...Object.fromEntries(Object.entries(paletas).map(([t,p])=>[t,contraste(p[frente],p[fundo])]))}));
 for (const r of resultados) for (const tema of Object.keys(paletas)) assert.ok(r[tema] >= r.minimo, `${tema}: ${r.frente}/${r.fundo} = ${r[tema]} < ${r.minimo}`);

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { SessaoProvider } from "@/lib/sessao";
 import { scriptAparencia } from "@/lib/aparencia";
+import { scriptBarra } from "@/lib/barra";
 import "./globals.css";
 
 // Com exportação estática o Next não prefixa o basePath nestes links.
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: scriptAparencia }} />
+        <script dangerouslySetInnerHTML={{ __html: scriptBarra }} />
       </head>
       <body>
         <SessaoProvider>{children}</SessaoProvider>

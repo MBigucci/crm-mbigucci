@@ -25,6 +25,11 @@
   --on-dark-muted: 183 179 172;
   --on-brand: 255 255 255;
   --overlay: 13 14 17;
+  --secondary: 239 238 234;
+  --secondary-edge: 129 125 116;
+  --nav: 33 30 32;
+  --nav-ativo: 73 59 61;
+  --nav-marca: 255 107 112;
 }
 
 :root[data-tema="escuro"] {
@@ -49,6 +54,11 @@
   --on-dark-muted: 183 179 172;
   --on-brand: 21 22 25;
   --overlay: 13 14 17;
+  --secondary: 48 49 56;
+  --secondary-edge: 135 137 149;
+  --nav: 33 30 32;
+  --nav-ativo: 73 59 61;
+  --nav-marca: 255 107 112;
 }
 
 /* Também acompanha o sistema quando JavaScript não está disponível. */
@@ -75,6 +85,8 @@
     --on-dark-muted: 183 179 172;
     --on-brand: 21 22 25;
     --overlay: 13 14 17;
+    --secondary: 48 49 56;
+    --secondary-edge: 135 137 149;
   }
 }
 
@@ -162,14 +174,24 @@
   .btn-red {
     @apply bg-brand text-on-brand hover:bg-brand-dark;
   }
+  /* Secundário: fundo neutro e contorno legível, igual no CRM e no Base360. */
   .btn-ghost {
-    @apply border-control bg-surface text-ink hover:border-ink;
+    @apply text-ink hover:border-ink;
+    background-color: rgb(var(--secondary));
+    border-color: rgb(var(--secondary-edge));
   }
   .btn:disabled {
     @apply cursor-default opacity-45 hover:bg-brand;
   }
-  .btn-ghost:disabled {
-    @apply hover:border-control hover:bg-surface;
+  .btn-ghost:disabled:hover {
+    background-color: rgb(var(--secondary));
+    border-color: rgb(var(--secondary-edge));
+  }
+  /* Celular: alvo de toque mínimo de 44 px em todo botão. */
+  @media (max-width: 767px) {
+    .btn {
+      min-height: 44px;
+    }
   }
   /* No celular, alvo de toque maior */
   .btn-lg {
@@ -226,6 +248,136 @@
   }
   .link-acao::after {
     content: " →";
+  }
+
+  /*
+   * Navegação: lateral escura no computador e lista escura no celular, iguais
+   * nos dois temas. Ícone + rótulo; o atual com fundo e barra vermelha de 3 px.
+   */
+  /* Barra superior como a do site: fundo do tema a 85%, desfoque de 12 px e borda fina. */
+  .cabecalho-vidro {
+    background: rgb(var(--paper) / 0.85);
+    border-bottom: 1px solid rgb(var(--line));
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+  @supports not ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px))) {
+    .cabecalho-vidro {
+      background: rgb(var(--paper));
+    }
+  }
+  .menu-escuro {
+    background: rgb(var(--nav));
+    color: rgb(var(--on-dark-soft));
+  }
+  .item-menu {
+    @apply flex items-center gap-[10px] font-semibold leading-[1.2] transition-colors;
+    border-left: 3px solid transparent;
+    color: rgb(var(--on-dark-soft));
+  }
+  .item-menu:hover {
+    background: rgb(255 255 255 / 0.07);
+    color: rgb(var(--on-dark));
+  }
+  .item-menu-atual,
+  .item-menu-atual:hover {
+    background: rgb(var(--nav-ativo));
+    border-left-color: rgb(var(--nav-marca));
+    color: rgb(var(--on-dark));
+  }
+  .foco-escuro:focus-visible {
+    outline: 2px solid rgb(var(--nav-marca));
+    outline-offset: -4px;
+  }
+  .item-lateral {
+    @apply min-h-[40px] gap-[9px] rounded-sm text-[13px];
+    /* O ícone fica no mesmo x (23 px) aberta e recolhida: centrado nos 64 px. */
+    padding: 10px 6px 10px 12px;
+  }
+  /* Na lateral o rótulo quebra em vez de cortar, se algum dia não couber. */
+  .item-lateral .rotulo-menu {
+    @apply break-words;
+  }
+  .item-lateral.foco-escuro:focus-visible {
+    outline-offset: 2px;
+  }
+  .barra-lateral {
+    display: none;
+  }
+  /* Aviso de conexão: flutua sem deslocar o conteúdo; só o fundo é translúcido. */
+  .aviso-conexao {
+    @apply pointer-events-none fixed z-30 rounded-sm border border-line px-3 py-2 text-[13px] font-semibold text-ink;
+    top: 68px;
+    left: 12px;
+    right: 12px;
+    background: rgb(var(--surface) / 0.85);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+  @media (min-width: 1024px) {
+    .aviso-conexao {
+      top: 76px;
+      left: auto;
+      right: 24px;
+    }
+  }
+  .dica-lateral {
+    @apply pointer-events-none fixed z-40 whitespace-nowrap rounded-sm px-2 py-[5px] text-[12px] font-semibold;
+    left: calc(var(--largura-barra) + 6px);
+    transform: translateY(-50%);
+    background: rgb(var(--band));
+    color: rgb(var(--on-dark));
+  }
+}
+
+/* Largura da lateral: 180 px aberta, 64 px recolhida (preferência deste aparelho). */
+:root {
+  --largura-barra: 180px;
+}
+:root[data-barra="recolhida"] {
+  --largura-barra: 64px;
+}
+@media (min-width: 1024px) {
+  .barra-lateral {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    left: 0;
+    top: 64px;
+    bottom: 0;
+    z-index: 20;
+    width: var(--largura-barra);
+    padding: 20px 8px 0;
+  }
+  /* Só a lista de destinos rola, pela roda e pelo teclado, sem barra de rolagem
+     visível; a folga de 2 px deixa o contorno de foco inteiro. */
+  .lista-lateral {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    margin-inline: -2px;
+    padding: 2px 2px 20px;
+    scrollbar-width: none;
+  }
+  .lista-lateral::-webkit-scrollbar {
+    display: none;
+  }
+  /* Recolhida: o rótulo sai da tela, mas continua sendo o nome acessível. */
+  :root[data-barra="recolhida"] .barra-lateral .rotulo-menu {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .area-principal {
+    padding-left: var(--largura-barra);
+  }
+  /* Rodapés fixos das telas começam depois da lateral. */
+  .area-principal .fixed.inset-x-0 {
+    left: var(--largura-barra);
   }
 }
 
@@ -284,6 +436,8 @@
     --on-dark-muted: 183 179 172;
     --on-brand: 255 255 255;
     --overlay: 13 14 17;
+    --secondary: 239 238 234;
+    --secondary-edge: 129 125 116;
   }
   @page {
     margin: 14mm 12mm;
@@ -314,7 +468,8 @@
     font-weight: 800;
     line-height: 1.1;
   }
-  main {
+  main,
+  .area-principal {
     max-width: none !important;
     padding: 0 !important;
   }

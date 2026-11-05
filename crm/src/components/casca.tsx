@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSessao } from "@/lib/sessao";
-import { Cabecalho, type ItemMenu } from "./cabecalho";
+import { BarraLateral, Cabecalho, type ItemMenu } from "./cabecalho";
 
 /** Página interna: exige login, monta o menu pelo perfil e checa a permissão da tela. */
 export function Casca({
@@ -67,7 +67,7 @@ export function Casca({
   }
   // O catálogo é lido por todo usuário ativo.
   itens.push({ href: "/empreendimentos/", rotulo: "Empreendimentos" });
-  itens.push({ href: "https://mbigucci.com.br/ferramentas", rotulo: "Simulador →", externo: true });
+  // Simulador, Site MBigucci e Linktree são atalhos do cabeçalho (ATALHOS em cabecalho.tsx).
   // Tela só do gerente geral, por regra fixa no banco (não é permissão do catálogo).
   if (ehGG) itens.push({ href: "/faixas/", rotulo: "Faixas de VGV" });
   // Programa de pontuação: pelas permissões (o banco filtra o resto).
@@ -81,23 +81,27 @@ export function Casca({
   if (pode("usuarios.gerenciar")) itens.push({ href: "/usuarios/", rotulo: "Usuários" });
   if (pode("equipes.gerenciar")) itens.push({ href: "/equipes/", rotulo: "Equipes" });
   if (ehGG) itens.push({ href: "/configuracoes/", rotulo: "Configurações" });
-  itens.push({ href: "/conta/", rotulo: "Minha conta" });
+  // Minha conta e Sair ficam no menu da conta (cabeçalho no computador, fim do menu no celular).
+  const conta = { nome: estado.perfil.nome, apelido: estado.perfil.apelido, onSair: sair };
 
   const liberado = (!exige || pode(exige)) && (!soGerenteGeral || ehGG);
 
   return (
     <>
-      <Cabecalho itens={itens} onSair={sair} nome={estado.perfil.nome} />
-      <main className="mx-auto max-w-content px-5 pb-16 pt-6">
-        <h1 className="titulo-pagina mb-5">{titulo}</h1>
-        {liberado ? (
-          children
-        ) : (
-          <div className="card max-w-[520px]">
-            <p>! Seu perfil não tem acesso a esta página.</p>
-          </div>
-        )}
-      </main>
+      <Cabecalho itens={itens} conta={conta} />
+      <BarraLateral itens={itens} />
+      <div className="area-principal">
+        <main className="mx-auto max-w-content px-5 pb-16 pt-6">
+          <h1 className="titulo-pagina mb-5">{titulo}</h1>
+          {liberado ? (
+            children
+          ) : (
+            <div className="card max-w-[520px]">
+              <p>! Seu perfil não tem acesso a esta página.</p>
+            </div>
+          )}
+        </main>
+      </div>
     </>
   );
 }
