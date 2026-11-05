@@ -60,7 +60,7 @@ Paleta definida em 30/10/2026 a partir dos tokens claros versionados. O artifact
 | `on-brand` | `#ffffff` | `#151619` | Texto do botão principal |
 | `overlay` | `#0d0e11` | `#0d0e11` | Fundo de diálogo, com 50% de opacidade |
 
-O cabeçalho usa `surface` sólido com borda `line` (antes era `header-glass`, `paper` a 90%). O PNG da logo (`/crm/mbigucci-logo.png`, enviado à parte para o site) já traz a própria moldura branca, então entra sem selo, sem fundo e sem filtro nos dois temas. Um selo branco extra dobrava a borda e foi retirado em 05/11/2026. Quando a imagem falta, o texto “MBigucci” usa `brand`. A cópia do CRM no Git não inclui o PNG, por isso as capturas usam esse fallback.
+O cabeçalho usa `paper` a 85% com desfoque de 12px e borda `line` (`.cabecalho-vidro`, veja "Tema e navegação do CRM"); antes era `header-glass`, `paper` a 90%. O PNG da logo (`/crm/mbigucci-logo.png`, enviado à parte para o site) já traz a própria moldura branca, então entra sem selo, sem fundo e sem filtro nos dois temas. Um selo branco extra dobrava a borda e foi retirado em 05/11/2026. Quando a imagem falta, o texto “MBigucci” usa `brand`. A cópia do CRM no Git não inclui o PNG, por isso as capturas usam esse fallback.
 
 No claro, `concrete` passa de `#8b877f` para `#6f6b63`, e `wa` de `#b26a00` para `#925600`, para também suportarem texto pequeno. `line` permanece uma borda decorativa, sem função de identificar controles. O novo `control` cumpre essa função. Não escurecer todas as divisórias para resolver os campos.
 
