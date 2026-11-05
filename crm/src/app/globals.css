@@ -266,6 +266,38 @@
       background: rgb(var(--paper));
     }
   }
+  /* Botão do menu do celular, igual ao do site: 44 px, sem borda, 3 traços
+     de 2 px (o do meio mais curto) que viram ✕ ao abrir. */
+  .botao-hamburguer {
+    @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-sm;
+  }
+  .botao-hamburguer .traco {
+    @apply absolute left-0 block h-0.5 w-6 bg-ink transition-all duration-300;
+  }
+  .botao-hamburguer .traco-topo {
+    top: 0;
+  }
+  .botao-hamburguer .traco-meio {
+    @apply w-4 duration-200;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .botao-hamburguer .traco-base {
+    top: 100%;
+    transform: translateY(-0.125rem);
+  }
+  .botao-hamburguer.aberto .traco-topo {
+    top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+  }
+  .botao-hamburguer.aberto .traco-meio {
+    opacity: 0;
+    transform: translateY(-50%) scaleX(0);
+  }
+  .botao-hamburguer.aberto .traco-base {
+    top: 50%;
+    transform: translateY(-50%) rotate(-45deg);
+  }
   .menu-escuro {
     background: rgb(var(--nav));
     color: rgb(var(--on-dark-soft));

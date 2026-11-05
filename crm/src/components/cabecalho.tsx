@@ -232,15 +232,21 @@ export function Cabecalho({ itens, conta }: { itens?: ItemMenu[]; conta?: Conta 
           </div>
           {conta && <MenuConta conta={conta} />}
           {itens && (
+            // O mesmo botão do site: três traços que viram ✕ ao abrir.
             <button
               ref={botao}
               type="button"
-              className="btn btn-ghost focus-ring lg:hidden"
+              className={clsx("botao-hamburguer focus-ring -mr-2 lg:hidden", aberto && "aberto")}
+              aria-label={aberto ? "Fechar menu" : "Abrir menu"}
               aria-expanded={aberto}
               aria-controls="menu-celular"
               onClick={() => setAberto((a) => !a)}
             >
-              {aberto ? "Fechar" : "Menu"}
+              <span aria-hidden className="relative block h-4 w-6">
+                <span className="traco traco-topo" />
+                <span className="traco traco-meio" />
+                <span className="traco traco-base" />
+              </span>
             </button>
           )}
         </div>
