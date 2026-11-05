@@ -12,6 +12,7 @@
 ## Onde os tokens já estão em código
 
 - `crm/src/app/globals.css` e `crm/tailwind.config.ts`: paletas clara/escura, tokens semânticos e componentes compartilhados, conforme a tabela abaixo.
+- `marca/tokens/`: o pacote compartilhado com o Base360 (`tokens.json`, o mesmo do artifact desde a versão 16, de 05/11/2026, com os temas Claro e Escuro, a casca dos sistemas e a seção Base360). `node marca/tokens/conferir.mjs` compara o pacote com o `globals.css`, e `gerar.mjs` gera o CSS do CRM e o do shadcn. Veja `marca/tokens/README.md`.
 
 - `discovery/tailwind.config.ts`: as cores (`brand` #e11119, `ink`, `ink-soft`, `concrete`, `paper`, `line`, `surface`, `tint-brand`, `ok`, `wa`), as famílias de fonte e os raios de 2, 3 e 4px.
 - `discovery/src/app/globals.css`: as classes `.card` (com a barra à esquerda), `.bar-brand`, `.btn`, `.btn-red`, `.btn-ghost`, `.eyebrow`, `.titulo-pagina`, `.titulo-card`, `.input`, `.field-label`, `.num` e `.link-acao`.
