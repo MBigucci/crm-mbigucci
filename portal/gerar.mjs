@@ -7,7 +7,7 @@
 // Não edite o index.html à mão: mude a fonte ou as constantes abaixo e gere de novo.
 
 /** Endereço do módulo Repasse (o sistema da Roberta). Vazio = cartão "Repasse · em breve", sem link. */
-const ENDERECO_REPASSE = "";
+const ENDERECO_REPASSE = "https://repasse.mbigucci.com.br/";
 /** Endereço do módulo de Vendas no site (o BASE_PATH do build do crm/). */
 const ENDERECO_VENDAS = "/base360/vendas/";
 
