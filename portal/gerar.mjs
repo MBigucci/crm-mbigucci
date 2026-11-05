@@ -8,8 +8,9 @@
 // Não edite o index.html à mão: mude a fonte ou as constantes abaixo e gere de novo.
 
 /** Endereço do módulo Repasse (o sistema da Roberta, app Node em subdomínio próprio). Vazio = cartão
- *  "Repasse · em breve", sem link. base360.mbigucci.com.br/repasse redireciona (302) para cá: quando o
- *  Repasse mudar de endereço na migração, troque aqui e gere de novo. */
+ *  "Repasse · em breve", sem link. base360.mbigucci.com.br/repasse redireciona (302) para cá. O Repasse
+ *  continua em repasse.mbigucci.com.br depois da migração para a Hostinger (Felipe, 05/11/2026); o 302
+ *  fica temporário porque a ideia futura é unificar em /repasse (docs/estudo-unificacao-base360.md). */
 const ENDERECO_REPASSE = "https://repasse.mbigucci.com.br/";
 /** Endereço do módulo de Vendas: a pasta /vendas do mesmo site (o BASE_PATH do build do crm/). */
 const ENDERECO_VENDAS = "/vendas/";
