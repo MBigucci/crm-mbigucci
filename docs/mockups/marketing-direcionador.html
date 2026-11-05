@@ -1,0 +1,583 @@
+<meta charset="utf-8">
+<title>Direcionador de leads</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Protótipo do Base360 Marketing no MBigucci Design System: casca do Vendas (cabeçalho em vidro, lateral grafite),
+   cards com barra de 4px, uma ação vermelha por grupo, sinais ✓ ! ✕ – → +, sem sombra. Tokens de docs/design-system.md. */
+:root{
+  --paper:#f7f6f2;--surface:#ffffff;--ink:#0d0e11;--ink-soft:#4a4b52;--concrete:#6f6b63;--line:#e5e3dd;--control:#76736c;
+  --brand:#e11119;--brand-dark:#b90d14;--ok:#1f7a45;--wa:#925600;--tint:#fff6f6;--disabled:#eeede9;--neutral:#5a5b60;
+  --on-brand:#ffffff;--secondary:#efeeea;--secondary-edge:#817d74;--glass:rgba(247,246,242,.85);
+  --nav:#16181c;--nav-ativo:#2b2d32;--nav-marca:#ff6b70;--nav-linha:#33363c;--on-dark:#ffffff;--on-dark-soft:#d9d6cf;
+  --band:#0d0e11;--overlay:rgba(13,14,17,.5);--mesa:#e4e2dc;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#151619;--surface:#202126;--ink:#f5f3ed;--ink-soft:#c4c1ba;--concrete:#aaa69e;--line:#42444c;--control:#878995;
+  --brand:#ff6b70;--brand-dark:#ff9296;--ok:#68ce92;--wa:#f0b65b;--tint:#332024;--disabled:#303138;--neutral:#b7b8c0;
+  --on-brand:#151619;--secondary:#303138;--secondary-edge:#878995;--glass:rgba(21,22,25,.85);--mesa:#0e0f11;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#151619;--surface:#202126;--ink:#f5f3ed;--ink-soft:#c4c1ba;--concrete:#aaa69e;--line:#42444c;--control:#878995;
+  --brand:#ff6b70;--brand-dark:#ff9296;--ok:#68ce92;--wa:#f0b65b;--tint:#332024;--disabled:#303138;--neutral:#b7b8c0;
+  --on-brand:#151619;--secondary:#303138;--secondary-edge:#878995;--glass:rgba(21,22,25,.85);--mesa:#0e0f11;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--mesa);color:var(--ink);font:14px/1.45 var(--body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 32px}
+h1,h2,h3{font-family:var(--display);margin:0;letter-spacing:-.015em;text-wrap:balance}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.num{font-family:var(--display);font-variant-numeric:tabular-nums}
+
+/* barra do protótipo, fora da casca */
+.prot{max-width:1366px;margin:0 auto 12px;display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between}
+.prot p{margin:0;color:var(--ink-soft);font-size:13px;max-width:70ch}
+.prot b{color:var(--ink)}
+.seg{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft)}
+.seg span{font-weight:600;text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+.seg button{border:1px solid var(--control);background:var(--surface);padding:5px 10px;border-radius:2px;cursor:pointer;font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+
+/* moldura: computador ou celular */
+.moldura{max-width:1366px;margin:0 auto;border:1px solid var(--control);border-radius:4px;overflow:hidden;background:var(--paper)}
+.moldura.cel{max-width:377px}
+.app{container-type:inline-size;background:var(--paper);min-height:780px;position:relative}
+
+/* cabeçalho em vidro */
+.cab{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;height:64px;display:flex;align-items:center;gap:16px;padding:0 24px;background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.marca{display:flex;align-items:center;gap:9px;text-decoration:none;color:var(--ink)}
+.marca svg{width:28px;height:28px;flex:none}
+.marca b{font:800 19px/1 var(--display);letter-spacing:-.02em}
+.marca i{width:1px;height:18px;background:var(--concrete)}
+.marca span{font:500 15px/1 var(--body);color:var(--ink-soft)}
+.conta{margin-left:auto;font-weight:600;font-size:13px;color:var(--ink);background:none;border:0;cursor:pointer;padding:8px}
+.hamb{display:none;margin-left:auto;width:44px;height:44px;border:0;background:none;cursor:pointer;position:relative}
+.hamb i{position:absolute;left:11px;height:2px;background:var(--ink);transition:transform .15s}
+.hamb i:nth-child(1){top:14px;width:22px}.hamb i:nth-child(2){top:21px;width:15px}.hamb i:nth-child(3){top:28px;width:22px}
+.hamb[aria-expanded="true"] i:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.hamb[aria-expanded="true"] i:nth-child(2){opacity:0}
+.hamb[aria-expanded="true"] i:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+
+.corpo{display:grid;grid-template-columns:180px minmax(0,1fr)}
+.lat{background:var(--nav);color:var(--on-dark-soft);padding:14px 0;min-height:716px;display:flex;flex-direction:column}
+.lat a{display:flex;align-items:center;gap:12px;padding:11px 18px 11px 20px;color:var(--on-dark-soft);text-decoration:none;font-size:13px;font-weight:600;border-left:3px solid transparent}
+.lat a::before{content:"";width:9px;height:9px;border-radius:50%;border:2px solid currentColor;flex:none}
+.lat a[aria-current="page"]{background:var(--nav-ativo);color:var(--on-dark);border-left-color:var(--nav-marca)}
+.lat a:focus-visible{outline-color:var(--nav-marca);outline-offset:-2px}
+.lat small{display:block;padding:14px 20px 6px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#b7b3ac}
+.lat .rod{margin-top:auto;border-top:1px solid var(--nav-linha);padding:14px 20px 0;font:800 15px var(--display);color:var(--nav-marca)}
+
+.area{padding:24px 28px 40px;min-width:0}
+.eyebrow{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--concrete)}
+.tp{font-size:28px;font-weight:800;line-height:1.05;margin-top:3px}
+.tc{font-size:18px;font-weight:700;line-height:1.15;margin-top:2px}
+.sub{color:var(--ink-soft);margin:6px 0 0;max-width:68ch}
+.topo{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.grade{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(300px,1fr);gap:20px;margin-top:20px;align-items:start}
+.col{display:grid;gap:14px;min-width:0}
+
+.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:16px 18px 16px 22px}
+.card::before{content:"";position:absolute;left:-1px;top:-1px;bottom:-1px;width:4px;background:var(--ink);border-radius:3px 0 0 3px}
+.card.destaque::before{background:var(--brand)}
+.card.apagada{background:var(--disabled)}
+.card.apagada::before{background:var(--neutral)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:7px 14px;border-radius:2px;border:1px solid var(--secondary-edge);background:var(--secondary);color:var(--ink);font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--ink)}
+.btn.red{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.btn.red:hover{background:var(--brand-dark);border-color:var(--brand-dark)}
+.btn.mini{min-height:30px;padding:4px 10px;font-size:12px}
+.link{background:none;border:0;padding:0;color:var(--brand-dark);font-weight:600;font-size:13px;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+
+/* chave liga/desliga: sinal + palavra + cor */
+.chave{display:inline-flex;align-items:center;gap:9px;border:1px solid var(--control);background:var(--surface);border-radius:2px;padding:5px 10px 5px 6px;cursor:pointer;font-weight:600;font-size:13px;min-height:34px}
+.chave .trilho{width:32px;height:18px;border-radius:9px;background:var(--disabled);border:1px solid var(--control);position:relative;flex:none}
+.chave .trilho::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--neutral);transition:left .15s}
+.chave[aria-checked="true"] .trilho{background:var(--ok);border-color:var(--ok)}
+.chave[aria-checked="true"] .trilho::after{left:16px;background:var(--surface)}
+.chave[aria-checked="true"] .txt{color:var(--ok)}
+.chave .txt{color:var(--neutral);min-width:9ch}
+
+/* chave geral */
+.geral{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.geral p{margin:4px 0 0;color:var(--ink-soft);max-width:60ch}
+.geral.desl{background:var(--tint)}
+
+/* regras */
+.regras{display:grid;gap:10px;list-style:none;margin:0;padding:0}
+.regra{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:4px 14px;align-items:start}
+.ordem{font:700 22px/1 var(--display);font-variant-numeric:tabular-nums;color:var(--ink-soft);padding-top:2px}
+.regra h3{font-size:16px;font-weight:700;line-height:1.2}
+.cond{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 0 0;font-size:13px;color:var(--ink-soft)}
+.cond dt{display:inline;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--concrete);margin-right:4px}
+.cond dd{display:inline;margin:0;color:var(--ink)}
+.cond div{white-space:normal}
+.destino{margin-top:8px;font-weight:700;font-size:14px}
+.destino.ext{color:var(--brand-dark)}
+.acoes{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.acoes .linha{display:flex;gap:6px}
+.padrao{display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px dashed var(--control);border-radius:3px;color:var(--ink-soft);font-size:13px}
+.padrao b{color:var(--ink)}
+.vazio{padding:16px;border:1px dashed var(--control);border-radius:3px;color:var(--ink-soft)}
+
+/* simulador */
+.campos{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;margin-top:12px}
+.campo{display:flex;flex-direction:column;gap:4px;min-width:0}
+.campo.largo{grid-column:1/-1}
+label.lab,.lab{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft)}
+.in{width:100%;min-height:38px;border:1px solid var(--control);background:var(--paper);border-radius:2px;padding:7px 10px;font-size:14px}
+.resultado{margin-top:14px;background:var(--band);color:var(--on-dark);border-radius:3px;padding:14px 16px;border-left:4px solid var(--nav-marca)}
+.resultado .eyebrow{color:#b7b3ac}
+.resultado strong{display:block;font:800 22px/1.15 var(--display);margin-top:4px}
+.resultado p{margin:6px 0 0;color:var(--on-dark-soft);font-size:13px}
+.passos{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:6px;font-size:13px}
+.passos li{display:grid;grid-template-columns:auto 1fr;gap:8px;color:var(--ink-soft)}
+.passos .s{font-weight:700;min-width:12px}
+.s.ok{color:var(--ok)}.s.nao{color:var(--neutral)}.s.er{color:var(--brand)}
+.nota{font-size:12px;color:var(--concrete);margin:10px 0 0}
+
+/* destino externo */
+.par{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:12px 0 0;font-size:13px}
+.par dt{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--concrete);padding-top:2px}
+.par dd{margin:0;color:var(--ink)}
+.sinal-wa{color:var(--wa);font-weight:600}
+.sinal-ok{color:var(--ok);font-weight:600}
+
+/* editor */
+dialog{border:1px solid var(--line);border-radius:3px;padding:0;background:var(--surface);color:var(--ink);width:min(640px,calc(100vw - 32px));max-height:calc(100vh - 32px)}
+dialog::backdrop{background:var(--overlay)}
+.ed{display:flex;flex-direction:column;max-height:calc(100vh - 34px)}
+.ed-cab{padding:18px 22px 8px;border-left:4px solid var(--ink)}
+.ed-corpo{padding:8px 22px 16px;overflow:auto;display:grid;gap:16px}
+.ed-rod{display:flex;gap:8px;align-items:center;padding:12px 22px;border-top:1px solid var(--line);background:var(--surface)}
+.ed-rod .link{margin-right:auto}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{padding:0;margin-bottom:6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{position:relative}
+.chip input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.chip span{display:inline-block;border:1px solid var(--control);background:var(--surface);border-radius:2px;padding:6px 10px;font-size:13px;font-weight:600}
+.chip input:checked+span{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.chip input:checked+span::before{content:"✓ "}
+.chip input:focus-visible+span{outline:2px solid var(--brand);outline-offset:2px}
+.horas{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:end}
+.horas .campo{width:130px}
+.aviso{font-size:13px;color:var(--ink-soft);margin:6px 0 0}
+.erro{color:var(--brand);font-weight:600;font-size:13px;margin:0}
+.radio{display:grid;gap:6px}
+.radio label{display:flex;gap:10px;align-items:center;border:1px solid var(--control);border-radius:2px;padding:9px 12px;cursor:pointer;font-weight:600}
+.radio input{accent-color:var(--ink);width:16px;height:16px}
+
+.moldura.cel~dialog,body:has(.moldura.cel) dialog{width:min(375px,calc(100vw - 32px))}
+.toast{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 14px;border-radius:2px;font-weight:600;font-size:13px;z-index:8}
+.rodape-cel{display:none}
+
+/* abaixo de 1024px: menu do site e uma coluna */
+@container (max-width: 1023px){
+  .corpo{grid-template-columns:minmax(0,1fr)}
+  .lat{display:none;position:absolute;left:0;right:0;top:64px;z-index:6;min-height:0;border-bottom:1px solid var(--line)}
+  .lat.aberta{display:flex}
+  .lat .rod{margin-top:12px;padding-bottom:6px}
+  .conta{display:none}
+  .hamb{display:block}
+  .grade{grid-template-columns:minmax(0,1fr)}
+}
+@container (max-width: 600px){
+  .cab{height:61px;padding:0 8px 0 14px}
+  .lat{top:61px}
+  .marca svg{width:24px;height:24px}
+  .marca b{font-size:17px}.marca span{font-size:14px}
+  .area{padding:18px 14px 96px}
+  .tp{font-size:24px}
+  .topo .btn.red{display:none}
+  .regra{grid-template-columns:26px minmax(0,1fr)}
+  .acoes{grid-column:2;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-top:8px}
+  .btn{min-height:44px}
+  .btn.mini{min-height:44px;padding:4px 12px}
+  .chave{min-height:44px}
+  .campos{grid-template-columns:minmax(0,1fr)}
+  .in{font-size:16px}
+  .rodape-cel{display:block;position:sticky;bottom:0;padding:10px 14px;background:var(--paper);border-top:1px solid var(--line);z-index:4}
+  .rodape-cel .btn{width:100%}
+  .toast{bottom:84px;width:max-content;max-width:calc(100% - 28px)}
+}
+@media (max-width:640px){
+  .ed-rod{flex-wrap:wrap}
+  .ed-rod .btn{flex:1;min-height:44px}
+  .ed-rod .link{flex-basis:100%;text-align:left;padding:6px 0}
+  .in{font-size:16px}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="prot" role="region" aria-label="Controles do protótipo">
+  <p><b>Protótipo do direcionador de leads.</b> Dados fictícios. Nada é gravado nem enviado. Mexa nas regras e veja o simulador responder.</p>
+  <div style="display:flex;gap:14px;flex-wrap:wrap">
+    <div class="seg" id="seg-tema"><span>Tema</span>
+      <button type="button" data-tema="" aria-pressed="true">Automático</button>
+      <button type="button" data-tema="light" aria-pressed="false">Claro</button>
+      <button type="button" data-tema="dark" aria-pressed="false">Escuro</button>
+    </div>
+    <div class="seg" id="seg-larg"><span>Largura</span>
+      <button type="button" data-larg="pc" aria-pressed="true">Computador</button>
+      <button type="button" data-larg="cel" aria-pressed="false">Celular</button>
+    </div>
+  </div>
+</div>
+
+<div class="moldura" id="moldura">
+<div class="app" id="app">
+  <header class="cab">
+    <a class="marca" href="#" aria-label="Base360 Marketing, início">
+      <svg viewBox="0 0 100 100" aria-hidden="true"><path d="M20 20H50V22A28 28 0 0 1 22 50H20Z" fill="var(--brand)"/><path fill="var(--ink)" fill-rule="evenodd" d="M8 8H92V92H8ZM22 22H78V78H22Z"/></svg>
+      <b>Base360</b><i></i><span>Marketing</span>
+    </a>
+    <button class="conta" type="button">Felipe ▾</button>
+    <button class="hamb" id="hamb" type="button" aria-expanded="false" aria-controls="lat" aria-label="Abrir menu"><i></i><i></i><i></i></button>
+  </header>
+  <div class="corpo">
+    <nav class="lat" id="lat" aria-label="Marketing">
+      <a href="#" aria-current="page">Direcionador</a>
+      <div class="rod">MBigucci</div>
+    </nav>
+
+    <main class="area">
+      <div class="topo">
+        <div>
+          <span class="eyebrow">Só o gerente geral vê</span>
+          <h1 class="tp">Direcionador de leads</h1>
+          <p class="sub">A primeira regra ligada que casar decide para onde vai o lead. Sem regra, ele vai para o Base360 Vendas.</p>
+        </div>
+        <button class="btn red" type="button" data-nova>+ Nova regra</button>
+      </div>
+
+      <div class="grade">
+        <div class="col">
+          <section class="card geral" id="geral" aria-labelledby="t-geral">
+            <div>
+              <span class="eyebrow">Chave geral</span>
+              <h2 class="tc" id="t-geral">Direcionador</h2>
+              <p id="geral-txt"></p>
+            </div>
+            <button class="chave" type="button" role="switch" id="chave-geral" aria-labelledby="t-geral"><span class="trilho"></span><span class="txt"></span></button>
+          </section>
+
+          <section aria-labelledby="t-regras">
+            <div class="topo" style="margin:6px 0 10px">
+              <div><span class="eyebrow">Na ordem em que são lidas</span><h2 class="tc" id="t-regras">Regras</h2></div>
+            </div>
+            <ol class="regras" id="lista"></ol>
+            <div class="padrao" style="margin-top:10px"><span class="num" style="font-weight:700">–</span><span>Nenhuma regra casou, ou a entrega externa falhou: <b>→ Base360 Vendas</b>, pela roleta do lead da empresa.</span></div>
+          </section>
+        </div>
+
+        <div class="col">
+          <section class="card" aria-labelledby="t-sim">
+            <span class="eyebrow">Teste sem gravar</span>
+            <h2 class="tc" id="t-sim">Simulador</h2>
+            <div class="campos">
+              <div class="campo largo"><label class="lab" for="s-produto">Produto</label><select class="in" id="s-produto"></select></div>
+              <div class="campo largo"><label class="lab" for="s-fonte">Fonte</label><select class="in" id="s-fonte"></select></div>
+              <div class="campo"><label class="lab" for="s-dia">Dia</label><select class="in" id="s-dia"></select></div>
+              <div class="campo"><label class="lab" for="s-hora">Hora</label><input class="in" id="s-hora" type="time" step="60"></div>
+            </div>
+            <button class="link" type="button" id="s-agora" style="margin-top:10px">Usar agora</button>
+            <div class="resultado" aria-live="polite" id="s-res"></div>
+            <ol class="passos" id="s-passos"></ol>
+            <p class="nota">Dia e hora de São Paulo, no momento em que o lead chega.</p>
+          </section>
+
+          <section class="card" aria-labelledby="t-ext">
+            <span class="eyebrow">Destino externo</span>
+            <h2 class="tc" id="t-ext"></h2>
+            <dl class="par">
+              <dt>Apelido</dt><dd id="d-apelido"></dd>
+              <dt>Entrega</dt><dd>Por e-mail, sem cópia em Enviados</dd>
+              <dt>Endereço</dt><dd class="num" id="d-end">e••••@example.com</dd>
+              <dt>Porta</dt><dd><span class="sinal-wa">! Ainda não configurada.</span> Quando existir, passa a ser a entrega, e o e-mail fica de reserva.</dd>
+              <dt>Registro</dt><dd><span class="sinal-ok">✓ Nada fica gravado.</span> Se a entrega falhar, o lead vai na hora para o Base360 Vendas, para não ficar sem atendimento.</dd>
+            </dl>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+              <button class="btn" type="button" id="b-apelido">Trocar apelido</button>
+              <button class="btn" type="button" id="b-end">Trocar endereço</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div class="rodape-cel"><button class="btn red" type="button" data-nova>+ Nova regra</button></div>
+  <div class="toast" id="toast" role="status" hidden></div>
+</div>
+</div>
+
+<dialog id="ed" aria-labelledby="ed-titulo">
+  <form class="ed" id="ed-form" novalidate>
+    <div class="ed-cab"><span class="eyebrow" id="ed-eyebrow">Nova regra</span><h2 class="tc" id="ed-titulo">Criar regra</h2></div>
+    <div class="ed-corpo">
+      <div class="campo"><label class="lab" for="f-nome">Nome da regra</label><input class="in" id="f-nome" maxlength="60" placeholder="Ex.: Fim de semana, portais"></div>
+      <fieldset><legend class="lab">Produto</legend><div class="chips" id="f-produtos"></div></fieldset>
+      <fieldset><legend class="lab">Fonte</legend><div class="chips" id="f-fontes"></div></fieldset>
+      <fieldset><legend class="lab">Dias</legend><div class="chips" id="f-dias"></div></fieldset>
+      <fieldset>
+        <legend class="lab">Horário</legend>
+        <div class="horas">
+          <div class="campo"><label class="lab" for="f-ini">Das</label><input class="in" id="f-ini" type="time" step="60"></div>
+          <div class="campo"><label class="lab" for="f-fim">Até</label><input class="in" id="f-fim" type="time" step="60"></div>
+          <label class="chip"><input type="checkbox" id="f-dia-todo"><span>Dia inteiro</span></label>
+        </div>
+        <p class="aviso" id="f-hora-aviso"></p>
+      </fieldset>
+      <fieldset><legend class="lab">Mandar para</legend>
+        <div class="radio">
+          <label><input type="radio" name="f-dest" value="vendas" id="f-dest-v"> → Base360 Vendas</label>
+          <label><input type="radio" name="f-dest" value="externo" id="f-dest-e"> <span id="f-dest-e-txt">→ Destino externo</span></label>
+        </div>
+      </fieldset>
+      <label class="chip"><input type="checkbox" id="f-ativa"><span>Regra ligada</span></label>
+      <p class="erro" id="f-erro" hidden></p>
+    </div>
+    <div class="ed-rod">
+      <button class="link" type="button" id="f-excluir">Excluir regra</button>
+      <button class="btn" type="button" id="f-cancelar">Cancelar</button>
+      <button class="btn red" type="submit">Salvar regra</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(function(){
+  const PRODUTOS=["Residencial Aurora","Parque Ipê","Torre Horizonte","Vila Jacarandá","Jardim Alecrim"];
+  const FONTES=["Site MBigucci","ZAP Imóveis","Viva Real","OLX","Imovelweb","Chaves na Mão","Outra"];
+  const DIAS=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+  const DIAS_LONGO=["domingo","segunda","terça","quarta","quinta","sexta","sábado"];
+  const estado={
+    geral:true,
+    apelido:"Externo A",
+    regras:[
+      {id:1,nome:"Torre Horizonte, pelo site",ativa:true,produtos:["Torre Horizonte"],fontes:["Site MBigucci"],dias:[0,1,2,3,4,5,6],ini:"09:00",fim:"18:00",destino:"vendas"},
+      {id:2,nome:"Fim de semana, portais",ativa:true,produtos:[],fontes:["ZAP Imóveis","Viva Real","OLX"],dias:[0,6],ini:"00:00",fim:"00:00",destino:"externo"},
+      {id:3,nome:"Noite, Parque Ipê",ativa:true,produtos:["Parque Ipê"],fontes:[],dias:[1,2,3,4,5],ini:"19:00",fim:"09:00",destino:"externo"},
+      {id:4,nome:"Imovelweb, horário comercial",ativa:false,produtos:[],fontes:["Imovelweb"],dias:[1,2,3,4,5],ini:"09:00",fim:"18:00",destino:"externo"}
+    ]
+  };
+  let proxId=5, editando=null;
+  const $=s=>document.querySelector(s);
+
+  /* ---------- regra pura: a mesma da Edge Function ---------- */
+  const min=h=>{const [a,b]=h.split(":").map(Number);return a*60+b};
+  function horarioCasa(r,dia,t){
+    const i=min(r.ini),f=min(r.fim);
+    if(i===f) return r.dias.includes(dia)?"ok":"dia";
+    if(i<f) return !r.dias.includes(dia)?"dia":(t>=i&&t<f?"ok":"hora");
+    const ontem=(dia+6)%7;                       /* intervalo que vira a meia-noite */
+    if(t>=i) return r.dias.includes(dia)?"ok":"dia";
+    if(t<f) return r.dias.includes(ontem)?"ok":"dia";
+    return "hora";
+  }
+  function decidir(lead){
+    const passos=[];
+    if(!estado.geral) return {destino:"vendas",motivo:"geral",passos};
+    for(let k=0;k<estado.regras.length;k++){
+      const r=estado.regras[k], n=k+1;
+      if(!r.ativa){passos.push({s:"nao",t:`${n}. ${r.nome}: desligada.`});continue}
+      if(r.produtos.length&&!r.produtos.includes(lead.produto)){passos.push({s:"nao",t:`${n}. ${r.nome}: ${lead.produto?"outro produto":"produto não reconhecido"}.`});continue}
+      if(r.fontes.length&&!r.fontes.includes(lead.fonte)){passos.push({s:"nao",t:`${n}. ${r.nome}: outra fonte.`});continue}
+      const h=horarioCasa(r,lead.dia,min(lead.hora));
+      if(h!=="ok"){passos.push({s:"nao",t:`${n}. ${r.nome}: ${h==="dia"?"fora dos dias":"fora do horário"}.`});continue}
+      passos.push({s:"ok",t:`${n}. ${r.nome}: casou e decidiu.`});
+      for(let j=k+1;j<estado.regras.length;j++) passos.push({s:"nao",t:`${j+1}. ${estado.regras[j].nome}: não lida.`});
+      return {destino:r.destino,regra:r,passos};
+    }
+    return {destino:"vendas",motivo:"nenhuma",passos};
+  }
+
+  /* ---------- textos ---------- */
+  const listaTxt=(arr,todos)=>arr.length?arr.join(", "):todos;
+  function diasTxt(d){
+    const s=[...d].sort();
+    if(s.length===7) return "Todos os dias";
+    if(s.join()==="1,2,3,4,5") return "Seg a sex";
+    if(s.join()==="0,6") return "Sáb e dom";
+    return s.map(i=>DIAS[i]).join(", ");
+  }
+  const h=x=>x.replace(":00","h").replace(":","h");
+  function horaTxt(r){
+    if(r.ini===r.fim) return "Dia inteiro";
+    return `${h(r.ini)} às ${h(r.fim)}${min(r.ini)>min(r.fim)?" do dia seguinte":""}`;
+  }
+  const destTxt=d=>d==="externo"?`→ Destino externo · ${estado.apelido}`:"→ Base360 Vendas";
+  const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+  /* ---------- desenho ---------- */
+  function chave(el,on,lig,desl){el.setAttribute("aria-checked",on);el.querySelector(".txt").textContent=on?`✓ ${lig}`:`– ${desl}`}
+  function desenhar(){
+    chave($("#chave-geral"),estado.geral,"Ligado","Desligado");
+    $("#geral").classList.toggle("desl",!estado.geral);
+    $("#geral").classList.toggle("destaque",!estado.geral);
+    $("#geral-txt").textContent=estado.geral?"As regras abaixo valem a cada lead que chega.":"Tudo vai para o Base360 Vendas. As regras ficam guardadas, sem valer.";
+    $("#t-ext").textContent=estado.apelido;
+    $("#d-apelido").textContent=estado.apelido;
+    $("#f-dest-e-txt").textContent=`→ Destino externo · ${estado.apelido}`;
+    const ol=$("#lista");
+    if(!estado.regras.length){ol.innerHTML=`<li class="vazio">Nenhuma regra. Tudo vai para o Base360 Vendas. Toque em + Nova regra para mandar um tipo de lead para o destino externo.</li>`;return simular()}
+    ol.innerHTML=estado.regras.map((r,k)=>`
+      <li class="card regra${r.ativa&&estado.geral?"":" apagada"}">
+        <span class="ordem">${k+1}</span>
+        <div style="min-width:0">
+          <h3>${esc(r.nome)}</h3>
+          <dl class="cond">
+            <div><dt>Produto</dt><dd>${esc(listaTxt(r.produtos,"Qualquer"))}</dd></div>
+            <div><dt>Fonte</dt><dd>${esc(listaTxt(r.fontes,"Qualquer"))}</dd></div>
+            <div><dt>Quando</dt><dd>${diasTxt(r.dias)} · ${horaTxt(r)}</dd></div>
+          </dl>
+          <div class="destino ${r.destino==="externo"?"ext":""}">${esc(destTxt(r.destino))}</div>
+        </div>
+        <div class="acoes">
+          <button class="chave" type="button" role="switch" data-liga="${r.id}" aria-label="Regra ${k+1}, ${esc(r.nome)}"><span class="trilho"></span><span class="txt"></span></button>
+          <div class="linha">
+            <button class="btn mini" type="button" data-sobe="${r.id}" ${k===0?"disabled":""} aria-label="Subir regra ${k+1}">Subir</button>
+            <button class="btn mini" type="button" data-desce="${r.id}" ${k===estado.regras.length-1?"disabled":""} aria-label="Descer regra ${k+1}">Descer</button>
+            <button class="btn mini" type="button" data-edita="${r.id}">Editar</button>
+          </div>
+        </div>
+      </li>`).join("");
+    ol.querySelectorAll("[data-liga]").forEach(b=>{const r=estado.regras.find(x=>x.id==b.dataset.liga);chave(b,r.ativa,"Ligada","Desligada")});
+    ol.querySelectorAll("button[disabled]").forEach(b=>b.style.opacity=".45");
+    simular();
+  }
+
+  function simular(){
+    const lead={produto:$("#s-produto").value,fonte:$("#s-fonte").value,dia:+$("#s-dia").value,hora:$("#s-hora").value||"00:00"};
+    const d=decidir(lead);
+    const quando=`${DIAS_LONGO[lead.dia]}, ${h(lead.hora)}`;
+    const quem=`Um lead ${lead.produto?"do "+esc(lead.produto):"de produto não reconhecido"}, de ${esc(lead.fonte)}, ${quando}, vai para`;
+    let por;
+    if(d.motivo==="geral") por="A chave geral está desligada.";
+    else if(d.motivo==="nenhuma") por="Nenhuma regra ligada casou.";
+    else por=`Pela regra ${estado.regras.indexOf(d.regra)+1}, ${esc(d.regra.nome)}.`;
+    $("#s-res").innerHTML=`<span class="eyebrow">${quem}</span><strong>${esc(destTxt(d.destino))}</strong><p>${por}</p>`;
+    $("#s-passos").innerHTML=d.passos.map(p=>`<li><span class="s ${p.s}">${p.s==="ok"?"✓":"–"}</span><span>${esc(p.t)}</span></li>`).join("");
+  }
+
+  function aviso(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(aviso.t);aviso.t=setTimeout(()=>el.hidden=true,3200)}
+
+  /* ---------- simulador: campos ---------- */
+  $("#s-produto").innerHTML=PRODUTOS.map(p=>`<option>${p}</option>`).join("")+`<option value="">Produto não reconhecido</option>`;
+  $("#s-fonte").innerHTML=FONTES.map(f=>`<option>${f}</option>`).join("");
+  $("#s-dia").innerHTML=DIAS_LONGO.map((d,i)=>`<option value="${i}">${d[0].toUpperCase()+d.slice(1)}</option>`).join("");
+  function agora(){
+    let d,hh,mm;
+    try{
+      const p=new Intl.DateTimeFormat("en-US",{timeZone:"America/Sao_Paulo",weekday:"short",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date());
+      const g=t=>p.find(x=>x.type===t).value;
+      d=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].indexOf(g("weekday"));hh=g("hour");mm=g("minute");
+    }catch(e){const n=new Date();d=n.getDay();hh=String(n.getHours()).padStart(2,"0");mm=String(n.getMinutes()).padStart(2,"0")}
+    $("#s-dia").value=d;$("#s-hora").value=`${hh}:${mm}`;
+  }
+  /* exemplo inicial: sábado de manhã, ZAP, para o simulador abrir mostrando uma regra externa */
+  $("#s-produto").value="Residencial Aurora";$("#s-fonte").value="ZAP Imóveis";$("#s-dia").value="6";$("#s-hora").value="10:30";
+  ["#s-produto","#s-fonte","#s-dia","#s-hora"].forEach(s=>$(s).addEventListener("input",simular));
+  $("#s-agora").addEventListener("click",()=>{agora();simular()});
+
+  /* ---------- lista: ações ---------- */
+  $("#chave-geral").addEventListener("click",()=>{estado.geral=!estado.geral;desenhar();aviso(estado.geral?"✓ Direcionador ligado":"– Direcionador desligado. Tudo vai para o Vendas")});
+  $("#lista").addEventListener("click",e=>{
+    const b=e.target.closest("button");if(!b)return;
+    const id=+(b.dataset.liga||b.dataset.sobe||b.dataset.desce||b.dataset.edita);
+    const k=estado.regras.findIndex(r=>r.id===id), r=estado.regras[k];
+    if(b.dataset.liga){r.ativa=!r.ativa;desenhar();aviso(r.ativa?`✓ Regra ${k+1} ligada`:`– Regra ${k+1} desligada`);focar(`[data-liga="${id}"]`)}
+    else if(b.dataset.sobe&&k>0){[estado.regras[k-1],estado.regras[k]]=[r,estado.regras[k-1]];desenhar();focar(`[data-sobe="${id}"]`,`[data-desce="${id}"]`)}
+    else if(b.dataset.desce&&k<estado.regras.length-1){[estado.regras[k+1],estado.regras[k]]=[r,estado.regras[k+1]];desenhar();focar(`[data-desce="${id}"]`,`[data-sobe="${id}"]`)}
+    else if(b.dataset.edita) abrir(r);
+  });
+  function focar(...sels){for(const s of sels){const el=$(s);if(el&&!el.disabled){el.focus();return}}}
+
+  /* ---------- editor ---------- */
+  const ed=$("#ed");
+  const chips=(alvo,itens,nome,todos)=>{$(alvo).innerHTML=(todos?`<label class="chip"><input type="checkbox" name="${nome}" value="*" id="${nome}-todos"><span>${todos}</span></label>`:"")+itens.map((t,i)=>`<label class="chip"><input type="checkbox" name="${nome}" value="${i}" id="${nome}-${i}"><span>${t}</span></label>`).join("")};
+  chips("#f-produtos",PRODUTOS,"fp","Qualquer produto");
+  chips("#f-fontes",FONTES,"ff","Qualquer fonte");
+  chips("#f-dias",DIAS,"fd");
+  /* "Qualquer" e as opções se excluem */
+  ["fp","ff"].forEach(n=>document.querySelectorAll(`[name="${n}"]`).forEach(c=>c.addEventListener("change",()=>{
+    const todos=$(`#${n}-todos`);
+    if(c===todos&&c.checked) document.querySelectorAll(`[name="${n}"]`).forEach(o=>{if(o!==todos)o.checked=false});
+    else if(c!==todos&&c.checked) todos.checked=false;
+    if(![...document.querySelectorAll(`[name="${n}"]`)].some(o=>o.checked)) todos.checked=true;
+  })));
+  function avisoHora(){
+    const todo=$("#f-dia-todo").checked;
+    $("#f-ini").disabled=todo;$("#f-fim").disabled=todo;
+    const i=$("#f-ini").value,f=$("#f-fim").value;
+    $("#f-hora-aviso").textContent=todo?"Vale das 0h às 24h dos dias marcados.":(i&&f&&min(i)>min(f)?`Vira a meia-noite: vale das ${h(i)} do dia marcado até as ${h(f)} do dia seguinte.`:"A hora de fim não entra: até 18h vale até 17h59.");
+  }
+  ["#f-ini","#f-fim","#f-dia-todo"].forEach(s=>$(s).addEventListener("input",avisoHora));
+  function marcar(n,lista,todosSe){document.querySelectorAll(`[name="${n}"]`).forEach(c=>{c.checked=c.value==="*"?todosSe:lista.includes(+c.value)})}
+  function abrir(r){
+    editando=r||null;
+    const base=r||{nome:"",ativa:true,produtos:[],fontes:[],dias:[0,1,2,3,4,5,6],ini:"09:00",fim:"18:00",destino:"externo"};
+    $("#ed-eyebrow").textContent=r?`Regra ${estado.regras.indexOf(r)+1}`:"Nova regra";
+    $("#ed-titulo").textContent=r?"Editar regra":"Criar regra";
+    $("#f-nome").value=base.nome;
+    marcar("fp",base.produtos.map(p=>PRODUTOS.indexOf(p)),!base.produtos.length);
+    marcar("ff",base.fontes.map(p=>FONTES.indexOf(p)),!base.fontes.length);
+    marcar("fd",base.dias,false);
+    const todo=base.ini===base.fim;
+    $("#f-dia-todo").checked=todo;$("#f-ini").value=todo?"00:00":base.ini;$("#f-fim").value=todo?"00:00":base.fim;
+    $(base.destino==="vendas"?"#f-dest-v":"#f-dest-e").checked=true;
+    $("#f-ativa").checked=base.ativa;
+    $("#f-excluir").hidden=!r;
+    $("#f-erro").hidden=true;
+    avisoHora();
+    ed.showModal();$("#f-nome").focus();
+  }
+  document.querySelectorAll("[data-nova]").forEach(b=>b.addEventListener("click",()=>abrir(null)));
+  $("#f-cancelar").addEventListener("click",()=>ed.close());
+  $("#f-excluir").addEventListener("click",()=>{
+    const k=estado.regras.indexOf(editando);estado.regras.splice(k,1);ed.close();desenhar();aviso(`✓ Regra excluída: ${editando.nome}`);
+  });
+  const pegar=n=>[...document.querySelectorAll(`[name="${n}"]:checked`)].map(c=>c.value).filter(v=>v!=="*").map(Number);
+  $("#ed-form").addEventListener("submit",e=>{
+    e.preventDefault();
+    const nome=$("#f-nome").value.trim(), dias=pegar("fd"), todo=$("#f-dia-todo").checked;
+    const ini=todo?"00:00":$("#f-ini").value, fim=todo?"00:00":$("#f-fim").value;
+    let erro="";
+    if(!nome) erro="✕ Dê um nome à regra, para achar na lista.";
+    else if(!dias.length) erro="✕ Marque pelo menos um dia.";
+    else if(!todo&&(!ini||!fim)) erro="✕ Preencha as duas horas ou marque Dia inteiro.";
+    else if(!todo&&ini===fim) erro="✕ Início e fim iguais. Para valer o dia todo, marque Dia inteiro.";
+    if(erro){$("#f-erro").textContent=erro;$("#f-erro").hidden=false;return}
+    const dados={nome,ativa:$("#f-ativa").checked,produtos:pegar("fp").map(i=>PRODUTOS[i]),fontes:pegar("ff").map(i=>FONTES[i]),dias,ini,fim,destino:document.querySelector('[name="f-dest"]:checked').value};
+    if(editando){Object.assign(editando,dados);aviso("✓ Regra salva")}
+    else{estado.regras.push({id:proxId++,...dados});aviso(`✓ Regra criada no fim da lista, na posição ${estado.regras.length}`)}
+    ed.close();desenhar();
+  });
+
+  /* ---------- destino externo (só na tela) ---------- */
+  $("#b-apelido").addEventListener("click",()=>{estado.apelido=estado.apelido==="Externo A"?"Externo B":"Externo A";desenhar();aviso(`✓ Apelido trocado: ${estado.apelido}`)});
+  $("#b-end").addEventListener("click",()=>aviso("No app, abre o campo do endereço. Ele é guardado no cofre e volta mascarado."));
+
+  /* ---------- controles do protótipo ---------- */
+  document.querySelectorAll("#seg-tema button").forEach(b=>b.addEventListener("click",()=>{
+    document.querySelectorAll("#seg-tema button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+    if(b.dataset.tema) document.documentElement.setAttribute("data-theme",b.dataset.tema); else document.documentElement.removeAttribute("data-theme");
+  }));
+  document.querySelectorAll("#seg-larg button").forEach(b=>b.addEventListener("click",()=>{
+    document.querySelectorAll("#seg-larg button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+    $("#moldura").classList.toggle("cel",b.dataset.larg==="cel");
+  }));
+  $("#hamb").addEventListener("click",()=>{
+    const ab=$("#hamb").getAttribute("aria-expanded")!=="true";
+    $("#hamb").setAttribute("aria-expanded",ab);$("#hamb").setAttribute("aria-label",ab?"Fechar menu":"Abrir menu");
+    $("#lat").classList.toggle("aberta",ab);
+  });
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("#hamb").getAttribute("aria-expanded")==="true"){$("#hamb").click();$("#hamb").focus()}});
+  document.querySelectorAll('.lat a,.marca').forEach(a=>a.addEventListener("click",e=>e.preventDefault()));
+
+  desenhar();
+})();
+</script>
