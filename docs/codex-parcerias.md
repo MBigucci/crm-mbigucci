@@ -64,10 +64,10 @@ Suposições (aprovadas pelo Felipe em 04/11/2026): gerente que cadastra à mão
 - Roleta dá rodízio igual entre gerentes ativos; duas entradas ao mesmo tempo vão para gerentes diferentes (teste).
 - Parceiro a 90 dias sem interação muda de gerente (nunca para o mesmo) e fica registrado no histórico (teste com datas simuladas).
 - Duplicado por WhatsApp ou CRECI, com um dos dois vazio (testes).
-- Typecheck, suíte e build passam; nenhum texto de verba, pontos ou ranking aparece nas telas novas.
+- Typecheck, suíte e build passam.
 
 ## Limites
 - Testes isolados, dados de teste fora do Git, sem usar credenciais reais.
 - Não instalar, não reiniciar serviço, não criar recurso externo nem rodar SQL no Supabase sem ok do Felipe.
-- Não publicar no WordPress (sigilo até a reunião de novembro de 2026).
+- Não publicar no WordPress sem ok do Felipe. (O sigilo de verba, pontos e ranking acabou em 04/11/2026, commit 0ccdca2.)
 - Não commitar: entregar arquivos mudados, resultado dos testes e pendências.
