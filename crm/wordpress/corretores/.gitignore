@@ -1,0 +1,3 @@
+# A saída do build leva a URL e a chave pública do Supabase (do crm/.env.local).
+# Nenhuma chave entra no Git: o dist/ é gerado na máquina que cola o .php.
+dist/

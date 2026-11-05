@@ -19,11 +19,14 @@ import {
   montarAvisos,
   paraBase64Url,
   paraTentarDeNovo,
+  parceirosParaDescartar,
+  parceirosParaMarcar,
   soNovos,
   TIPOS_AVISO as TIPOS_DA_FUNCAO,
   type Assinatura,
   type DadosAvisos,
   type LeadAviso,
+  type ParceiroAviso,
   type VisitaAviso,
 } from "../../supabase/functions/avisos/index.ts";
 import { TIPOS_AVISO, tiposDoAparelho } from "./avisos.ts";
@@ -399,6 +402,108 @@ test("os tipos de Minha conta são os mesmos da função", () => {
   // "Equipe" só aparece para quem vê a equipe
   assert.equal(tiposDoAparelho(() => false).some((t) => t.slug === "equipe"), false);
   assert.equal(tiposDoAparelho((p) => p === "dados.ver_equipe").some((t) => t.slug === "equipe"), true);
+  // "Parceiros" só para quem cadastra parceiros (o corretor não vê)
+  assert.equal(tiposDoAparelho(() => false).some((t) => t.slug === "parceiros"), false);
+  assert.equal(tiposDoAparelho((p) => p === "dados.ver_equipe").some((t) => t.slug === "parceiros"), false);
+  assert.equal(tiposDoAparelho((p) => p === "parceiros.cadastrar").some((t) => t.slug === "parceiros"), true);
+});
+
+// ---------- Parcerias (05/11/2026): tipo "parceiros" ----------
+
+const pend = (o: Partial<ParceiroAviso> = {}): ParceiroAviso => ({
+  id: 1,
+  gerente_id: GERENTE,
+  tipo: "recebido",
+  criado_em: iso("2026-11-03T07:00"),
+  parceiro_id: "p1",
+  do_gerente: true,
+  nome: "Rita Lopes",
+  empresa: "Lopes Imóveis",
+  dias_sem_interacao: 0,
+  proximo_contato: null,
+  ...o,
+});
+const deParceiros = (avisos: ReturnType<typeof montarAvisos>) => avisos.filter((a) => a.tipo === "parceiros");
+
+test("parceiros: cada tipo com o texto curto, só para o gerente dono, abrindo a ficha do parceiro", () => {
+  const d = dados({
+    parceiros: [
+      pend({ id: 1, tipo: "recebido" }),
+      pend({ id: 2, tipo: "reentrada", parceiro_id: "p2", nome: "Caio Dias", empresa: null }),
+      pend({ id: 3, tipo: "prazo_80", parceiro_id: "p3", nome: "Edu Paz", empresa: "Paz", dias_sem_interacao: 80 }),
+      pend({ id: 4, tipo: "proximo_contato", parceiro_id: "p4", nome: "Lia Reis", empresa: "", proximo_contato: "2026-11-03" }),
+      pend({ id: 5, tipo: "proximo_contato", parceiro_id: "p5", nome: "Teo Luz", empresa: "Teo Luz", proximo_contato: "2026-11-01" }),
+    ],
+  });
+  const av = deParceiros(montarAvisos(d, sp("2026-11-03T09:05")));
+  assert.deepEqual(
+    av.map((a) => [a.usuario_id, a.titulo, a.corpo, a.url, a.chaves, a.parceiroAvisos]),
+    [
+      [GERENTE, "Parceiro novo para você", "Rita Lopes · Lopes Imóveis. Faça o primeiro contato.", "parceiros/ficha/?id=p1", ["parceiro:1"], [1]],
+      [GERENTE, "Parceiro procurou de novo", "Caio Dias procurou a MBigucci de novo. Retome o contato.", "parceiros/ficha/?id=p2", ["parceiro:2"], [2]],
+      [GERENTE, "Faltam 10 dias para perder o parceiro", "Edu Paz · Paz. 80 dias sem interação. Registre um contato.", "parceiros/ficha/?id=p3", ["parceiro:3"], [3]],
+      [GERENTE, "Contato com parceiro hoje", "Lia Reis. Combinado para hoje.", "parceiros/ficha/?id=p4", ["parceiro:4"], [4]],
+      [GERENTE, "Contato com parceiro vencido", "Teo Luz. Combinado para 01/11.", "parceiros/ficha/?id=p5", ["parceiro:5"], [5]],
+    ],
+  );
+  // a rodada seguinte gera as mesmas chaves; o banco não registra de novo, então nada sai
+  const seguinte = deParceiros(montarAvisos(d, sp("2026-11-03T09:10")));
+  assert.deepEqual(seguinte.map((a) => a.chaves), av.map((a) => a.chaves));
+  assert.equal(soNovos(seguinte, []).length, 0);
+});
+
+test("parceiros: o aviso espera o horário de atendimento e não sai mais depois de 72 h", () => {
+  const d = dados({ parceiros: [pend({ criado_em: iso("2026-11-03T02:00") })] });
+  assert.equal(deParceiros(montarAvisos(d, sp("2026-11-03T07:00"))).length, 0); // a rotina roda às 7h
+  assert.equal(parceirosParaDescartar(d, sp("2026-11-03T07:00")).length, 0); // espera, não descarta
+  assert.equal(deParceiros(montarAvisos(d, sp("2026-11-03T09:00"))).length, 1);
+  assert.equal(deParceiros(montarAvisos(d, sp("2026-11-06T09:00"))).length, 0);
+  assert.deepEqual(parceirosParaDescartar(d, sp("2026-11-06T09:00")), [1]);
+});
+
+test("parceiros: parceiro que já não é do gerente não vira aviso, só é marcado (sem dado de outro gerente)", () => {
+  const d = dados({ parceiros: [pend({ id: 7, do_gerente: false, nome: null, empresa: null, dias_sem_interacao: null })] });
+  assert.equal(deParceiros(montarAvisos(d, sp("2026-11-03T10:00"))).length, 0);
+  assert.deepEqual(parceirosParaDescartar(d, sp("2026-11-03T10:00")), [7]);
+});
+
+test("parceiros: contato registrado entre a rotina e o envio tira o aviso (80 dias e próximo contato), sem texto errado", () => {
+  const d = dados({
+    parceiros: [
+      pend({ id: 1, tipo: "prazo_80", dias_sem_interacao: 0 }), // registrou contato às 8h; o prazo recomeçou
+      pend({ id: 2, tipo: "proximo_contato", parceiro_id: "p2", proximo_contato: null }), // a interação já não é a última
+      pend({ id: 3, tipo: "prazo_80", parceiro_id: "p3", dias_sem_interacao: 81 }),
+    ],
+  });
+  const av = deParceiros(montarAvisos(d, sp("2026-11-03T09:00")));
+  assert.deepEqual(av.map((a) => a.titulo), ["Faltam 9 dias para perder o parceiro"]);
+  assert.deepEqual(parceirosParaDescartar(d, sp("2026-11-03T09:00")), [1, 2]);
+});
+
+test("parceiros: só vai para o aparelho com a chave Parceiros; mais de 3 viram um aviso só", () => {
+  const ass = (tipos: string[], usuario = GERENTE): Assinatura => ({ endpoint: `https://fcm.googleapis.com/${usuario}`, usuario_id: usuario, p256dh: "", auth: "", tipos });
+  const nomes = ["Ana Lima", "Bia Rocha", "Caio Dias", "Davi Reis"];
+  const d = dados({ parceiros: nomes.map((nome, i) => pend({ id: i + 1, parceiro_id: `p${i}`, nome })) });
+  const av = montarAvisos(d, sp("2026-11-03T09:00"));
+  assert.equal(comDestino(av, [ass(["contato", "visita", "atribuido", "prazo", "resumo", "equipe"])]).length, 0);
+  assert.equal(comDestino(av, [ass(["parceiros"], "outro")]).length, 0);
+  const [j] = juntarContatos(comDestino(av, [ass(["parceiros"])]));
+  assert.equal(j.titulo, "4 avisos de parceiros");
+  assert.equal(j.corpo, "Ana, Bia, Caio e mais 1. Veja seus parceiros.");
+  assert.equal(j.url, "parceiros/");
+  assert.deepEqual(j.parceiroAvisos, [1, 2, 3, 4]);
+  assert.equal(j.chaves.length, 4);
+});
+
+test("parceiros: marca só o que saiu; o que falhou em todos os aparelhos volta na próxima rodada", () => {
+  const d = dados({ parceiros: [pend({ id: 1 }), pend({ id: 2, parceiro_id: "p2" }), pend({ id: 3, parceiro_id: "p3" })] });
+  const [a, b, c] = deParceiros(montarAvisos(d, sp("2026-11-03T09:00")));
+  const deNovo = paraTentarDeNovo([
+    { aviso: a, resultado: "enviado" },
+    { aviso: b, resultado: "falhou" },
+    { aviso: c, resultado: "removido" },
+  ]);
+  assert.deepEqual(parceirosParaMarcar([a, b, c], deNovo), [1, 3]);
 });
 
 test("só endereços de serviços de push de verdade", () => {

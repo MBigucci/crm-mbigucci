@@ -281,6 +281,107 @@ test("item 28: avisos_dados traz a equipe do gerente com o tipo Equipe, e os lea
   await db.exec(`delete from public.push_assinaturas where endpoint in ('${FCM("ca-equipe")}', '${FCM("ga-celular")}', '${FCM("ga-tablet")}')`);
 });
 
+// ---------- Parcerias (05/11/2026): tipo "parceiros" ----------
+// Outro banco, com o schema.sql e o parcerias.sql (o de cima só tem o schema).
+test("parcerias: avisos_dados traz os pendentes só do gerente dono com a chave Parceiros, e cada um sai uma vez", async () => {
+  const pg = new PGlite();
+  const parcerias = readFileSync(new URL("../parcerias.sql", import.meta.url), "utf8");
+  const q = async (sql, p) => (await pg.query(sql, p)).rows;
+  async function sob(n, fn) {
+    const papel = n === "servico" ? "service_role" : n ? "authenticated" : "anon";
+    const sub = typeof n === "number" && n ? id(n) : "";
+    await pg.exec(`set role ${papel}; select set_config('request.jwt.claim.sub', '${sub}', false);`);
+    try {
+      return await fn();
+    } finally {
+      await pg.exec(`reset role; select set_config('request.jwt.claim.sub', '', false);`);
+    }
+  }
+  await pg.exec(`
+    create role anon nologin; create role authenticated nologin; create role service_role nologin;
+    create schema auth;
+    create table auth.users (id uuid primary key default gen_random_uuid(), email text, raw_user_meta_data jsonb default '{}');
+    create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+    grant usage on schema auth to anon, authenticated, service_role;
+    grant usage on schema public to anon, authenticated, service_role;
+  `);
+  await pg.exec(schema);
+  await pg.exec(parcerias);
+  await pg.exec(schema); // o schema roda de novo por cima do parcerias.sql
+  const G1 = 11, G2 = 12, CO = 13;
+  for (const [n, nome] of [[G1, "Gerente Um"], [G2, "Gerente Dois"], [CO, "Corretor"]])
+    await pg.query(`insert into auth.users (id, email, raw_user_meta_data) values ($1, $2, $3)`, [id(n), `u${n}@x.com`, { nome }]);
+  await pg.exec(`
+    update public.profiles set perfil = 'gerente', ativo = true where id in ('${id(G1)}', '${id(G2)}');
+    insert into public.teams (nome, gerente_id) values ('Um', '${id(G1)}');
+    update public.profiles set ativo = true, equipe_id = (select id from public.teams) where id = '${id(CO)}';
+  `);
+  const dadosP = async () => (await sob("servico", () => q(`select public.avisos_dados() d`)))[0].d.parceiros;
+
+  // a chave "parceiros" é aceita; tipo desconhecido não
+  await sob(G1, () => pg.exec(`select public.push_assinar('${FCM("g1")}', 'BPk3', 'a1b2', '{contato,parceiros}', 'Android')`));
+  await sob(G2, () => pg.exec(`select public.push_assinar('${FCM("g2")}', 'BPk3', 'a1b2', null, 'Android')`));
+  await sob(CO, () => pg.exec(`select public.push_assinar('${FCM("co")}', 'BPk3', 'a1b2', '{parceiros}', 'Android')`));
+  await assert.rejects(sob(G2, () => pg.exec(`select public.push_assinar('${FCM("g2x")}', 'BPk3', 'a1b2', '{parceiros,outro}', null)`)), /Tipo de aviso inválido/);
+
+  // dois parceiros pelo link (anônimo): a roleta dá um a cada gerente, com o aviso "recebido"
+  for (const [nome, w] of [["Rita Lopes", "11988887771"], ["Caio Dias", "11988887772"]])
+    await sob(0, () => pg.query(`select public.parceiro_enviar(p_nome => $1, p_empresa => 'Imob', p_whatsapp => $2, p_creci => null, p_email => null)`, [nome, w]));
+  const dono = Object.fromEntries((await q(`select nome, gerente_id from public.parceiros`)).map((r) => [r.nome, r.gerente_id]));
+  assert.notEqual(dono["Rita Lopes"], dono["Caio Dias"]);
+  const deG1 = dono["Rita Lopes"] === id(G1) ? "Rita Lopes" : "Caio Dias";
+
+  // só o G1 tem a chave ligada: vem só o aviso dele, com o nome do parceiro dele
+  let p = await dadosP();
+  assert.deepEqual(p.map((x) => [x.gerente_id, x.tipo, x.nome, x.do_gerente]), [[id(G1), "recebido", deG1, true]]);
+
+  // o G2 liga a chave: vem o dele também; o corretor (sem parceiros.cadastrar) nunca
+  await sob(G2, () => pg.exec(`select public.push_assinar('${FCM("g2")}', 'BPk3', 'a1b2', '{parceiros}', 'Android')`));
+  p = await dadosP();
+  assert.equal(p.length, 2);
+  for (const x of p) assert.equal(dono[x.nome], x.gerente_id, "cada aviso só com o parceiro do próprio gerente");
+  assert.ok(!p.some((x) => x.gerente_id === id(CO)));
+
+  // sem parceiros.cadastrar no catálogo, o gerente sai da lista
+  await pg.exec(`delete from public.role_permissions where perfil = 'gerente' and permissao = 'parceiros.cadastrar'`);
+  assert.deepEqual(await dadosP(), []);
+  await pg.exec(`insert into public.role_permissions (perfil, permissao) values ('gerente', 'parceiros.cadastrar')`);
+
+  // o parceiro do G1 passa para o G2 antes do envio: o aviso do G1 vem sem nome nem empresa
+  await pg.query(`update public.parceiros set gerente_id = $1 where nome = $2`, [id(G2), deG1]);
+  const doG1 = (await dadosP()).find((x) => x.gerente_id === id(G1));
+  assert.equal(doG1.do_gerente, false);
+  assert.equal(doG1.nome, null);
+  assert.equal(doG1.empresa, null);
+  await pg.query(`update public.parceiros set gerente_id = $1 where nome = $2`, [id(G1), deG1]);
+
+  // marcar: some da lista e não volta (cada aviso sai uma vez)
+  const ids = (await dadosP()).map((x) => x.id);
+  assert.equal((await sob("servico", () => q(`select public.parceiros_avisos_marcar($1) n`, [ids])))[0].n, 2);
+  assert.deepEqual(await dadosP(), []);
+  assert.equal((await sob("servico", () => q(`select public.parceiros_avisos_marcar($1) n`, [ids])))[0].n, 0);
+  // o push_log também não repete a chave do aviso (o cron e o gatilho ao mesmo tempo)
+  const item = [{ usuario_id: id(G1), chave: `parceiro:${ids[0]}` }];
+  const r1 = await sob("servico", () => q(`select public.avisos_registrar($1::jsonb) r`, [JSON.stringify(item)]));
+  const r2 = await sob("servico", () => q(`select public.avisos_registrar($1::jsonb) r`, [JSON.stringify(item)]));
+  assert.equal(r1[0].r.length, 1);
+  assert.equal(r2[0].r.length, 0);
+
+  // próximo contato: vem com o dia combinado; se o gerente registra outra
+  // interação antes do envio, o dia vem nulo (a função só marca, sem texto velho)
+  const [{ pid }] = await q(`select id as pid from public.parceiros where nome = $1`, [deG1]);
+  await pg.query(`insert into public.parceiro_interacoes (parceiro_id, tipo, resumo, proximo_contato, criado_por)
+                  values ($1, 'ligacao', 'Combinamos visita', (now() at time zone 'America/Sao_Paulo')::date, $2)`, [pid, id(G1)]);
+  await pg.exec(`select private.parceiros_gerar_avisos()`);
+  let pc = (await dadosP()).filter((x) => x.tipo === "proximo_contato");
+  assert.equal(pc.length, 1);
+  assert.ok(pc[0].proximo_contato, "vem o dia combinado");
+  await pg.query(`insert into public.parceiro_interacoes (parceiro_id, tipo, resumo, criado_por, criado_em) values ($1, 'whatsapp', 'Falei de novo', $2, now() + interval '1 minute')`, [pid, id(G1)]);
+  pc = (await dadosP()).filter((x) => x.tipo === "proximo_contato");
+  assert.equal(pc[0].proximo_contato, null);
+  await pg.close();
+});
+
 test("schema roda de novo com assinaturas e log gravados", async () => {
   await db.exec(schema);
   assert.ok((await linhas(`select count(*)::int n from public.push_log`))[0].n > 0);

@@ -31,7 +31,8 @@ function comoDesbloquear() {
 
 export function AvisosNesteAparelho() {
   const { pode } = useSessao();
-  // "Equipe" só para quem vê a equipe (item 28); quem não vê nunca grava esse tipo.
+  // "Equipe" só para quem vê a equipe (item 28) e "Parceiros" só para quem cadastra
+  // parceiros (05/11/2026); quem não vê nunca grava esses tipos.
   const visiveis = tiposDoAparelho(pode);
   const soVisiveis = (ts: TipoAviso[]) => ts.filter((t) => visiveis.some((v) => v.slug === t));
   const [disp, setDisp] = useState<Disponibilidade | null>(null);

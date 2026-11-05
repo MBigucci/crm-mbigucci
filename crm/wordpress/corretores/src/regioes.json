@@ -1,0 +1,182 @@
+[
+  {
+    "codigo": "santo_andre",
+    "nome": "Santo André",
+    "cidade": "Santo André",
+    "ordem": 100
+  },
+  {
+    "codigo": "sa_centro",
+    "nome": "Centro",
+    "cidade": "Santo André",
+    "ordem": 101
+  },
+  {
+    "codigo": "sa_jardim",
+    "nome": "Jardim",
+    "cidade": "Santo André",
+    "ordem": 102
+  },
+  {
+    "codigo": "sa_vila_assuncao",
+    "nome": "Vila Assunção",
+    "cidade": "Santo André",
+    "ordem": 103
+  },
+  {
+    "codigo": "sa_campestre",
+    "nome": "Campestre",
+    "cidade": "Santo André",
+    "ordem": 104
+  },
+  {
+    "codigo": "sa_vila_bastos",
+    "nome": "Vila Bastos",
+    "cidade": "Santo André",
+    "ordem": 105
+  },
+  {
+    "codigo": "sa_utinga",
+    "nome": "Utinga",
+    "cidade": "Santo André",
+    "ordem": 106
+  },
+  {
+    "codigo": "sa_parque_das_nacoes",
+    "nome": "Parque das Nações",
+    "cidade": "Santo André",
+    "ordem": 107
+  },
+  {
+    "codigo": "sa_vila_luzita",
+    "nome": "Vila Luzita",
+    "cidade": "Santo André",
+    "ordem": 108
+  },
+  {
+    "codigo": "sao_bernardo",
+    "nome": "São Bernardo do Campo",
+    "cidade": "São Bernardo do Campo",
+    "ordem": 200
+  },
+  {
+    "codigo": "sbc_centro",
+    "nome": "Centro",
+    "cidade": "São Bernardo do Campo",
+    "ordem": 201
+  },
+  {
+    "codigo": "sbc_rudge_ramos",
+    "nome": "Rudge Ramos",
+    "cidade": "São Bernardo do Campo",
+    "ordem": 202
+  },
+  {
+    "codigo": "sbc_baeta_neves",
+    "nome": "Baeta Neves",
+    "cidade": "São Bernardo do Campo",
+    "ordem": 203
+  },
+  {
+    "codigo": "sbc_nova_petropolis",
+    "nome": "Nova Petrópolis",
+    "cidade": "São Bernardo do Campo",
+    "ordem": 204
+  },
+  {
+    "codigo": "sbc_jardim_do_mar",
+    "nome": "Jardim do Mar",
+    "cidade": "São Bernardo do Campo",
+    "ordem": 205
+  },
+  {
+    "codigo": "sbc_anchieta",
+    "nome": "Anchieta",
+    "cidade": "São Bernardo do Campo",
+    "ordem": 206
+  },
+  {
+    "codigo": "sbc_assuncao",
+    "nome": "Assunção",
+    "cidade": "São Bernardo do Campo",
+    "ordem": 207
+  },
+  {
+    "codigo": "sbc_planalto",
+    "nome": "Planalto",
+    "cidade": "São Bernardo do Campo",
+    "ordem": 208
+  },
+  {
+    "codigo": "sbc_demarchi",
+    "nome": "Demarchi",
+    "cidade": "São Bernardo do Campo",
+    "ordem": 209
+  },
+  {
+    "codigo": "sbc_ferrazopolis",
+    "nome": "Ferrazópolis",
+    "cidade": "São Bernardo do Campo",
+    "ordem": 210
+  },
+  {
+    "codigo": "sao_caetano",
+    "nome": "São Caetano do Sul",
+    "cidade": "São Caetano do Sul",
+    "ordem": 300
+  },
+  {
+    "codigo": "diadema",
+    "nome": "Diadema",
+    "cidade": "Diadema",
+    "ordem": 400
+  },
+  {
+    "codigo": "maua",
+    "nome": "Mauá",
+    "cidade": "Mauá",
+    "ordem": 500
+  },
+  {
+    "codigo": "ribeirao_pires",
+    "nome": "Ribeirão Pires",
+    "cidade": "Ribeirão Pires",
+    "ordem": 600
+  },
+  {
+    "codigo": "rio_grande_da_serra",
+    "nome": "Rio Grande da Serra",
+    "cidade": "Rio Grande da Serra",
+    "ordem": 700
+  },
+  {
+    "codigo": "sp_centro",
+    "nome": "Centro",
+    "cidade": "São Paulo",
+    "ordem": 800
+  },
+  {
+    "codigo": "sp_zona_sul",
+    "nome": "Zona Sul",
+    "cidade": "São Paulo",
+    "ordem": 810
+  },
+  {
+    "codigo": "sp_zona_leste",
+    "nome": "Zona Leste",
+    "cidade": "São Paulo",
+    "ordem": 820
+  },
+  {
+    "codigo": "sp_zona_norte",
+    "nome": "Zona Norte",
+    "cidade": "São Paulo",
+    "ordem": 830
+  },
+  {
+    "codigo": "sp_zona_oeste",
+    "nome": "Zona Oeste",
+    "cidade": "São Paulo",
+    "ordem": 840
+  }
+]

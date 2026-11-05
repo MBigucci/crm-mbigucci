@@ -3325,10 +3325,11 @@ $$;
 
 alter table public.push_assinaturas drop constraint if exists push_assinaturas_tipos;
 alter table public.push_assinaturas add constraint push_assinaturas_tipos
-  check (tipos <@ '{contato,visita,atribuido,prazo,resumo,equipe}'::text[]);
+  check (tipos <@ '{contato,visita,atribuido,prazo,resumo,equipe,parceiros}'::text[]);
 
--- Aceita "equipe". Sem tipos, o aparelho novo continua com os 5 de sempre:
--- o "equipe" só entra quando o app manda (o card só mostra para quem vê a equipe).
+-- Aceita "equipe" e "parceiros" (05/11/2026). Sem tipos, o aparelho novo
+-- continua com os 5 de sempre: esses dois só entram quando o app manda (o card
+-- só mostra para quem vê a equipe ou cadastra parceiros).
 create or replace function public.push_assinar(
   p_endpoint text, p_p256dh text, p_auth text, p_tipos text[] default null, p_aparelho text default null)
 returns void
@@ -3337,7 +3338,7 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_aceitos constant text[] := '{contato,visita,atribuido,prazo,resumo,equipe}';
+  v_aceitos constant text[] := '{contato,visita,atribuido,prazo,resumo,equipe,parceiros}';
   v_padrao constant text[] := '{contato,visita,atribuido,prazo,resumo}';
 begin
   if public.current_perfil() is null then
@@ -3373,13 +3374,23 @@ grant execute on function public.push_assinar(text, text, text, text[], text) to
 -- equipes dele. Os leads e as visitas desses corretores entram também (mesmo
 -- sem aparelho), para o prazo estourado e a baixa da equipe. Os privilégios
 -- do item 15 continuam valendo (create or replace não mexe neles).
+-- Parcerias (05/11/2026, tipo "parceiros"): "parceiros" traz, na mesma leitura,
+-- os avisos pendentes de parceiro_avisos dos gerentes ativos que têm
+-- parceiros.cadastrar no catálogo e um aparelho com o tipo ligado. Nome e
+-- empresa só vêm quando o parceiro ainda é daquele gerente (do_gerente);
+-- senão, a função só marca o aviso, sem mandar. Sem o parcerias.sql a lista
+-- vem vazia: por isso plpgsql com execute (o schema roda sem as tabelas dele).
 create or replace function public.avisos_dados()
 returns jsonb
-language sql
+language plpgsql
 stable
 security definer
 set search_path = ''
 as $$
+declare
+  v_dados jsonb;
+  v_parceiros jsonb;
+begin
   with quem as (
     select distinct a.usuario_id
     from public.push_assinaturas a
@@ -3437,5 +3448,43 @@ as $$
     'equipes', (select coalesce(jsonb_agg(jsonb_build_object('gerente_id', e.gerente_id, 'membros', e.membros)), '[]')
                 from (select gerente_id, jsonb_agg(jsonb_build_object('id', id, 'nome', nome) order by nome) membros
                       from membros group by gerente_id) e)
-  );
+  ) into v_dados;
+
+  if to_regclass('public.parceiro_avisos') is not null then
+    execute $q$
+      with donos as (
+        select g.id
+        from public.profiles g
+        where g.ativo
+          and exists (select 1 from public.role_permissions rp where rp.perfil = g.perfil and rp.permissao = 'parceiros.cadastrar')
+          and exists (select 1 from public.push_assinaturas s where s.usuario_id = g.id and 'parceiros' = any (s.tipos))
+      )
+      select coalesce(jsonb_agg(jsonb_build_object(
+               'id', x.id, 'gerente_id', x.gerente_id, 'tipo', x.tipo, 'criado_em', x.criado_em,
+               'parceiro_id', x.parceiro_id, 'do_gerente', x.do_gerente,
+               'nome', case when x.do_gerente then x.nome end,
+               'empresa', case when x.do_gerente then x.empresa end,
+               'dias_sem_interacao', case when x.do_gerente then x.dias end,
+               -- só se aquela interação ainda é a última do gerente; senão nulo e a função só marca
+               'proximo_contato', case when x.do_gerente and x.tipo = 'proximo_contato' then
+                                    (select i.proximo_contato from public.parceiro_interacoes i
+                                     where x.chave = 'proximo:' || i.id
+                                       and not exists (select 1 from public.parceiro_interacoes j
+                                                       where j.parceiro_id = i.parceiro_id and j.criado_por = i.criado_por
+                                                         and j.criado_em > i.criado_em)) end)
+             order by x.id), '[]'::jsonb)
+      from (
+        select a.id, a.gerente_id, a.tipo, a.chave, a.criado_em, p.id as parceiro_id, p.nome, p.empresa,
+               (p.ativo and p.gerente_id is not distinct from a.gerente_id) as do_gerente,
+               floor(extract(epoch from (now() - p.prazo_desde)) / 86400)::int as dias
+        from public.parceiro_avisos a
+        join public.parceiros p on p.id = a.parceiro_id
+        where a.enviado_em is null
+          and a.gerente_id in (select id from donos)
+      ) x
+    $q$ into v_parceiros;
+  end if;
+
+  return v_dados || jsonb_build_object('parceiros', coalesce(v_parceiros, '[]'::jsonb));
+end;
 $$;

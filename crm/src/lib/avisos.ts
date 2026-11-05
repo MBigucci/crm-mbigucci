@@ -1,7 +1,7 @@
 // Os tipos de aviso no celular, com o nome e a explicação de Minha conta. Puro,
 // testado em avisos.test.ts contra a Edge Function. Regras em docs/notificacoes.md.
 
-export type TipoAviso = "contato" | "visita" | "atribuido" | "prazo" | "resumo" | "equipe";
+export type TipoAviso = "contato" | "visita" | "atribuido" | "prazo" | "resumo" | "equipe" | "parceiros";
 
 type TipoNaTela = {
   slug: TipoAviso;
@@ -27,6 +27,12 @@ export const TIPOS_AVISO: TipoNaTela[] = [
     nome: "Equipe",
     explica: "Quando um lead da empresa estoura o prazo de 15 min e, no fim do dia, as visitas da equipe que aguardam baixa.",
     exige: "dados.ver_equipe",
+  },
+  {
+    slug: "parceiros",
+    nome: "Parceiros",
+    explica: "Parceiro novo para você, parceiro que procurou de novo, próximo contato do dia e quando faltam 10 dias para perder o parceiro.",
+    exige: "parceiros.cadastrar",
   },
 ];
 

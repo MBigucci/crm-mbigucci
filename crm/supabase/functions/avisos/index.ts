@@ -20,8 +20,8 @@
 // Regras: quem recebe o quê, e quando
 // ====================================================================
 
-export type TipoAviso = "contato" | "visita" | "atribuido" | "prazo" | "resumo" | "equipe";
-export const TIPOS_AVISO: TipoAviso[] = ["contato", "visita", "atribuido", "prazo", "resumo", "equipe"];
+export type TipoAviso = "contato" | "visita" | "atribuido" | "prazo" | "resumo" | "equipe" | "parceiros";
+export const TIPOS_AVISO: TipoAviso[] = ["contato", "visita", "atribuido", "prazo", "resumo", "equipe", "parceiros"];
 
 export type HorarioAvisos = { dias: number[]; inicio: string; fim: string };
 export const HORARIO_PADRAO: HorarioAvisos = { dias: [0, 1, 2, 3, 4, 5, 6], inicio: "09:00", fim: "19:00" };
@@ -59,6 +59,25 @@ export type AniversarioAviso = { lead_id: string; dono_id: string; nome: string;
  */
 export type EquipeAviso = { gerente_id: string; membros: { id: string; nome: string }[] };
 
+/**
+ * Parcerias (05/11/2026): um aviso pendente de parceiro_avisos, do gerente que
+ * tem o tipo "parceiros" ligado. Nome, empresa, dias e próximo contato só vêm
+ * quando o parceiro ainda é dele (do_gerente); senão, o aviso só é marcado.
+ */
+export type ParceiroAviso = {
+  id: number;
+  gerente_id: string;
+  tipo: "recebido" | "reentrada" | "prazo_80" | "proximo_contato";
+  criado_em: string;
+  parceiro_id: string;
+  do_gerente: boolean;
+  nome: string | null;
+  empresa: string | null;
+  dias_sem_interacao: number | null;
+  /** "2026-11-05", só no tipo proximo_contato. */
+  proximo_contato: string | null;
+};
+
 export type Assinatura = { endpoint: string; usuario_id: string; p256dh: string; auth: string; tipos: string[] };
 
 /** O que avisos_dados() devolve. */
@@ -71,6 +90,8 @@ export type DadosAvisos = {
   aniversarios?: AniversarioAviso[];
   /** Vem do SQL do item 28; sem ele, o gerente não recebe os avisos da equipe. */
   equipes?: EquipeAviso[];
+  /** Vem do schema.sql com o parcerias.sql; sem eles, nenhum aviso de parceiro. */
+  parceiros?: ParceiroAviso[];
 };
 
 export type Aviso = {
@@ -88,6 +109,8 @@ export type Aviso = {
   nome?: string;
   /** Prazo estourado na equipe: o corretor do lead, para juntar vários num aviso só. */
   corretor?: string;
+  /** Parcerias: os ids de parceiro_avisos que este aviso cobre (marcados depois do envio). */
+  parceiroAvisos?: number[];
 };
 
 /** Lead da empresa: o único com prazo de primeiro contato (docs/leads.md, seção 4). */
@@ -100,6 +123,10 @@ export const PRAZO_AVISO_MIN = 6;
 export const ATRASO_MAX_MIN = 30;
 /** Mais que isso de contatos (ou de prazos estourados na equipe) na mesma rodada vira um aviso só. */
 export const CONTATOS_JUNTOS = 3;
+/** Aviso de parceiro mais velho que isso não sai mais: só é marcado (quem liga a chave depois não recebe a pilha). */
+export const PARCEIRO_VALIDADE_H = 72;
+/** O parceiro é perdido com 90 dias sem interação (parcerias.sql). */
+const PARCEIRO_LIMITE_DIAS = 90;
 /** Resumo do dia e aguardando baixa: janela depois da hora, para uma rodada perdida não perder o aviso. */
 const JANELA_DIA_MIN = 60;
 
@@ -189,6 +216,7 @@ const aguardaPrimeiroContato = (l: LeadAviso) => l.origem === ORIGEM_COM_PRAZO &
  * - Prazo de 15 min: faltando 5 min e quando estoura (até 30 min depois).
  * - Resumo do dia: na abertura do atendimento (9h no padrão), nos dias de atendimento.
  * - Equipe (item 28, para o gerente): avisosDaEquipe, logo abaixo.
+ * - Parceiros (05/11/2026, para o gerente dono): avisosDeParceiros.
  */
 export function montarAvisos(d: DadosAvisos, agora: Date): Aviso[] {
   const horario = d.horario && horarioValido(d.horario) ? d.horario : HORARIO_PADRAO;
@@ -340,7 +368,85 @@ export function montarAvisos(d: DadosAvisos, agora: Date): Aviso[] {
   }
 
   avisos.push(...avisosDaEquipe(d, agora, horario));
+  if (aberto) avisos.push(...avisosDeParceiros(d, agora));
   return avisos;
+}
+
+/**
+ * O aviso ainda vale? Entre a rotina (7h) e o envio (na abertura) o gerente pode
+ * ter registrado um contato: o prazo recomeça (menos de 80 dias) ou o próximo
+ * contato deixa de ser o da última interação (o banco manda nulo). Aí só marca.
+ */
+const parceiroValido = (p: ParceiroAviso, agora: Date) =>
+  p.do_gerente &&
+  !!p.nome?.trim() &&
+  agora.getTime() - new Date(p.criado_em).getTime() < PARCEIRO_VALIDADE_H * 60 * MIN &&
+  !(p.tipo === "prazo_80" && (p.dias_sem_interacao ?? 0) < PARCEIRO_LIMITE_DIAS - 10) &&
+  !(p.tipo === "proximo_contato" && !p.proximo_contato);
+
+/**
+ * Parcerias (05/11/2026), para o gerente dono (tipo "parceiros"). Um aviso por
+ * pendente de parceiro_avisos, só dentro do horário de atendimento (a rotina
+ * diária e o link podem gerar de madrugada; o aviso espera a abertura):
+ * - recebido: parceiro novo para ele (roleta, estande ou 90 dias de outro);
+ * - reentrada: o parceiro dele procurou a MBigucci de novo;
+ * - prazo_80: faltam 10 dias para perder o parceiro;
+ * - proximo_contato: chegou (ou passou) o dia do próximo contato combinado.
+ * Vai só para o gerente_id do pendente, com o nome só do parceiro dele.
+ */
+function avisosDeParceiros(d: DadosAvisos, agora: Date): Aviso[] {
+  const hoje = emSP(agora).data;
+  const avisos: Aviso[] = [];
+  for (const p of d.parceiros ?? []) {
+    if (!parceiroValido(p, agora)) continue;
+    const nome = p.nome!.trim();
+    const empresa = p.empresa?.trim();
+    const quem = empresa && empresa !== nome ? `${nome} · ${empresa}` : nome;
+    let titulo: string;
+    let corpo: string;
+    if (p.tipo === "recebido") {
+      titulo = "Parceiro novo para você";
+      corpo = `${quem}. Faça o primeiro contato.`;
+    } else if (p.tipo === "reentrada") {
+      titulo = "Parceiro procurou de novo";
+      corpo = `${quem} procurou a MBigucci de novo. Retome o contato.`;
+    } else if (p.tipo === "prazo_80") {
+      const dias = p.dias_sem_interacao!;
+      const faltam = Math.max(1, PARCEIRO_LIMITE_DIAS - dias);
+      titulo = faltam === 1 ? "Falta 1 dia para perder o parceiro" : `Faltam ${faltam} dias para perder o parceiro`;
+      corpo = `${quem}. ${dias} dias sem interação. Registre um contato.`;
+    } else {
+      const dia = p.proximo_contato!;
+      titulo = dia >= hoje ? "Contato com parceiro hoje" : "Contato com parceiro vencido";
+      corpo = dia >= hoje ? `${quem}. Combinado para hoje.` : `${quem}. Combinado para ${dia.slice(8, 10)}/${dia.slice(5, 7)}.`;
+    }
+    avisos.push({
+      usuario_id: p.gerente_id,
+      tipo: "parceiros",
+      chaves: [`parceiro:${p.id}`],
+      titulo,
+      corpo,
+      url: `parceiros/ficha/?id=${p.parceiro_id}`,
+      tag: `parceiro-${p.parceiro_id}`,
+      nome,
+      parceiroAvisos: [p.id],
+    });
+  }
+  return avisos;
+}
+
+/**
+ * Pendentes de parceiro que nunca vão sair e só são marcados: o parceiro mudou
+ * de gerente ou saiu, ou o aviso passou de PARCEIRO_VALIDADE_H.
+ */
+export function parceirosParaDescartar(d: DadosAvisos, agora: Date): number[] {
+  return (d.parceiros ?? []).filter((p) => !parceiroValido(p, agora)).map((p) => p.id);
+}
+
+/** Os ids de parceiro_avisos a marcar depois do envio: todos os enviados, menos os que voltam para a próxima rodada. */
+export function parceirosParaMarcar(enviados: Aviso[], deNovo: Aviso[]): number[] {
+  const voltam = new Set(deNovo);
+  return enviados.filter((a) => !voltam.has(a)).flatMap((a) => a.parceiroAvisos ?? []);
 }
 
 /**
@@ -432,12 +538,19 @@ export function soNovos(avisos: Aviso[], registrados: { usuario_id: string; chav
 
 /**
  * Mais de CONTATOS_JUNTOS contatos da mesma pessoa na mesma rodada viram um
- * aviso só. O mesmo vale para os prazos estourados na equipe, para o gerente.
+ * aviso só. O mesmo vale para os prazos estourados na equipe, para o gerente,
+ * e para os avisos de parceiros (a abertura pode juntar os da madrugada).
  */
 export function juntarContatos(avisos: Aviso[]): Aviso[] {
   const grupoDe = (a: Aviso) =>
-    a.tipo === "contato" ? "contato" : a.tipo === "equipe" && a.tag.startsWith("equipe-lead-") ? "equipe" : null;
-  const grupos = new Map<string, { grupo: "contato" | "equipe"; usuario: string; avisos: Aviso[] }>();
+    a.tipo === "contato"
+      ? "contato"
+      : a.tipo === "equipe" && a.tag.startsWith("equipe-lead-")
+        ? "equipe"
+        : a.tipo === "parceiros"
+          ? "parceiros"
+          : null;
+  const grupos = new Map<string, { grupo: "contato" | "equipe" | "parceiros"; usuario: string; avisos: Aviso[] }>();
   for (const a of avisos) {
     const grupo = grupoDe(a);
     if (!grupo) continue;
@@ -460,6 +573,17 @@ export function juntarContatos(avisos: Aviso[]): Aviso[] {
         corpo: `${listaDeNomes(cs.map((c) => c.nome ?? ""))}. Veja a lista do dia.`,
         url: "",
         tag: "contatos",
+      });
+    } else if (grupo === "parceiros") {
+      out.push({
+        usuario_id: usuario,
+        tipo: "parceiros",
+        chaves,
+        titulo: `${cs.length} avisos de parceiros`,
+        corpo: `${listaDeNomes([...new Set(cs.map((c) => c.nome ?? ""))])}. Veja seus parceiros.`,
+        url: "parceiros/",
+        tag: "parceiros",
+        parceiroAvisos: cs.flatMap((c) => c.parceiroAvisos ?? []),
       });
     } else {
       out.push({
@@ -610,7 +734,7 @@ export async function cabecalhoVapid(
 export type Vapid = { publica: string; privada: string; assunto: string };
 
 /** Por quanto tempo o serviço de push guarda o aviso se o aparelho estiver desligado. */
-const VALIDADE: Record<TipoAviso, number> = { contato: 3600, visita: 3600, atribuido: 3600, prazo: 1800, resumo: 4 * 3600, equipe: 1800 };
+const VALIDADE: Record<TipoAviso, number> = { contato: 3600, visita: 3600, atribuido: 3600, prazo: 1800, resumo: 4 * 3600, equipe: 1800, parceiros: 4 * 3600 };
 
 /** Manda um aviso para um aparelho. "removido": o aparelho não existe mais e sai do banco. */
 export async function enviar(
@@ -675,7 +799,11 @@ async function rpc<T>(amb: Ambiente, nome: string, args: Record<string, unknown>
 async function rodada(amb: Ambiente) {
   await rpc(amb, "avisos_limpar");
   const dados = await rpc<DadosAvisos & { agora: string }>(amb, "avisos_dados");
-  const candidatos = comDestino(montarAvisos(dados, new Date(dados.agora)), dados.assinaturas);
+  const agora = new Date(dados.agora);
+  // Parcerias: o que nunca vai sair (parceiro de outro gerente, aviso velho) só é marcado.
+  const descartar = parceirosParaDescartar(dados, agora);
+  if (descartar.length) await rpc(amb, "parceiros_avisos_marcar", { p_ids: descartar });
+  const candidatos = comDestino(montarAvisos(dados, agora), dados.assinaturas);
   if (!candidatos.length) return { avisos: 0, enviados: 0, falhas: 0, removidos: 0 };
 
   const registrados = await rpc<{ usuario_id: string; chave: string }[]>(amb, "avisos_registrar", {
@@ -697,6 +825,10 @@ async function rodada(amb: Ambiente) {
   if (removidos.length) await rpc(amb, "push_esquecer", { p_endpoints: removidos });
   const deNovo = paraTentarDeNovo(resultados);
   if (deNovo.length) await rpc(amb, "avisos_desmarcar", { p_itens: itensDoLog(deNovo) });
+  // Parcerias: marca o que saiu (ou cujo aparelho sumiu). O que falhou volta na
+  // próxima rodada; quem impede mandar em dobro é o push_log (avisos_registrar).
+  const marcar = parceirosParaMarcar(avisos, deNovo);
+  if (marcar.length) await rpc(amb, "parceiros_avisos_marcar", { p_ids: marcar });
 
   return {
     avisos: avisos.length,

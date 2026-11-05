@@ -1,0 +1,74 @@
+<section id="mbParceiro" aria-labelledby="mbpTitulo">
+  <div class="mbp-caixa">
+    <div class="mbp-card">
+      <h2 id="mbpTitulo" class="mbp-titulo">Quero ser parceiro</h2>
+      <p class="mbp-intro">Deixe seu nome e WhatsApp. Um gerente da MBigucci fala com você.</p>
+
+      <form id="mbpForm" class="mbp-form" novalidate>
+        <div class="mbp-grade">
+          <div class="mbp-campo mbp-largo">
+            <label for="mbpNome">Nome</label>
+            <input id="mbpNome" name="nome" type="text" autocomplete="name" maxlength="120" required aria-describedby="mbpNomeErro">
+            <p id="mbpNomeErro" class="mbp-erro" hidden></p>
+          </div>
+          <div class="mbp-campo">
+            <label for="mbpWhatsapp">WhatsApp</label>
+            <input id="mbpWhatsapp" name="whatsapp" type="tel" inputmode="tel" autocomplete="tel" maxlength="30" placeholder="(11) 98888-7777" required aria-describedby="mbpWhatsappErro">
+            <p id="mbpWhatsappErro" class="mbp-erro" hidden></p>
+          </div>
+          <div class="mbp-campo">
+            <label for="mbpCreci">CRECI <span class="mbp-opcional">se tiver</span></label>
+            <input id="mbpCreci" name="creci" type="text" autocomplete="off" maxlength="30" placeholder="123456-F" aria-describedby="mbpCreciErro">
+            <p id="mbpCreciErro" class="mbp-erro" hidden></p>
+          </div>
+        </div>
+
+        <details id="mbpMais" class="mbp-mais">
+          <summary>Mais dados (opcional)</summary>
+          <div class="mbp-grade mbp-mais-corpo">
+            <div class="mbp-campo">
+              <label for="mbpEmpresa">Empresa ou imobiliária</label>
+              <input id="mbpEmpresa" name="empresa" type="text" autocomplete="organization" maxlength="120" aria-describedby="mbpEmpresaErro">
+              <p id="mbpEmpresaErro" class="mbp-erro" hidden></p>
+            </div>
+            <div class="mbp-campo">
+              <label for="mbpEmail">E-mail</label>
+              <input id="mbpEmail" name="email" type="email" inputmode="email" autocomplete="email" maxlength="160" placeholder="voce@email.com" aria-describedby="mbpEmailErro">
+              <p id="mbpEmailErro" class="mbp-erro" hidden></p>
+            </div>
+          </div>
+          <fieldset class="mbp-regioes" aria-describedby="mbpRegioesErro">
+            <legend>Onde você atua</legend>
+            <div class="mbp-opcoes">
+__REGIOES__
+              <label class="mbp-opcao"><input type="checkbox" id="mbpOutra" name="outra" value="1"><span>Outra</span></label>
+            </div>
+            <div id="mbpOutraCampo" class="mbp-campo mbp-outra" hidden>
+              <label for="mbpRegiaoOutra">Qual cidade ou região</label>
+              <input id="mbpRegiaoOutra" name="regiaoOutra" type="text" maxlength="160" aria-describedby="mbpRegiaoOutraErro">
+              <p id="mbpRegiaoOutraErro" class="mbp-erro" hidden></p>
+            </div>
+            <p id="mbpRegioesErro" class="mbp-erro" hidden></p>
+          </fieldset>
+        </details>
+
+        <div class="mbp-isca" aria-hidden="true">
+          <label for="mbpSite">Deixe este campo vazio</label>
+          <input id="mbpSite" name="site" type="text" tabindex="-1" autocomplete="off">
+        </div>
+
+        <p id="mbpAviso" class="mbp-aviso" role="status" aria-live="polite" hidden></p>
+
+        <div class="mbp-acoes">
+          <button id="mbpEnviar" class="mbp-botao" type="submit">Enviar cadastro</button>
+        </div>
+        <p class="mbp-legal">Ao enviar, você autoriza o contato da MBigucci e parceiros. CRECI 19682-J.</p>
+      </form>
+
+      <div id="mbpPronto" class="mbp-pronto" hidden>
+        <p class="mbp-ok" role="status" tabindex="-1"><span aria-hidden="true">✓</span> <span id="mbpProntoTexto"></span></p>
+        <button id="mbpOutro" class="mbp-link" type="button">Cadastrar outra pessoa</button>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,96 @@
+/* Cadastro de parceiro da página /corretores/, no padrão do tema do site
+   (Felipe, 05/11/2026: "fugiu do tema"): o mesmo card, rótulos, campos e botão
+   do formulário antigo (.mb-cf7 e .btn-red do app.css do tema). As cores vêm
+   das variáveis do tema (--color-*), com o valor delas de reserva para a página
+   avulsa. Tudo preso a #mbParceiro, variáveis --mbp-* e medidas em px (o tema
+   mexe no tamanho da raiz). Classes próprias começam com mbp-. Sem fontes
+   externas: o tema já carrega a Bricolage Grotesque e a Inter. */
+#mbParceiro{
+  --mbp-brand:var(--color-brand,#e11119);--mbp-brand-deep:var(--color-brand-deep,#b90d14);
+  --mbp-ink:var(--color-ink,#17181c);--mbp-ink-soft:var(--color-ink-soft,#41434a);
+  --mbp-line:var(--color-line,#e6e3dc);--mbp-paper:var(--color-paper,#f6f5f1);
+  --mbp-concrete:var(--color-concrete,#9d998f);--mbp-ok:#0b7a45;
+  --mbp-display:var(--font-display,"Bricolage Grotesque","Inter",sans-serif);
+  --mbp-body:var(--font-sans,"Inter",system-ui,sans-serif);
+  display:block;margin:0;padding:clamp(56px,6vw,104px) 0;background:transparent;color:var(--mbp-ink);
+  font-family:var(--mbp-body);font-size:16px;line-height:1.6;text-align:left;
+}
+#mbParceiro *,#mbParceiro *::before,#mbParceiro *::after{box-sizing:border-box}
+#mbParceiro [hidden]{display:none!important}
+#mbParceiro .mbp-caixa{width:min(720px,92vw);margin:0 auto;padding:0}
+/* O card do formulário antigo: borda fina, cantos de 4px e a sombra do tema (shadow-elegant). */
+#mbParceiro .mbp-card{background:#fff;border:1px solid var(--mbp-line);border-radius:4px;padding:36px;
+  box-shadow:0 18px 50px -24px rgba(23,24,28,.45)}
+#mbParceiro .mbp-titulo{margin:0;font-family:var(--mbp-display);font-weight:700;font-size:22px;line-height:1.1;letter-spacing:-.02em;color:var(--mbp-ink)}
+#mbParceiro .mbp-intro{margin:8px 0 24px;font-size:15px;line-height:1.5;color:var(--mbp-ink-soft)}
+#mbParceiro .mbp-form{margin:0}
+#mbParceiro .mbp-grade{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+#mbParceiro .mbp-largo{grid-column:1 / -1}
+#mbParceiro .mbp-campo{display:block;margin:0 0 16px;min-width:0}
+/* Rótulo do tema: pequeno, em maiúsculas, espaçado. */
+#mbParceiro .mbp-campo > label{display:block;margin:0 0 6px;font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mbp-ink-soft);cursor:pointer}
+#mbParceiro .mbp-opcional{font-weight:500;letter-spacing:.06em;color:var(--mbp-ink-soft)}
+#mbParceiro input[type=text],#mbParceiro input[type=tel],#mbParceiro input[type=email]{
+  -webkit-appearance:none;appearance:none;display:block;width:100%;height:auto;margin:0;padding:12px 16px;
+  background:var(--mbp-paper);border:1px solid var(--mbp-line);border-radius:2px;box-shadow:none;outline:none;
+  font-family:var(--mbp-body);font-size:16px;line-height:1.4;color:var(--mbp-ink);transition:border-color .2s}
+#mbParceiro input::placeholder{color:var(--mbp-ink-soft);opacity:1}
+#mbParceiro input[type=text]:focus,#mbParceiro input[type=tel]:focus,#mbParceiro input[type=email]:focus{border-color:var(--mbp-brand)}
+#mbParceiro input[aria-invalid=true]{border-color:var(--mbp-brand)}
+#mbParceiro .mbp-erro{margin:6px 0 0;font-size:13px;font-weight:500;color:var(--mbp-brand-deep)}
+
+/* Mais dados (opcional): fechado; o + vira – quando abre. */
+#mbParceiro .mbp-mais{margin:4px 0 0;border-top:1px solid var(--mbp-line)}
+#mbParceiro .mbp-mais summary{display:flex;align-items:center;gap:8px;min-height:44px;padding:14px 0 6px;list-style:none;cursor:pointer;
+  font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mbp-ink-soft)}
+#mbParceiro .mbp-mais summary::-webkit-details-marker{display:none}
+#mbParceiro .mbp-mais summary::before{content:"+";display:inline-block;width:12px;font-size:16px;font-weight:600;color:var(--mbp-brand)}
+#mbParceiro .mbp-mais[open] summary::before{content:"–"}
+#mbParceiro .mbp-mais summary:hover{color:var(--mbp-ink)}
+#mbParceiro .mbp-mais summary:focus-visible{outline:2px solid var(--mbp-brand);outline-offset:2px}
+#mbParceiro .mbp-mais-corpo{margin-top:12px}
+#mbParceiro .mbp-regioes{margin:0 0 8px;padding:0;border:0;min-width:0}
+#mbParceiro .mbp-regioes legend{margin:0 0 8px;padding:0;font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mbp-ink-soft)}
+#mbParceiro .mbp-opcoes{display:flex;flex-wrap:wrap;gap:8px}
+#mbParceiro .mbp-opcao{position:relative;display:inline-flex;margin:0;cursor:pointer}
+#mbParceiro .mbp-opcao input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+#mbParceiro .mbp-opcao span{display:inline-flex;align-items:center;min-height:40px;padding:8px 14px;border:1px solid var(--mbp-line);border-radius:2px;
+  background:var(--mbp-paper);font-size:14px;font-weight:500;line-height:1.2;color:var(--mbp-ink);transition:border-color .2s,background .2s,color .2s}
+#mbParceiro .mbp-opcao:hover span{border-color:var(--mbp-concrete)}
+#mbParceiro .mbp-opcao input:checked + span{border-color:var(--mbp-brand);background:rgba(225,17,25,.08);color:var(--mbp-brand-deep);font-weight:600}
+#mbParceiro .mbp-opcao input:checked + span::before{content:"✓";margin-right:6px}
+#mbParceiro .mbp-opcao input:focus-visible + span{outline:2px solid var(--mbp-brand);outline-offset:2px}
+#mbParceiro .mbp-outra{margin:12px 0 0;max-width:420px}
+
+/* Campo isca: fora da tela para gente, à vista para robô. */
+#mbParceiro .mbp-isca{position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden}
+
+/* Aviso de erro como a resposta do formulário antigo. */
+#mbParceiro .mbp-aviso{margin:16px 0 0;padding:12px 16px;border:1px solid rgba(225,17,25,.4);border-radius:3px;background:rgba(225,17,25,.1);
+  font-size:14px;font-weight:500;color:var(--mbp-brand-deep)}
+#mbParceiro .mbp-acoes{margin:20px 0 0}
+/* O botão do tema (btn-base btn-red), na largura toda como no formulário antigo. */
+#mbParceiro .mbp-botao{-webkit-appearance:none;appearance:none;display:flex;width:100%;align-items:center;justify-content:center;gap:9px;
+  margin:0;padding:12px 22px;border:0;border-radius:2px;background:var(--mbp-brand);color:#fff;box-shadow:none;
+  font-family:var(--mbp-body);font-size:13.5px;font-weight:600;line-height:1.4;white-space:nowrap;cursor:pointer;
+  transition:transform .18s,background .2s}
+#mbParceiro .mbp-botao:hover{background:var(--mbp-brand-deep);color:#fff;transform:translateY(-1px)}
+#mbParceiro .mbp-botao:focus-visible{outline:2px solid var(--mbp-brand);outline-offset:2px}
+#mbParceiro .mbp-botao:disabled{opacity:.6;cursor:wait;transform:none}
+#mbParceiro .mbp-legal{margin:14px 0 0;font-size:13px;color:var(--mbp-ink-soft)}
+
+/* Resposta enviada: a do formulário antigo, em verde. */
+#mbParceiro .mbp-pronto{margin:0}
+#mbParceiro .mbp-ok{margin:0;padding:12px 16px;border:1px solid rgba(15,157,88,.4);border-radius:3px;background:rgba(15,157,88,.1);
+  font-size:15px;font-weight:500;color:var(--mbp-ok)}
+#mbParceiro .mbp-ok:focus-visible{outline:2px solid var(--mbp-brand);outline-offset:2px}
+#mbParceiro .mbp-link{-webkit-appearance:none;appearance:none;margin:14px 0 0;padding:6px 0;border:0;background:none;box-shadow:none;
+  font-family:var(--mbp-body);font-size:14px;font-weight:600;color:var(--mbp-ink);text-decoration:underline;text-underline-offset:4px;cursor:pointer}
+#mbParceiro .mbp-link:hover{color:var(--mbp-brand-deep);background:none}
+#mbParceiro .mbp-link:focus-visible{outline:2px solid var(--mbp-brand);outline-offset:2px}
+
+@media (max-width:640px){
+  #mbParceiro .mbp-card{padding:24px 20px}
+  #mbParceiro .mbp-grade{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){#mbParceiro *{transition:none!important}}
