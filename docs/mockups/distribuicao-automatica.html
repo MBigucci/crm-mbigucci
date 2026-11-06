@@ -1,0 +1,501 @@
+<title>Distribuição automática</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: mesa de protótipos (celular 375px e computador), por perfil; tokens do MBigucci DS (docs/design-system.md), claro e escuro */
+:root{
+  --paper:#f7f6f2;--surface:#ffffff;--ink:#0d0e11;--soft:#4a4b52;--conc:#6f6b63;--line:#e5e3dd;--ctl:#76736c;
+  --brand:#e11119;--brand-d:#b90d14;--ok:#1f7a45;--wa:#925600;--tint:#fff6f6;--dis:#eeede9;--neutral:#5a5b60;
+  --on-brand:#ffffff;--sec:#efeeea;--sec-edge:#817d74;--mesa:#e4e2db;--overlay:rgba(13,14,17,.5);
+  --nav:#16181c;--nav-ativo:#2b2d32;--nav-marca:#ff6b70;--on-dark:#ffffff;--on-dark-soft:#d9d6cf;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#151619;--surface:#202126;--ink:#f5f3ed;--soft:#c4c1ba;--conc:#aaa69e;--line:#42444c;--ctl:#878995;
+  --brand:#ff6b70;--brand-d:#ff9296;--ok:#68ce92;--wa:#f0b65b;--tint:#332024;--dis:#303138;--neutral:#b7b8c0;
+  --on-brand:#151619;--sec:#303138;--sec-edge:#878995;--mesa:#0e0f11;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#151619;--surface:#202126;--ink:#f5f3ed;--soft:#c4c1ba;--conc:#aaa69e;--line:#42444c;--ctl:#878995;
+  --brand:#ff6b70;--brand-d:#ff9296;--ok:#68ce92;--wa:#f0b65b;--tint:#332024;--dis:#303138;--neutral:#b7b8c0;
+  --on-brand:#151619;--sec:#303138;--sec-edge:#878995;--mesa:#0e0f11;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--mesa);color:var(--ink);font:14px/1.45 var(--body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+h1,h2,h3{font-family:var(--display);letter-spacing:-.01em;margin:0;text-wrap:balance}
+.wrap{max-width:1320px;margin:0 auto}
+.nota{padding-top:24px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;align-items:flex-end}
+.nota h1{font-size:26px;font-weight:800}
+.nota p{margin:6px 0 0;color:var(--soft);max-width:70ch}
+.tema{display:flex;gap:0;border:1px solid var(--ctl);border-radius:2px;overflow:hidden}
+.tema button{font:600 13px var(--body);padding:8px 12px;background:var(--surface);color:var(--ink);border:0;cursor:pointer}
+.tema button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.tema button:focus-visible,.btn:focus-visible,.sw:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.secao{margin-top:36px}
+.secao>h2{font-size:20px;font-weight:700}
+.secao>p{margin:4px 0 14px;color:var(--soft);max-width:75ch}
+.rot{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--conc);margin:0 0 6px}
+.mesa{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.tela{width:375px;max-width:100%;min-width:0}
+.fone{background:var(--paper);border:1px solid var(--ctl);border-radius:4px;overflow:hidden;position:relative}
+.topo{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--paper)}
+.logo{font:800 16px var(--display);color:var(--ink)}.logo i{font-style:normal;color:var(--brand)}.logo span{font:600 13px var(--body);color:var(--soft);margin-left:4px}
+.ham{width:22px;display:grid;gap:4px}.ham i{height:2px;background:var(--ink);display:block}.ham i:nth-child(2){width:15px}
+.corpo{padding:14px 16px 18px;display:grid;gap:12px}
+.eyebrow{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--conc)}
+.tp{font:800 24px/1.1 var(--display)}
+.tc{font:700 16px/1.2 var(--display)}
+.num{font-family:var(--display);font-variant-numeric:tabular-nums}
+.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:14px 14px 14px 18px}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--ink)}
+.card.b::before{background:var(--brand)}
+.card.tint{background:var(--tint)}
+.card p{margin:4px 0 0}
+.acoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border:1px solid transparent;border-radius:2px;font:600 14px/1.2 var(--body);padding:10px 14px;cursor:pointer;background:var(--sec);border-color:var(--sec-edge);color:var(--ink)}
+.btn.red{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.btn.full{width:100%}
+.pc .btn{min-height:36px;font-size:13px;padding:7px 12px}
+.btn.mini{min-height:30px!important;padding:4px 9px!important;font-size:12px!important}
+.link{color:var(--brand-d);font-weight:600;text-decoration:underline;text-underline-offset:2px}
+.ok{color:var(--ok);font-weight:600}.wa{color:var(--wa);font-weight:600}.er{color:var(--brand);font-weight:600}.nt{color:var(--neutral);font-weight:600}
+.sm{font-size:13px;color:var(--soft)}
+.aux{font-size:12px;color:var(--conc)}
+.lista{display:grid}
+.lista>div{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--line);align-items:baseline}
+.lista>div:first-child{border-top:0}
+.lista .q{font-weight:600}
+.pos{font:800 15px var(--display);font-variant-numeric:tabular-nums;color:var(--soft);width:26px;flex:none}
+.eu{background:var(--paper);box-shadow:inset 3px 0 0 var(--ink);padding-left:8px!important}
+.prosa p{margin:0 0 8px;max-width:62ch}
+.destaque{border-top:1px solid var(--line);padding-top:10px;font-weight:600}
+/* diálogo */
+.dialogo{position:absolute;inset:0;background:var(--overlay);display:flex;align-items:flex-end}
+.folha{background:var(--surface);width:100%;border-top:4px solid var(--ink);padding:18px 16px 16px}
+.folha .acoes .btn{flex:1}
+/* computador */
+.pc{width:100%;background:var(--paper);border:1px solid var(--ctl);border-radius:4px;overflow:hidden;display:grid;grid-template-columns:180px minmax(0,1fr)}
+.lateral{background:var(--nav);color:var(--on-dark-soft);padding:16px 0;font-size:13px;font-weight:600}
+.lateral div{padding:9px 16px}
+.lateral .at{background:var(--nav-ativo);color:var(--on-dark);box-shadow:inset 3px 0 0 var(--nav-marca)}
+.pccorpo{padding:18px 22px 24px;display:grid;gap:14px;min-width:0}
+.rolavel{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:760px}
+th{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--conc);text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
+td{padding:8px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+td.n{font-family:var(--display);font-variant-numeric:tabular-nums;font-weight:700;color:var(--soft);width:34px}
+td.r{text-align:right;white-space:nowrap}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.fora td{color:var(--conc)}
+.abas{display:flex;gap:4px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.abas span{padding:7px 12px;font-size:13px;font-weight:600;color:var(--soft);border-bottom:2px solid transparent;margin-bottom:-1px}
+.abas span.on{color:var(--ink);border-color:var(--ink)}
+.grade2{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px;align-items:start}
+.cab{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px}
+/* chaves */
+.chave{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;padding:11px 0;border-top:1px solid var(--line);align-items:center}
+.chave:first-of-type{border-top:0}
+.chave .nm{font-weight:600}
+.chave .ex{font-size:12px;color:var(--soft);grid-column:1}
+.chave.off .nm{color:var(--soft)}
+.sw{display:inline-flex;align-items:center;gap:8px;font:600 12px var(--body);color:var(--ink);background:none;border:0;cursor:pointer;padding:4px 0}
+.sw i{width:38px;height:22px;border-radius:11px;background:var(--ink);position:relative;display:block}
+.sw i::after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:var(--surface);top:3px;left:19px}
+.sw[aria-checked="false"] i{background:var(--dis);box-shadow:inset 0 0 0 1px var(--ctl)}
+.sw[aria-checked="false"] i::after{left:3px;background:var(--ctl)}
+.modos{display:grid;gap:6px;margin-top:10px}
+.modo{border:1px solid var(--ctl);border-radius:2px;padding:9px 12px;background:var(--surface)}
+.modo.on{border-color:var(--ink);box-shadow:inset 3px 0 0 var(--ink)}
+.modo b{display:block}
+.indic{font-size:12px;border:1px solid var(--line);border-radius:2px;padding:3px 7px;background:var(--surface);white-space:nowrap;margin-left:auto}
+.legenda{margin-top:28px;color:var(--soft);font-size:13px;max-width:80ch}
+.legenda li{margin-bottom:4px}
+@media (max-width:900px){.pc{grid-template-columns:minmax(0,1fr)}.lateral{display:none}.grade2{grid-template-columns:minmax(0,1fr)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <div class="nota">
+    <div>
+      <div class="eyebrow">Base360 Vendas · mockup da Etapa 1.1 · 05/11/2026</div>
+      <h1>Distribuição automática</h1>
+      <p>Protótipo para o Felipe ver antes do código. Dados fictícios. Desenho completo em <code>docs/distribuicao-automatica.md</code>. As telas mostram o que cada perfil vê e o que some quando uma chave está desligada.</p>
+    </div>
+    <div class="tema" role="group" aria-label="Tema do protótipo">
+      <button type="button" id="t-auto" aria-pressed="true">Automático</button>
+      <button type="button" id="t-claro" aria-pressed="false">Claro</button>
+      <button type="button" id="t-escuro" aria-pressed="false">Escuro</button>
+    </div>
+  </div>
+
+  <!-- ===================== CORRETOR ===================== -->
+  <section class="secao">
+    <h2>Corretor, no celular</h2>
+    <p>O card "Distribuição automática" fica no topo da Lista do dia. Uma ação vermelha por card. Os números do desempenho nunca aparecem como pontos.</p>
+    <div class="mesa">
+
+      <div class="tela">
+        <div class="rot">1. Lista do dia · ainda sem check-in</div>
+        <div class="fone">
+          <div class="topo"><div class="logo">Base<i>360</i><span>Vendas</span></div><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="corpo">
+            <div><div class="eyebrow">Quinta, 06/11</div><div class="tp">Lista do dia</div></div>
+            <div class="card b tint">
+              <div class="eyebrow">Distribuição automática</div>
+              <p class="wa">! Faça o check-in no stand para receber leads da empresa.</p>
+              <p class="sm">Você está com "Recebendo leads" ligado.</p>
+              <div class="acoes"><button class="btn red full" type="button">Fazer check-in</button><button class="btn full" type="button">Parar de receber</button></div>
+            </div>
+            <div class="card"><div class="eyebrow">Aguardando primeiro contato</div><p class="sm">Nenhum lead da empresa agora.</p></div>
+            <div class="card"><div class="eyebrow">Para hoje</div>
+              <div class="lista"><div><span class="q">Marina Prado</span><span class="sm">10h · WhatsApp</span></div><div><span class="q">Rafael Nunes</span><span class="sm">15h · Ligar</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tela">
+        <div class="rot">2. No stand e recebendo (com o sinal no cabeçalho)</div>
+        <div class="fone">
+          <div class="topo"><div class="logo">Base<i>360</i><span>Vendas</span></div><span class="indic ok">✓ Recebendo · 3º</span><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="corpo">
+            <div><div class="eyebrow">Quinta, 06/11</div><div class="tp">Lista do dia</div></div>
+            <div class="card">
+              <div class="eyebrow">Distribuição automática</div>
+              <p class="ok">✓ Recebendo leads · Marco Zero desde 9h04</p>
+              <p>Você é o <b class="num">3º</b> da fila da Equipe Norte. <a class="link" href="#minhas-vezes">Minhas vezes</a></p>
+              <div class="acoes"><button class="btn" type="button">Saí para visita</button><button class="btn" type="button">Fazer check-out</button><button class="btn" type="button">Parar de receber</button></div>
+            </div>
+            <div class="card b">
+              <div class="eyebrow">Aguardando primeiro contato</div>
+              <div class="tc">Ana Souza</div>
+              <p class="sm">Marco Zero One · pela distribuição automática</p>
+              <p class="wa">! Responder em 12 min</p>
+              <div class="acoes"><button class="btn red" type="button">WhatsApp</button><button class="btn" type="button">Ligar</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tela">
+        <div class="rot">3. O sinal caiu fora do raio</div>
+        <div class="fone" style="min-height:520px">
+          <div class="topo"><div class="logo">Base<i>360</i><span>Vendas</span></div><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="corpo">
+            <div><div class="eyebrow">Quinta, 06/11</div><div class="tp">Lista do dia</div></div>
+            <div class="card"><div class="eyebrow">Distribuição automática</div><p class="ok">✓ Recebendo leads · Marco Zero desde 9h04</p></div>
+          </div>
+          <div class="dialogo" role="dialog" aria-label="Você saiu do stand?">
+            <div class="folha">
+              <h3 class="tc">Você saiu do stand?</h3>
+              <p class="sm">Seu celular está a <span class="num">600 m</span> do Marco Zero. Enquanto estiver fora, você não recebe leads e mantém a posição na fila.</p>
+              <div class="acoes"><button class="btn red" type="button">Saí</button><button class="btn" type="button">Estou no stand</button></div>
+              <p class="aux">Sem resposta em 5 min, você fica fora do stand até o próximo sinal dentro.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tela">
+        <div class="rot">4. Outros estados do card</div>
+        <div class="fone">
+          <div class="corpo">
+            <div class="card"><p class="ok">✓ Recebendo leads · na vez do Marco Zero desde 8h52</p><p class="sm">A saída e a volta são marcadas pela recepção.</p><div class="acoes"><button class="btn full" type="button">Parar de receber</button></div></div>
+            <div class="card b tint"><p class="wa">! Fora do stand desde 10h40. Você mantém a posição.</p><div class="acoes"><button class="btn red full" type="button">Voltei ao stand</button></div></div>
+            <div class="card"><p>→ Em visita desde 14h10. Você mantém a posição.</p><div class="acoes"><button class="btn full" type="button">Voltei</button></div></div>
+            <div class="card b tint"><p class="wa">! Sem sinal desde 11h05. Abra o Vendas no stand para continuar recebendo.</p></div>
+            <div class="card"><p class="ok">✓ De plantão</p><p class="sm">Recebendo leads até você parar de usar o Vendas por 30 min. O prazo de 15 min corre na hora.</p><p class="sm">→ 4 leads esperando a abertura. Você recebe o próximo quando responder este.</p><div class="acoes"><button class="btn full" type="button">Parar de receber</button></div></div>
+            <div class="card"><p class="nt">– Em pausa até 12/11.</p><div class="acoes"><button class="btn full" type="button">Voltar a receber</button></div></div>
+            <div class="card"><p class="nt">– Você não está recebendo leads da empresa.</p><div class="acoes"><button class="btn red full" type="button">Começar a receber</button></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tela" id="minhas-vezes">
+        <div class="rot">5. Minhas vezes</div>
+        <div class="fone">
+          <div class="topo"><div class="logo">Base<i>360</i><span>Vendas</span></div><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="corpo">
+            <div><div class="eyebrow">Distribuição automática</div><div class="tp">Minhas vezes</div></div>
+            <div class="card">
+              <p>Você é o <b class="num">3º</b> da fila da Equipe Norte.</p>
+              <p class="sm">Desempenho na distribuição: <b>na média</b>. <a class="link" href="#como">Como é calculado</a></p>
+            </div>
+            <div class="card">
+              <div class="eyebrow">Fila agora</div>
+              <div class="lista">
+                <div><span class="pos">1º</span><span style="flex:1"><span class="q">Carla</span> <span class="aux">acima da média</span></span><span class="ok">✓ Apta</span></div>
+                <div><span class="pos">2º</span><span style="flex:1"><span class="q">Diego</span> <span class="aux">na média</span></span><span class="wa">! Fora do stand</span></div>
+                <div class="eu"><span class="pos">3º</span><span style="flex:1"><span class="q">Você</span> <span class="aux">na média</span></span><span class="ok">✓ Apto</span></div>
+                <div><span class="pos">4º</span><span style="flex:1"><span class="q">Edu</span> <span class="aux">abaixo da média</span></span><span>→ Em visita</span></div>
+                <div><span class="pos">–</span><span style="flex:1"><span class="q">Bruno</span></span><span class="nt">– Em pausa</span></div>
+              </div>
+              <p class="aux">Última a receber: Carla, às 10h12.</p>
+            </div>
+            <div class="card">
+              <div class="eyebrow">Suas vezes hoje</div>
+              <div class="lista">
+                <div><span class="ok">✓ Recebeu Ana Souza</span><span class="sm">10h12</span></div>
+                <div><span>→ Pulado · Fora do stand · manteve a posição</span><span class="sm">11h40</span></div>
+                <div><span>→ Pulado · Não atende Easy · manteve a posição</span><span class="sm">14h02</span></div>
+                <div><span class="er">! Fim da fila · o prazo de Paulo Lima estourou</span><span class="sm">15h30</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tela" id="como">
+        <div class="rot">6. Como é calculado</div>
+        <div class="fone">
+          <div class="topo"><div class="logo">Base<i>360</i><span>Vendas</span></div><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="corpo prosa">
+            <div><div class="eyebrow">Distribuição automática</div><div class="tp">Como é calculado</div></div>
+            <div class="card">
+              <p><b>Nota do CRM:</b> nos últimos 30 dias você respondeu <span class="num">18</span> de <span class="num">23</span> leads da empresa em até 15 min (<span class="num">78%</span>) e, em média, <span class="num">85%</span> da sua carteira ficou com o follow-up em dia.</p>
+              <p><b>Nota do plantão:</b> sua atividade no plantão foi <span class="num">12%</span> acima da média da empresa.</p>
+              <p>Cada nota vale metade. No total você ficou <span class="num">8%</span> acima da média da empresa, então está <b>na média</b> (até 10% acima ou abaixo). Na média você recebe 2 leads a cada 3 de quem está acima e 1 de quem está abaixo. Recalculado toda segunda.</p>
+              <p class="destaque">Este cálculo não muda seus pontos nem sua verba. Serve só para a ordem da distribuição.</p>
+            </div>
+            <div class="card">
+              <div class="eyebrow">Como a fila anda</div>
+              <p class="sm">Recebe quem está na frente e pode atender o lead. Quem está fora do stand, em visita, não atende o produto ou já teve o lead é pulado e mantém a posição.</p>
+              <p class="sm">Só o prazo de 15 min estourado manda você ao fim da fila.</p>
+              <p class="sm">Desligar o recebimento ou pausar não tira sua posição. Enquanto isso a fila anda sem você.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================== GERENTE ===================== -->
+  <section class="secao">
+    <h2>Gerente da equipe, no computador</h2>
+    <p>A fila da equipe, com os créditos (só para o gerente), as decisões com os motivos de todos e as ações de pausa, produtos e participação.</p>
+    <div class="pc">
+      <nav class="lateral" aria-label="Menu do protótipo"><div>Lista do dia</div><div>Leads</div><div>Agenda</div><div class="at">Distribuição</div><div>Painel</div></nav>
+      <div class="pccorpo">
+        <div class="cab">
+          <div><div class="eyebrow">Equipe Norte · quinta, 06/11 · 11h52</div><h2 class="tp">Distribuição</h2></div>
+          <p class="sm" style="margin:0"><b class="num">6</b> na fila · <b class="num">2</b> fora do stand · <b class="num">1</b> em pausa</p>
+        </div>
+        <div class="abas"><span class="on">Fila agora</span><span>Decisões</span><span>Produtos</span></div>
+        <div class="grade2">
+          <div class="card" style="padding-right:0">
+            <div class="rolavel">
+              <table>
+                <thead><tr><th>Pos.</th><th>Corretor</th><th>Situação</th><th>Desempenho</th><th class="num">Créditos</th><th class="num">Hoje</th><th class="num">Estouros 30d</th><th></th></tr></thead>
+                <tbody>
+                  <tr><td class="n">1º</td><td><b>Carla</b></td><td class="ok">✓ Apta · Marco Zero</td><td>Acima da média</td><td class="num">5</td><td class="num">2</td><td class="num">0</td><td class="r"><button class="btn mini" type="button">Pausar</button></td></tr>
+                  <tr><td class="n">2º</td><td><b>Diego</b></td><td class="wa">! Fora do stand desde 10h40</td><td>Na média</td><td class="num">4</td><td class="num">1</td><td class="num">1</td><td class="r"><button class="btn mini" type="button">Pausar</button></td></tr>
+                  <tr><td class="n">3º</td><td><b>Felipa</b></td><td class="ok">✓ Apta · Marco Zero</td><td>Na média</td><td class="num">2</td><td class="num">1</td><td class="num">0</td><td class="r"><button class="btn mini" type="button">Pausar</button></td></tr>
+                  <tr><td class="n">4º</td><td><b>Edu</b></td><td>→ Em visita desde 11h20</td><td>Abaixo da média</td><td class="num">1</td><td class="num">0</td><td class="num">3</td><td class="r"><button class="btn mini" type="button">Pausar</button></td></tr>
+                  <tr><td class="n">5º</td><td><b>Gil</b></td><td class="wa">! Sem sinal desde 11h05</td><td>Na média</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="r"><button class="btn mini" type="button">Pausar</button></td></tr>
+                  <tr class="fora"><td class="n">–</td><td><b>Bruno</b></td><td>– Em pausa até 12/11 (pausou: Bruno)</td><td>Na média</td><td class="num">3</td><td class="num">0</td><td class="num">0</td><td class="r"><button class="btn mini" type="button">Voltar</button></td></tr>
+                  <tr class="fora"><td class="n">–</td><td><b>Hugo</b></td><td>– Recebimento desligado</td><td>Novo · na média</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="r"><button class="btn mini" type="button">Tirar da distribuição</button></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div style="display:grid;gap:14px">
+            <div class="card">
+              <div class="eyebrow">Última decisão · 11h40</div>
+              <div class="tc">Lucas Ferreira · Easy</div>
+              <div class="lista">
+                <div><span>→ Diego · Fora do stand</span><span class="aux">mantém</span></div>
+                <div><span>→ Carla · Não atende Easy</span><span class="aux">mantém</span></div>
+                <div><span class="ok">✓ Felipa recebeu</span><span class="aux">−9 créditos</span></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="eyebrow">Produtos de Diego</div>
+              <p class="sm">Desmarque o que ele não atende. Empreendimento novo já entra como atendido.</p>
+              <div class="lista">
+                <div><span>Marco Zero One</span><span class="ok">✓ Atende</span></div>
+                <div><span>Easy</span><span class="nt">– Não atende</span></div>
+                <div><span>Elleva</span><span class="ok">✓ Atende</span></div>
+              </div>
+              <div class="acoes"><button class="btn red" type="button">Salvar</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="card b tint">
+          <div class="eyebrow">Modo só gerentes (exemplo, quando o Felipe escolhe esse modo)</div>
+          <p><b>Ana Souza · Marco Zero One</b> está na fila da equipe.</p>
+          <p class="wa">! Repasse em 12 min</p>
+          <div class="acoes"><button class="btn red" type="button">Repassar</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mesa" style="margin-top:24px">
+      <div class="tela">
+        <div class="rot">Gerente no celular · fila da equipe</div>
+        <div class="fone">
+          <div class="topo"><div class="logo">Base<i>360</i><span>Vendas</span></div><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="corpo">
+            <div><div class="eyebrow">Equipe Norte · 11h52</div><div class="tp">Distribuição</div></div>
+            <div class="card b tint">
+              <div class="eyebrow">Fila da equipe · modo só gerentes</div>
+              <div class="tc">Ana Souza</div>
+              <p class="sm">Marco Zero One · site</p>
+              <p class="wa">! Repasse em 12 min</p>
+              <div class="acoes"><button class="btn red full" type="button">Repassar</button></div>
+            </div>
+            <div class="card">
+              <div class="eyebrow">Fila agora · 6 na fila</div>
+              <div class="lista">
+                <div><span class="pos">1º</span><span style="flex:1"><span class="q">Carla</span> <span class="aux">5 créditos</span></span><span class="ok">✓ Apta</span></div>
+                <div><span class="pos">2º</span><span style="flex:1"><span class="q">Diego</span> <span class="aux">4</span></span><span class="wa">! Fora do stand</span></div>
+                <div><span class="pos">3º</span><span style="flex:1"><span class="q">Felipa</span> <span class="aux">2</span></span><span class="ok">✓ Apta</span></div>
+                <div><span class="pos">4º</span><span style="flex:1"><span class="q">Edu</span> <span class="aux">1</span></span><span>→ Em visita</span></div>
+                <div><span class="pos">–</span><span style="flex:1"><span class="q">Bruno</span></span><span class="nt">– Em pausa</span></div>
+              </div>
+              <div class="acoes"><button class="btn full" type="button">Ver decisões</button></div>
+            </div>
+            <div class="card">
+              <div class="eyebrow">Pausar Diego</div>
+              <p class="sm">Volta em (opcional)</p>
+              <p class="num">12/11/2026</p>
+              <div class="acoes"><button class="btn full" type="button">Pausar</button></div>
+              <p class="aux">Fica registrado quem pausou e quando.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== GERENTE GERAL ===================== -->
+  <section class="secao">
+    <h2>Gerente geral, no computador</h2>
+    <p>Configurações &gt; Distribuição automática, com todas as chaves. Neste exemplo "Exigir check-in" está desligado: o Sinal de localização avisa que não vale, e o check-in some das telas do corretor (tela 7, ao lado).</p>
+    <div class="pc">
+      <nav class="lateral" aria-label="Menu do protótipo"><div>Lista do dia</div><div>Leads</div><div>A distribuir</div><div>Painel</div><div class="at">Configurações</div></nav>
+      <div class="pccorpo">
+        <div><div class="eyebrow">Configurações · só o gerente geral</div><h2 class="tp">Distribuição automática</h2></div>
+        <div class="grade2">
+          <div style="display:grid;gap:14px">
+            <div class="card b">
+              <div class="chave" style="border-top:0">
+                <div><div class="nm">Distribuição automática</div><div class="ex ok">✓ Ligada desde 06/11 às 9h</div></div>
+                <button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button>
+              </div>
+              <div class="eyebrow" style="margin-top:8px">Modo</div>
+              <div class="modos">
+                <div class="modo on"><b>Equipe e depois corretor</b><span class="sm">As equipes se revezam, e dentro da equipe vale a fila.</span></div>
+                <div class="modo"><b>Direto ao corretor</b><span class="sm">Uma fila só com todos.</span></div>
+                <div class="modo"><b>Só gerentes</b><span class="sm">O lead vai à fila da equipe, e o gerente repassa em até 15 min.</span></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="eyebrow">Chaves</div>
+              <div class="chave"><div><div class="nm">Peso por desempenho</div><div class="ex">Ligada: 3, 2 e 1 pela faixa. Desligada: todos recebem igual.</div></div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
+              <div class="chave off"><div><div class="nm">Exigir check-in no horário</div><div class="ex">Ligada: só recebe quem fez check-in. Desligada: vale só o botão "Recebendo leads".</div></div><button class="sw" type="button" role="switch" aria-checked="false"><i></i>Desligada</button></div>
+              <div class="chave off"><div><div class="nm">Sinal de localização</div><div class="ex wa">! Só vale com o check-in ligado.</div></div><button class="sw" type="button" role="switch" aria-checked="true" disabled><i></i>Ligada</button></div>
+              <div class="chave"><div><div class="nm">Plantão fora do horário</div><div class="ex">Ligada: recebe quem está com o botão ligado e usou o Vendas há até 30 min. Desligada: ninguém recebe fora do horário.</div></div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
+              <div class="chave"><div><div class="nm">Represar quando não há ninguém</div><div class="ex">Ligada: o lead espera a abertura. Desligada: distribui na hora entre todos, com o prazo na abertura.</div></div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
+              <div class="chave"><div><div class="nm">Produtos que o corretor atende</div><div class="ex">Desligada: todos atendem todos.</div></div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
+              <div class="chave"><div><div class="nm">Redistribuição pelo prazo</div><div class="ex">Ligada: passa sozinho adiante até alguém atender, primeiro na mesma equipe, nunca a quem já teve. Desligada: o gerente usa o Lead perdido.</div></div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
+              <div class="chave"><div><div class="nm">Prazo estourado manda ao fim da fila</div><div class="ex">Desligada: só pula, mantendo a posição.</div></div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
+              <div class="chave"><div><div class="nm">Lead repetido vai ao dono</div><div class="ex">Desligada: cria lead novo pela roleta.</div></div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
+              <div class="chave"><div><div class="nm">Atribuição à mão conta como vez</div><div class="ex">Desligada: não mexe na fila.</div></div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
+              <div class="chave"><div><div class="nm">Transparência para o corretor</div><div class="ex">Desligada: "Minhas vezes" some para o corretor; o gerente continua vendo.</div></div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
+            </div>
+          </div>
+          <div style="display:grid;gap:14px">
+            <div class="card b tint">
+              <div class="eyebrow">A distribuir · 3 leads</div>
+              <div class="lista">
+                <div><span><b>Paulo Lima</b> · Elleva · Zap<br><span class="aux">Prazo estourado com 6 corretores, ninguém sobrando</span></span><button class="btn red mini" type="button">Atribuir</button></div>
+                <div><span><b>Teresa Reis</b> · sem produto · site<br><span class="aux">Represado até a abertura</span></span><button class="btn mini" type="button">Atribuir</button></div>
+                <div><span><b>Caio Matos</b> · Easy · OLX<br><span class="aux">Chave desligada às 8h50</span></span><button class="btn mini" type="button">Atribuir</button></div>
+              </div>
+              <div class="acoes"><button class="btn" type="button">Mandar todos à distribuição</button></div>
+            </div>
+            <div class="card">
+              <div class="eyebrow">Fila entre equipes</div>
+              <div class="lista">
+                <div><span class="pos">1º</span><span style="flex:1"><b>Equipe Sul</b></span><span class="sm">recebeu às 10h05</span></div>
+                <div><span class="pos">2º</span><span style="flex:1"><b>Equipe Oeste</b></span><span class="wa">! pulada 11h40 · ninguém no stand</span></div>
+                <div><span class="pos">3º</span><span style="flex:1"><b>Equipe Norte</b></span><span class="sm">recebeu às 11h40</span></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="eyebrow">Histórico das mudanças</div>
+              <div class="lista">
+                <div><span>Exigir check-in: ligada → desligada</span><span class="sm">Felipe · 06/11 8h50</span></div>
+                <div><span>Distribuição automática: desligada → ligada</span><span class="sm">Felipe · 06/11 9h00</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mesa" style="margin-top:24px">
+      <div class="tela">
+        <div class="rot">7. Corretor com o check-in desligado</div>
+        <div class="fone">
+          <div class="topo"><div class="logo">Base<i>360</i><span>Vendas</span></div><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="corpo">
+            <div><div class="eyebrow">Quinta, 06/11</div><div class="tp">Lista do dia</div></div>
+            <div class="card">
+              <div class="eyebrow">Distribuição automática</div>
+              <p class="ok">✓ Recebendo leads</p>
+              <p>Você é o <b class="num">3º</b> da fila da Equipe Norte. <a class="link" href="#minhas-vezes">Minhas vezes</a></p>
+              <div class="acoes"><button class="btn full" type="button">Parar de receber</button></div>
+            </div>
+            <p class="aux">Sem check-in, check-out, visita nem pergunta do sinal: a chave desligada tira tudo isso da tela.</p>
+          </div>
+        </div>
+      </div>
+      <div class="tela">
+        <div class="rot">8. Corretor com a transparência desligada</div>
+        <div class="fone">
+          <div class="topo"><div class="logo">Base<i>360</i><span>Vendas</span></div><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="corpo">
+            <div><div class="eyebrow">Quinta, 06/11</div><div class="tp">Lista do dia</div></div>
+            <div class="card">
+              <div class="eyebrow">Distribuição automática</div>
+              <p class="ok">✓ Recebendo leads · Marco Zero desde 9h04</p>
+              <div class="acoes"><button class="btn" type="button">Saí para visita</button><button class="btn" type="button">Fazer check-out</button></div>
+            </div>
+            <p class="aux">Sem posição na fila e sem "Minhas vezes".</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <ul class="legenda">
+    <li>Dados e nomes fictícios. Nada aqui grava no banco.</li>
+    <li>Os créditos aparecem só para o gerente e o gerente geral. O corretor vê a posição e a faixa.</li>
+    <li>"Nota do plantão" usa os pontos aprovados só como medida de atividade, e a tela nunca mostra pontos.</li>
+    <li>Navegação no computador: lateral grafite com ícone + rótulo no app real (aqui só o rótulo).</li>
+  </ul>
+</div>
+
+<script>
+(function(){
+  var b={auto:document.getElementById('t-auto'),claro:document.getElementById('t-claro'),escuro:document.getElementById('t-escuro')};
+  function aplicar(m){
+    var r=document.documentElement;
+    if(m==='claro') r.setAttribute('data-theme','light');
+    else if(m==='escuro') r.setAttribute('data-theme','dark');
+    else r.removeAttribute('data-theme');
+    Object.keys(b).forEach(function(k){b[k].setAttribute('aria-pressed',String(k===m));});
+  }
+  Object.keys(b).forEach(function(k){b[k].addEventListener('click',function(){aplicar(k);});});
+  document.querySelectorAll('.sw:not([disabled])').forEach(function(s){
+    s.addEventListener('click',function(){
+      var on=s.getAttribute('aria-checked')!=='true';
+      s.setAttribute('aria-checked',String(on));
+      s.lastChild.textContent=on?'Ligada':'Desligada';
+      var c=s.closest('.chave'); if(c) c.classList.toggle('off',!on);
+    });
+  });
+})();
+</script>

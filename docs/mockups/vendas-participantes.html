@@ -1,0 +1,348 @@
+<title>Venda dividida e pedido de registro</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400..700&display=swap">
+<style>
+/* Mesa de mockups: quatro telas de celular (375px) lado a lado, que empilham no celular. Tokens do MBigucci DS (docs/design-system.md). */
+:root{
+  --paper:#f7f6f2;--surface:#ffffff;--ink:#0d0e11;--soft:#4a4b52;--conc:#6f6b63;--line:#e5e3dd;--ctl:#76736c;
+  --brand:#e11119;--brand-d:#b90d14;--ok:#1f7a45;--wa:#925600;--tint:#fff6f6;--band:#0d0e11;--on-dark:#ffffff;--on-dark-soft:#d9d6cf;
+  --on-brand:#ffffff;--mesa:#e4e2db;--off:#eeede9;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;--body:Inter,ui-sans-serif,system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#151619;--surface:#202126;--ink:#f5f3ed;--soft:#c4c1ba;--conc:#aaa69e;--line:#42444c;--ctl:#878995;
+  --brand:#ff6b70;--brand-d:#ff9296;--ok:#68ce92;--wa:#f0b65b;--tint:#332024;--on-brand:#151619;--mesa:#0e0f11;--off:#303138;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#151619;--surface:#202126;--ink:#f5f3ed;--soft:#c4c1ba;--conc:#aaa69e;--line:#42444c;--ctl:#878995;
+  --brand:#ff6b70;--brand-d:#ff9296;--ok:#68ce92;--wa:#f0b65b;--tint:#332024;--on-brand:#151619;--mesa:#0e0f11;--off:#303138;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--mesa);color:var(--ink);font:14px/1.45 var(--body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 32px}
+h1,h2,h3,p{margin:0}
+h1,h2,h3{font-family:var(--display);letter-spacing:-.01em;text-wrap:balance}
+.nota{max-width:1640px;margin:0 auto}
+.nota h1{font-size:24px}
+.nota p{margin-top:4px;color:var(--soft);max-width:70ch}
+.mesa{display:flex;gap:24px;flex-wrap:wrap;justify-content:center;margin-top:20px}
+.tela{width:375px;max-width:100%;min-width:0}
+.rot{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--soft);margin-bottom:6px}
+.fone{height:780px;overflow:auto;background:var(--paper);border:1px solid var(--ctl);border-radius:4px;position:relative}
+.topo{position:sticky;top:0;background:var(--paper);padding:12px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;z-index:2}
+.logo{font:800 17px var(--display);color:var(--brand)}
+.menu{font-size:13px;font-weight:600}
+.corpo{padding:16px 16px 96px;display:grid;gap:10px}
+.eyebrow{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--conc)}
+.tp{font:800 25px/1.05 var(--display);margin-top:2px}
+.tc{font:700 17px/1.15 var(--display)}
+.num{font-family:var(--display);font-variant-numeric:tabular-nums}
+.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:14px 16px 14px 20px;display:grid;gap:8px}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--ink)}
+.card.b::before{background:var(--brand)}
+.card.t{background:var(--tint)}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:2px;font:600 13px/1.2 var(--body);padding:9px 14px;cursor:pointer;background:none;color:var(--ink)}
+.btn:focus-visible,.in:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.red{background:var(--brand);color:var(--on-brand)}
+.ghost{border-color:var(--ctl);background:var(--surface)}
+.link{padding:0;color:var(--brand-d);text-decoration:underline;text-underline-offset:3px}
+.lg{font-size:15px;padding:14px 18px}
+.off{background:var(--off);color:var(--soft);cursor:not-allowed}
+.rodape{position:sticky;bottom:0;background:var(--paper);border-top:1px solid var(--line);padding:12px 16px;display:flex;gap:8px}
+.rodape .btn{flex:1}
+.lab{display:block;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--soft);margin-bottom:5px}
+.in{width:100%;border:1px solid var(--ctl);background:var(--paper);border-radius:2px;padding:11px 12px;font:16px/1.3 var(--body);color:var(--ink)}
+.duas{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.selo{display:inline-block;border:1px solid var(--line);border-radius:2px;padding:2px 6px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--soft);white-space:nowrap}
+.ok{color:var(--ok);font-weight:600}.wa{color:var(--wa);font-weight:600}.er{color:var(--brand);font-weight:600}
+.lin{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.lin>div{min-width:0}
+.sm{font-size:13px;color:var(--soft)}
+.aux{font-size:12px;color:var(--conc)}
+.sep{border-top:1px solid var(--line)}
+/* Divisão: uma linha por vendedor, com a porcentagem à direita */
+.div{display:grid;gap:6px}
+.vend{display:grid;grid-template-columns:1fr 84px 28px;gap:8px;align-items:center;border:1px solid var(--line);border-radius:2px;padding:8px 8px 8px 10px;background:var(--paper)}
+.vend .in{padding:8px;text-align:right;font-family:var(--display);font-variant-numeric:tabular-nums}
+.vend b{font-weight:600;display:block}
+.x{border:1px solid var(--ctl);background:var(--surface);color:var(--ink);border-radius:2px;width:28px;height:28px;font:600 14px var(--body);cursor:pointer}
+.soma{display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.trilho{height:6px;background:var(--line);border-radius:1px;display:flex;overflow:hidden}
+.trilho span{display:block;height:100%;border-right:2px solid var(--surface)}
+.partes{margin:0;padding:0;list-style:none;display:grid;gap:4px}
+.partes li{display:flex;justify-content:space-between;gap:8px;font-size:13px}
+.partes li.eu{font-weight:700}
+.tot{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.tot div{border:1px solid var(--line);background:var(--surface);border-radius:2px;padding:8px}
+.tot .v{font:700 15px var(--display);font-variant-numeric:tabular-nums}
+.band{background:var(--band);color:var(--on-dark);border-left:4px solid var(--brand);border-radius:3px;padding:12px 14px;display:grid;gap:4px}
+.band .sm{color:var(--on-dark-soft)}
+.tl{margin:0;padding:0;list-style:none}
+.tl li{border-left:1px solid var(--ctl);padding:0 0 10px 12px;margin-left:4px;position:relative;font-size:13px}
+.tl li::before{content:"";position:absolute;left:-4px;top:5px;width:7px;height:7px;background:var(--ink)}
+.legenda{max-width:1640px;margin:20px auto 0;color:var(--soft);font-size:13px}
+.legenda ul{margin:6px 0 0;padding-left:18px;display:grid;gap:3px;max-width:90ch}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="nota">
+  <h1>Venda dividida e pedido de registro</h1>
+  <p>Mockup da etapa 1 (desenho em docs/vendas-participantes.md). Celular, 375px, MBigucci Design System, nos dois temas. Dados fictícios. Atualizado com as respostas do Felipe de 05/11/2026. Exemplo: venda de R$ 600.000 dividida 50/30/20 entre Ana Souza e Bruno Lima (Equipe Paulo) e Carla Dias (Equipe Renata). A divisão da tela 2 recalcula a soma ao digitar.</p>
+</div>
+
+<div class="mesa">
+
+<!-- 1. FICHA DO CORRETOR: PEDIR REGISTRO -->
+<section class="tela" aria-label="Ficha do corretor com Pedir registro">
+  <p class="rot">1. Ficha do lead (corretora Ana): pedir o registro</p>
+  <div class="fone">
+    <div class="topo"><span class="logo">Base360</span><span class="menu">← Leads</span></div>
+    <div class="corpo">
+      <div>
+        <span class="eyebrow">Lead · Proposta</span>
+        <h2 class="tp">Marcos Pereira</h2>
+        <span class="sm">Marco Zero One · <span class="num">(11) 97777-2020</span></span>
+      </div>
+
+      <div class="card b">
+        <span class="eyebrow">Venda</span>
+        <p class="tc">O cliente assinou?</p>
+        <p class="sm">Conte ao gerente o que você sabe. Ele registra a venda e o lead vai para Venda.</p>
+
+        <div><label class="lab" for="p-emp">Empreendimento</label><input id="p-emp" class="in" value="Marco Zero One"></div>
+        <div class="duas">
+          <div><label class="lab" for="p-uni">Unidade</label><input id="p-uni" class="in" value="Apto 52"></div>
+          <div><label class="lab" for="p-ass">Assinatura</label><input id="p-ass" class="in num" value="20/11/2026"></div>
+        </div>
+        <div><label class="lab" for="p-vgv">VGV (R$)</label><input id="p-vgv" class="in num" value="600.000"></div>
+
+        <div class="sep"></div>
+        <p class="lab" style="margin:0">Dividiu a venda?</p>
+        <div class="div">
+          <div class="vend"><div><b>Ana Souza (você)</b><span class="aux">Equipe Paulo</span></div><input id="p-v1" class="in" value="50" aria-label="Porcentagem de Ana Souza"><span class="aux">%</span></div>
+          <div class="vend"><div><b>Bruno Lima</b><span class="aux">Equipe Paulo</span></div><input id="p-v2" class="in" value="30" aria-label="Porcentagem de Bruno Lima"><button class="x" aria-label="Tirar Bruno Lima">✕</button></div>
+          <div class="vend"><div><b>Carla Dias</b><span class="aux">Equipe Renata</span></div><input id="p-v3" class="in" value="20" aria-label="Porcentagem de Carla Dias"><button class="x" aria-label="Tirar Carla Dias">✕</button></div>
+        </div>
+        <p><button class="btn link">+ Outro corretor</button></p>
+        <p class="aux">É uma sugestão. O gerente confere e decide a divisão.</p>
+
+        <div><label class="lab" for="p-obs">Observação</label><input id="p-obs" class="in" placeholder="Opcional"></div>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow">Depois de pedir, a ficha mostra</span>
+        <p class="sm"><span class="wa">!</span> Registro pedido em <span class="num">05/11/2026</span>. Aguardando o gerente Paulo.</p>
+        <p><button class="btn ghost">Cancelar pedido</button></p>
+        <div class="sep"></div>
+        <p class="sm"><span class="er">✕</span> Pedido devolvido: falta a data da assinatura. Peça de novo quando tiver.</p>
+      </div>
+    </div>
+    <div class="rodape"><button class="btn red lg">Pedir registro</button></div>
+  </div>
+</section>
+
+<!-- 2. GERENTE: REGISTRAR COM DIVISÃO -->
+<section class="tela" aria-label="Registrar venda com divisão">
+  <p class="rot">2. Gerente Paulo: registrar a venda, com a divisão</p>
+  <div class="fone">
+    <div class="topo"><span class="logo">Base360</span><span class="menu">← Pedidos</span></div>
+    <div class="corpo">
+      <div>
+        <span class="eyebrow">Pedido de Ana Souza · <span class="num">05/11/2026</span></span>
+        <h2 class="tp">Parabéns pela venda para Marcos Pereira.</h2>
+      </div>
+
+      <div class="card b">
+        <div><label class="lab" for="r-emp">Empreendimento</label><input id="r-emp" class="in" value="Marco Zero One"></div>
+        <div class="duas">
+          <div><label class="lab" for="r-uni">Unidade</label><input id="r-uni" class="in" value="Apto 52"></div>
+          <div><label class="lab" for="r-ass">Assinatura</label><input id="r-ass" class="in num" value="20/11/2026"></div>
+        </div>
+        <div><label class="lab" for="r-vgv">VGV (R$)</label><input id="r-vgv" class="in num" value="600.000"></div>
+        <div>
+          <p class="lab">Pagamento</p>
+          <p style="display:flex;gap:6px"><button class="btn ghost" aria-pressed="true" style="background:var(--ink);color:var(--surface);border-color:var(--ink)">Pendente</button><button class="btn ghost" aria-pressed="false">Paga</button></p>
+        </div>
+
+        <div class="sep"></div>
+        <div class="lin"><p class="lab" style="margin:0">Divisão</p><button class="btn link" id="igual">Dividir igual</button></div>
+        <div class="div" id="divisao">
+          <div class="vend"><div><b>Ana Souza</b><span class="aux">Dona do lead · Equipe Paulo</span></div><input id="r-v1" class="in pct" value="50" inputmode="decimal" aria-label="Porcentagem de Ana Souza"><span class="aux">%</span></div>
+          <div class="vend"><div><b>Bruno Lima</b><span class="aux">Equipe Paulo</span></div><input id="r-v2" class="in pct" value="30" inputmode="decimal" aria-label="Porcentagem de Bruno Lima"><button class="x" aria-label="Tirar Bruno Lima">✕</button></div>
+          <div class="vend"><div><b>Carla Dias</b><span class="aux">Equipe Renata</span></div><input id="r-v3" class="in pct" value="20" inputmode="decimal" aria-label="Porcentagem de Carla Dias"><button class="x" aria-label="Tirar Carla Dias">✕</button></div>
+        </div>
+        <p><button class="btn link">+ Outro vendedor</button> <span class="aux">corretores de qualquer equipe, ou você</span></p>
+        <p class="aux">Venda da casa: corretores e, se quiser, o gerente. Parceiro só em venda de parceiro, sem corretor da casa.</p>
+        <div class="trilho" aria-hidden="true"><span id="t1" style="width:50%;background:var(--ink)"></span><span id="t2" style="width:30%;background:var(--soft)"></span><span id="t3" style="width:20%;background:var(--conc)"></span></div>
+        <div class="soma" aria-live="polite"><span id="soma-txt"><span class="ok">✓</span> Soma <span class="num">100%</span></span><span class="num sm" id="soma-vgv">R$ 300.000 · R$ 180.000 · R$ 120.000</span></div>
+        <p class="aux">O VGV e o número de vendas de cada um seguem a parte: <span class="num">50%</span> conta <span class="num">0,5</span> venda.</p>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow">Ou</span>
+        <p class="sm">Falta alguma informação? Devolva ao corretor com o motivo.</p>
+        <p><button class="btn ghost">Devolver ao corretor</button></p>
+      </div>
+    </div>
+    <div class="rodape"><button class="btn red lg" id="registrar">Registrar venda</button></div>
+  </div>
+</section>
+
+<!-- 3. LISTA DE VENDAS DA EQUIPE -->
+<section class="tela" aria-label="Vendas da equipe com pedidos">
+  <p class="rot">3. /vendas/ do gerente: pedidos e vendas da equipe</p>
+  <div class="fone">
+    <div class="topo"><span class="logo">Base360</span><span class="menu">Vendas ▾</span></div>
+    <div class="corpo">
+      <div>
+        <span class="eyebrow">Equipe Paulo</span>
+        <h2 class="tp">Vendas da equipe</h2>
+      </div>
+
+      <div class="card b t">
+        <div class="lin"><p class="tc">Pedidos de registro</p><span class="selo"><span class="num">2</span> abertos</span></div>
+        <div class="lin"><div><p style="font-weight:600">Marcos Pereira</p><span class="sm">Ana Souza · Marco Zero One · <span class="num">R$ 600.000</span></span></div><button class="btn red">Abrir</button></div>
+        <div class="sep"></div>
+        <div class="lin"><div><p style="font-weight:600">Júlia Ramos</p><span class="sm">Bruno Lima · Vista Rudge · VGV a confirmar</span></div><button class="btn ghost">Abrir</button></div>
+      </div>
+
+      <p style="display:flex;justify-content:space-between;align-items:center"><button class="btn ghost">← Out</button><span class="tc">Novembro de 2026</span><button class="btn ghost">Dez →</button></p>
+
+      <div class="tot">
+        <div><span class="aux">Assinado e pago</span><p class="v">R$ 480.000</p></div>
+        <div><span class="aux">Com pendentes</span><p class="v">R$ 880.000</p></div>
+        <div><span class="aux">Vendas</span><p class="v">1,8</p></div>
+      </div>
+      <p class="aux">Partes dos corretores da equipe. Venda dividida com outra equipe conta só a parte de quem é daqui.</p>
+      <p class="sm">Com parceiros: <span class="num">1</span> venda · <span class="num">R$ 400.000</span> com pendentes</p>
+
+      <div class="card">
+        <div class="lin"><div><p class="tc">Marcos Pereira</p><span class="sm">Marco Zero One, Apto 52</span></div><span class="ok" style="font-size:13px;white-space:nowrap">✓ Paga em <span class="num">25/11</span></span></div>
+        <p class="num" style="font:700 20px var(--display)">R$ 600.000</p>
+        <ul class="partes">
+          <li><span>Ana Souza</span><span class="num">50% · R$ 300.000</span></li>
+          <li><span>Bruno Lima</span><span class="num">30% · R$ 180.000</span></li>
+          <li><span>Carla Dias <span class="aux">Equipe Renata</span></span><span class="num">20% · R$ 120.000</span></li>
+        </ul>
+        <span class="aux">Assinada em <span class="num">20/11/2026</span> · registrada por Paulo</span>
+        <span class="aux">Para corrigir ou cancelar, fale com o operacional.</span>
+      </div>
+
+      <div class="card">
+        <div class="lin"><div><p class="tc">Renato Alves</p><span class="sm">Vista Rudge, Apto 31</span></div><span class="wa" style="font-size:13px;white-space:nowrap">! Pagamento pendente</span></div>
+        <p class="num" style="font:700 20px var(--display)">R$ 400.000</p>
+        <ul class="partes">
+          <li><span>Bruno Lima</span><span class="num">100% · R$ 400.000</span></li>
+        </ul>
+        <p style="display:flex;gap:8px"><button class="btn red">Marcar como paga</button></p>
+      </div>
+
+      <div class="card">
+        <div class="lin"><div><p class="tc">Sílvia Moura</p><span class="sm">Marco Zero One, Apto 81</span></div><span class="wa" style="font-size:13px;white-space:nowrap">! Pagamento pendente</span></div>
+        <span class="selo" style="justify-self:start">Com parceiro</span>
+        <p class="num" style="font:700 20px var(--display)">R$ 400.000</p>
+        <ul class="partes">
+          <li><span>Imobiliária Vila Nova <span class="aux">parceiro</span></span><span class="num">50%</span></li>
+          <li><span>Paulo <span class="aux">gerente</span></span><span class="num">50%</span></li>
+        </ul>
+        <span class="aux">Fora das contas dos corretores. Entra na linha "Com parceiros" do painel.</span>
+      </div>
+    </div>
+    <div class="rodape"><button class="btn ghost lg">+ Registrar venda</button></div>
+  </div>
+</section>
+
+<!-- 4. CORRETORA DE OUTRA EQUIPE: MINHAS VENDAS -->
+<section class="tela" aria-label="Minhas vendas da corretora Carla">
+  <p class="rot">4. Corretora Carla (outra equipe): minhas vendas</p>
+  <div class="fone">
+    <div class="topo"><span class="logo">Base360</span><span class="menu">Vendas ▾</span></div>
+    <div class="corpo">
+      <div>
+        <span class="eyebrow">Equipe Renata</span>
+        <h2 class="tp">Minhas vendas</h2>
+      </div>
+
+      <div class="band">
+        <span class="eyebrow" style="color:var(--on-dark-soft)">Novembro de 2026 · sua parte</span>
+        <p class="num" style="font:800 26px var(--display)">R$ 120.000</p>
+        <p class="sm"><span class="num">0,2</span> venda assinada e paga · meta anual <span class="num">+1,20%</span></p>
+      </div>
+
+      <div class="card">
+        <div class="lin"><div><p class="tc">Marcos Pereira</p><span class="sm">Marco Zero One, Apto 52</span></div><span class="ok" style="font-size:13px;white-space:nowrap">✓ Paga em <span class="num">25/11</span></span></div>
+        <div class="lin" style="align-items:baseline"><p class="num" style="font:700 20px var(--display)">R$ 120.000</p><span class="sm">sua parte, <span class="num">20%</span> de <span class="num">R$ 600.000</span></span></div>
+        <ul class="partes">
+          <li><span>Ana Souza <span class="aux">Equipe Paulo</span></span><span class="num">50%</span></li>
+          <li><span>Bruno Lima <span class="aux">Equipe Paulo</span></span><span class="num">30%</span></li>
+          <li class="eu"><span>Carla Dias (você)</span><span class="num">20%</span></li>
+        </ul>
+        <span class="aux">Assinada em <span class="num">20/11/2026</span> · registrada por Paulo</span>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow">Para registrar uma venda</span>
+        <p class="sm">Abra o lead e toque em "Pedir registro da venda". O gerente registra e marca como paga.</p>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow">Histórico na ficha do lead</span>
+        <ul class="tl">
+          <li>Registro da venda pedido ao gerente · Ana Souza · <span class="num">05/11</span></li>
+          <li><span class="ok">✓</span> Venda registrada: Marco Zero One, Apto 52 · <span class="num">R$ 600.000</span>. Ana 50% · Bruno 30% · Carla 20% · Paulo</li>
+          <li><span class="ok">✓</span> Venda paga · Paulo · <span class="num">25/11</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<div class="legenda">
+  <strong>O que este mockup mostra</strong>
+  <ul>
+    <li>O corretor não tem mais "+ Registrar venda" nem "Marcar como paga": ele pede, e o gerente registra (tela 1 e 2).</li>
+    <li>A divisão começa com a dona do lead em 100% (ou a sugestão do corretor). O botão Registrar só libera com a soma em 100%.</li>
+    <li>Na lista do gerente, os totais são das partes da equipe: 0,5 + 0,3 da venda dividida, mais 1 venda inteira do Bruno = 1,8.</li>
+    <li>Quem participa vê a divisão inteira (P4, decidida em 05/11/2026).</li>
+    <li>O gerente registra e marca como paga, mas não corrige nem cancela: isso passa a ser só do operacional e do gerente geral (P3).</li>
+    <li>O gerente pode entrar na divisão de qualquer venda (P5). Venda de parceiro não junta corretor da casa (P6).</li>
+    <li>A venda de parceiro (parceiro e gerente) aparece na lista, mas fica fora das contas dos corretores.</li>
+    <li>Em aberto: a verba (a regra nova de pontos) e como conta a parte do gerente.</li>
+  </ul>
+</div>
+
+<script>
+// Tela 2: soma ao vivo da divisão e "Dividir igual". Só demonstração.
+(function(){
+  var vgv = 600000;
+  var ins = Array.prototype.slice.call(document.querySelectorAll('#divisao .pct'));
+  var tons = ['t1','t2','t3'];
+  var btn = document.getElementById('registrar');
+  function ler(s){ var n = parseFloat(String(s).replace(',', '.')); return isFinite(n) ? n : 0; }
+  function reais(n){ return 'R$ ' + Math.round(n).toLocaleString('pt-BR'); }
+  function pct(n){ return (Math.round(n*100)/100).toLocaleString('pt-BR') + '%'; }
+  function atualizar(){
+    var ps = ins.map(function(i){ return ler(i.value); });
+    var soma = Math.round(ps.reduce(function(a,b){ return a+b; }, 0)*100)/100;
+    ps.forEach(function(p,k){ document.getElementById(tons[k]).style.width = Math.max(0, Math.min(100,p)) + '%'; });
+    var txt = document.getElementById('soma-txt');
+    if (soma === 100) {
+      txt.innerHTML = '<span class="ok">✓</span> Soma <span class="num">100%</span>';
+      btn.className = 'btn red lg'; btn.disabled = false;
+    } else {
+      var falta = Math.round((100 - soma)*100)/100;
+      txt.innerHTML = '<span class="wa">!</span> Soma <span class="num">' + pct(soma) + '</span>. ' + (falta > 0 ? 'Falta <span class="num">' + pct(falta) + '</span>' : 'Passou <span class="num">' + pct(-falta) + '</span>');
+      btn.className = 'btn lg off'; btn.disabled = true;
+    }
+    document.getElementById('soma-vgv').textContent = ps.map(function(p){ return reais(vgv*p/100); }).join(' · ');
+  }
+  ins.forEach(function(i){ i.addEventListener('input', atualizar); });
+  document.getElementById('igual').addEventListener('click', function(){
+    var n = ins.length, base = Math.floor(10000/n)/100;
+    ins.forEach(function(i,k){ i.value = (k === n-1 ? Math.round((100 - base*(n-1))*100)/100 : base).toLocaleString('pt-BR'); });
+    atualizar();
+  });
+  atualizar();
+})();
+</script>
