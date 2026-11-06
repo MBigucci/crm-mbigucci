@@ -43,6 +43,13 @@ Situação: **desenho para conciliar com a sessão principal do Vendas antes do 
 - **Ficha do parceiro:** o card "Indicações" (indicados, vendidos, a última indicação) e "Clientes indicados" (primeiro nome, empreendimento, etapa e data). Os estágios Indicou e Vendeu passam a funcionar.
 - **Início do gerente:** a carteira entra na lista do dia dele (próximos contatos dos leads "De parceiros").
 
+## Conciliação com a sessão principal (05/11/2026)
+- Liberados agora: origem, `parceiro_id`, recepção, `lead_acompanhamentos`, views e funções novas. A suíte do banco só roda com o aviso da sessão principal.
+- **Item 3:** hoje o gerente dono **não** salva a ficha (`with check` de "alterar leads"), não registra interação (`lead_interacoes` exige `leads.cadastrar`) e as visitas seguem o mesmo padrão. A exceção vira a **permissão nova `leads.carteira_propria`**, dada ao gerente: as policies de `leads`, `lead_interacoes` e `visitas` aceitam `dono_id = auth.uid() and (leads.cadastrar or leads.carteira_propria)`. Espera o banco da distribuição automática; a sessão principal avisa.
+- O repasse do gerente para um corretor da equipe já passa pelo `leads_guard`.
+- **Prazo:** confirmado, só a origem `empresa` tem os 15 min. A distribuição vai filtrar `origem = 'empresa'` de forma explícita.
+- **Venda:** pelos participantes (`docs/codex-vendas-participantes.md`, aguardando o Felipe). Daqui em diante só o gerente e o operacional registram vendas e marcam como paga; o corretor pede o registro.
+
 ## Ordem e dependências
 1. Este desenho vai à sessão principal e é conciliado.
 2. O SQL que não toca no núcleo (origem, `parceiro_id`, acompanhamentos, views e funções novas) pode ser feito já.
