@@ -226,8 +226,9 @@ html[data-dir="M"] .eyebrow{color:var(--link);letter-spacing:.18em}
 .frame.anim .ent{animation:sobe var(--t-slow) var(--ease) both;animation-delay:calc(var(--i,0)*var(--stagger,50ms))}
 .frame.anim .prog i{animation:cresce 600ms var(--ease) 400ms both}
 .tt .frame,.tt .frame *{transition-property:background-color,color,border-color,box-shadow,transform,opacity,visibility;transition-duration:var(--t-base);transition-timing-function:var(--ease)}
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.card:hover,.btn:hover,.btn:active,.opcao:active,.btn-menu:active{transform:none!important}}
 html[data-mov="reduzido"] *,html[data-mov="reduzido"] *::before,html[data-mov="reduzido"] *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+html[data-mov="reduzido"] .card:hover,html[data-mov="reduzido"] .btn:hover,html[data-mov="reduzido"] .btn:active,html[data-mov="reduzido"] .opcao:active,html[data-mov="reduzido"] .btn-menu:active{transform:none!important}
 html[data-mov="reduzido"] .frame .ent{opacity:1}
 </style>
 <style id="vars"></style>

@@ -49,6 +49,14 @@ Medido em mbigucci.com.br/blog/ (captura em `crm/local/visual-diretoria/site/blo
 - **Botão secundário (`btn-ghost`)**: borda de tinta, no hover **inverte** para fundo tinta e texto papel.
 - **Menu:** caixa alta 12,5px com espaçamento, item atual com sublinhado vermelho de 2px; linha vermelha de progresso no topo da página.
 
+## A página institucional (acrescentado em 06/11/2026)
+Vista em mbigucci.com.br/institucional/ (capturas em `crm/local/visual-diretoria/site/inst-*.jpg`):
+- **Herói:** migalha de pão (Início / A MBigucci), eyebrow vermelho, título 800 e brilho radial vermelho; a mídia vai num painel com borda fina.
+- **Faixa de números** em grafite: números enormes em branco (40+, 477, 35 mil+, 1,3 mi m²) com o **sufixo ou a unidade em vermelho**.
+- **Chips de valores:** brancos, borda `line`, raio de 2px, **ponto vermelho** antes do rótulo, 600.
+- **Citação:** barra vermelha de 4px à esquerda, itálico, sem fundo. **Fotos** com a sombra elegante.
+- **Grade de programas:** cards brancos de 4px, imagem em faixa papel no topo, **título em vermelho** (Bricolage 700, 20px), texto de 15px em tinta suave.
+
 ## O que o site também é
 - **Não é macio.** Cantos de 2 px e caixa alta com espaçamento são marca. A suavidade vem de sombra, espaço e movimento.
 - **Tem pontos fracos que o CRM já corrigiu:** borda de campo a 1,2:1, concreto `#9A958C` em texto pequeno, âmbar `#E8890C`.
