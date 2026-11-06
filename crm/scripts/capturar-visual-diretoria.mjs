@@ -24,7 +24,7 @@ const cdp = (method, params = {}) => new Promise((r) => { const id = ++seq; pend
 const av = async (expr) => (await cdp("Runtime.evaluate", { expression: expr, awaitPromise: true, returnByValue: true })).result?.result?.value;
 const medidas = {};
 try {
-  await cdp("Emulation.setDeviceMetricsOverride", { width: 1400, height: 1000, deviceScaleFactor: 1, mobile: false });
+  await cdp("Emulation.setDeviceMetricsOverride", { width: 1400, height: 1500, deviceScaleFactor: 1, mobile: false });
   await cdp("Page.enable");
   await cdp("Page.navigate", { url: pagina });
   await espera(1500);
@@ -47,6 +47,38 @@ try {
   await av(`__visualDiretoria.set({mov:"normal"},true)`);
   await espera(50);
   medidas.animacaoComSistemaReduzido = await av(`getComputedStyle(document.querySelector(".card.ent")).animationName`);
+  for (const graf of ["site","quente"]) for (const dev of ["m","n"]) for (const tema of ["claro","escuro"]) {
+    await av(`__visualDiretoria.set({dir:"M",dev:"${dev}",tema:"${tema}",graf:"${graf}",mov:"reduzido"})`);
+    await espera(250);
+    const rr = await av(`(()=>{const f=document.querySelector(".frame").getBoundingClientRect();return {x:f.left+scrollX,y:f.top+scrollY,w:f.width,h:f.height}})()`);
+    const sh = await cdp("Page.captureScreenshot", { format: "png", clip: { x: rr.x, y: rr.y, width: rr.w, height: rr.h, scale: 1 } });
+    writeFileSync(join(saida, `M-grafite-${graf}-${dev === "m" ? "celular" : "notebook"}-${tema}.png`), Buffer.from(sh.result.data, "base64"));
+  }
+  await av(`__visualDiretoria.set({graf:"site"})`);
+  // Etapa 2 (só na M): ficha, painel e menu, celular e notebook, claro e escuro.
+  for (const tela of ["ficha","painel","menu"]) for (const dev of ["m","n"]) for (const tema of ["claro","escuro"]) {
+    await av(`__visualDiretoria.set({dir:"M",dev:"${dev}",tema:"${tema}",graf:"quente",tela:"${tela}",mov:"reduzido"})`);
+    await espera(250);
+    const rr = await av(`(()=>{const f=document.querySelector(".frame").getBoundingClientRect();return {x:f.left+scrollX,y:f.top+scrollY,w:f.width,h:f.height}})()`);
+    const sh = await cdp("Page.captureScreenshot", { format: "png", clip: { x: rr.x, y: rr.y, width: rr.w, height: rr.h, scale: 1 } });
+    writeFileSync(join(saida, `M-${tela}-${dev === "m" ? "celular" : "notebook"}-${tema}.png`), Buffer.from(sh.result.data, "base64"));
+    medidas[`M-${tela}-${dev}-${tema}`] = await av(`(()=>{const vis=(e)=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(e).visibility!=="hidden"&&!e.closest(".sheet:not(.on)")};const alvos=[...document.querySelectorAll(".frame button,.frame .btn,.frame .opcao,.frame input,.frame textarea,.frame .lateral a,.frame .sheet a,.frame .voltar,.frame .faixa a")].filter(vis).map(e=>({t:(e.innerText||e.id||e.tagName).slice(0,20),h:Math.round(e.getBoundingClientRect().height)}));const menor=alvos.reduce((a,b)=>a.h<b.h?a:b);return {menorAlvo:menor,n:alvos.length,paginaRola:document.documentElement.scrollWidth>document.documentElement.clientWidth,frameRolaX:(()=>{const r=document.querySelector(".rol");return r.scrollWidth>r.clientWidth+1})()}})()`);
+  }
+  // Movimento nas telas novas da M: normal, Movimento reduzido e prefers-reduced-motion emulado.
+  const anim = `(()=>{const q=(s)=>document.querySelector(s);const e=q(".ent");const sh=q(".sheet");return {ent:getComputedStyle(e).animationName+" "+getComputedStyle(e).animationDuration+" atraso do 3º: "+(()=>{const x=[...document.querySelectorAll(".ent")][2];return x?getComputedStyle(x).animationDelay:"-"})(),sheet:sh?getComputedStyle(sh).transitionDuration:"-",pop:q(".pop")?getComputedStyle(q(".pop")).animationName:"sem pop",btn:getComputedStyle(q(".btn")).transitionDuration}})()`;
+  await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
+  for (const tela of ["lista","ficha","painel","menu"]) {
+    medidas["mov-M-" + tela] = {};
+    await av(`__visualDiretoria.set({dir:"M",dev:"m",tema:"claro",tela:"${tela}",mov:"normal"},true)`); await espera(80);
+    medidas["mov-M-" + tela].normal = await av(anim);
+    await av(`__visualDiretoria.set({mov:"reduzido"},true)`); await espera(80);
+    medidas["mov-M-" + tela].reduzido = await av(anim);
+    await av(`__visualDiretoria.set({mov:"normal"},true)`);
+    await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] }); await espera(80);
+    medidas["mov-M-" + tela].sistemaReduz = await av(anim);
+    await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
+  }
+  await av(`__visualDiretoria.set({dir:"B",tela:"lista",mov:"reduzido"})`);
   // Menu do celular aberto (folha animada).
   await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
   await av(`__visualDiretoria.set({dir:"B",dev:"m",tema:"claro",mov:"reduzido"})`);

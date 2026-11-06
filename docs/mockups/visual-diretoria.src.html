@@ -67,6 +67,9 @@ html[data-dir="A"] a[aria-current]:focus-visible,html[data-dir="M"] a[aria-curre
 .btn:active{transform:scale(.97)}
 .btn-red{background:var(--action);color:var(--on-action);box-shadow:var(--sh-btn)}
 .btn-red:hover{background:var(--action-hover)}
+html[data-dir="M"] .btn-red.wa{background:var(--whats);color:var(--on-whats)}
+html[data-dir="M"] .btn-red.wa:hover{background:var(--whats-hover)}
+html[data-dir="M"] .btn-red.wa:focus-visible{outline-color:var(--whats)}
 .btn-ghost{background:var(--secondary);color:var(--ink);border-color:var(--secondary-edge);box-shadow:var(--sh-btn-sec)}
 .btn-ghost:hover{border-color:var(--ink)}
 @container f (min-width:900px){.btn{min-height:36px}.btn-menu{display:none}.lateral{display:flex}.cab{display:none}.rol{padding:24px 32px 32px}.cx{max-width:1040px}}
@@ -78,12 +81,14 @@ html[data-dir="A"] a[aria-current]:focus-visible,html[data-dir="M"] a[aria-curre
 .faixa .itens{display:grid;gap:4px 16px}
 @container f (min-width:900px){.faixa .itens{grid-template-columns:repeat(3,1fr)}}
 .faixa a{display:flex;align-items:center;gap:12px;min-height:44px;color:var(--on-band);text-decoration:none;transition:opacity var(--t-fast) var(--ease)}
+html[data-dir="M"][data-grafite="site"][data-tema]{--nav:#16181C;--nav-edge:#33363C;--band:#16181C;--nav-active:#2B2D32}
+
 .faixa a:hover span.t{text-decoration-thickness:2px}
 .faixa .n{font:var(--w-num) 32px/1 var(--f-display);font-variant-numeric:tabular-nums;min-width:30px}
 .faixa .t{font-size:14px;text-decoration:underline;text-underline-offset:4px}
 .faixa .vis{margin-top:8px;padding-top:6px;border-top:1px solid var(--band-line);color:var(--on-band-soft);font-size:14px}
 .faixa .vis b{color:var(--on-band);font-variant-numeric:tabular-nums}
-@container f (min-width:900px){.faixa a{min-height:0}}
+@container f (min-width:900px){.faixa a{min-height:36px}}
 /* seções e cards */
 h2.sec{font:var(--w-h2) 18px/1.25 var(--f-display);letter-spacing:-.01em;margin:0 0 12px}
 .num,.linha,.data{font-family:var(--f-num);font-variant-numeric:tabular-nums}
@@ -96,7 +101,7 @@ h2 .num{font-family:inherit}
 .card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:16px 18px 16px calc(18px + var(--bar-w));box-shadow:var(--sh-card);overflow:hidden;transition:box-shadow var(--t-base) var(--ease),transform var(--t-base) var(--ease),border-color var(--t-base) var(--ease)}
 .card::before{content:"";position:absolute;inset:0 auto 0 0;width:var(--bar-w);background:var(--bar)}
 .card.dest{border-color:var(--dest-edge);background:var(--dest-bg);box-shadow:var(--sh-dest)}
-.card.dest::before{background:var(--mark)}
+.card.dest::before{background:var(--mark);width:var(--dest-bar-w,var(--bar-w))}
 @media (hover:hover){.card:hover{box-shadow:var(--sh-hover);transform:translateY(var(--lift))}}
 .lh{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .lh .id{min-width:0;flex:1}
@@ -117,7 +122,7 @@ h2 .num{font-family:inherit}
 .prog{height:10px;border-radius:var(--r-chip);background:var(--line);margin-top:10px;overflow:hidden}
 .prog i{display:block;height:100%;width:34%;background:var(--ok);border-radius:inherit;transform-origin:left}
 .rodape{font-size:13px;color:var(--ink-soft)}
-.link{color:var(--link,var(--action));font-weight:600;text-decoration:underline;text-underline-offset:3px;background:none;border:0;padding:0;cursor:pointer;font:inherit}
+.link{display:inline-flex;align-items:center;min-height:44px;color:var(--link,var(--action));font-weight:600;text-decoration:underline;text-underline-offset:3px;background:none;border:0;padding:0;cursor:pointer;font:inherit}
 .barra-base{position:absolute;left:0;right:0;bottom:0;z-index:5;padding:12px 16px 16px;background:var(--cab-bg);border-top:1px solid var(--line);display:flex;justify-content:flex-end}
 .barra-base .btn{flex:1}
 @container f (min-width:900px){.barra-base{display:none}}
@@ -134,10 +139,83 @@ h2 .num{font-family:inherit}
 .aviso{position:absolute;left:50%;bottom:84px;z-index:40;transform:translate(-50%,16px);opacity:0;pointer-events:none;background:var(--ink);color:var(--card);padding:10px 16px;border-radius:var(--r-btn);box-shadow:var(--sh-pop);font-size:13px;font-weight:600;transition:opacity var(--t-base) var(--ease),transform var(--t-base) var(--ease);white-space:nowrap}
 .aviso.on{opacity:1;transform:translate(-50%,0)}
 @container f (min-width:900px){.aviso{bottom:24px}}
+/* ---------- ficha, painel e menu (etapa 2, só na M) ---------- */
+.voltar{display:inline-flex;align-items:center;min-height:44px;color:var(--ink-soft);text-decoration:none;font-weight:600;font-size:13px}
+@container f (min-width:900px){.voltar{min-height:36px}.link{min-height:36px}}
+.tit{font:var(--w-h2) 27px/1.1 var(--f-display);letter-spacing:-.01em;margin:0}
+.cab-ficha{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px}
+.cab-ficha .sub{margin:6px 0 0;color:var(--ink-soft);font-size:14px}
+.cols{display:grid;gap:20px}
+@container f (min-width:900px){.cols{grid-template-columns:minmax(0,1.8fr) minmax(0,1fr);align-items:start}}
+.box{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:18px 20px;box-shadow:var(--sh-card)}
+.box h2{font:var(--w-h2) 18px/1.25 var(--f-display);letter-spacing:-.01em;margin:0 0 6px}
+.eyebrow{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-soft);margin:0 0 8px}
+.dica{margin:0 0 12px;font-size:13px;color:var(--ink-soft)}
+.opcoes{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
+@container f (min-width:900px){.opcoes{grid-template-columns:repeat(6,1fr)}.opcoes.q4{grid-template-columns:repeat(4,1fr)}}
+.opcao{min-height:44px;border-radius:var(--r-btn);border:1px solid var(--control);background:var(--card);color:var(--ink-soft);font:600 14px var(--f-body);cursor:pointer;transition:background-color var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease),color var(--t-fast) var(--ease),transform var(--t-fast) var(--ease)}
+@container f (min-width:900px){.opcao{min-height:36px}}
+.opcao:hover{border-color:var(--ink);color:var(--ink)}.opcao:active{transform:scale(.97)}
+.opcao[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--card)}
+.opcao:focus-visible{outline:2px solid var(--action);outline-offset:2px}
+.nome-f{font:var(--w-h3) 24px/1.15 var(--f-display);letter-spacing:-.01em;margin:4px 0 0;overflow-wrap:anywhere}
+.dls{display:grid;gap:6px;margin:14px 0 0;font-size:13px}
+.dl{display:grid;grid-template-columns:120px 1fr;gap:8px}.dl dt{color:var(--ink-soft)}.dl dd{margin:0;font-variant-numeric:tabular-nums}.dl dd.forte{font-weight:700;color:var(--ink)}
+.blk{display:block;color:var(--ink-soft);font-weight:400}
+.rot{display:block;font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-soft);margin:0 0 5px}
+.campo{display:block;width:100%;min-height:48px;padding:12px;border-radius:var(--r-btn);border:1px solid var(--control);background:var(--page);color:var(--ink);font:400 16px/1.3 var(--f-body);transition:border-color var(--t-fast) var(--ease),box-shadow var(--t-base) var(--ease)}
+textarea.campo{min-height:88px;resize:vertical}
+.campo:focus{outline:none;border-color:var(--action);box-shadow:0 0 0 3px color-mix(in srgb,var(--action) 18%,transparent)}
+.campo::placeholder{color:var(--concrete)}
+.par{display:grid;gap:12px;grid-template-columns:1fr 1fr;margin-bottom:14px}
+.fm{margin-bottom:14px}
+.btn-bloco{width:100%}
+.hist-i{padding:10px 0;border-top:1px solid var(--line);font-size:13px;color:var(--ink-soft)}.hist-i:first-of-type{border-top:0;padding-top:0}
+.hist-i b{color:var(--ink)}
+.hist-i .tx{display:block;margin-top:2px;font-size:14px;color:var(--ink)}
+.selo-s{display:inline-block;border:1px solid var(--ink);border-radius:var(--r-chip);padding:1px 9px;font:600 11px/1.5 var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
+.vis-c{display:grid;gap:6px;margin-top:10px}
+.vis-c .t{font:var(--w-h3) 19px/1.15 var(--f-display);font-variant-numeric:tabular-nums}
+.seg-f{display:inline-flex;border:1px solid var(--control);border-radius:var(--r-btn);overflow:hidden}
+.seg-f button{min-height:44px;padding:0 16px;border:0;border-right:1px solid var(--control);background:var(--card);color:var(--ink);font:600 14px var(--f-body);cursor:pointer;transition:background-color var(--t-fast) var(--ease)}
+.seg-f button:last-child{border-right:0}.seg-f button[aria-pressed="true"]{background:var(--ink);color:var(--card)}
+@container f (min-width:900px){.seg-f button{min-height:36px}}
+.nav-per{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.nav-per .rg{font:700 15px var(--f-num);font-variant-numeric:tabular-nums}
+.tabela{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-card)}
+.tabela table{border-collapse:collapse;width:100%;min-width:560px;font-size:14px;font-variant-numeric:tabular-nums}
+.tabela th{font-weight:600;color:var(--ink-soft);text-align:right;padding:10px 14px;white-space:nowrap}
+.tabela td{text-align:right;padding:10px 14px;border-top:1px solid var(--line);color:var(--ink-soft)}
+.tabela th:first-child,.tabela td:first-child{text-align:left;color:var(--ink);position:sticky;left:0;background:var(--card)}
+.tabela tr.tot td{font-weight:700;color:var(--ink);border-top:2px solid var(--line)}
+.tabela tbody tr{transition:background-color var(--t-fast) var(--ease)}
+@media (hover:hover){.tabela tbody tr:hover td{background:var(--page)}}
+.kpis{display:grid;gap:12px;grid-template-columns:1fr 1fr}
+@container f (min-width:900px){.kpis{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:14px 16px;box-shadow:var(--sh-card)}
+.kpi .v{font:var(--w-num) 20px/1.3 var(--f-display);font-variant-numeric:tabular-nums}
+.kpi .n{font-size:12px;color:var(--ink-soft)}
+.faixa.pn .itens{grid-template-columns:1fr}
+@container f (min-width:900px){.faixa.pn .itens{grid-template-columns:repeat(3,1fr)}}
+.faixa.pn .it{display:block;color:var(--on-band)}.faixa.pn .it .t{text-decoration:none}.faixa.pn .n{display:block;font-size:32px}.faixa.pn a{display:block;min-height:44px}
+@container f (min-width:900px){.faixa.pn a{min-height:0}}
+.sheet .extra{margin:8px 4px 0;padding-top:8px;border-top:1px solid var(--nav-edge)}
+.sheet .extra a{min-height:44px;font-size:14px}
+.sheet .conta-s{margin:8px 4px 0;padding-top:8px;border-top:1px solid var(--nav-edge)}
+.sheet .conta-s b{display:block;padding:6px 12px 0;color:var(--on-nav);font-size:15px}
+.sheet .conta-s a{min-height:44px;font-size:14px}
+.pop{position:absolute;left:12px;bottom:56px;z-index:12;min-width:220px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-pop);padding:6px}
+.pop a{display:flex;align-items:center;min-height:40px;padding:0 12px;border-radius:var(--r-btn);color:var(--ink);text-decoration:none;font:600 13px var(--f-body)}
+.pop a:hover{background:var(--page)}
+.pop .tt{padding:8px 12px 4px;font-size:12px;color:var(--ink-soft)}
+.frame.anim .pop{animation:sobe var(--t-base) var(--ease) both}
+.lateral a.hov{background:var(--nav-hover);color:var(--on-nav)}
+.lateral a.foc{outline:2px solid var(--nav-mark);outline-offset:-2px;color:var(--on-nav)}
+.seg button[disabled]{opacity:.4;cursor:not-allowed}
 /* ---------- movimento ---------- */
-@keyframes sobe{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes sobe{from{opacity:0;transform:translateY(var(--enter-y,8px))}to{opacity:1;transform:none}}
 @keyframes cresce{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-.frame.anim .ent{animation:sobe var(--t-slow) var(--ease) both;animation-delay:calc(var(--i,0)*50ms)}
+.frame.anim .ent{animation:sobe var(--t-slow) var(--ease) both;animation-delay:calc(var(--i,0)*var(--stagger,50ms))}
 .frame.anim .prog i{animation:cresce 600ms var(--ease) 400ms both}
 .tt .frame,.tt .frame *{transition-property:background-color,color,border-color,box-shadow,transform,opacity,visibility;transition-duration:var(--t-base);transition-timing-function:var(--ease)}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
@@ -152,12 +230,16 @@ html[data-mov="reduzido"] .frame .ent{opacity:1}
   <div class="grupos">
     <div class="grupo"><span id="l-dir">Direção</span><div class="seg" role="group" aria-labelledby="l-dir" data-g="dir">
       <button data-v="B" aria-pressed="true">B<span class="lg"> · MBigucci suavizada</span></button><button data-v="A" aria-pressed="false">A<span class="lg"> · Repasse</span></button><button data-v="M" aria-pressed="false">M<span class="lg"> · Repasse + MBigucci</span></button><button data-v="C" aria-pressed="false">C<span class="lg"> · Clara e leve</span></button></div></div>
+    <div class="grupo"><span id="l-tela">Tela (só na M)</span><div class="seg" role="group" aria-labelledby="l-tela" data-g="tela">
+      <button data-v="lista" aria-pressed="true">Lista do dia</button><button data-v="ficha" aria-pressed="false">Ficha</button><button data-v="painel" aria-pressed="false">Painel</button><button data-v="menu" aria-pressed="false">Menu</button></div></div>
     <div class="grupo"><span id="l-dev">Aparelho</span><div class="seg" role="group" aria-labelledby="l-dev" data-g="dev">
       <button data-v="m" aria-pressed="true">Celular</button><button data-v="n" aria-pressed="false">Notebook</button></div></div>
     <div class="grupo"><span id="l-tema">Tema</span><div class="seg" role="group" aria-labelledby="l-tema" data-g="tema">
       <button data-v="claro" aria-pressed="true">Claro</button><button data-v="escuro" aria-pressed="false">Escuro</button></div></div>
     <div class="grupo"><span id="l-mov">Movimento</span><div class="seg" role="group" aria-labelledby="l-mov" data-g="mov">
       <button data-v="normal" aria-pressed="true">Normal</button><button data-v="reduzido" aria-pressed="false">Reduzido</button></div></div>
+    <div class="grupo"><span id="l-gr">Grafite (só na M)</span><div class="seg" role="group" aria-labelledby="l-gr" data-g="graf">
+      <button data-v="site" aria-pressed="false">Do site #16181C</button><button data-v="quente" aria-pressed="true">Quente #2A1B19</button></div></div>
     <div class="grupo"><span>&nbsp;</span><button class="acao" id="ver-anim" type="button">Ver animações</button></div>
   </div>
 </header>
@@ -197,7 +279,8 @@ var IC={
 };
 var NAV=[["lista","Lista do dia"],["leads","Leads"],["quadro","Quadro"],["agenda","Agenda"],["painel","Painel"],["vendas","Vendas"],["metas","Metas"],["emp","Empreendimentos"],["ranking","Ranking"]];
 function ic(k){return '<svg viewBox="0 0 24 24" aria-hidden="true">'+IC[k]+'</svg>'}
-function navLinks(){return NAV.map(function(n,i){return '<a href="#" '+(i===0?'aria-current="page"':'')+'>'+ic(n[0])+n[1]+'</a>'}).join("")}
+var ATUAL={lista:0,menu:0,ficha:1,painel:4};
+function navLinks(hov,foc){var at=ATUAL[S.tela];return NAV.map(function(n,i){var nome=(i===0&&S.tela==="painel")?"Início":n[1];return '<a href="#" '+(i===at?'aria-current="page"':'')+(hov===i?' class="hov"':foc===i?' class="foc"':'')+'>'+ic(n[0])+nome+'</a>'}).join("")}
 /* ---- logo Base360 · Vendas (docs/marca-base360/lockup-vendas-*.svg), sem alteração ---- */
 var LOGO={claro:__LOGO_CLARO__,escuro:__LOGO_ESCURO__};
 function navEscura(d,tema){var k=T[d].layout.tokens.filter(function(x){return x.name==="nav-escura"})[0];var x=k.value;return (typeof x==="string"?x:x[tema==="claro"?"light":"dark"])==="1"}
@@ -218,10 +301,63 @@ function card(x){
    +x.l.map(function(l){return '<span class="linha'+(l[1]?" forte":"")+'">'+l[0]+'</span>'}).join("")
    +'</div><span class="selo '+x.t+'"><span aria-hidden="true">'+SEL[x.t][0]+'</span> '+SEL[x.t][1]+'</span></div>'
    +'<p class="hist">'+x.h+'</p><span class="etapa">'+x.e+'</span>'
-   +'<div class="acoes">'+x.b.map(function(b){return '<button type="button" class="btn '+(b[1]==="r"?"btn-red":"btn-ghost")+'"'+(b[0].indexOf("WhatsApp")===0?' data-aviso="Toque registrado"':'')+'>'+b[0]+'</button>'}).join("")+'</div></li>';
+   +'<div class="acoes">'+x.b.map(function(b){return '<button type="button" class="btn '+(b[1]==="r"?"btn-red"+(b[0].indexOf("WhatsApp")===0?" wa":""):"btn-ghost")+'"'+(b[0].indexOf("WhatsApp")===0?' data-aviso="Toque registrado"':'')+'>'+b[0]+'</button>'}).join("")+'</div></li>';
 }
 function grupo(id,tit,arr){
   return '<section aria-labelledby="t-'+id+'" id="g-'+id+'"><h2 class="sec ent" id="t-'+id+'" style="--i:'+(seq++)+'">'+tit+' · <span class="num">'+arr.length+'</span></h2><ul class="lista">'+arr.map(card).join("")+'</ul></section>';
+}
+function listaHtml(strip){
+  seq=1;
+  return '<div class="cabeca ent" style="--i:0"><p class="data">Sexta-feira, 06/11/2026</p><button type="button" class="btn btn-ghost novo-topo">+ Novo lead</button></div>'
+   +strip
+   +grupo("primeiro","Aguardando primeiro contato",G.primeiro)
+   +grupo("detalhar","Detalhe o contato",G.detalhar)
+   +grupo("atrasados","Atrasados",G.atrasados)
+   +'<section aria-labelledby="t-vis"><h2 class="sec ent" id="t-vis" style="--i:'+(seq++)+'">Visitas de hoje · <span class="num">1</span></h2><ul class="lista"><li class="card ent" style="--i:'+(seq++)+'"><div class="visita"><div><span class="t">Ana Exemplo</span><span class="linha">Hoje, 15h · Plantão do residencial</span></div><button type="button" class="btn btn-ghost">Abrir</button></div></li></ul></section>'
+   +'<section aria-labelledby="t-an"><h2 class="sec ent" id="t-an" style="--i:'+(seq++)+'">Aniversários de hoje · <span class="num">1</span></h2><ul class="lista"><li class="card ent" style="--i:'+(seq++)+'"><div class="aniv"><span class="t">→ Aniversário de Clara Exemplo hoje</span></div><div class="acoes"><button type="button" class="btn btn-ghost" data-aviso="Mensagem aberta">Mandar parabéns →</button><button type="button" class="btn btn-ghost">Abrir</button></div></li></ul></section>'
+   +grupo("hoje","Hoje",G.hoje)
+   +'<p class="rodape ent" style="--i:'+(seq++)+'"><span class="num">2</span> leads têm contato marcado para os próximos dias. <button type="button" class="link">Ver todos</button></p>'
+   +'<div class="meta ent" style="--i:'+(seq++)+'"><div class="lab">Meta anual de VGV</div><div class="v">R$ 3.400.000 de R$ 10.000.000</div><div class="prog" role="img" aria-label="34% da meta"><i></i></div></div>'
+;
+}
+function fichaHtml(){
+  seq=0;var e=function(){return ' ent" style="--i:'+(seq++)+'"'};
+  var op=function(arr,sel,cl){return '<div class="opcoes '+(cl||"")+'" role="group">'+arr.map(function(x,i){return '<button type="button" class="opcao" aria-pressed="'+(i===sel)+'">'+x+'</button>'}).join("")+'</div>'};
+  var dl=function(r,v,cl){return '<div class="dl"><dt>'+r+'</dt><dd'+(cl?' class="'+cl+'"':'')+'>'+v+'</dd></div>'};
+  return '<h1 class="tit'+e()+'>Ficha do lead</h1>'
+   +'<div class="cols">'
+   +'<div style="display:grid;gap:16px;min-width:0">'
+   +'<section class="box dest'+e()+'><div class="lh"><div class="id"><span class="eyebrow" style="margin:0">Em contato</span><h2 class="nome-f">Ana Exemplo</h2><p class="linha" style="margin:2px 0 0">(11) 99999-0010</p></div><span class="selo q"><span aria-hidden="true">!</span> Quente</span></div>'
+   +'<dl class="dls">'+dl("Próximo contato","! Atrasado · Ontem, 10:00","forte")+dl("Último contato","! Sem contato há 3 dias<span class=\"blk\">Tentativa 2 de 3 sem resposta</span>")+dl("A detalhar","! Abriu o WhatsApp hoje, 09:00")+dl("Origem","Indicação")+dl("Empreendimento","Residencial Exemplo →")+dl("Cadastrado","28/10/2026, 10:00")+'</dl>'
+   +'<div class="acoes" style="margin-top:16px"><button type="button" class="btn btn-red wa" data-aviso="Toque registrado">WhatsApp →</button><button type="button" class="btn btn-ghost">Ligar</button></div></section>'
+   +'<section class="box'+e()+' id="registrar"><h2>Registrar interação</h2><p class="dica">→ Você abriu o WhatsApp hoje, 09:00. Conte como foi.</p>'
+   +'<span class="rot">Como foi</span>'+op(["WhatsApp","Ligação","E-mail","Visita","Anotação","Sem resposta"],0)
+   +'<div class="fm"><label class="rot" for="t1">O que aconteceu</label><textarea class="campo" id="t1" placeholder="Ex.: Falou que quer visitar no sábado"></textarea></div>'
+   +'<span class="rot">Próximo contato</span>'+op(["Hoje","Amanhã","Em 3 dias","Em 1 semana"],-1,"q4")
+   +'<div class="par"><div><label class="rot" for="d1">Dia</label><input class="campo" id="d1" placeholder="dd/mm/aaaa"></div><div><label class="rot" for="h1">Hora</label><input class="campo" id="h1" placeholder="--:--"></div></div>'
+   +'<button type="button" class="btn btn-red btn-bloco" data-aviso="Interação registrada">Registrar</button></section>'
+   +'<section class="box'+e()+'><p class="eyebrow">Visitas</p><div class="vis-c"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><span class="t">Qua, 04/11, 23:00</span><span class="selo-s">→ Agendada</span></div><span class="linha">Residencial Exemplo · Plantão do residencial</span></div><div class="acoes" style="flex-direction:column"><button type="button" class="btn btn-red wa" data-aviso="Confirmação aberta">Confirmar no WhatsApp</button><div style="display:flex;gap:8px"><button type="button" class="btn btn-ghost" style="flex:1">✓ Cliente confirmou</button><button type="button" class="btn btn-ghost" style="flex:1">Remarcar</button></div><button type="button" class="btn btn-ghost">Cancelar</button></div><div style="margin-top:12px"><button type="button" class="btn btn-ghost">+ Agendar visita</button></div></section>'
+   +'</div>'
+   +'<div style="display:grid;gap:16px;min-width:0">'
+   +'<aside class="box'+e()+'><p class="eyebrow">Andamento</p><span class="rot">Temperatura</span><div class="opcoes" style="grid-template-columns:repeat(3,1fr)"><button type="button" class="opcao" aria-pressed="true">! Quente</button><button type="button" class="opcao" aria-pressed="false">○ Morno</button><button type="button" class="opcao" aria-pressed="false">– Frio</button></div><label class="rot" for="et">Etapa</label><select class="campo" id="et"><option>Em contato</option></select></aside>'
+   +'<aside class="box'+e()+'><p class="eyebrow">Radar: empreendimentos que combinam · 1</p><div style="display:flex;justify-content:space-between;gap:8px"><b class="nome-f" style="font-size:16px">Residencial Exemplo</b><b class="num">100%</b></div><p class="linha" style="margin:2px 0 8px">Em obras · Centro</p><p class="linha" style="margin:0 0 10px">! Sem preço na tabela · ✓ Região: Centro · ✓ Para morar</p><button type="button" class="btn btn-ghost">Mandar →</button></aside>'
+   +'<aside class="box'+e()+'><p class="eyebrow">Histórico</p>'
+   +'<div class="hist-i"><b>Abriu o WhatsApp</b> · Hoje, 09:00 · automático</div>'
+   +'<div class="hist-i">Hoje, 09:00 · automático<span class="tx">Lead cadastrado</span></div>'
+   +'<div class="hist-i"><b>WhatsApp</b> · 01/11/2026, 10:00<span class="tx">Quer conhecer a planta de dois dormitórios. Retornar para combinar a visita.</span>→ Próximo contato: Ontem, 10:00</div></aside>'
+   +'</div></div>';
+}
+function painelHtml(){
+  seq=0;var e=function(){return ' ent" style="--i:'+(seq++)+'"'};
+  var tb=function(cols,rows,tot,ttl){return (ttl?'<h2 class="sec'+e()+'>'+ttl+'</h2>':'')+'<div class="tabela'+e()+'><table><thead><tr>'+cols.map(function(c){return '<th scope="col">'+c+'</th>'}).join("")+'</tr></thead><tbody>'+rows.map(function(r){return '<tr>'+r.map(function(c){return '<td>'+c+'</td>'}).join("")+'</tr>'}).join("")+(tot?'<tr class="tot">'+tot.map(function(c){return '<td>'+c+'</td>'}).join("")+'</tr>':'')+'</tbody></table></div>'};
+  return '<h1 class="tit'+e()+'>Painel da equipe</h1>'
+   +'<div class="ent" style="--i:'+(seq++)+'"><span class="rot">Período</span><div class="nav-per"><div class="seg-f" role="group" aria-label="Período"><button type="button" aria-pressed="false">Dia</button><button type="button" aria-pressed="true">Semana</button><button type="button" aria-pressed="false">Mês</button></div><button type="button" class="btn btn-ghost">Imprimir</button></div></div>'
+   +'<div class="nav-per ent" style="--i:'+(seq++)+'"><button type="button" class="btn btn-ghost">← Anterior</button><span class="rg">02/11 a 08/11/2026</span><button type="button" class="btn btn-ghost">Seguinte →</button></div>'
+   +'<section class="faixa pn'+e()+' aria-label="Leads do período"><h2>Leads do período</h2><div class="itens"><a href="#"><span class="t">Recebidos da empresa →</span><span class="n">2</span></a><div class="it"><span class="t">Perdidos</span><span class="n">0</span></div><div class="it"><span class="t">Venda no funil</span><span class="n">0</span></div></div></section>'
+   +tb(["Corretor","Recebidos da empresa","Perdidos","Cadastrados pelo corretor","Descartados","Vendas"],[["Marina Exemplo","2","0","6","0","0"],["Paulo Exemplo","0","0","1","0","0"]],["Equipe","2","0","7","0","0"],"Leads no período, por corretor")
+   +tb(["Corretor","Entraram","Em contato","Visita agendada","Visita realizada","Proposta","Venda"],[["Marina Exemplo","8","6","1","1","0","0"],["Paulo Exemplo","1","1","1","1","1","0"]],["Equipe","9","7","2","2","1","0"],"Funil até a venda")
+   +'<h2 class="sec'+e()+'>Conversão por origem</h2><div class="kpis'+e()+'><div class="kpi"><div class="rot">Leads</div><div class="v">9</div><div class="n">entraram no período</div></div><div class="kpi"><div class="rot">Lead → venda</div><div class="v">0%</div><div class="n">0 de 9 viraram venda</div></div><div class="kpi"><div class="rot">Ticket médio</div><div class="v">R$ 2.050.000</div><div class="n">2 vendas · VGV R$ 4.100.000</div></div><div class="kpi"><div class="rot">Ciclo médio</div><div class="v">7 dias</div><div class="n">Do cadastro à assinatura</div></div></div>'
+   +tb(["Corretor","Assinadas e pagas","VGV assinado e pago","Assinadas","VGV assinado"],[["Marina Exemplo","1","R$ 3.450.000","2","R$ 4.100.000"],["Paulo Exemplo","0","R$ 0","0","R$ 0"]],["Equipe","1","R$ 3.450.000","2","R$ 4.100.000"],"Vendas no período, por corretor");
 }
 function tela(dev,tema,d){
   seq=0;
@@ -233,32 +369,23 @@ function tela(dev,tema,d){
    +'<div class="vis"><b>1</b> visita hoje · próxima às 15h <span class="link-faixa">Ver visitas →</span></div></section>';
   seq=1;
   var html='<div class="app"><div class="cab"><div class="marca">'+logoCab+'</div><button type="button" class="btn-menu" id="abre-menu" aria-expanded="false" aria-controls="sheet">Menu</button></div>'
-   +'<div class="corpo"><nav class="lateral" aria-label="Principal"><div class="marca">'+logoNav+'</div>'+navLinks()+'<div class="conta">Marina Exemplo · corretora</div></nav>'
+   +'<div class="corpo"><nav class="lateral" aria-label="Principal"><div class="marca">'+logoNav+'</div>'+(S.tela==="menu"&&dev==="n"?navLinks(4,2):navLinks())+'<div class="conta">'+(S.tela==="painel"?"Gerente Exemplo · gerente":"Marina Exemplo · corretora")+'</div></nav>'
    +'<main class="rol"><div class="cx">'
-   +'<div class="cabeca ent" style="--i:0"><p class="data">Sexta-feira, 06/11/2026</p><button type="button" class="btn btn-ghost novo-topo">+ Novo lead</button></div>'
-   +strip
-   +grupo("primeiro","Aguardando primeiro contato",G.primeiro)
-   +grupo("detalhar","Detalhe o contato",G.detalhar)
-   +grupo("atrasados","Atrasados",G.atrasados)
-   +'<section aria-labelledby="t-vis"><h2 class="sec ent" id="t-vis" style="--i:'+(seq++)+'">Visitas de hoje · <span class="num">1</span></h2><ul class="lista"><li class="card ent" style="--i:'+(seq++)+'"><div class="visita"><div><span class="t">Ana Exemplo</span><span class="linha">Hoje, 15h · Plantão do residencial</span></div><button type="button" class="btn btn-ghost">Abrir</button></div></li></ul></section>'
-   +'<section aria-labelledby="t-an"><h2 class="sec ent" id="t-an" style="--i:'+(seq++)+'">Aniversários de hoje · <span class="num">1</span></h2><ul class="lista"><li class="card ent" style="--i:'+(seq++)+'"><div class="aniv"><span class="t">→ Aniversário de Clara Exemplo hoje</span></div><div class="acoes"><button type="button" class="btn btn-ghost" data-aviso="Mensagem aberta">Mandar parabéns →</button><button type="button" class="btn btn-ghost">Abrir</button></div></li></ul></section>'
-   +grupo("hoje","Hoje",G.hoje)
-   +'<p class="rodape ent" style="--i:'+(seq++)+'"><span class="num">2</span> leads têm contato marcado para os próximos dias. <button type="button" class="link">Ver todos</button></p>'
-   +'<div class="meta ent" style="--i:'+(seq++)+'"><div class="lab">Meta anual de VGV</div><div class="v">R$ 3.400.000 de R$ 10.000.000</div><div class="prog" role="img" aria-label="34% da meta"><i></i></div></div>'
+   +(S.tela==="ficha"?fichaHtml():S.tela==="painel"?painelHtml():listaHtml(strip))
    +'</div></main></div>'
    +'<div class="barra-base"><button type="button" class="btn btn-ghost">+ Novo lead</button></div>'
-   +'<div class="veu" id="veu"></div>'
-   +'<div class="sheet" id="sheet" role="dialog" aria-label="Menu"><div class="topo-s">'+logoNav+'<button type="button" id="fecha-menu">Fechar</button></div>'+navLinks()+'</div>'
+   +'<div class="veu'+(S.tela==="menu"&&dev==="m"?" on":"")+'" id="veu"></div>'
+   +'<div class="sheet'+(S.tela==="menu"&&dev==="m"?" on":"")+'" id="sheet" role="dialog" aria-label="Menu"><div class="topo-s">'+logoNav+'<button type="button" id="fecha-menu">Fechar</button></div>'+navLinks()+'<div class="extra"><a href="#">Simulador ↗</a><a href="#">Site MBigucci ↗</a><a href="#">Linktree ↗</a></div><div class="conta-s"><b>Mari</b><a href="#">Minha conta</a><a href="#">Sair</a></div></div>'
    +'<div class="aviso" id="aviso" role="status"></div>';
   return html;
 }
 /* ---- estado e controles ---- */
-var S={dir:"B",dev:"m",tema:"claro",mov:"normal"};
+var S={dir:"B",dev:"m",tema:"claro",mov:"normal",graf:"quente",tela:"lista"};
 var root=document.documentElement,el=document.getElementById("frame"),esc=document.getElementById("cx-escala");
 var DESC={
  B:"A marca de hoje com cantos de 10px, sombra leve, vermelho só na ação e no card em destaque, e a faixa preta virou uma superfície quente neutra.",
  A:"O shadcn da Roberta como está (vinho #A50013, raios 6 a 12px, sombra, fonte do sistema, lateral escura quente). No escuro, o Repasse usa azul: aqui está fiel.",
- M:"Raios, sombras e densidade do Repasse, com o vermelho, a Bricolage nos títulos e os fundos quentes da marca.",
+ M:"A recomendada. Raios, sombras e densidade do Repasse com a marca: faixa escura quente, destaque com barra vermelha, WhatsApp verde, botões de 7px (o raio do logo do site) e entrada suave. Telas: Lista do dia, Ficha, Painel e Menu.",
  C:"Fundo claro, lateral clara, sem faixa escura, vermelho só na ação principal; o destaque do primeiro card vira um anel."};
 function fit(){
   var w=S.dev==="m"?375:1280,h=S.dev==="m"?812:800,disp=document.documentElement.clientWidth-16,s=Math.min(1,disp/w);
@@ -280,7 +407,9 @@ function liga(){
   el.querySelectorAll(".faixa a").forEach(function(a){a.addEventListener("click",function(e){e.preventDefault();var t=el.querySelector(a.getAttribute("href"));if(t)t.scrollIntoView({block:"start"})})});
 }
 function desenha(anim){
-  root.setAttribute("data-dir",S.dir);root.setAttribute("data-tema",S.tema);
+  if(S.dir!=="M")S.tela="lista";
+  document.querySelectorAll('.seg[data-g="tela"] button').forEach(function(b){var off=S.dir!=="M"&&b.getAttribute("data-v")!=="lista";b.disabled=off;b.title=off?"Só na direção M":""});
+  root.setAttribute("data-dir",S.dir);root.setAttribute("data-tema",S.tema);root.setAttribute("data-grafite",S.graf);
   if(S.mov==="reduzido")root.setAttribute("data-mov","reduzido");else root.removeAttribute("data-mov");
   el.innerHTML='<div class="frame '+S.dev+(anim?" anim":"")+'">'+tela(S.dev,S.tema,S.dir)+'</div>';
   document.getElementById("legenda").innerHTML="<b>"+S.dir+" · "+T[S.dir].name+".</b> "+DESC[S.dir];
@@ -292,9 +421,9 @@ document.querySelectorAll(".seg").forEach(function(g){g.addEventListener("click"
   var tema=k==="tema",ant=el.querySelector(".frame");
   S[k]=v;
   if(tema&&ant){ /* troca de tema sem piscar: só repinta as variáveis, a transição de cor cuida do resto */
-    root.setAttribute("data-tema",S.tema);trocaLogos();
+    root.setAttribute("data-tema",S.tema);root.setAttribute("data-grafite",S.graf);trocaLogos();
     document.querySelectorAll(".seg").forEach(function(g2){var kk=g2.getAttribute("data-g");g2.querySelectorAll("button").forEach(function(bb){bb.setAttribute("aria-pressed",String(S[kk]===bb.getAttribute("data-v")))})});
-  } else desenha(k==="dir"||k==="dev"?true:false);
+  } else desenha(k==="dir"||k==="dev"||k==="tela"?true:false);
 })});
 document.getElementById("ver-anim").onclick=function(){
   var f=el.querySelector(".frame");if(!f)return;f.classList.remove("anim");void f.offsetWidth;f.classList.add("anim");

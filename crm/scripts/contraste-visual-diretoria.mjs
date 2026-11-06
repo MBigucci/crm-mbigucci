@@ -19,9 +19,11 @@ for (const f of FUNDOS) {
   pares.push(["control", f, 3, "borda de controle"], ["action", f, 3, "foco e anel"]);
 }
 pares.push(["on-action", "action", 4.5, "botão principal"], ["on-action", "action-hover", 4.5, "botão principal (hover)"]);
+pares.push(["on-whats", "whats", 4.5, "botão WhatsApp"], ["on-whats", "whats-hover", 4.5, "botão WhatsApp (hover)"], ["whats", "card", 3, "botão WhatsApp sobre o card"], ["whats", "page", 3, "botão WhatsApp sobre a página"], ["whats", "dest-bg", 3, "botão WhatsApp sobre o card em destaque"]);
 pares.push(["on-band", "band", 4.5, "faixa de atenção"], ["on-band-soft", "band", 4.5, "faixa de atenção"]);
 pares.push(["on-nav", "nav", 4.5, "lateral e Menu"], ["on-nav-soft", "nav", 4.5, "lateral e Menu"], ["on-nav-active", "nav-active", 4.5, "item atual"]);
 pares.push(["secondary-edge", "secondary", 3, "contorno do secundário"], ["secondary-edge", "page", 3, "contorno do secundário"], ["ink", "secondary", 4.5, "botão secundário"]);
+pares.push(["card", "ink", 4.5, "opção marcada e período marcado"], ["concrete", "card", 4.5, "texto de apoio"], ["concrete", "page", 4.5, "placeholder"]);
 pares.push(["mark", "card", 3, "barra do card em destaque"], ["ink-soft", "dest-bg", 4.5, "card em destaque"], ["ink", "dest-bg", 4.5, "card em destaque"]);
 pares.push(["nav-mark", "nav", 3, "foco e item atual na navegação"], ["nav-mark", "nav-active", 3, "foco e item atual na navegação"]);
 pares.push(["ink", "nav-active", 4.5, "—"]);
@@ -35,6 +37,8 @@ for (const [d, def] of Object.entries(tokens)) {
     for (const [f, b, min, uso] of pares) {
       if (descartar.has(f + "/" + b)) continue;
       if (!por[f] || !por[b]) continue;
+      // Faixa escura (M): os textos claros dela têm pares próprios; tinta e vermelho sobre ela não se usam.
+      if (b === "band" && ["ink", "ink-soft", "concrete", "ok", "warn", "action", "link", "control"].includes(f) && def.layout.tokens.find((k) => k.name === "band-escura")) continue;
       // Em A e M o item atual é preenchido (sem barra) e o foco dele usa on-nav-active, já medido sobre nav-active.
       if (f === "nav-mark" && b === "nav-active" && (def.layout.tokens.find((k) => k.name === "nav-bar-w")?.value ?? "0px") === "0px") continue;
       // Pares sem sentido para a direção: o vermelho como texto no C e no band-bar que é transparente não entram.

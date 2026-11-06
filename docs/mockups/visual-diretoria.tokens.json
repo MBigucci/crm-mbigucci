@@ -368,6 +368,16 @@
           "name": "ease",
           "value": "cubic-bezier(.2,.7,.2,1)",
           "usage": ""
+        },
+        {
+          "name": "enter-y",
+          "value": "8px",
+          "usage": "Quanto o card sobe ao entrar."
+        },
+        {
+          "name": "stagger",
+          "value": "50ms",
+          "usage": "Atraso entre um card e o próximo."
         }
       ]
     },
@@ -809,6 +819,16 @@
           "name": "ease",
           "value": "cubic-bezier(.2,.7,.2,1)",
           "usage": ""
+        },
+        {
+          "name": "enter-y",
+          "value": "8px",
+          "usage": "Quanto o card sobe ao entrar."
+        },
+        {
+          "name": "stagger",
+          "value": "50ms",
+          "usage": "Atraso entre um card e o próximo."
         }
       ]
     },
@@ -970,6 +990,30 @@
           "usage": ""
         },
         {
+          "name": "whats",
+          "value": {
+            "light": "#1F7A45",
+            "dark": "#68CE92"
+          },
+          "usage": "Botão WhatsApp do card em destaque (verde reconhecível)."
+        },
+        {
+          "name": "whats-hover",
+          "value": {
+            "light": "#17653A",
+            "dark": "#8EDCAE"
+          },
+          "usage": ""
+        },
+        {
+          "name": "on-whats",
+          "value": {
+            "light": "#FFFFFF",
+            "dark": "#151619"
+          },
+          "usage": ""
+        },
+        {
           "name": "mark",
           "value": {
             "light": "#E11119",
@@ -996,15 +1040,15 @@
         {
           "name": "band",
           "value": {
-            "light": "#FAF5F2",
-            "dark": "#2A2B31"
+            "light": "#2A1B19",
+            "dark": "#1B1413"
           },
-          "usage": "Card tonal, como o muted do Repasse."
+          "usage": "Faixa escura de volta (grafite quente; a página tem a variante grafite do site #16181C)."
         },
         {
           "name": "on-band",
           "value": {
-            "light": "#16181C",
+            "light": "#FFFFFF",
             "dark": "#F5F3ED"
           },
           "usage": ""
@@ -1012,16 +1056,16 @@
         {
           "name": "on-band-soft",
           "value": {
-            "light": "#4A4B52",
-            "dark": "#C4C1BA"
+            "light": "#D9D1CF",
+            "dark": "#D2CBC9"
           },
           "usage": ""
         },
         {
           "name": "band-line",
           "value": {
-            "light": "#E0D6D0",
-            "dark": "#3E4048"
+            "light": "rgba(255,255,255,.14)",
+            "dark": "rgba(255,255,255,.14)"
           },
           "usage": ""
         },
@@ -1060,16 +1104,16 @@
         {
           "name": "nav-active",
           "value": {
-            "light": "#E11119",
-            "dark": "#FF6B70"
+            "light": "#43312E",
+            "dark": "#3A2B29"
           },
-          "usage": ""
+          "usage": "Item atual: grafite mais claro, com barra vermelha de 3px."
         },
         {
           "name": "on-nav-active",
           "value": {
             "light": "#FFFFFF",
-            "dark": "#151619"
+            "dark": "#FFFFFF"
           },
           "usage": ""
         },
@@ -1100,10 +1144,10 @@
         {
           "name": "secondary",
           "value": {
-            "light": "#F1EAE6",
+            "light": "#FFFFFF",
             "dark": "#2E2F36"
           },
-          "usage": ""
+          "usage": "Secundário branco com borda de controle, sem vermelho."
         },
         {
           "name": "secondary-edge",
@@ -1124,26 +1168,26 @@
         {
           "name": "bar",
           "value": {
-            "light": "transparent",
-            "dark": "transparent"
+            "light": "#CFCAC0",
+            "dark": "#4A4C54"
           },
-          "usage": ""
+          "usage": "Barra neutra de 3px nos cards."
         },
         {
           "name": "dest-bg",
           "value": {
-            "light": "#FFFFFF",
-            "dark": "#202126"
+            "light": "#FFF8F7",
+            "dark": "#2A2225"
           },
-          "usage": ""
+          "usage": "Card em destaque: fundo levemente rosado."
         },
         {
           "name": "dest-edge",
           "value": {
-            "light": "#E11119",
-            "dark": "#FF6B70"
+            "light": "#F0C9C6",
+            "dark": "#4A2F33"
           },
-          "usage": "Anel na cor da ação no card em destaque."
+          "usage": ""
         }
       ]
     },
@@ -1156,8 +1200,8 @@
         },
         {
           "name": "r-btn",
-          "value": "6px",
-          "usage": ""
+          "value": "7px",
+          "usage": "Raio do logo MBigucci do site: ~16% da altura."
         },
         {
           "name": "r-chip",
@@ -1187,8 +1231,8 @@
         {
           "name": "sh-dest",
           "value": {
-            "light": "0 0 0 1px #E11119,0 1px 3px 0 rgba(22,24,28,.10)",
-            "dark": "0 0 0 1px #FF6B70,0 1px 3px 0 rgba(0,0,0,.5)"
+            "light": "0 1px 3px 0 rgba(22,24,28,.10),0 4px 12px rgba(225,17,25,.08)",
+            "dark": "0 1px 3px 0 rgba(0,0,0,.5)"
           },
           "usage": ""
         },
@@ -1244,14 +1288,24 @@
           "usage": "Cards, popups, véu e troca de tema."
         },
         {
-          "name": "t-slow",
-          "value": "250ms",
-          "usage": "Entrada dos cards, folha do Menu."
-        },
-        {
           "name": "ease",
           "value": "cubic-bezier(.2,.7,.2,1)",
           "usage": ""
+        },
+        {
+          "name": "t-slow",
+          "value": "220ms",
+          "usage": "Entrada dos cards e folha do Menu (decisão do Felipe, 06/11/2026)."
+        },
+        {
+          "name": "enter-y",
+          "value": "6px",
+          "usage": "Decisão do Felipe, 06/11/2026."
+        },
+        {
+          "name": "stagger",
+          "value": "40ms",
+          "usage": "Decisão do Felipe, 06/11/2026."
         }
       ]
     },
@@ -1259,7 +1313,12 @@
       "tokens": [
         {
           "name": "bar-w",
-          "value": "0px",
+          "value": "3px",
+          "usage": ""
+        },
+        {
+          "name": "dest-bar-w",
+          "value": "4px",
           "usage": ""
         },
         {
@@ -1269,7 +1328,7 @@
         },
         {
           "name": "nav-bar-w",
-          "value": "0px",
+          "value": "3px",
           "usage": ""
         },
         {
@@ -1284,7 +1343,15 @@
         },
         {
           "name": "band-border",
-          "value": "1px solid transparent",
+          "value": {
+            "light": "1px solid transparent",
+            "dark": "1px solid #3A3C44"
+          },
+          "usage": ""
+        },
+        {
+          "name": "band-escura",
+          "value": "1",
           "usage": ""
         },
         {
@@ -1703,6 +1770,16 @@
           "name": "ease",
           "value": "cubic-bezier(.2,.7,.2,1)",
           "usage": ""
+        },
+        {
+          "name": "enter-y",
+          "value": "8px",
+          "usage": "Quanto o card sobe ao entrar."
+        },
+        {
+          "name": "stagger",
+          "value": "50ms",
+          "usage": "Atraso entre um card e o próximo."
         }
       ]
     },
