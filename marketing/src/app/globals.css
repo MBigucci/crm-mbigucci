@@ -1,0 +1,574 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* MBigucci DS: valores e pares auditados em docs/design-system.md. */
+:root {
+  color-scheme: light;
+  --paper: 247 246 242;
+  --surface: 255 255 255;
+  --ink: 13 14 17;
+  --ink-soft: 74 75 82;
+  --concrete: 111 107 99;
+  --line: 229 227 221;
+  --control: 118 115 108;
+  --brand: 225 17 25;
+  --brand-dark: 185 13 20;
+  --ok: 31 122 69;
+  --wa: 146 86 0;
+  --tint-brand: 255 246 246;
+  --surface-disabled: 238 237 233;
+  --neutral-mark: 90 91 96;
+  --band: 13 14 17;
+  --on-dark: 255 255 255;
+  --on-dark-soft: 217 214 207;
+  --on-dark-muted: 183 179 172;
+  --on-brand: 255 255 255;
+  --overlay: 13 14 17;
+  --secondary: 239 238 234;
+  --secondary-edge: 129 125 116;
+  --nav: 22 24 28;
+  --nav-ativo: 43 45 50;
+  --nav-linha: 51 54 60;
+  --nav-marca: 255 107 112;
+}
+
+:root[data-tema="escuro"] {
+  color-scheme: dark;
+  --paper: 21 22 25;
+  --surface: 32 33 38;
+  --ink: 245 243 237;
+  --ink-soft: 196 193 186;
+  --concrete: 170 166 158;
+  --line: 66 68 76;
+  --control: 135 137 149;
+  --brand: 255 107 112;
+  --brand-dark: 255 146 150;
+  --ok: 104 206 146;
+  --wa: 240 182 91;
+  --tint-brand: 51 32 36;
+  --surface-disabled: 48 49 56;
+  --neutral-mark: 183 184 192;
+  --band: 13 14 17;
+  --on-dark: 255 255 255;
+  --on-dark-soft: 217 214 207;
+  --on-dark-muted: 183 179 172;
+  --on-brand: 21 22 25;
+  --overlay: 13 14 17;
+  --secondary: 48 49 56;
+  --secondary-edge: 135 137 149;
+  --nav: 22 24 28;
+  --nav-ativo: 43 45 50;
+  --nav-linha: 51 54 60;
+  --nav-marca: 255 107 112;
+}
+
+/* Também acompanha o sistema quando JavaScript não está disponível. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema]) {
+    color-scheme: dark;
+    --paper: 21 22 25;
+    --surface: 32 33 38;
+    --ink: 245 243 237;
+    --ink-soft: 196 193 186;
+    --concrete: 170 166 158;
+    --line: 66 68 76;
+    --control: 135 137 149;
+    --brand: 255 107 112;
+    --brand-dark: 255 146 150;
+    --ok: 104 206 146;
+    --wa: 240 182 91;
+    --tint-brand: 51 32 36;
+    --surface-disabled: 48 49 56;
+    --neutral-mark: 183 184 192;
+    --band: 13 14 17;
+    --on-dark: 255 255 255;
+    --on-dark-soft: 217 214 207;
+    --on-dark-muted: 183 179 172;
+    --on-brand: 21 22 25;
+    --overlay: 13 14 17;
+    --secondary: 48 49 56;
+    --secondary-edge: 135 137 149;
+  }
+}
+
+
+/* Fontes do MBigucci Design System (variáveis, subconjunto latino, SIL OFL) */
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("./fonts/BricolageGrotesque-latin.woff2") format("woff2");
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("./fonts/Inter-latin.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-paper font-sans text-ink antialiased;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer components {
+  /* Eyebrow: caixa alta pelo CSS, concrete */
+  .eyebrow {
+    @apply block text-[11px] font-semibold uppercase tracking-eyebrow text-concrete;
+  }
+  .titulo-pagina {
+    @apply font-display font-extrabold;
+    font-size: clamp(21px, 2.6vw + 12px, 27px);
+    line-height: 1.05;
+  }
+  .titulo-card {
+    @apply font-display text-[17px] font-bold leading-[1.15];
+  }
+  .num {
+    @apply font-display;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Título de seção que orienta uma decisão; eyebrow fica só como apoio. */
+  .titulo-secao {
+    @apply font-display text-[18px] font-bold leading-tight text-ink;
+  }
+
+  /* Faixa de síntese do DS (Veredito), com uma única barra de destaque. */
+  .veredito {
+    @apply rounded-md border border-band border-l-bar border-l-brand bg-band p-4 text-on-dark;
+  }
+
+  /* Card: branco, borda fina, barra de 4px à esquerda (ink; brand em destaque) */
+  .card {
+    @apply relative min-w-0 rounded-md border border-line bg-surface;
+    padding: 16px 18px 16px 21px;
+  }
+  .card::before {
+    content: "";
+    @apply absolute bottom-0 left-0 top-0 w-[4px];
+    background: var(--mb-bar, rgb(var(--ink)));
+  }
+  .card.bar-brand {
+    --mb-bar: rgb(var(--brand));
+  }
+
+  /* Botões */
+  .btn {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-sm border border-transparent text-[13px] font-semibold leading-[1.2] transition-colors;
+    padding: 9px 16px;
+  }
+  .btn-red {
+    @apply bg-brand text-on-brand hover:bg-brand-dark;
+  }
+  /* Secundário: fundo neutro e contorno legível, igual no CRM e no Base360. */
+  .btn-ghost {
+    @apply text-ink hover:border-ink;
+    background-color: rgb(var(--secondary));
+    border-color: rgb(var(--secondary-edge));
+  }
+  .btn:disabled {
+    @apply cursor-default opacity-45 hover:bg-brand;
+  }
+  .btn-ghost:disabled:hover {
+    background-color: rgb(var(--secondary));
+    border-color: rgb(var(--secondary-edge));
+  }
+  /* Celular: alvo de toque mínimo de 44 px em todo botão. */
+  @media (max-width: 767px) {
+    .btn {
+      min-height: 44px;
+    }
+  }
+  /* No celular, alvo de toque maior */
+  .btn-lg {
+    @apply text-[15px];
+    padding: 14px 20px;
+  }
+
+  /* Campos */
+  .field-label {
+    @apply mb-[5px] block text-[12px] font-semibold uppercase leading-[1.3] tracking-eyebrow text-ink-soft;
+  }
+  .input {
+    @apply w-full min-w-0 rounded-sm border border-control bg-paper text-ink outline-none transition-colors placeholder:text-ink-soft focus:border-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+    padding: 12px 12px;
+    font-size: 16px; /* 16px evita o zoom do iOS ao focar */
+    line-height: 1.3;
+  }
+
+  /* Foco de teclado: 2px brand, afastado 2px */
+  .focus-ring {
+    @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+  }
+
+  .checkbox {
+    @apply h-[18px] w-[18px] shrink-0 cursor-pointer;
+    accent-color: rgb(var(--brand));
+    @apply focus-ring;
+  }
+
+  /* Controles avulsos usam o mesmo contraste, sem variantes por tela/tema. */
+  :is(button, select, input, textarea).border-line,
+  label.border-line:has(input) {
+    border-color: rgb(var(--control));
+  }
+
+  /* O PNG já traz a própria moldura branca: sem selo extra e nunca filtro na marca. */
+  .marca-selo {
+    display: block;
+  }
+  /* "MBigucci" em texto quando falta o PNG, sobre a navegação grafite:
+     brand não tem contraste para texto pequeno ali, nav-marca tem. */
+  .marca-texto-nav {
+    color: rgb(var(--nav-marca));
+  }
+  /* Rodapé da lateral com o logo MBigucci: pequeno, abaixo dos destinos. */
+  .rodape-lateral {
+    @apply border-t px-[12px] pb-4 pt-4;
+  }
+  .aviso-erro {
+    @apply text-[13px] font-semibold text-brand;
+  }
+  .aviso-ok {
+    @apply text-[13px] font-semibold text-ok;
+  }
+  /* Selo de situação/perfil: texto com glifo, sem cor de fundo */
+  .selo {
+    @apply inline-flex items-center gap-1 whitespace-nowrap rounded-sm border border-line px-[6px] py-[2px] text-[12px] font-semibold uppercase leading-[1.3] tracking-eyebrow text-ink-soft;
+  }
+
+  /* Link de ação com → */
+  .link-acao {
+    @apply font-semibold text-brand hover:text-brand-dark;
+  }
+  .link-acao::after {
+    content: " →";
+  }
+
+  /*
+   * Navegação: lateral escura no computador e lista escura no celular, iguais
+   * nos dois temas. Ícone + rótulo; o atual com fundo e barra vermelha de 3 px.
+   */
+  /* Barra superior como a do site: fundo do tema a 85%, desfoque de 12 px e borda fina. */
+  .cabecalho-vidro {
+    background: rgb(var(--paper) / 0.85);
+    border-bottom: 1px solid rgb(var(--line));
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+  @supports not ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px))) {
+    .cabecalho-vidro {
+      background: rgb(var(--paper));
+    }
+  }
+  /* Botão do menu do celular, igual ao do site: 44 px, sem borda, 3 traços
+     de 2 px (o do meio mais curto) que viram ✕ ao abrir. */
+  .botao-hamburguer {
+    @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-sm;
+  }
+  .botao-hamburguer .traco {
+    @apply absolute left-0 block h-0.5 w-6 bg-ink transition-all duration-300;
+  }
+  .botao-hamburguer .traco-topo {
+    top: 0;
+  }
+  .botao-hamburguer .traco-meio {
+    @apply w-4 duration-200;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .botao-hamburguer .traco-base {
+    top: 100%;
+    transform: translateY(-0.125rem);
+  }
+  .botao-hamburguer.aberto .traco-topo {
+    top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+  }
+  .botao-hamburguer.aberto .traco-meio {
+    opacity: 0;
+    transform: translateY(-50%) scaleX(0);
+  }
+  .botao-hamburguer.aberto .traco-base {
+    top: 50%;
+    transform: translateY(-50%) rotate(-45deg);
+  }
+  /* Grafite do menu do site (#16181c). */
+  .menu-escuro {
+    background: rgb(var(--nav));
+    color: rgb(var(--on-dark-soft));
+  }
+  .divisoria-nav {
+    border-color: rgb(var(--nav-linha));
+  }
+  /* No tema escuro o grafite é quase o fundo da página: uma borda fina separa. */
+  :root[data-tema="escuro"] .barra-lateral {
+    border-right: 1px solid rgb(var(--line));
+  }
+  :root[data-tema="escuro"] #menu-celular {
+    border-bottom: 1px solid rgb(var(--line));
+  }
+  .item-menu {
+    @apply flex items-center gap-[10px] font-semibold leading-[1.2] transition-colors;
+    border-left: 3px solid transparent;
+    color: rgb(var(--on-dark-soft));
+  }
+  .item-menu:hover {
+    background: rgb(255 255 255 / 0.07);
+    color: rgb(var(--on-dark));
+  }
+  .item-menu-atual,
+  .item-menu-atual:hover {
+    background: rgb(var(--nav-ativo));
+    border-left-color: rgb(var(--nav-marca));
+    color: rgb(var(--on-dark));
+  }
+  .foco-escuro:focus-visible {
+    outline: 2px solid rgb(var(--nav-marca));
+    outline-offset: -4px;
+  }
+  .item-lateral {
+    @apply min-h-[40px] gap-[9px] rounded-sm text-[13px];
+    /* O ícone fica no mesmo x (23 px) aberta e recolhida: centrado nos 64 px. */
+    padding: 10px 6px 10px 12px;
+  }
+  /* Na lateral o rótulo quebra em vez de cortar, se algum dia não couber. */
+  .item-lateral .rotulo-menu {
+    @apply break-words;
+  }
+  .item-lateral.foco-escuro:focus-visible {
+    outline-offset: 2px;
+  }
+  .barra-lateral {
+    display: none;
+  }
+  /* Aviso de conexão: flutua sem deslocar o conteúdo; só o fundo é translúcido. */
+  .aviso-conexao {
+    @apply pointer-events-none fixed z-30 rounded-sm border border-line px-3 py-2 text-[13px] font-semibold text-ink;
+    top: 68px;
+    left: 12px;
+    right: 12px;
+    background: rgb(var(--surface) / 0.85);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+  @media (min-width: 1024px) {
+    .aviso-conexao {
+      top: 76px;
+      left: auto;
+      right: 24px;
+    }
+  }
+  .dica-lateral {
+    @apply pointer-events-none fixed z-40 whitespace-nowrap rounded-sm px-2 py-[5px] text-[12px] font-semibold;
+    left: calc(var(--largura-barra) + 6px);
+    transform: translateY(-50%);
+    background: rgb(var(--band));
+    color: rgb(var(--on-dark));
+  }
+}
+
+/* Largura da lateral: 180 px aberta, 64 px recolhida (preferência deste aparelho). */
+:root {
+  --largura-barra: 180px;
+}
+:root[data-barra="recolhida"] {
+  --largura-barra: 64px;
+}
+@media (min-width: 1024px) {
+  .barra-lateral {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    left: 0;
+    top: 64px;
+    bottom: 0;
+    z-index: 20;
+    width: var(--largura-barra);
+    padding: 20px 8px 0;
+  }
+  /* Só a lista de destinos rola, pela roda e pelo teclado, sem barra de rolagem
+     visível; a folga de 2 px deixa o contorno de foco inteiro. */
+  .lista-lateral {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    margin-inline: -2px;
+    padding: 2px 2px 20px;
+    scrollbar-width: none;
+  }
+  .lista-lateral::-webkit-scrollbar {
+    display: none;
+  }
+  /* Recolhida: o rótulo sai da tela, mas continua sendo o nome acessível. */
+  /* Recolhida, o logo MBigucci do rodapé some: não cabe nos 64 px. */
+  :root[data-barra="recolhida"] .rodape-lateral {
+    display: none;
+  }
+  :root[data-barra="recolhida"] .barra-lateral .rotulo-menu {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .area-principal {
+    padding-left: var(--largura-barra);
+  }
+  /* Rodapés fixos das telas começam depois da lateral. */
+  .area-principal .fixed.inset-x-0 {
+    left: var(--largura-barra);
+  }
+}
+
+/* Transição entre etapas: o único movimento além do acordeão */
+@keyframes etapa-entra {
+  from {
+    opacity: 0;
+    transform: translateX(var(--etapa-dx, 16px));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.etapa-entra {
+  animation: etapa-entra 220ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .etapa-entra {
+    animation: none;
+  }
+  * {
+    transition: none !important;
+  }
+}
+
+/*
+ * Impressão (painel e relatório do corretor). Os gerentes leem no papel:
+ * letra grande, preto no branco, sem cor de fundo, sem menu e sem botões.
+ */
+.so-impressao {
+  display: none;
+}
+@media print {
+  :root,
+  :root[data-tema],
+  :root:not([data-tema]) {
+    color-scheme: light;
+    --paper: 247 246 242;
+    --surface: 255 255 255;
+    --ink: 13 14 17;
+    --ink-soft: 74 75 82;
+    --concrete: 111 107 99;
+    --line: 229 227 221;
+    --control: 118 115 108;
+    --brand: 225 17 25;
+    --brand-dark: 185 13 20;
+    --ok: 31 122 69;
+    --wa: 146 86 0;
+    --tint-brand: 255 246 246;
+    --surface-disabled: 238 237 233;
+    --neutral-mark: 90 91 96;
+    --band: 13 14 17;
+    --on-dark: 255 255 255;
+    --on-dark-soft: 217 214 207;
+    --on-dark-muted: 183 179 172;
+    --on-brand: 255 255 255;
+    --overlay: 13 14 17;
+    --secondary: 239 238 234;
+    --secondary-edge: 129 125 116;
+  }
+  @page {
+    margin: 14mm 12mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+    font-size: 16px;
+  }
+  * {
+    background: transparent !important;
+    color: #000 !important;
+    border-color: #000 !important;
+    box-shadow: none !important;
+  }
+  .sem-impressao,
+  .btn,
+  .fixed {
+    display: none !important;
+  }
+  .so-impressao {
+    display: block;
+    margin-bottom: 4mm;
+  }
+  .titulo-impressao {
+    font-family: "Bricolage Grotesque", Inter, Arial, sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.1;
+  }
+  main,
+  .area-principal {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  main > h1 {
+    display: none;
+  }
+  .card {
+    border: 1px solid #000 !important;
+    padding: 10px 12px !important;
+    break-inside: avoid;
+  }
+  .card::before {
+    display: none;
+  }
+  .eyebrow,
+  .field-label {
+    font-size: 13px;
+  }
+  .text-\[13px\],
+  .text-\[14px\],
+  .text-\[15px\] {
+    font-size: 16px !important;
+  }
+  .tabela-painel {
+    overflow: visible !important;
+  }
+  .tabela-painel table {
+    font-size: 16px !important;
+  }
+  .tabela-painel tr {
+    break-inside: avoid;
+    border-color: #000 !important;
+  }
+  .lista-painel li {
+    break-inside: avoid;
+  }
+  a,
+  button {
+    text-decoration: none !important;
+  }
+  .link-acao::after {
+    content: "";
+  }
+}

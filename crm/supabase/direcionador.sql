@@ -858,6 +858,55 @@ begin
 end;
 $$;
 
+-- O turno da entrada: uma passada por vez. A passada pega o turno (vale 2 min
+-- ou o que p_segundos disser), trabalha e devolve. Outra passada que chegue
+-- no meio não pega e sai sem fazer nada; assim o mesmo e-mail nunca é lido
+-- por duas passadas e o mesmo lead nunca vai para dois lugares. Se a passada
+-- cair sem devolver, o turno vence sozinho.
+create table if not exists interno.entrada_turno (
+  id     boolean primary key default true check (id),
+  dono   uuid,
+  ate    timestamptz not null default '-infinity'
+);
+insert into interno.entrada_turno (id) values (true) on conflict (id) do nothing;
+
+create or replace function public.entrada_turno_pegar(p_dono uuid, p_segundos integer default 120)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_ok boolean;
+begin
+  if p_dono is null then
+    return false;
+  end if;
+  -- O update trava a linha: duas passadas ao mesmo tempo, só uma vê ate < now().
+  update interno.entrada_turno
+     set dono = p_dono, ate = clock_timestamp() + make_interval(secs => greatest(coalesce(p_segundos, 120), 10))
+   where id and ate < clock_timestamp()
+  returning true into v_ok;
+  return coalesce(v_ok, false);
+end;
+$$;
+
+create or replace function public.entrada_turno_devolver(p_dono uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_ok boolean;
+begin
+  update interno.entrada_turno set dono = null, ate = '-infinity'
+   where id and dono = p_dono
+  returning true into v_ok;
+  return coalesce(v_ok, false);
+end;
+$$;
+
 -- Confere o segredo do agendador (cabeçalho x-entrada-segredo), guardado no
 -- Vault por agendar-entrada.sql. Só a service_role.
 create or replace function public.entrada_segredo_ok(p_segredo text)
@@ -978,7 +1027,7 @@ begin
   foreach t in array array[
     'interno.direcionador_config', 'interno.direcionador_destinos', 'interno.lead_fontes',
     'interno.direcionador_regras', 'interno.direcionador_regra_partes',
-    'interno.direcionador_contadores', 'interno.direcionador_contagem_dia'
+    'interno.direcionador_contadores', 'interno.direcionador_contagem_dia', 'interno.entrada_turno'
   ] loop
     execute format('alter table %s enable row level security', t);
     execute format('revoke all on %s from public, anon, authenticated, service_role', t);
@@ -1017,7 +1066,8 @@ begin
     'public.cfg_regra_ligar(uuid, boolean)', 'public.cfg_regra_ordem(uuid[])', 'public.cfg_regra_excluir(uuid)',
     'public.cfg_motor()', 'public.cfg_escolher(uuid, timestamptz)',
     'public.cfg_desfazer(uuid, uuid, timestamptz)', 'public.cfg_item_entrega(uuid)',
-    'public.mkt_registrar_envio(jsonb)', 'public.entrada_segredo_ok(text)'
+    'public.mkt_registrar_envio(jsonb)', 'public.entrada_segredo_ok(text)',
+    'public.entrada_turno_pegar(uuid, integer)', 'public.entrada_turno_devolver(uuid)'
   ] loop
     execute format('revoke all on function %s from public, anon, authenticated, service_role', f);
   end loop;
@@ -1036,5 +1086,6 @@ grant execute on function
 grant execute on function
   public.cfg_motor(), public.cfg_escolher(uuid, timestamptz),
   public.cfg_desfazer(uuid, uuid, timestamptz), public.cfg_item_entrega(uuid),
-  public.mkt_registrar_envio(jsonb), public.entrada_segredo_ok(text)
+  public.mkt_registrar_envio(jsonb), public.entrada_segredo_ok(text),
+  public.entrada_turno_pegar(uuid, integer), public.entrada_turno_devolver(uuid)
   to service_role;

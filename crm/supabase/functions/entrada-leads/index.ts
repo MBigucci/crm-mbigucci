@@ -1354,9 +1354,10 @@ export type Dependencias = {
   graph: {
     listar: () => Promise<MensagemGraph[]>;
     apagar: (id: string) => Promise<void>;
-    marcarLida: (id: string) => Promise<void>;
     enviarEmail: (payload: unknown) => Promise<void>;
   };
+  /** Id desta passada, para o turno (crypto.randomUUID). */
+  turno: () => string;
   /** POST com tempo de 10 s: o status, "tempo" (sem resposta) ou "rede" (falha de conexão). */
   post: (url: string, init: ReturnType<typeof montarPost>["init"]) => Promise<number | "tempo" | "rede">;
   catalogo: () => Promise<Empreendimento[]>;
@@ -1364,11 +1365,30 @@ export type Dependencias = {
   agora: () => Date;
 };
 
-export type Resumo = { lidos: number; vendas: number; externos: number; falhas: number; erros: number; teste: number };
+export type Resumo = { ocupado: boolean; lidos: number; vendas: number; externos: number; falhas: number; erros: number; teste: number };
 
-/** Uma passada: lê os não lidos, decide e entrega um por um, do mais antigo ao mais novo. */
+/**
+ * Uma passada: pega o turno (só uma passada por vez, para o mesmo lead nunca
+ * ir para dois lugares), lê os não lidos, decide e entrega um por um, do mais
+ * antigo ao mais novo, e devolve o turno. Sem o turno, sai sem fazer nada.
+ */
 export async function passada(d: Dependencias): Promise<Resumo> {
-  const resumo: Resumo = { lidos: 0, vendas: 0, externos: 0, falhas: 0, erros: 0, teste: 0 };
+  const resumo: Resumo = { ocupado: false, lidos: 0, vendas: 0, externos: 0, falhas: 0, erros: 0, teste: 0 };
+  const dono = d.turno();
+  if (!(await d.rpc<boolean>("entrada_turno_pegar", { p_dono: dono }))) {
+    d.log(linhaDeLog("-", d.agora(), "ocupado"));
+    return { ...resumo, ocupado: true };
+  }
+  try {
+    await lerEEntregar(d, resumo);
+  } finally {
+    // Se a devolução falhar, o turno vence sozinho (2 min).
+    await d.rpc("entrada_turno_devolver", { p_dono: dono }).catch(() => {});
+  }
+  return resumo;
+}
+
+async function lerEEntregar(d: Dependencias, resumo: Resumo) {
   const motor = await d.rpc<Motor>("cfg_motor");
   const catalogo = await d.catalogo();
   const mensagens = [...(await d.graph.listar())].sort((a, b) => a.receivedDateTime.localeCompare(b.receivedDateTime));
@@ -1390,7 +1410,6 @@ export async function passada(d: Dependencias): Promise<Resumo> {
       d.log(linhaDeLog(id, d.agora(), `erro:${e instanceof ErroDeChamada ? e.message : "inesperado"}`));
     }
   }
-  return resumo;
 }
 
 /** Para onde vai e entrega. Devolve o código do log. */
@@ -1398,10 +1417,10 @@ async function processar(mensagemId: string, lead: LeadDoEmail, id: string, moto
   const { regra } = acharRegra(motor, lead, momentoSP(lead.recebido_em));
 
   if (d.modo !== "producao") {
-    // Modo de teste: decide (sem somar contador), registra só o código e não
-    // entrega nem apaga. Marca como lido para não repetir a cada minuto.
+    // Modo de teste: decide (sem somar contador) e registra só o código. Não
+    // entrega, não grava, não apaga e não marca como lido: a caixa fica como
+    // está, e o mesmo e-mail volta a aparecer no log a cada passada.
     const e = escolherNaRegra(motor, regra, {}, {});
-    await d.graph.marcarLida(mensagemId);
     return `teste:${e.tipo}:${e.motivo}${lead.fonte ? "" : ":fonte_desconhecida"}`;
   }
 
@@ -1537,7 +1556,6 @@ function graphDe(amb: Ambiente, token: string): Dependencias["graph"] {
       return ((await r.json()) as { value: MensagemGraph[] }).value ?? [];
     },
     apagar: async (id) => void (await chamar("graph_apagar", `/messages/${encodeURIComponent(id)}/permanentDelete`, { method: "POST" })),
-    marcarLida: async (id) => void (await chamar("graph_lida", `/messages/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ isRead: true }) })),
     enviarEmail: async (payload) => void (await chamar("graph_enviar", "/sendMail", { method: "POST", body: JSON.stringify(payload) })),
   };
 }
@@ -1589,10 +1607,11 @@ if (deno?.serve) {
         catalogo: () => catalogoDe(amb),
         log: (linha) => console.log(linha),
         agora: () => new Date(),
+        turno: () => crypto.randomUUID(),
       });
       // A resposta fica em net._http_response: só quantos foram lidos. O
       // detalhe (para onde foi cada um) fica só no log da função.
-      return resposta(200, { ok: true, modo: amb.modo, lidos: resumo.lidos });
+      return resposta(200, { ok: true, modo: amb.modo, ocupado: resumo.ocupado, lidos: resumo.lidos });
     } catch (e) {
       const codigo = e instanceof ErroDeChamada ? e.message : "inesperado";
       console.error(linhaDeLog("-", new Date(), `erro:${codigo}`));

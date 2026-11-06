@@ -190,11 +190,10 @@ const mensagem = (c: (typeof CLIENTES)[number], i: number): MensagemGraph => ({
 });
 
 type Chamada = { nome: string; args?: unknown };
-function falsos(opcoes: { modo?: "teste" | "producao"; post?: number | "tempo" | "rede"; vendasFalha?: boolean; apagarFalha?: boolean; emailFalha?: boolean } = {}) {
+function falsos(opcoes: { modo?: "teste" | "producao"; post?: number | "tempo" | "rede"; vendasFalha?: boolean; apagarFalha?: boolean; emailFalha?: boolean; turnoOcupado?: boolean; motorFalha?: boolean } = {}) {
   const chamadas: Chamada[] = [];
   const logs: string[] = [];
   const apagadas: string[] = [];
-  const lidas: string[] = [];
   const emails: unknown[] = [];
   const posts: { url: string; body: string }[] = [];
   // O banco falso escolhe com a regra pura (a paridade com cfg_escolher está no teste do banco).
@@ -203,6 +202,7 @@ function falsos(opcoes: { modo?: "teste" | "producao"; post?: number | "tempo" |
   const d: Dependencias = {
     modo: opcoes.modo ?? "producao",
     agora: () => new Date("2026-11-07T13:40:00Z"),
+    turno: () => "turno-1",
     catalogo: async () => [],
     log: (l) => logs.push(l),
     post: async (url, init) => (posts.push({ url, body: init.body }), opcoes.post ?? 201),
@@ -212,7 +212,6 @@ function falsos(opcoes: { modo?: "teste" | "producao"; post?: number | "tempo" |
         if (opcoes.apagarFalha) throw new ErroDeChamada("graph_apagar", 503);
         apagadas.push(id);
       },
-      marcarLida: async (id) => void lidas.push(id),
       enviarEmail: async (p) => {
         if (opcoes.emailFalha) throw new ErroDeChamada("graph_enviar", 500);
         emails.push(p);
@@ -221,7 +220,12 @@ function falsos(opcoes: { modo?: "teste" | "producao"; post?: number | "tempo" |
     rpc: async <T,>(nome: string, args?: Record<string, unknown>): Promise<T> => {
       chamadas.push({ nome, args });
       switch (nome) {
+        case "entrada_turno_pegar":
+          return !opcoes.turnoOcupado as T;
+        case "entrada_turno_devolver":
+          return true as T;
         case "cfg_motor":
+          if (opcoes.motorFalha) throw new ErroDeChamada("cfg_motor", 503);
           return MOTOR as T;
         case "cfg_escolher": {
           const r = MOTOR.regras.find((x) => x.id === args!.p_regra)!;
@@ -241,13 +245,13 @@ function falsos(opcoes: { modo?: "teste" | "producao"; post?: number | "tempo" |
       }
     },
   };
-  return { d, chamadas, logs, apagadas, lidas, emails, posts, nomes: () => chamadas.map((c) => c.nome) };
+  return { d, chamadas, logs, apagadas, emails, posts, nomes: () => chamadas.map((c) => c.nome) };
 }
 
 test("produção: OLX por e-mail ao destino, ZAP pela porta até o limite, o resto no Vendas", async () => {
   const f = falsos();
   const r = await passada(f.d);
-  assert.deepEqual(r, { lidos: 4, vendas: 2, externos: 2, falhas: 0, erros: 0, teste: 0 });
+  assert.deepEqual(r, { ocupado: false, lidos: 4, vendas: 2, externos: 2, falhas: 0, erros: 0, teste: 0 });
   const codigos = f.logs.map((l) => l.split(" ").slice(3).join(" "));
   assert.deepEqual(codigos, ["externo:entregue", "externo:entregue", "vendas:limite:criado", "vendas:sem_regra:criado"]);
   // OLX: e-mail para o endereço do Vault, sem registro (chave desligada).
@@ -263,7 +267,9 @@ test("produção: OLX por e-mail ao destino, ZAP pela porta até o limite, o res
     [["Bruno Fictício Teles", "2026-11-07T13:32:00Z", "zap"], ["Lúcia Fictícia Rocha", "2026-11-07T13:33:00Z", "site"]]);
   assert.ok(!f.nomes().includes("cfg_desfazer"), "limite não desfaz");
   assert.deepEqual(f.apagadas, ["graph-0", "graph-1", "graph-2", "graph-3"]);
-  assert.deepEqual(f.lidas, []);
+  // O turno: pego antes de tudo, devolvido no fim, com o mesmo dono.
+  assert.deepEqual(f.chamadas[0], { nome: "entrada_turno_pegar", args: { p_dono: "turno-1" } });
+  assert.deepEqual(f.chamadas.at(-1), { nome: "entrada_turno_devolver", args: { p_dono: "turno-1" } });
 });
 
 test("falha na porta: uma tentativa, desfaz o contador e vai para o Vendas na mesma passada", async () => {
@@ -298,15 +304,25 @@ test("erro no Vendas: o e-mail fica na caixa para a próxima passada; erro ao ap
   assert.equal((await passada(g.d)).lidos, 4);
 });
 
-test("modo de teste: decide e registra só o código; não entrega, não grava, não apaga", async () => {
+test("modo de teste: decide e registra só o código; não entrega, não grava, não apaga nem marca como lido", async () => {
   const f = falsos({ modo: "teste" });
   const r = await passada(f.d);
-  assert.deepEqual(r, { lidos: 4, vendas: 0, externos: 0, falhas: 0, erros: 0, teste: 4 });
-  assert.deepEqual(f.nomes(), ["cfg_motor"], "só lê a configuração");
+  assert.deepEqual(r, { ocupado: false, lidos: 4, vendas: 0, externos: 0, falhas: 0, erros: 0, teste: 4 });
+  assert.deepEqual(f.nomes(), ["entrada_turno_pegar", "cfg_motor", "entrada_turno_devolver"], "só lê a configuração");
   assert.deepEqual([f.emails.length, f.posts.length, f.apagadas.length], [0, 0, 0]);
-  assert.deepEqual(f.lidas, ["graph-0", "graph-1", "graph-2", "graph-3"], "marca como lido para não repetir");
+  assert.ok(!("marcarLida" in f.d.graph), "a função nem tem como marcar como lido");
   assert.deepEqual(f.logs.map((l) => l.split(" ").slice(3).join(" ")),
     ["teste:externo:divisao", "teste:externo:divisao", "teste:externo:divisao", "teste:vendas:sem_regra"]);
+});
+
+test("turno: sem ele, a passada sai sem ler nada; com erro no meio, devolve mesmo assim", async () => {
+  const f = falsos({ turnoOcupado: true });
+  assert.deepEqual(await passada(f.d), { ocupado: true, lidos: 0, vendas: 0, externos: 0, falhas: 0, erros: 0, teste: 0 });
+  assert.deepEqual(f.nomes(), ["entrada_turno_pegar"]);
+  assert.match(f.logs[0], / - ocupado$/);
+  const g = falsos({ motorFalha: true });
+  await assert.rejects(passada(g.d), /cfg_motor:503/);
+  assert.equal(g.nomes().at(-1), "entrada_turno_devolver");
 });
 
 test("logs: só id, hora e código; nenhum dado de cliente, endereço ou chave", async () => {
@@ -317,7 +333,7 @@ test("logs: só id, hora e código; nenhum dado de cliente, endereço ou chave",
     saidas.push(...f.logs);
   }
   assert.ok(saidas.length >= 20);
-  for (const l of saidas) assert.match(l, /^\[entrada-leads\] \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z [0-9a-f-]{36} [a-z_:0-9]+$/, l);
+  for (const l of saidas) assert.match(l, /^\[entrada-leads\] \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z ([0-9a-f-]{36}|-) [a-z_:0-9]+$/, l);
   const tudo = saidas.join("\n").toLowerCase();
   const proibidos = CLIENTES.flatMap((c) => [
     c.nome, ...c.nome.split(" "), c.tel, c.tel_norm, c.tel_norm.slice(4), c.email, c.email.split("@")[0], c.msg, c.de, c.de.split("@")[1],
@@ -342,6 +358,8 @@ test("index.ts gerado: roda com Deno falso e devolve só contagens", () => {
       const json = (o, s = 200) => new Response(JSON.stringify(o), { status: s, headers: { "content-type": "application/json" } });
       if (u.endsWith("/rpc/entrada_segredo_ok")) return json(JSON.parse(init.body).p_segredo === "${"s".repeat(64)}");
       if (u.endsWith("/rpc/cfg_motor")) return json(motor);
+      if (u.endsWith("/rpc/entrada_turno_pegar")) return json(true);
+      if (u.endsWith("/rpc/entrada_turno_devolver")) return json(true);
       if (u.includes("/rest/v1/empreendimentos")) return json([]);
       if (u.includes("/oauth2/v2.0/token")) return json({ access_token: "tok" });
       if (u.includes("/mailFolders/inbox/messages")) return json({ value: [{ id: "g1", internetMessageId: "<m@x.test>", subject: "Oi",
@@ -362,7 +380,7 @@ test("index.ts gerado: roda com Deno falso e devolve só contagens", () => {
   assert.equal(r.status, 0, r.stderr);
   const saida = JSON.parse(r.stdout);
   assert.equal(saida.sem.status, 401);
-  assert.deepEqual(saida.com, { status: 200, corpo: { ok: true, modo: "teste", lidos: 1 } }, "a resposta (guardada pelo pg_net) só tem contagem");
+  assert.deepEqual(saida.com, { status: 200, corpo: { ok: true, modo: "teste", ocupado: false, lidos: 1 } }, "a resposta (guardada pelo pg_net) só tem contagem");
   assert.equal(saida.logs.length, 1);
   assert.match(saida.logs[0], / teste:vendas:desligado:fonte_desconhecida$/);
   assert.ok(!saida.logs[0].includes("Fictício"));

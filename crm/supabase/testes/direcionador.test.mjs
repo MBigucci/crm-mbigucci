@@ -12,7 +12,7 @@ import assert from "node:assert/strict";
 import { readFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { PGlite } from "@electric-sql/pglite";
 // A regra pura do Marketing: o mesmo caso tem de dar o mesmo resultado aqui e no banco.
 import { escolherNaRegra, momentoSP, somar } from "../../../marketing/src/lib/direcionador.ts";
@@ -391,6 +391,27 @@ test("segredo do agendador da entrada: só a chave de serviço confere, e só o 
   await db.query(`delete from vault.secrets where name = 'entrada_segredo'`);
 });
 
+test("turno da entrada: uma passada por vez; só o dono devolve; vence sozinho", async () => {
+  const A = "00000000-0000-0000-0000-0000000000a1", B = "00000000-0000-0000-0000-0000000000b2";
+  const pegar = (dono) => um("servico", `select public.entrada_turno_pegar($1) r`, [dono]);
+  const devolver = (dono) => um("servico", `select public.entrada_turno_devolver($1) r`, [dono]);
+  assert.equal(await pegar(A), true);
+  assert.equal(await pegar(B), false, "outra passada no meio não pega");
+  assert.equal(await pegar(A), false, "nem a mesma pega duas vezes");
+  assert.equal(await devolver(B), false, "só o dono devolve");
+  assert.equal(await devolver(A), true);
+  assert.equal(await pegar(B), true);
+  // A passada B caiu sem devolver: o turno vence sozinho.
+  await db.exec(`update interno.entrada_turno set ate = clock_timestamp() - interval '1 second'`);
+  assert.equal(await pegar(A), true);
+  assert.equal(await devolver(A), true);
+  assert.equal(await pegar(null), false);
+  for (const n of [GG, COR, "anon"]) {
+    await assert.rejects(q(n, `select public.entrada_turno_pegar($1)`, [A]), /permission denied/, String(n));
+    await assert.rejects(q(n, `select public.entrada_turno_devolver($1)`, [A]), /permission denied/, String(n));
+  }
+});
+
 test("regra pura (marketing/src/lib/direcionador.ts) e cfg_escolher dão o mesmo resultado nos mesmos casos", async () => {
   // Três regras com divisões diferentes (uma com o Vendas primeiro) e o destino
   // com limite de 2 por dia; 80 leads em dois dias de São Paulo, com horários
@@ -558,6 +579,21 @@ test("concorrência: 20 leads ao mesmo tempo não repetem o contador nem passam 
     assert.equal(lim.filter((r) => r.motivo === "limite").length, 15);
     const dia = (await admin.query(`select total from interno.direcionador_contagem_dia where destino_id = $1`, [b])).rows[0].total;
     assert.equal(dia, 5);
+
+    // Turno: 10 passadas ao mesmo tempo, só uma pega.
+    const turnos = await Promise.all(Array.from({ length: 10 }, async (_, i) => {
+      const c = await pool.connect();
+      try {
+        await c.query(`begin; set local role service_role`);
+        const r = (await c.query(`select public.entrada_turno_pegar($1) r`, [randomUUID()])).rows[0].r;
+        await c.query(`select pg_sleep(0.02)`);
+        await c.query("commit");
+        return r;
+      } finally {
+        c.release();
+      }
+    }));
+    assert.equal(turnos.filter(Boolean).length, 1);
   } finally {
     await pool.end();
     await admin.end();
