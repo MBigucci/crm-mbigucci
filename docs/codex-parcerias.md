@@ -40,7 +40,7 @@ Sumário: Leia antes · O que o Felipe pediu · Decisões técnicas · Etapas ·
    - **De parceiros:** o cliente de parceiro (do estande ou indicado ao gerente) vira **lead do gerente**, com origem "Parceiro" e o parceiro vinculado: ficha, follow-up e visita como qualquer lead. Substitui a lista simples "Clientes de parceiros" do estudo da recepção (3.1).
    - **Acompanhando:** o gerente **não tira lead do corretor** (o "pegar para si" foi descartado). Ele já vê todos os da equipe e pode **marcar para acompanhar** os casos mais quentes; o lead continua do corretor.
    - A tela separa as duas coisas com clareza ("De parceiros" e "Acompanhando"), porque são distintas.
-   - **Venda:** o gerente não vende sozinho, sempre com um corretor, da casa ou do parceiro. As vendas com parcerias contam para a meta do gerente (a desenhar depois).
+   - **Venda:** o gerente não vende sozinho, sempre com um corretor, da casa ou do parceiro. **Venda de parceiro registra o parceiro e o gerente, sem corretor da casa** (05/11/2026). As vendas com parcerias contam para a meta do gerente (a desenhar depois).
    - **Prazo:** a origem Parceiro não tem prazo de perda.
    - **Repasse:** o gerente pode passar um lead da carteira dele para um corretor.
    - Mexe em leads e vendas (outra frente): o desenho vai à sessão principal antes do código, e o código que toca `leads_guard`, `pode_atribuir_a` e as policies de `leads` só entra depois do banco da distribuição automática.
