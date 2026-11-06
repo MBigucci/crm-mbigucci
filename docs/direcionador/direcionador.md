@@ -229,7 +229,7 @@ No desenho recomendado, o lead que vai à distribuição manual **nunca entra no
 ## 8. O lead que vai para o Vendas
 
 - **Hoje não existe lead sem dono.** `docs/leads.md`, seção 1, lista "fila de leads da empresa sem corretor" em "ficou de fora": o gerente cadastra o lead da empresa já com um corretor. O brief do código vai precisar de:
-  - `leads.corretor_id` aceitar nulo **só** para origem "empresa" vinda da entrada (check);
+  - `leads.dono_id` aceitar nulo **só** para origem "empresa" vinda da entrada (check). O desenho completo está na distribuição automática, `docs/estudo-roleta-leads.md`, seção 8;
   - uma tela "A distribuir" e quem a vê (pergunta 4);
   - o prazo de 15 minutos começar na **atribuição** (já é assim para o lead reatribuído, `docs/leads.md`, seção 4);
   - a policy e o `leads_guard` aceitarem a gravação da função (chave de serviço) e a atribuição posterior.
