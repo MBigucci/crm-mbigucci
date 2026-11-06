@@ -39,6 +39,16 @@ Medido no início (900 elementos visíveis):
 
 A origem do DS aparece na captura de Ferramentas: barra preta e vermelha nos cards, campos de 2 px, tudo plano. É a página do site mais parecida com o CRM, e foi a única copiada.
 
+## O blog (acrescentado em 06/11/2026)
+Medido em mbigucci.com.br/blog/ (captura em `crm/local/visual-diretoria/site/blog-*.jpg`):
+- **Herói grafite com brilho radial vermelho** no canto, título em Bricolage 800 com **uma palavra em vermelho**, colagem de fotos com raio de 10px e em elipse.
+- **Eyebrow em vermelho:** caixa alta, 11,5px, 600, espaçamento de 0,22em, acima de cada título de seção ("TODOS OS ARTIGOS"). Título da seção em Bricolage 700, 37px.
+- **Filtros em pílula:** raio total, 10 × 18px, 14px/600, borda `line`, fundo branco, ponto colorido por categoria; o marcado vira tinta com texto branco. Contador discreto ("Mostrando 1 a 6 de 2036 artigos").
+- **Card:** branco, borda `line`, **5px de raio**, foto no topo, **sobe 6px no hover** com borda e sombra (`transition-all` 300ms).
+- **Etiqueta sobre a foto:** vermelho cheio, **2px de raio**, caixa alta 10px, espaçamento 0,1em.
+- **Botão secundário (`btn-ghost`)**: borda de tinta, no hover **inverte** para fundo tinta e texto papel.
+- **Menu:** caixa alta 12,5px com espaçamento, item atual com sublinhado vermelho de 2px; linha vermelha de progresso no topo da página.
+
 ## O que o site também é
 - **Não é macio.** Cantos de 2 px e caixa alta com espaçamento são marca. A suavidade vem de sombra, espaço e movimento.
 - **Tem pontos fracos que o CRM já corrigiu:** borda de campo a 1,2:1, concreto `#9A958C` em texto pequeno, âmbar `#E8890C`.

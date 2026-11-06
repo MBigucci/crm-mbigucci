@@ -915,7 +915,7 @@
             "light": "#F7F6F2",
             "dark": "#151619"
           },
-          "usage": "Papel quente da marca."
+          "usage": "Papel do CRM, um passo mais claro que o do site (#F6F5F1): o vermelho único #E11119 dá 4,52:1 sobre ele, e 4,48:1 sobre o do site."
         },
         {
           "name": "card",
@@ -969,23 +969,31 @@
           "name": "action",
           "value": {
             "light": "#E11119",
-            "dark": "#FF6B70"
+            "dark": "#E11119"
           },
-          "usage": "Vermelho da marca."
+          "usage": "Vermelho do site nos dois temas (botão com texto branco 4,89:1). O coral #FF6B70 fica só para texto vermelho no escuro (token link)."
         },
         {
           "name": "action-hover",
           "value": {
             "light": "#B90D14",
-            "dark": "#FF9296"
+            "dark": "#B90D14"
           },
           "usage": ""
+        },
+        {
+          "name": "link",
+          "value": {
+            "light": "#E11119",
+            "dark": "#F5F3ED"
+          },
+          "usage": "Link e rótulo: o mesmo vermelho único no claro (4,89:1 no card, 4,52:1 no papel). No escuro o vermelho não passa como texto (3,29:1), então link e rótulo ficam em tinta e o vermelho fica só em fundo e barra."
         },
         {
           "name": "on-action",
           "value": {
             "light": "#FFFFFF",
-            "dark": "#151619"
+            "dark": "#FFFFFF"
           },
           "usage": ""
         },
@@ -1017,7 +1025,7 @@
           "name": "mark",
           "value": {
             "light": "#E11119",
-            "dark": "#FF6B70"
+            "dark": "#E11119"
           },
           "usage": ""
         },
@@ -1040,10 +1048,10 @@
         {
           "name": "band",
           "value": {
-            "light": "#2A1B19",
-            "dark": "#1B1413"
+            "light": "#16181C",
+            "dark": "#2C1A1D"
           },
-          "usage": "Faixa escura de volta (grafite quente; a página tem a variante grafite do site #16181C)."
+          "usage": "Faixa escura. Claro: grafite do site. Escuro: vinho profundo, sem barra (a barra vermelha à esquerda é dos cards; na faixa confundia)."
         },
         {
           "name": "on-band",
@@ -1073,17 +1081,17 @@
           "name": "band-bar",
           "value": {
             "light": "#E11119",
-            "dark": "#FF6B70"
+            "dark": "#E11119"
           },
           "usage": ""
         },
         {
           "name": "nav",
           "value": {
-            "light": "#2A1B19",
-            "dark": "#1B1413"
+            "light": "#16181C",
+            "dark": "#16181C"
           },
-          "usage": "Lateral escura quente, como a do Repasse."
+          "usage": "Grafite do site, igual ao menu do site e ao token nav do CRM."
         },
         {
           "name": "on-nav",
@@ -1104,10 +1112,10 @@
         {
           "name": "nav-active",
           "value": {
-            "light": "#43312E",
-            "dark": "#3A2B29"
+            "light": "#212328",
+            "dark": "#212328"
           },
-          "usage": "Item atual: grafite mais claro, com barra vermelha de 3px."
+          "usage": "Item atual: fundo discreto, ícone vermelho e barra vermelha de 3px."
         },
         {
           "name": "on-nav-active",
@@ -1120,18 +1128,18 @@
         {
           "name": "nav-edge",
           "value": {
-            "light": "#3A2B29",
-            "dark": "#2C2220"
+            "light": "#2B2E34",
+            "dark": "#2B2E34"
           },
           "usage": ""
         },
         {
           "name": "nav-mark",
           "value": {
-            "light": "#FF8A8E",
-            "dark": "#FF6B70"
+            "light": "#E11119",
+            "dark": "#E11119"
           },
-          "usage": "Foco na navegação (3:1 sobre nav)."
+          "usage": "Ícone e barra do item atual e foco na navegação (3,64:1 sobre o grafite, 3,2:1 sobre o item atual)."
         },
         {
           "name": "nav-hover",
@@ -1176,16 +1184,16 @@
         {
           "name": "dest-bg",
           "value": {
-            "light": "#FFF8F7",
-            "dark": "#2A2225"
+            "light": "#FFFFFF",
+            "dark": "#202126"
           },
-          "usage": "Card em destaque: fundo levemente rosado."
+          "usage": "Card em destaque: branco (escuro: o do card). O destaque forte fica na faixa, no escuro."
         },
         {
           "name": "dest-edge",
           "value": {
-            "light": "#F0C9C6",
-            "dark": "#4A2F33"
+            "light": "#E4E1DA",
+            "dark": "#3A3C44"
           },
           "usage": ""
         }
@@ -1195,8 +1203,8 @@
       "tokens": [
         {
           "name": "r-card",
-          "value": "12px",
-          "usage": ""
+          "value": "8px",
+          "usage": "Cards de 8px (decisão do Felipe, 06/11/2026); o site usa 5px."
         },
         {
           "name": "r-btn",
@@ -1207,6 +1215,11 @@
           "name": "r-chip",
           "value": "999px",
           "usage": ""
+        },
+        {
+          "name": "r-pill",
+          "value": "999px",
+          "usage": "Seletores em pílula, como o filtro do blog."
         }
       ]
     },
@@ -1215,23 +1228,23 @@
         {
           "name": "sh-card",
           "value": {
-            "light": "0 1px 3px 0 rgba(22,24,28,.10),0 1px 2px -1px rgba(22,24,28,.10)",
-            "dark": "0 1px 3px 0 rgba(0,0,0,.5)"
+            "light": "0 18px 50px -24px rgba(22,24,28,.45)",
+            "dark": "0 18px 50px -24px rgba(0,0,0,.75)"
           },
-          "usage": ""
+          "usage": "shadow-elegant do site em todos os cards (pedido da master, 06/11/2026)."
         },
         {
           "name": "sh-hover",
           "value": {
-            "light": "0 4px 6px -1px rgba(22,24,28,.12),0 2px 4px -2px rgba(22,24,28,.10)",
-            "dark": "0 6px 16px rgba(0,0,0,.5)"
+            "light": "0 18px 50px -24px rgba(22,24,28,.45)",
+            "dark": "0 18px 50px -24px rgba(0,0,0,.75)"
           },
-          "usage": ""
+          "usage": "shadow-elegant do site."
         },
         {
           "name": "sh-dest",
           "value": {
-            "light": "0 1px 3px 0 rgba(22,24,28,.10),0 4px 12px rgba(225,17,25,.08)",
+            "light": "0 18px 50px -24px rgba(22,24,28,.45)",
             "dark": "0 1px 3px 0 rgba(0,0,0,.5)"
           },
           "usage": ""
@@ -1248,7 +1261,7 @@
           "name": "sh-btn-hover",
           "value": {
             "light": "0 3px 8px rgba(225,17,25,.25)",
-            "dark": "0 3px 8px rgba(255,107,112,.18)"
+            "dark": "0 3px 8px rgba(225,17,25,.35)"
           },
           "usage": ""
         },
@@ -1291,6 +1304,11 @@
           "name": "ease",
           "value": "cubic-bezier(.2,.7,.2,1)",
           "usage": ""
+        },
+        {
+          "name": "t-card",
+          "value": "300ms",
+          "usage": "Hover do card: transition-all de 300ms, como no site."
         },
         {
           "name": "t-slow",
@@ -1338,14 +1356,14 @@
         },
         {
           "name": "lift",
-          "value": "-1px",
+          "value": "-4px",
           "usage": ""
         },
         {
           "name": "band-border",
           "value": {
             "light": "1px solid transparent",
-            "dark": "1px solid #3A3C44"
+            "dark": "1px solid #3A2226"
           },
           "usage": ""
         },

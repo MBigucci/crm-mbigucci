@@ -37,6 +37,8 @@ for (const [d, def] of Object.entries(tokens)) {
     for (const [f, b, min, uso] of pares) {
       if (descartar.has(f + "/" + b)) continue;
       if (!por[f] || !por[b]) continue;
+      // Quando a direção tem token de link, o vermelho da ação não é usado como texto.
+      if (f === "action" && min === 4.5 && por.link) continue;
       // Faixa escura (M): os textos claros dela têm pares próprios; tinta e vermelho sobre ela não se usam.
       if (b === "band" && ["ink", "ink-soft", "concrete", "ok", "warn", "action", "link", "control"].includes(f) && def.layout.tokens.find((k) => k.name === "band-escura")) continue;
       // Em A e M o item atual é preenchido (sem barra) e o foco dele usa on-nav-active, já medido sobre nav-active.

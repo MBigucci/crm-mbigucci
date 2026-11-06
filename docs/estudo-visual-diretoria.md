@@ -17,22 +17,37 @@
 
 ## Decisões do Felipe sobre a M
 Tomadas em conversa direta em 06/11/2026.
-- **Faixa "Contatos que precisam de atenção":** volta escura, no grafite **quente** `#2A1B19` (escuro: `#1B1413`), cantos de 12px. Peso e foco da informação eram o que faltava na versão clara. A lateral usa o mesmo grafite. O grafite do site (`#16181C`) foi comparado e fica como variante na página.
+- **Faixa "Contatos que precisam de atenção":** escura, com cantos suaves; peso e foco da informação eram o que faltava na versão clara. **Cor revista no mesmo dia:** o grafite do site `#16181C` (antes o quente `#2A1B19`). A lateral e o fundo também usam as cores do site (grafite `#16181C`, papel `#F6F5F1`).
 - **Card em destaque:** barra vermelha de 4px que segue o raio, mais fundo rosado, sem anel. Cards comuns: barra neutra de 3px.
 - **Lateral:** item atual em grafite mais claro com barra vermelha de 3px (um só vermelho forte por tela).
-- **WhatsApp:** botão verde `#1F7A45` (escuro `#68CE92`) no card em destaque da Lista. O vermelho fica para as outras ações principais. Secundário branco com borda de controle, sem vermelho.
+- **WhatsApp:** botão verde `#1F7A45` (escuro `#68CE92`) no card em destaque da Lista (mantido pelo Felipe). O vermelho fica para as outras ações principais. Secundário branco com borda de controle, sem vermelho.
 - **Raio dos botões:** 7px, o do logo MBigucci do site (cerca de 16% da altura). Cards de 12px.
 - **Selo "! Quente":** neutro, com borda, como na revisão de conforto.
 - **Tipografia:** Bricolage 700 nos títulos e nos números da faixa; texto corrido e linhas do card como hoje (Inter 14px, nome 17px).
 - **Movimento:** entrada dos cards sobe 6px em 220ms, cascata de 40ms; hover e toque como estão (botão vermelho sobe 1px, card 1px, toque encolhe 3%), 140ms. Tudo respeita `prefers-reduced-motion`.
 - **Opinião registrada** (06/11/2026): o DS atual ficou pesado por análise incompleta; o site já usa sombra e movimento (`docs/estudo-site-mbigucci.md`).
 
-### Extensões minhas, a confirmar com o Felipe
-Escolhas feitas ao montar a ficha, o painel e o menu, **não decididas por ele**:
-- Verde também no botão WhatsApp do topo da ficha e em "Confirmar no WhatsApp" (ele escolheu só o do card em destaque da Lista).
-- Foco de campo com borda vermelha e anel de 3px (um dos três ajustes do estudo do site; a pergunta continua sem resposta).
-- Primeira coluna fixa nas tabelas do painel, no celular.
-- Lateral do notebook no estado de hover e de foco (tela Menu); itens "Simulador, Site MBigucci, Linktree" e bloco da conta no Menu do celular.
+### Aproximações do site pedidas pelo Felipe (06/11/2026, depois de ver o blog)
+Cantos retos não são opção; o resto se aproxima do site.
+- **Seletores em pílula** (Como foi, Próximo contato, Temperatura, Dia/Semana/Mês), como o filtro do blog; o marcado vira tinta.
+- **Hover forte nos cards:** sobe 4px, borda de controle e a sombra do site (`0 18px 50px -24px`), em 300ms.
+- **Secundário inverte no hover e no toque:** fundo tinta, texto claro, como o `btn-ghost` do site.
+- **Papel, lateral e faixa nas cores do site.** ~~Menu em caixa alta~~ e ~~fundo rosado do card em destaque~~ foram **retirados** (Felipe, mesmo dia): o destaque é branco com barra vermelha de 4px e a sombra do site.
+- **Cards de 8px** (eram 12px; o site usa 5px). Botões seguem em 7px.
+- Ajuste técnico meu: o vermelho da marca dá 4,48:1 sobre o papel do site, então o link de texto usa `#B90D14` (token `link`).
+- **Mais vermelho, com um só vermelho (mesmo dia):** peça do logo, botões, barras e rótulos/links no **mesmo `#E11119`**, nos dois temas. Item atual da lateral só com a **barra** vermelha (o ícone vermelho pesou e saiu). No escuro, o vermelho não passa como texto (3,29:1), então rótulos e links ficam em tinta e o vermelho só em fundo e barra; o coral `#FF6B70` deixou de existir na M. Papel `#F7F6F2` (um passo mais claro que o do site) para o link de texto passar em 4,52:1. Regra proposta: vermelho é ação e navegação, nunca status.
+- **Destaque no escuro (mesmo dia):** a barra sozinha não destacava, mas o destaque forte no card ficou demais (e a borda parecia neon). Ele foi para a **faixa de atenção**: no escuro ela ganha fundo vinho `#2C1A1D`, **sem barra** (a barra vermelha à esquerda é dos cards e confundia, Felipe, mesmo dia). O card em destaque volta a ser simples: barra vermelha de 4px, sem borda nem brilho.
+- **WhatsApp:** o Felipe decidiu manter o verde (06/11/2026), mesmo com a recomendação contrária (no CRM o verde significa "✓ sucesso"; o site usa vermelho em todo CTA). No escuro é um verde-menta claro `#68CE92`.
+- **Não escolhidas:** eyebrow vermelho e etiquetas de 2px, brilho radial na faixa, entrada mais lenta.
+
+### Decisões por recomendação (06/11/2026, "recomendada, sem preferência do Felipe")
+Pontos em que o Felipe não opinou; vale a opção recomendada, segundo a sessão master:
+- **WhatsApp verde em todo botão de WhatsApp**, incluindo o topo da ficha e "Confirmar no WhatsApp".
+- **Foco de campo:** borda vermelha e anel de 3px.
+- **Tabelas do painel no celular:** primeira coluna fixa.
+- **Sombra dos cards:** a do site (`0 18px 50px -24px`, no escuro em preto a 75%) em todos os cards, no lugar da sombra pequena.
+- **Hover dos cards:** a master pediu que o card **não suba**; o Felipe, em conversa direta comigo, tinha escolhido "hover forte" (sobe 4px). Conflito aberto (ver pendências).
+- Também ficaram, sem decisão explícita: lateral do notebook com estados de hover e foco na tela Menu; itens "Simulador, Site MBigucci, Linktree" e bloco da conta no Menu do celular.
 
 ## Custo no Vendas
 P = token ou primitiva isolada · M = várias primitivas e amostra de telas · G = revisão de fluxos e regressão.
@@ -44,7 +59,7 @@ P = token ou primitiva isolada · M = várias primitivas e amostra de telas · G
 | Barra do card (3px neutra, 4px vermelha) e fundo do destaque | **P** | `.card`, `.bar-brand` |
 | Lateral e menu do celular (item atual com barra) | **M** | `casca.tsx`, ícones já existem |
 | Botões: raio 7px, secundário branco, WhatsApp verde | **M** | `.btn-*` e todas as telas com WhatsApp (Lista, ficha, visitas, parabéns) |
-| Campos: foco com borda vermelha e anel (**pendente**, extensão minha) | **P** | `.campo` |
+| Campos: foco com borda vermelha e anel | **P** | `.campo` |
 | Tabelas do painel (raio, sombra, primeira coluna fixa) | **P** | Já têm rolagem lateral |
 | Movimento: entrada, hover, folhas, tema sem piscar | **M** | Componente de entrada, `prefers-reduced-motion`, teste de movimento reduzido |
 | Atualizar `docs/design-system.md`, `CLAUDE.md` e os testes de contraste | **M** | Regras "sem sombra" e "uma ação vermelha por grupo" mudam |
@@ -68,7 +83,7 @@ Captura isolada em Chrome headless (perfil em `crm/local/`), pelos scripts `cont
 
 ## Pendências
 - **Só o Felipe vê na tela dele:** sensação do movimento, toque em celular real, fonte do sistema de A no aparelho, cores.
-- **Não decidido:** aplicar na M a sombra do site (`0 18px 50px -24px`) e hover de 2 a 4px (`docs/estudo-site-mbigucci.md`).
+- **Conflito:** hover do card. Felipe escolheu "sobe 4px"; a master pediu "sem subir". Está subindo até o Felipe confirmar.
 - **Cabeçalho do desktop omitido** (desde a etapa 1): o do app tem 64px, com logo, atalhos, "✓ Recebendo", "3º na fila" e "Mari ▾"; o menu da conta abre ali. A página mostra só a lateral. Falta desenhar esse cabeçalho se a diretoria o quiser na amostra. O menu do celular termina, no app, com o logo MBigucci (o PNG não está no repositório); aqui termina na conta.
 - **Ficha:** segue a estrutura do app (card do lead, Registrar interação, Visitas, e à direita Andamento, Radar e Histórico). Ficam de fora Venda, Perfil do cliente, Documentos e Descartar. O painel mostra só 4 das 9 seções do app, e a lateral do painel mostra "Início" com conta de gerente, como no app.
 - Palpites do conteúdo: "Abriu o WhatsApp hoje, 9h" e "3 dias atrás" não vieram do formatador do app; os números são fictícios.

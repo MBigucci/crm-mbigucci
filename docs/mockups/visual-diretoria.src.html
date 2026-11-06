@@ -98,11 +98,11 @@ h2 .num{font-family:inherit}
 .faixa .link-faixa{color:var(--on-band-soft);text-decoration:underline;text-underline-offset:3px}
 .lista{list-style:none;margin:0;padding:0;display:grid;gap:12px}
 @container f (min-width:900px){.lista{grid-template-columns:1fr 1fr}}
-.card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:16px 18px 16px calc(18px + var(--bar-w));box-shadow:var(--sh-card);overflow:hidden;transition:box-shadow var(--t-base) var(--ease),transform var(--t-base) var(--ease),border-color var(--t-base) var(--ease)}
+.card{--t-hover:var(--t-card,var(--t-base));position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:16px 18px 16px calc(18px + var(--bar-w));box-shadow:var(--sh-card);overflow:hidden;transition:box-shadow var(--t-hover) var(--ease),transform var(--t-hover) var(--ease),border-color var(--t-hover) var(--ease)}
 .card::before{content:"";position:absolute;inset:0 auto 0 0;width:var(--bar-w);background:var(--bar)}
 .card.dest{border-color:var(--dest-edge);background:var(--dest-bg);box-shadow:var(--sh-dest)}
 .card.dest::before{background:var(--mark);width:var(--dest-bar-w,var(--bar-w))}
-@media (hover:hover){.card:hover{box-shadow:var(--sh-hover);transform:translateY(var(--lift))}}
+@media (hover:hover){.card:hover{box-shadow:var(--sh-hover);transform:translateY(var(--lift));border-color:var(--control)}}
 .lh{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .lh .id{min-width:0;flex:1}
 .nome{display:block;color:var(--ink);text-decoration:none;font:var(--w-h3) 17px/1.15 var(--f-display);letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -212,6 +212,14 @@ textarea.campo{min-height:88px;resize:vertical}
 .lateral a.hov{background:var(--nav-hover);color:var(--on-nav)}
 .lateral a.foc{outline:2px solid var(--nav-mark);outline-offset:-2px;color:var(--on-nav)}
 .seg button[disabled]{opacity:.4;cursor:not-allowed}
+/* ---------- aproximações do site, só na M (decisões do Felipe, 06/11/2026) ---------- */
+html[data-dir="M"] .opcao,html[data-dir="M"] .seg-f{border-radius:var(--r-pill)}
+html[data-dir="M"] .opcao{padding:0 14px}
+html[data-dir="M"] .seg-f button:first-child{padding-left:20px}html[data-dir="M"] .seg-f button:last-child{padding-right:20px}
+html[data-dir="M"] .btn-ghost{transition-property:background-color,border-color,color,transform,box-shadow}
+@media (hover:hover){html[data-dir="M"] .btn-ghost:hover{background:var(--ink);border-color:var(--ink);color:var(--card)}}
+html[data-dir="M"] .btn-ghost:active{background:var(--ink);border-color:var(--ink);color:var(--card)}
+html[data-dir="M"] .eyebrow{color:var(--link);letter-spacing:.18em}
 /* ---------- movimento ---------- */
 @keyframes sobe{from{opacity:0;transform:translateY(var(--enter-y,8px))}to{opacity:1;transform:none}}
 @keyframes cresce{from{transform:scaleX(0)}to{transform:scaleX(1)}}
@@ -284,7 +292,7 @@ function navLinks(hov,foc){var at=ATUAL[S.tela];return NAV.map(function(n,i){var
 /* ---- logo Base360 · Vendas (docs/marca-base360/lockup-vendas-*.svg), sem alteração ---- */
 var LOGO={claro:__LOGO_CLARO__,escuro:__LOGO_ESCURO__};
 function navEscura(d,tema){var k=T[d].layout.tokens.filter(function(x){return x.name==="nav-escura"})[0];var x=k.value;return (typeof x==="string"?x:x[tema==="claro"?"light":"dark"])==="1"}
-function logo(escuroNoFundo){return escuroNoFundo?LOGO.escuro:LOGO.claro}
+function logo(escuroNoFundo){var s=escuroNoFundo?LOGO.escuro:LOGO.claro;return S.dir==="M"?s.split("#ff6b70").join("#e11119"):s}
 /* ---- dados fictícios (inspirados em crm/scripts/visual-fixtures.ts) ---- */
 var G={
  primeiro:[{n:"Sofia Exemplo",l:[["! Responder em 9 min",1],["Sem próximo contato"]],t:"q",h:"Nenhuma interação registrada.",e:"Novo",b:[["Abrir","g"],["WhatsApp →","r"]],dest:1}],
@@ -385,7 +393,7 @@ var root=document.documentElement,el=document.getElementById("frame"),esc=docume
 var DESC={
  B:"A marca de hoje com cantos de 10px, sombra leve, vermelho só na ação e no card em destaque, e a faixa preta virou uma superfície quente neutra.",
  A:"O shadcn da Roberta como está (vinho #A50013, raios 6 a 12px, sombra, fonte do sistema, lateral escura quente). No escuro, o Repasse usa azul: aqui está fiel.",
- M:"A recomendada. Raios, sombras e densidade do Repasse com a marca: faixa escura quente, destaque com barra vermelha, WhatsApp verde, botões de 7px (o raio do logo do site) e entrada suave. Telas: Lista do dia, Ficha, Painel e Menu.",
+ M:"A recomendada. Raios, sombras e densidade do Repasse com a marca e o site: papel e grafite do site, faixa escura, destaque com barra vermelha, WhatsApp verde, botões de 7px (o raio do logo), cards de 8px, seletores em pílula, hover forte nos cards e menu em caixa alta. Telas: Lista do dia, Ficha, Painel e Menu.",
  C:"Fundo claro, lateral clara, sem faixa escura, vermelho só na ação principal; o destaque do primeiro card vira um anel."};
 function fit(){
   var w=S.dev==="m"?375:1280,h=S.dev==="m"?812:800,disp=document.documentElement.clientWidth-16,s=Math.min(1,disp/w);
