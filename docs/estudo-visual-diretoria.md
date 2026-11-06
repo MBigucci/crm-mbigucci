@@ -46,7 +46,7 @@ Pontos em que o Felipe não opinou; vale a opção recomendada, segundo a sessã
 - **Foco de campo:** borda vermelha e anel de 3px.
 - **Tabelas do painel no celular:** primeira coluna fixa.
 - **Sombra dos cards:** a do site (`0 18px 50px -24px`, no escuro em preto a 75%) em todos os cards, no lugar da sombra pequena.
-- **Hover dos cards:** a master pediu que o card **não suba**; o Felipe, em conversa direta comigo, tinha escolhido "hover forte" (sobe 4px). Conflito aberto (ver pendências).
+- **Hover dos cards:** a master pediu que não subisse; o Felipe confirmou em 06/11/2026 que **sobe 4px** (com borda e a sombra do site, 300ms). Vale a escolha dele.
 - Também ficaram, sem decisão explícita: lateral do notebook com estados de hover e foco na tela Menu; itens "Simulador, Site MBigucci, Linktree" e bloco da conta no Menu do celular.
 
 ## Custo no Vendas
@@ -83,7 +83,6 @@ Captura isolada em Chrome headless (perfil em `crm/local/`), pelos scripts `cont
 
 ## Pendências
 - **Só o Felipe vê na tela dele:** sensação do movimento, toque em celular real, fonte do sistema de A no aparelho, cores.
-- **Conflito:** hover do card. Felipe escolheu "sobe 4px"; a master pediu "sem subir". Está subindo até o Felipe confirmar.
 - **Cabeçalho do desktop omitido** (desde a etapa 1): o do app tem 64px, com logo, atalhos, "✓ Recebendo", "3º na fila" e "Mari ▾"; o menu da conta abre ali. A página mostra só a lateral. Falta desenhar esse cabeçalho se a diretoria o quiser na amostra. O menu do celular termina, no app, com o logo MBigucci (o PNG não está no repositório); aqui termina na conta.
 - **Ficha:** segue a estrutura do app (card do lead, Registrar interação, Visitas, e à direita Andamento, Radar e Histórico). Ficam de fora Venda, Perfil do cliente, Documentos e Descartar. O painel mostra só 4 das 9 seções do app, e a lateral do painel mostra "Início" com conta de gerente, como no app.
 - Palpites do conteúdo: "Abriu o WhatsApp hoje, 9h" e "3 dias atrás" não vieram do formatador do app; os números são fictícios.
