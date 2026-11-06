@@ -1,0 +1,1783 @@
+{
+  "B": {
+    "name": "MBigucci suavizada",
+    "version": 1,
+    "id": "B",
+    "color": {
+      "tokens": [
+        {
+          "name": "page",
+          "value": {
+            "light": "#F7F6F2",
+            "dark": "#17181B"
+          },
+          "usage": "Fundo da página."
+        },
+        {
+          "name": "card",
+          "value": {
+            "light": "#FFFFFF",
+            "dark": "#222328"
+          },
+          "usage": "Card. No escuro, um tom acima do fundo no lugar de sombra."
+        },
+        {
+          "name": "ink",
+          "value": {
+            "light": "#16181C",
+            "dark": "#F5F3ED"
+          },
+          "usage": "Texto principal."
+        },
+        {
+          "name": "ink-soft",
+          "value": {
+            "light": "#4A4B52",
+            "dark": "#C4C1BA"
+          },
+          "usage": "Texto secundário."
+        },
+        {
+          "name": "concrete",
+          "value": {
+            "light": "#6F6B63",
+            "dark": "#AAA69E"
+          },
+          "usage": "Eyebrow e nota."
+        },
+        {
+          "name": "line",
+          "value": {
+            "light": "#E6E3DC",
+            "dark": "#34363D"
+          },
+          "usage": "Borda decorativa de card."
+        },
+        {
+          "name": "control",
+          "value": {
+            "light": "#76736C",
+            "dark": "#878995"
+          },
+          "usage": "Borda de controle (3:1)."
+        },
+        {
+          "name": "action",
+          "value": {
+            "light": "#D4141C",
+            "dark": "#FF6B70"
+          },
+          "usage": "Ação principal, link de ação e foco. Um pouco menos vivo que o #E11119 da marca."
+        },
+        {
+          "name": "action-hover",
+          "value": {
+            "light": "#B30D13",
+            "dark": "#FF9296"
+          },
+          "usage": ""
+        },
+        {
+          "name": "on-action",
+          "value": {
+            "light": "#FFFFFF",
+            "dark": "#151619"
+          },
+          "usage": ""
+        },
+        {
+          "name": "mark",
+          "value": {
+            "light": "#E5484D",
+            "dark": "#FF6B70"
+          },
+          "usage": "Barra do card em destaque (não é texto)."
+        },
+        {
+          "name": "ok",
+          "value": {
+            "light": "#1F7A45",
+            "dark": "#68CE92"
+          },
+          "usage": ""
+        },
+        {
+          "name": "warn",
+          "value": {
+            "light": "#925600",
+            "dark": "#F0B65B"
+          },
+          "usage": ""
+        },
+        {
+          "name": "band",
+          "value": {
+            "light": "#F3EFE9",
+            "dark": "#2A2B30"
+          },
+          "usage": "Faixa de atenção: superfície quente neutra, sem preto e sem vermelho."
+        },
+        {
+          "name": "on-band",
+          "value": {
+            "light": "#16181C",
+            "dark": "#F5F3ED"
+          },
+          "usage": ""
+        },
+        {
+          "name": "on-band-soft",
+          "value": {
+            "light": "#4A4B52",
+            "dark": "#C4C1BA"
+          },
+          "usage": ""
+        },
+        {
+          "name": "band-line",
+          "value": {
+            "light": "#E0D9CE",
+            "dark": "#3C3E45"
+          },
+          "usage": ""
+        },
+        {
+          "name": "band-bar",
+          "value": {
+            "light": "#C9C3B7",
+            "dark": "#4A4C54"
+          },
+          "usage": ""
+        },
+        {
+          "name": "nav",
+          "value": {
+            "light": "#2A2C32",
+            "dark": "#1E1F23"
+          },
+          "usage": "Lateral e Menu: grafite suave."
+        },
+        {
+          "name": "on-nav",
+          "value": {
+            "light": "#FFFFFF",
+            "dark": "#F5F3ED"
+          },
+          "usage": ""
+        },
+        {
+          "name": "on-nav-soft",
+          "value": {
+            "light": "#D9D6CF",
+            "dark": "#C4C1BA"
+          },
+          "usage": ""
+        },
+        {
+          "name": "nav-active",
+          "value": {
+            "light": "#3A3D45",
+            "dark": "#2E3036"
+          },
+          "usage": ""
+        },
+        {
+          "name": "on-nav-active",
+          "value": {
+            "light": "#FFFFFF",
+            "dark": "#FFFFFF"
+          },
+          "usage": ""
+        },
+        {
+          "name": "nav-edge",
+          "value": {
+            "light": "#3A3D45",
+            "dark": "#34363D"
+          },
+          "usage": ""
+        },
+        {
+          "name": "nav-mark",
+          "value": {
+            "light": "#FF8A8E",
+            "dark": "#FF6B70"
+          },
+          "usage": "Foco e barra do item atual na navegação (3:1 sobre nav)."
+        },
+        {
+          "name": "nav-hover",
+          "value": {
+            "light": "rgba(255,255,255,.07)",
+            "dark": "rgba(255,255,255,.07)"
+          },
+          "usage": ""
+        },
+        {
+          "name": "secondary",
+          "value": {
+            "light": "#F0EEE9",
+            "dark": "#2E2F36"
+          },
+          "usage": ""
+        },
+        {
+          "name": "secondary-edge",
+          "value": {
+            "light": "#817D74",
+            "dark": "#878995"
+          },
+          "usage": ""
+        },
+        {
+          "name": "cab-bg",
+          "value": {
+            "light": "#F7F6F2",
+            "dark": "#17181B"
+          },
+          "usage": ""
+        },
+        {
+          "name": "bar",
+          "value": {
+            "light": "#DAD6CD",
+            "dark": "#3A3C44"
+          },
+          "usage": "Barra neutra dos cards."
+        },
+        {
+          "name": "dest-bg",
+          "value": {
+            "light": "#FFF8F7",
+            "dark": "#2A2225"
+          },
+          "usage": ""
+        },
+        {
+          "name": "dest-edge",
+          "value": {
+            "light": "#F0C9C6",
+            "dark": "#4A2F33"
+          },
+          "usage": ""
+        }
+      ]
+    },
+    "radius": {
+      "tokens": [
+        {
+          "name": "r-card",
+          "value": "10px",
+          "usage": ""
+        },
+        {
+          "name": "r-btn",
+          "value": "8px",
+          "usage": ""
+        },
+        {
+          "name": "r-chip",
+          "value": "999px",
+          "usage": ""
+        }
+      ]
+    },
+    "shadow": {
+      "tokens": [
+        {
+          "name": "sh-card",
+          "value": {
+            "light": "0 1px 2px rgba(22,24,28,.06),0 4px 12px rgba(22,24,28,.05)",
+            "dark": "0 1px 2px rgba(0,0,0,.4)"
+          },
+          "usage": ""
+        },
+        {
+          "name": "sh-hover",
+          "value": {
+            "light": "0 2px 4px rgba(22,24,28,.08),0 10px 24px rgba(22,24,28,.10)",
+            "dark": "0 8px 24px rgba(0,0,0,.45)"
+          },
+          "usage": ""
+        },
+        {
+          "name": "sh-dest",
+          "value": {
+            "light": "0 2px 6px rgba(180,10,18,.08),0 6px 16px rgba(22,24,28,.07)",
+            "dark": "0 6px 18px rgba(0,0,0,.4)"
+          },
+          "usage": ""
+        },
+        {
+          "name": "sh-btn",
+          "value": {
+            "light": "0 1px 2px rgba(150,10,16,.25)",
+            "dark": "none"
+          },
+          "usage": ""
+        },
+        {
+          "name": "sh-btn-hover",
+          "value": {
+            "light": "0 4px 10px rgba(212,20,28,.28)",
+            "dark": "0 4px 10px rgba(255,107,112,.18)"
+          },
+          "usage": ""
+        },
+        {
+          "name": "sh-btn-sec",
+          "value": {
+            "light": "0 1px 1px rgba(22,24,28,.05)",
+            "dark": "none"
+          },
+          "usage": ""
+        },
+        {
+          "name": "sh-pop",
+          "value": {
+            "light": "0 12px 32px rgba(22,24,28,.28)",
+            "dark": "0 12px 32px rgba(0,0,0,.6)"
+          },
+          "usage": ""
+        },
+        {
+          "name": "nav-ativo-sombra",
+          "value": "0 0 0 0 transparent",
+          "usage": ""
+        }
+      ]
+    },
+    "motion": {
+      "tokens": [
+        {
+          "name": "t-fast",
+          "value": "140ms",
+          "usage": "Hover e toque em botões e itens."
+        },
+        {
+          "name": "t-base",
+          "value": "200ms",
+          "usage": "Cards, popups, véu e troca de tema."
+        },
+        {
+          "name": "t-slow",
+          "value": "250ms",
+          "usage": "Entrada dos cards, folha do Menu."
+        },
+        {
+          "name": "ease",
+          "value": "cubic-bezier(.2,.7,.2,1)",
+          "usage": ""
+        }
+      ]
+    },
+    "layout": {
+      "tokens": [
+        {
+          "name": "bar-w",
+          "value": "4px",
+          "usage": ""
+        },
+        {
+          "name": "band-bar-w",
+          "value": "4px",
+          "usage": ""
+        },
+        {
+          "name": "nav-bar-w",
+          "value": "3px",
+          "usage": ""
+        },
+        {
+          "name": "w-nav",
+          "value": "200px",
+          "usage": ""
+        },
+        {
+          "name": "lift",
+          "value": "-1px",
+          "usage": ""
+        },
+        {
+          "name": "band-border",
+          "value": "1px solid transparent",
+          "usage": ""
+        },
+        {
+          "name": "nav-escura",
+          "value": "1",
+          "usage": ""
+        }
+      ]
+    },
+    "weight": {
+      "tokens": [
+        {
+          "name": "w-h2",
+          "value": "700",
+          "usage": ""
+        },
+        {
+          "name": "w-h3",
+          "value": "700",
+          "usage": ""
+        },
+        {
+          "name": "w-num",
+          "value": "800",
+          "usage": ""
+        },
+        {
+          "name": "w-btn",
+          "value": "600",
+          "usage": ""
+        }
+      ]
+    },
+    "type": {
+      "families": {
+        "display": "\"Bricolage Grotesque\",Inter,system-ui,Arial,sans-serif",
+        "sans": "\"Inter\",system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif",
+        "number": "\"Inter\",system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif"
+      }
+    }
+  },
+  "A": {
+    "name": "Visual do Repasse",
+    "version": 1,
+    "id": "A",
+    "color": {
+      "tokens": [
+        {
+          "name": "page",
+          "value": {
+            "light": "#F8FAFC",
+            "dark": "#040A11"
+          },
+          "usage": "background"
+        },
+        {
+          "name": "card",
+          "value": {
+            "light": "#FFFFFF",
+            "dark": "#0B1723"
+          },
+          "usage": "card"
+        },
+        {
+          "name": "ink",
+          "value": {
+            "light": "#07121E",
+            "dark": "#F0F6FC"
+          },
+          "usage": "foreground"
+        },
+        {
+          "name": "ink-soft",
+          "value": {
+            "light": "#695958",
+            "dark": "#95A0AB"
+          },
+          "usage": "muted-foreground"
+        },
+        {
+          "name": "concrete",
+          "value": {
+            "light": "#695958",
+            "dark": "#95A0AB"
+          },
+          "usage": "muted-foreground"
+        },
+        {
+          "name": "line",
+          "value": {
+            "light": "#E3DCDB",
+            "dark": "#28333D"
+          },
+          "usage": "border (no escuro, branco 12% composto sobre o card)"
+        },
+        {
+          "name": "control",
+          "value": {
+            "light": "#8F8482",
+            "dark": "#6B7785"
+          },
+          "usage": "input, escurecido para 3:1 (borda de controle).",
+          "original": {
+            "light": "#EAE3E1",
+            "dark": "#2A2F35"
+          }
+        },
+        {
+          "name": "action",
+          "value": {
+            "light": "#A50013",
+            "dark": "#4393E1"
+          },
+          "usage": "primary. No escuro o Repasse usa azul."
+        },
+        {
+          "name": "action-hover",
+          "value": {
+            "light": "#AD192A",
+            "dark": "#3F87CF"
+          },
+          "usage": "primary/90"
+        },
+        {
+          "name": "on-action",
+          "value": {
+            "light": "#FCFCFC",
+            "dark": "#040A11"
+          },
+          "usage": "primary-foreground"
+        },
+        {
+          "name": "mark",
+          "value": {
+            "light": "#A50013",
+            "dark": "#4393E1"
+          },
+          "usage": ""
+        },
+        {
+          "name": "ok",
+          "value": {
+            "light": "#0B7D49",
+            "dark": "#3BB974"
+          },
+          "usage": "success, escurecido para texto.",
+          "original": {
+            "light": "#0FA05C",
+            "dark": "#3BB974"
+          }
+        },
+        {
+          "name": "warn",
+          "value": {
+            "light": "#8F5A00",
+            "dark": "#F9AD26"
+          },
+          "usage": "warning, escurecido para texto.",
+          "original": {
+            "light": "#E89D00",
+            "dark": "#F9AD26"
+          }
+        },
+        {
+          "name": "band",
+          "value": {
+            "light": "#F5EEED",
+            "dark": "#162330"
+          },
+          "usage": "muted: a faixa vira card tonal com sombra."
+        },
+        {
+          "name": "on-band",
+          "value": {
+            "light": "#07121E",
+            "dark": "#F0F6FC"
+          },
+          "usage": ""
+        },
+        {
+          "name": "on-band-soft",
+          "value": {
+            "light": "#695958",
+            "dark": "#95A0AB"
+          },
+          "usage": ""
+        },
+        {
+          "name": "band-line",
+          "value": {
+            "light": "#E3DCDB",
+            "dark": "#28333D"
+          },
+          "usage": ""
+        },
+        {
+          "name": "band-bar",
+          "value": {
+            "light": "#A50013",
+            "dark": "#4393E1"
+          },
+          "usage": ""
+        },
+        {
+          "name": "nav",
+          "value": {
+            "light": "#1E1311",
+            "dark": "#07121E"
+          },
+          "usage": "sidebar (quente no claro, azul-marinho no escuro)."
+        },
+        {
+          "name": "on-nav",
+          "value": {
+            "light": "#F5F1F0",
+            "dark": "#F0F6FC"
+          },
+          "usage": "sidebar-foreground"
+        },
+        {
+          "name": "on-nav-soft",
+          "value": {
+            "light": "#B5AEAC",
+            "dark": "#AAB2B9"
+          },
+          "usage": "sidebar-foreground a 70%, composto."
+        },
+        {
+          "name": "nav-active",
+          "value": {
+            "light": "#BB061E",
+            "dark": "#1F74BF"
+          },
+          "usage": "sidebar-primary"
+        },
+        {
+          "name": "on-nav-active",
+          "value": {
+            "light": "#FFFFFF",
+            "dark": "#FFFFFF"
+          },
+          "usage": ""
+        },
+        {
+          "name": "nav-edge",
+          "value": {
+            "light": "#3B2422",
+            "dark": "#202A35"
+          },
+          "usage": ""
+        },
+        {
+          "name": "nav-mark",
+          "value": {
+            "light": "#FF6B70",
+            "dark": "#6CAEEE"
+          },
+          "usage": "Foco na navegação (3:1 sobre nav). Não existe no Repasse."
+        },
+        {
+          "name": "nav-hover",
+          "value": {
+            "light": "#311E1D",
+            "dark": "#162330"
+          },
+          "usage": "sidebar-accent"
+        },
+        {
+          "name": "secondary",
+          "value": {
+            "light": "#F5E8E5",
+            "dark": "#162330"
+          },
+          "usage": "secondary"
+        },
+        {
+          "name": "secondary-edge",
+          "value": {
+            "light": "#8F8482",
+            "dark": "#6B7785"
+          },
+          "usage": "Contorno do secundário, igual ao control ajustado.",
+          "original": {
+            "light": "#EAE3E1",
+            "dark": "#2A2F35"
+          }
+        },
+        {
+          "name": "cab-bg",
+          "value": {
+            "light": "#FFFFFF",
+            "dark": "#0B1723"
+          },
+          "usage": ""
+        },
+        {
+          "name": "bar",
+          "value": {
+            "light": "transparent",
+            "dark": "transparent"
+          },
+          "usage": ""
+        },
+        {
+          "name": "dest-bg",
+          "value": {
+            "light": "#FFFFFF",
+            "dark": "#0B1723"
+          },
+          "usage": ""
+        },
+        {
+          "name": "dest-edge",
+          "value": {
+            "light": "#A50013",
+            "dark": "#4393E1"
+          },
+          "usage": "Anel na cor da ação no card em destaque."
+        }
+      ]
+    },
+    "radius": {
+      "tokens": [
+        {
+          "name": "r-card",
+          "value": "12px",
+          "usage": "rounded-xl"
+        },
+        {
+          "name": "r-btn",
+          "value": "6px",
+          "usage": "rounded-md"
+        },
+        {
+          "name": "r-chip",
+          "value": "6px",
+          "usage": ""
+        }
+      ]
+    },
+    "shadow": {
+      "tokens": [
+        {
+          "name": "sh-card",
+          "value": "0 1px 3px 0 rgb(0 0 0/.1),0 1px 2px -1px rgb(0 0 0/.1)",
+          "usage": ""
+        },
+        {
+          "name": "sh-hover",
+          "value": "0 1px 3px 0 rgb(0 0 0/.1),0 1px 2px -1px rgb(0 0 0/.1)",
+          "usage": ""
+        },
+        {
+          "name": "sh-dest",
+          "value": {
+            "light": "0 0 0 1px #A50013,0 1px 3px 0 rgb(0 0 0/.1)",
+            "dark": "0 0 0 1px #4393E1,0 1px 3px 0 rgb(0 0 0/.1)"
+          },
+          "usage": ""
+        },
+        {
+          "name": "sh-btn",
+          "value": "0 1px 3px 0 rgb(0 0 0/.1),0 1px 2px -1px rgb(0 0 0/.1)",
+          "usage": ""
+        },
+        {
+          "name": "sh-btn-hover",
+          "value": "0 1px 3px 0 rgb(0 0 0/.1),0 1px 2px -1px rgb(0 0 0/.1)",
+          "usage": ""
+        },
+        {
+          "name": "sh-btn-sec",
+          "value": "0 1px 2px 0 rgb(0 0 0/.05)",
+          "usage": ""
+        },
+        {
+          "name": "sh-pop",
+          "value": "0 10px 15px -3px rgb(0 0 0/.2),0 4px 6px -4px rgb(0 0 0/.2)",
+          "usage": ""
+        },
+        {
+          "name": "nav-ativo-sombra",
+          "value": "0 0 0 0 transparent",
+          "usage": ""
+        }
+      ]
+    },
+    "motion": {
+      "tokens": [
+        {
+          "name": "t-fast",
+          "value": "140ms",
+          "usage": "Hover e toque em botões e itens."
+        },
+        {
+          "name": "t-base",
+          "value": "200ms",
+          "usage": "Cards, popups, véu e troca de tema."
+        },
+        {
+          "name": "t-slow",
+          "value": "250ms",
+          "usage": "Entrada dos cards, folha do Menu."
+        },
+        {
+          "name": "ease",
+          "value": "cubic-bezier(.2,.7,.2,1)",
+          "usage": ""
+        }
+      ]
+    },
+    "layout": {
+      "tokens": [
+        {
+          "name": "bar-w",
+          "value": "0px",
+          "usage": ""
+        },
+        {
+          "name": "band-bar-w",
+          "value": "0px",
+          "usage": ""
+        },
+        {
+          "name": "nav-bar-w",
+          "value": "0px",
+          "usage": ""
+        },
+        {
+          "name": "w-nav",
+          "value": "232px",
+          "usage": ""
+        },
+        {
+          "name": "lift",
+          "value": "0px",
+          "usage": ""
+        },
+        {
+          "name": "band-border",
+          "value": "1px solid transparent",
+          "usage": ""
+        },
+        {
+          "name": "nav-escura",
+          "value": "1",
+          "usage": ""
+        }
+      ]
+    },
+    "weight": {
+      "tokens": [
+        {
+          "name": "w-h2",
+          "value": "600",
+          "usage": ""
+        },
+        {
+          "name": "w-h3",
+          "value": "600",
+          "usage": ""
+        },
+        {
+          "name": "w-num",
+          "value": "600",
+          "usage": ""
+        },
+        {
+          "name": "w-btn",
+          "value": "500",
+          "usage": ""
+        }
+      ]
+    },
+    "type": {
+      "families": {
+        "display": "-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif",
+        "sans": "-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif",
+        "number": "\"Inter\",system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif"
+      }
+    }
+  },
+  "M": {
+    "name": "Repasse + MBigucci",
+    "version": 1,
+    "id": "M",
+    "color": {
+      "tokens": [
+        {
+          "name": "page",
+          "value": {
+            "light": "#F7F6F2",
+            "dark": "#151619"
+          },
+          "usage": "Papel quente da marca."
+        },
+        {
+          "name": "card",
+          "value": {
+            "light": "#FFFFFF",
+            "dark": "#202126"
+          },
+          "usage": ""
+        },
+        {
+          "name": "ink",
+          "value": {
+            "light": "#16181C",
+            "dark": "#F5F3ED"
+          },
+          "usage": ""
+        },
+        {
+          "name": "ink-soft",
+          "value": {
+            "light": "#4A4B52",
+            "dark": "#C4C1BA"
+          },
+          "usage": ""
+        },
+        {
+          "name": "concrete",
+          "value": {
+            "light": "#6F6B63",
+            "dark": "#AAA69E"
+          },
+          "usage": ""
+        },
+        {
+          "name": "line",
+          "value": {
+            "light": "#E5E3DD",
+            "dark": "#3A3C44"
+          },
+          "usage": ""
+        },
+        {
+          "name": "control",
+          "value": {
+            "light": "#76736C",
+            "dark": "#878995"
+          },
+          "usage": ""
+        },
+        {
+          "name": "action",
+          "value": {
+            "light": "#E11119",
+            "dark": "#FF6B70"
+          },
+          "usage": "Vermelho da marca."
+        },
+        {
+          "name": "action-hover",
+          "value": {
+            "light": "#B90D14",
+            "dark": "#FF9296"
+          },
+          "usage": ""
+        },
+        {
+          "name": "on-action",
+          "value": {
+            "light": "#FFFFFF",
+            "dark": "#151619"
+          },
+          "usage": ""
+        },
+        {
+          "name": "mark",
+          "value": {
+            "light": "#E11119",
+            "dark": "#FF6B70"
+          },
+          "usage": ""
+        },
+        {
+          "name": "ok",
+          "value": {
+            "light": "#1F7A45",
+            "dark": "#68CE92"
+          },
+          "usage": ""
+        },
+        {
+          "name": "warn",
+          "value": {
+            "light": "#925600",
+            "dark": "#F0B65B"
+          },
+          "usage": ""
+        },
+        {
+          "name": "band",
+          "value": {
+            "light": "#FAF5F2",
+            "dark": "#2A2B31"
+          },
+          "usage": "Card tonal, como o muted do Repasse."
+        },
+        {
+          "name": "on-band",
+          "value": {
+            "light": "#16181C",
+            "dark": "#F5F3ED"
+          },
+          "usage": ""
+        },
+        {
+          "name": "on-band-soft",
+          "value": {
+            "light": "#4A4B52",
+            "dark": "#C4C1BA"
+          },
+          "usage": ""
+        },
+        {
+          "name": "band-line",
+          "value": {
+            "light": "#E0D6D0",
+            "dark": "#3E4048"
+          },
+          "usage": ""
+        },
+        {
+          "name": "band-bar",
+          "value": {
+            "light": "#E11119",
+            "dark": "#FF6B70"
+          },
+          "usage": ""
+        },
+        {
+          "name": "nav",
+          "value": {
+            "light": "#2A1B19",
+            "dark": "#1B1413"
+          },
+          "usage": "Lateral escura quente, como a do Repasse."
+        },
+        {
+          "name": "on-nav",
+          "value": {
+            "light": "#F5F1F0",
+            "dark": "#F5F1F0"
+          },
+          "usage": ""
+        },
+        {
+          "name": "on-nav-soft",
+          "value": {
+            "light": "#D9D1CF",
+            "dark": "#D2CBC9"
+          },
+          "usage": ""
+        },
+        {
+          "name": "nav-active",
+          "value": {
+            "light": "#E11119",
+            "dark": "#FF6B70"
+          },
+          "usage": ""
+        },
+        {
+          "name": "on-nav-active",
+          "value": {
+            "light": "#FFFFFF",
+            "dark": "#151619"
+          },
+          "usage": ""
+        },
+        {
+          "name": "nav-edge",
+          "value": {
+            "light": "#3A2B29",
+            "dark": "#2C2220"
+          },
+          "usage": ""
+        },
+        {
+          "name": "nav-mark",
+          "value": {
+            "light": "#FF8A8E",
+            "dark": "#FF6B70"
+          },
+          "usage": "Foco na navegação (3:1 sobre nav)."
+        },
+        {
+          "name": "nav-hover",
+          "value": {
+            "light": "rgba(255,255,255,.07)",
+            "dark": "rgba(255,255,255,.07)"
+          },
+          "usage": ""
+        },
+        {
+          "name": "secondary",
+          "value": {
+            "light": "#F1EAE6",
+            "dark": "#2E2F36"
+          },
+          "usage": ""
+        },
+        {
+          "name": "secondary-edge",
+          "value": {
+            "light": "#817D74",
+            "dark": "#878995"
+          },
+          "usage": ""
+        },
+        {
+          "name": "cab-bg",
+          "value": {
+            "light": "#FFFFFF",
+            "dark": "#202126"
+          },
+          "usage": ""
+        },
+        {
+          "name": "bar",
+          "value": {
+            "light": "transparent",
+            "dark": "transparent"
+          },
+          "usage": ""
+        },
+        {
+          "name": "dest-bg",
+          "value": {
+            "light": "#FFFFFF",
+            "dark": "#202126"
+          },
+          "usage": ""
+        },
+        {
+          "name": "dest-edge",
+          "value": {
+            "light": "#E11119",
+            "dark": "#FF6B70"
+          },
+          "usage": "Anel na cor da ação no card em destaque."
+        }
+      ]
+    },
+    "radius": {
+      "tokens": [
+        {
+          "name": "r-card",
+          "value": "12px",
+          "usage": ""
+        },
+        {
+          "name": "r-btn",
+          "value": "6px",
+          "usage": ""
+        },
+        {
+          "name": "r-chip",
+          "value": "999px",
+          "usage": ""
+        }
+      ]
+    },
+    "shadow": {
+      "tokens": [
+        {
+          "name": "sh-card",
+          "value": {
+            "light": "0 1px 3px 0 rgba(22,24,28,.10),0 1px 2px -1px rgba(22,24,28,.10)",
+            "dark": "0 1px 3px 0 rgba(0,0,0,.5)"
+          },
+          "usage": ""
+        },
+        {
+          "name": "sh-hover",
+          "value": {
+            "light": "0 4px 6px -1px rgba(22,24,28,.12),0 2px 4px -2px rgba(22,24,28,.10)",
+            "dark": "0 6px 16px rgba(0,0,0,.5)"
+          },
+          "usage": ""
+        },
+        {
+          "name": "sh-dest",
+          "value": {
+            "light": "0 0 0 1px #E11119,0 1px 3px 0 rgba(22,24,28,.10)",
+            "dark": "0 0 0 1px #FF6B70,0 1px 3px 0 rgba(0,0,0,.5)"
+          },
+          "usage": ""
+        },
+        {
+          "name": "sh-btn",
+          "value": {
+            "light": "0 1px 3px 0 rgba(22,24,28,.12)",
+            "dark": "none"
+          },
+          "usage": ""
+        },
+        {
+          "name": "sh-btn-hover",
+          "value": {
+            "light": "0 3px 8px rgba(225,17,25,.25)",
+            "dark": "0 3px 8px rgba(255,107,112,.18)"
+          },
+          "usage": ""
+        },
+        {
+          "name": "sh-btn-sec",
+          "value": {
+            "light": "0 1px 2px 0 rgba(22,24,28,.06)",
+            "dark": "none"
+          },
+          "usage": ""
+        },
+        {
+          "name": "sh-pop",
+          "value": {
+            "light": "0 10px 15px -3px rgba(22,24,28,.28),0 4px 6px -4px rgba(22,24,28,.2)",
+            "dark": "0 12px 32px rgba(0,0,0,.6)"
+          },
+          "usage": ""
+        },
+        {
+          "name": "nav-ativo-sombra",
+          "value": "0 0 0 0 transparent",
+          "usage": ""
+        }
+      ]
+    },
+    "motion": {
+      "tokens": [
+        {
+          "name": "t-fast",
+          "value": "140ms",
+          "usage": "Hover e toque em botões e itens."
+        },
+        {
+          "name": "t-base",
+          "value": "200ms",
+          "usage": "Cards, popups, véu e troca de tema."
+        },
+        {
+          "name": "t-slow",
+          "value": "250ms",
+          "usage": "Entrada dos cards, folha do Menu."
+        },
+        {
+          "name": "ease",
+          "value": "cubic-bezier(.2,.7,.2,1)",
+          "usage": ""
+        }
+      ]
+    },
+    "layout": {
+      "tokens": [
+        {
+          "name": "bar-w",
+          "value": "0px",
+          "usage": ""
+        },
+        {
+          "name": "band-bar-w",
+          "value": "0px",
+          "usage": ""
+        },
+        {
+          "name": "nav-bar-w",
+          "value": "0px",
+          "usage": ""
+        },
+        {
+          "name": "w-nav",
+          "value": "208px",
+          "usage": ""
+        },
+        {
+          "name": "lift",
+          "value": "-1px",
+          "usage": ""
+        },
+        {
+          "name": "band-border",
+          "value": "1px solid transparent",
+          "usage": ""
+        },
+        {
+          "name": "nav-escura",
+          "value": "1",
+          "usage": ""
+        }
+      ]
+    },
+    "weight": {
+      "tokens": [
+        {
+          "name": "w-h2",
+          "value": "700",
+          "usage": ""
+        },
+        {
+          "name": "w-h3",
+          "value": "700",
+          "usage": ""
+        },
+        {
+          "name": "w-num",
+          "value": "700",
+          "usage": ""
+        },
+        {
+          "name": "w-btn",
+          "value": "600",
+          "usage": ""
+        }
+      ]
+    },
+    "type": {
+      "families": {
+        "display": "\"Bricolage Grotesque\",Inter,system-ui,Arial,sans-serif",
+        "sans": "\"Inter\",system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif",
+        "number": "\"Inter\",system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif"
+      }
+    }
+  },
+  "C": {
+    "name": "Clara e leve",
+    "version": 1,
+    "id": "C",
+    "color": {
+      "tokens": [
+        {
+          "name": "page",
+          "value": {
+            "light": "#FBFAF8",
+            "dark": "#17181B"
+          },
+          "usage": ""
+        },
+        {
+          "name": "card",
+          "value": {
+            "light": "#FFFFFF",
+            "dark": "#1F2024"
+          },
+          "usage": ""
+        },
+        {
+          "name": "ink",
+          "value": {
+            "light": "#16181C",
+            "dark": "#F5F3ED"
+          },
+          "usage": ""
+        },
+        {
+          "name": "ink-soft",
+          "value": {
+            "light": "#4A4B52",
+            "dark": "#C4C1BA"
+          },
+          "usage": ""
+        },
+        {
+          "name": "concrete",
+          "value": {
+            "light": "#6F6B63",
+            "dark": "#AAA69E"
+          },
+          "usage": ""
+        },
+        {
+          "name": "line",
+          "value": {
+            "light": "#ECE9E3",
+            "dark": "#2E3036"
+          },
+          "usage": ""
+        },
+        {
+          "name": "control",
+          "value": {
+            "light": "#76736C",
+            "dark": "#878995"
+          },
+          "usage": ""
+        },
+        {
+          "name": "action",
+          "value": {
+            "light": "#E11119",
+            "dark": "#FF6B70"
+          },
+          "usage": "Vermelho só na ação principal e no anel do card em destaque."
+        },
+        {
+          "name": "action-hover",
+          "value": {
+            "light": "#B90D14",
+            "dark": "#FF9296"
+          },
+          "usage": ""
+        },
+        {
+          "name": "on-action",
+          "value": {
+            "light": "#FFFFFF",
+            "dark": "#151619"
+          },
+          "usage": ""
+        },
+        {
+          "name": "mark",
+          "value": {
+            "light": "#E11119",
+            "dark": "#FF6B70"
+          },
+          "usage": ""
+        },
+        {
+          "name": "ok",
+          "value": {
+            "light": "#1F7A45",
+            "dark": "#68CE92"
+          },
+          "usage": ""
+        },
+        {
+          "name": "warn",
+          "value": {
+            "light": "#925600",
+            "dark": "#F0B65B"
+          },
+          "usage": ""
+        },
+        {
+          "name": "link",
+          "value": {
+            "light": "#16181C",
+            "dark": "#F5F3ED"
+          },
+          "usage": "Link de texto em tinta: o vermelho fica só na ação principal."
+        },
+        {
+          "name": "band",
+          "value": {
+            "light": "#FFFFFF",
+            "dark": "#1F2024"
+          },
+          "usage": "Sem faixa escura: a prioridade é um card claro."
+        },
+        {
+          "name": "on-band",
+          "value": {
+            "light": "#16181C",
+            "dark": "#F5F3ED"
+          },
+          "usage": ""
+        },
+        {
+          "name": "on-band-soft",
+          "value": {
+            "light": "#4A4B52",
+            "dark": "#C4C1BA"
+          },
+          "usage": ""
+        },
+        {
+          "name": "band-line",
+          "value": {
+            "light": "#ECE9E3",
+            "dark": "#2E3036"
+          },
+          "usage": ""
+        },
+        {
+          "name": "band-bar",
+          "value": {
+            "light": "transparent",
+            "dark": "transparent"
+          },
+          "usage": ""
+        },
+        {
+          "name": "nav",
+          "value": {
+            "light": "#F3F1EC",
+            "dark": "#1B1C1F"
+          },
+          "usage": "Lateral clara. No escuro, um grafite um tom acima do fundo."
+        },
+        {
+          "name": "on-nav",
+          "value": {
+            "light": "#16181C",
+            "dark": "#F5F3ED"
+          },
+          "usage": ""
+        },
+        {
+          "name": "on-nav-soft",
+          "value": {
+            "light": "#4A4B52",
+            "dark": "#C4C1BA"
+          },
+          "usage": ""
+        },
+        {
+          "name": "nav-active",
+          "value": {
+            "light": "#FFFFFF",
+            "dark": "#2A2B30"
+          },
+          "usage": ""
+        },
+        {
+          "name": "on-nav-active",
+          "value": {
+            "light": "#16181C",
+            "dark": "#FFFFFF"
+          },
+          "usage": ""
+        },
+        {
+          "name": "nav-edge",
+          "value": {
+            "light": "#E6E3DC",
+            "dark": "#2E3036"
+          },
+          "usage": ""
+        },
+        {
+          "name": "nav-mark",
+          "value": {
+            "light": "#16181C",
+            "dark": "#F5F3ED"
+          },
+          "usage": "Foco e barra do item atual em tinta."
+        },
+        {
+          "name": "nav-hover",
+          "value": {
+            "light": "rgba(22,24,28,.05)",
+            "dark": "rgba(255,255,255,.06)"
+          },
+          "usage": ""
+        },
+        {
+          "name": "secondary",
+          "value": {
+            "light": "#F3F1EC",
+            "dark": "#2A2B30"
+          },
+          "usage": ""
+        },
+        {
+          "name": "secondary-edge",
+          "value": {
+            "light": "#817D74",
+            "dark": "#878995"
+          },
+          "usage": ""
+        },
+        {
+          "name": "cab-bg",
+          "value": {
+            "light": "#FFFFFF",
+            "dark": "#1F2024"
+          },
+          "usage": ""
+        },
+        {
+          "name": "bar",
+          "value": {
+            "light": "transparent",
+            "dark": "transparent"
+          },
+          "usage": ""
+        },
+        {
+          "name": "dest-bg",
+          "value": {
+            "light": "#FFFFFF",
+            "dark": "#1F2024"
+          },
+          "usage": ""
+        },
+        {
+          "name": "dest-edge",
+          "value": {
+            "light": "#E11119",
+            "dark": "#FF6B70"
+          },
+          "usage": "Anel de 1,5px na cor da ação."
+        }
+      ]
+    },
+    "radius": {
+      "tokens": [
+        {
+          "name": "r-card",
+          "value": "16px",
+          "usage": ""
+        },
+        {
+          "name": "r-btn",
+          "value": "12px",
+          "usage": ""
+        },
+        {
+          "name": "r-chip",
+          "value": "999px",
+          "usage": ""
+        }
+      ]
+    },
+    "shadow": {
+      "tokens": [
+        {
+          "name": "sh-card",
+          "value": {
+            "light": "0 1px 2px rgba(22,24,28,.04),0 2px 8px rgba(22,24,28,.04)",
+            "dark": "0 1px 2px rgba(0,0,0,.3)"
+          },
+          "usage": ""
+        },
+        {
+          "name": "sh-hover",
+          "value": {
+            "light": "0 6px 20px rgba(22,24,28,.09)",
+            "dark": "0 8px 22px rgba(0,0,0,.4)"
+          },
+          "usage": ""
+        },
+        {
+          "name": "sh-dest",
+          "value": {
+            "light": "0 0 0 1.5px #E11119,0 6px 20px rgba(22,24,28,.07)",
+            "dark": "0 0 0 1.5px #FF6B70,0 6px 20px rgba(0,0,0,.35)"
+          },
+          "usage": ""
+        },
+        {
+          "name": "sh-btn",
+          "value": {
+            "light": "0 1px 2px rgba(150,10,16,.2)",
+            "dark": "none"
+          },
+          "usage": ""
+        },
+        {
+          "name": "sh-btn-hover",
+          "value": {
+            "light": "0 4px 12px rgba(225,17,25,.25)",
+            "dark": "0 4px 12px rgba(255,107,112,.16)"
+          },
+          "usage": ""
+        },
+        {
+          "name": "sh-btn-sec",
+          "value": "none",
+          "usage": ""
+        },
+        {
+          "name": "sh-pop",
+          "value": {
+            "light": "0 16px 40px rgba(22,24,28,.22)",
+            "dark": "0 16px 40px rgba(0,0,0,.6)"
+          },
+          "usage": ""
+        },
+        {
+          "name": "nav-ativo-sombra",
+          "value": {
+            "light": "0 1px 2px rgba(22,24,28,.10)",
+            "dark": "0 0 0 0 transparent"
+          },
+          "usage": ""
+        }
+      ]
+    },
+    "motion": {
+      "tokens": [
+        {
+          "name": "t-fast",
+          "value": "140ms",
+          "usage": "Hover e toque em botões e itens."
+        },
+        {
+          "name": "t-base",
+          "value": "200ms",
+          "usage": "Cards, popups, véu e troca de tema."
+        },
+        {
+          "name": "t-slow",
+          "value": "250ms",
+          "usage": "Entrada dos cards, folha do Menu."
+        },
+        {
+          "name": "ease",
+          "value": "cubic-bezier(.2,.7,.2,1)",
+          "usage": ""
+        }
+      ]
+    },
+    "layout": {
+      "tokens": [
+        {
+          "name": "bar-w",
+          "value": "0px",
+          "usage": ""
+        },
+        {
+          "name": "band-bar-w",
+          "value": "0px",
+          "usage": ""
+        },
+        {
+          "name": "nav-bar-w",
+          "value": "3px",
+          "usage": ""
+        },
+        {
+          "name": "w-nav",
+          "value": "200px",
+          "usage": ""
+        },
+        {
+          "name": "lift",
+          "value": "-2px",
+          "usage": ""
+        },
+        {
+          "name": "band-border",
+          "value": "1px solid transparent",
+          "usage": ""
+        },
+        {
+          "name": "nav-escura",
+          "value": {
+            "light": "0",
+            "dark": "1"
+          },
+          "usage": ""
+        }
+      ]
+    },
+    "weight": {
+      "tokens": [
+        {
+          "name": "w-h2",
+          "value": "600",
+          "usage": ""
+        },
+        {
+          "name": "w-h3",
+          "value": "600",
+          "usage": ""
+        },
+        {
+          "name": "w-num",
+          "value": "700",
+          "usage": ""
+        },
+        {
+          "name": "w-btn",
+          "value": "600",
+          "usage": ""
+        }
+      ]
+    },
+    "type": {
+      "families": {
+        "display": "\"Bricolage Grotesque\",Inter,system-ui,Arial,sans-serif",
+        "sans": "\"Inter\",system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif",
+        "number": "\"Inter\",system-ui,-apple-system,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif"
+      }
+    }
+  }
+}
