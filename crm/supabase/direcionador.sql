@@ -726,16 +726,24 @@ $$;
 -- ---------------------------------------------------------------------
 -- Ponto de encaixe com o Vendas: a Edge Function chama, ela mesma, a
 -- lead_empresa_entrada(...) da distribuição automática quando o destino é o
--- Base360 Vendas. Nada aqui chama essa função. Contrato proposto (05/11/2026,
--- ainda não fechado com a frente do Vendas):
+-- Base360 Vendas. Nada aqui chama essa função. Contrato fechado com a frente
+-- do Vendas (05/11/2026):
 --   public.lead_empresa_entrada(p_entrada_id text, p_recebido_em timestamptz,
 --     p_nome text, p_telefone text, p_email text, p_mensagem text,
---     p_fonte text, p_produto text, p_campanha jsonb)
---   -> (lead_id uuid, situacao text: criado | anexado | reativado |
---       a_distribuir | repetido). Qualquer situação conta como gravado; erro
---       mantém o e-mail na caixa. p_fonte é o slug de interno.lead_fontes;
---       p_produto é o nome do catálogo ou nulo. Nada nos argumentos diz que o
---       lead passou por aqui, qual regra casou ou que outra entrega falhou.
+--     p_fonte text, p_produto text, p_empreendimento_id uuid default null,
+--     p_campanha jsonb default null)
+--   returns table (lead_id uuid, situacao text)
+--   - situacao: criado | anexado | reativado | a_distribuir | repetido; todas
+--     contam como gravado. Só um erro lançado mantém o e-mail na caixa para a
+--     próxima passada; dado ruim (nome vazio, telefone fora do formato,
+--     produto desconhecido) é tratado dentro da função.
+--   - p_entrada_id: o internetMessageId (idempotência). p_recebido_em: o
+--     receivedDateTime do e-mail, nunca a hora da leitura (o prazo conta de
+--     greatest(p_recebido_em, now() - 5 min)).
+--   - p_fonte: slug de interno.lead_fontes. p_produto e p_empreendimento_id:
+--     o nome e o id que o acharNoCatalogo devolve, nulos quando não reconheceu.
+--   - Nada nos argumentos diz que o lead passou por aqui, qual regra casou ou
+--     que outra entrega falhou.
 
 -- O que a regra pura precisa para decidir: a chave geral, as regras ligadas
 -- (sem nome), as partes, os destinos (sem endereço) e as fontes com os padrões.

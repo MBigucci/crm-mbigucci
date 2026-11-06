@@ -14,6 +14,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 import { PGlite } from "@electric-sql/pglite";
+// A regra pura do Marketing: o mesmo caso tem de dar o mesmo resultado aqui e no banco.
+import { escolherNaRegra, momentoSP, somar } from "../../../marketing/src/lib/direcionador.ts";
 
 const ler = (f) => readFileSync(new URL(`../${f}`, import.meta.url), "utf8");
 const id = (n) => `00000000-0000-0000-0000-0000000000${String(n).padStart(2, "0")}`;
@@ -378,6 +380,48 @@ test("registro dos envios: só com a chave ligada; sem ela, nada fica", async ()
   assert.deepEqual(ev, [{ tipo: "enviado_parceiro", parceiro_id: REG, fonte: "olx" }]);
 });
 
+test("regra pura (marketing/src/lib/direcionador.ts) e cfg_escolher dão o mesmo resultado nos mesmos casos", async () => {
+  // Três regras com divisões diferentes (uma com o Vendas primeiro) e o destino
+  // com limite de 2 por dia; 80 leads em dois dias de São Paulo, com horários
+  // perto da meia-noite, regra e destino desligados no meio.
+  const parte = (destino_id, porcentagem) => ({ destino_id, porcentagem });
+  const ids = [];
+  for (const partes of [
+    [parte(EXT, 70), parte(VENDAS, 30)],
+    [parte(EXT, 50), parte(PARC, 25), parte(VENDAS, 25)],
+    [parte(VENDAS, 33), parte(EXT, 67)],
+  ]) ids.push(await um(GG, `select public.cfg_regra_salvar($1) r`, [{ nome: `Paridade ${ids.length + 1}`, partes }]));
+
+  const quandos = ["2026-12-01T12:00:00Z", "2026-12-02T02:59:00Z", "2026-12-02T03:00:00Z", "2026-12-02T20:00:00Z"];
+  let semente = 7;
+  const sorteio = (n) => ((semente = (semente * 1103515245 + 12345) % 2147483648), semente % n);
+  const cont = {}, totais = {}, motivos = new Set();
+  for (let i = 0; i < 80; i++) {
+    const regraId = ids[sorteio(3)];
+    const quando = quandos[Math.min(3, Math.floor(i / 20))];
+    if (i === 30) await um(GG, `select public.cfg_regra_ligar($1, false) r`, [ids[0]]);
+    if (i === 36) await um(GG, `select public.cfg_regra_ligar($1, true) r`, [ids[0]]);
+    if (i === 50) await um(GG, `select public.cfg_item_salvar($1) r`, [{ id: EXT, nome: "Externo sem registro", modo: "email", ativo: false }]);
+    if (i === 60) await um(GG, `select public.cfg_item_salvar($1) r`, [{ id: EXT, nome: "Externo sem registro", modo: "email", ativo: true }]);
+
+    // O que a regra pura recebe: os destinos de cfg_motor e a regra como a tela lê.
+    const motor = await um("servico", `select public.cfg_motor() r`);
+    const regra = (await q(GG, `select public.cfg_ler() r`))[0].r.regras.find((r) => r.id === regraId);
+    const dia = momentoSP(quando).data;
+    const pura = escolherNaRegra(motor, regra, cont[regraId] ?? {}, totais[dia] ?? {});
+    const banco = await escolher(regraId, quando);
+    assert.deepEqual([pura.destino_id, pura.motivo], [banco.destino_id, banco.motivo], `lead ${i + 1}`);
+    assert.equal(dia, banco.dia, `dia do lead ${i + 1}`);
+    motivos.add(banco.motivo);
+    const s = somar(pura, cont[regraId] ?? {}, totais[dia] ?? {});
+    cont[regraId] = s.contadores;
+    totais[dia] = s.totaisDoDia;
+  }
+  // No fim, os contadores somados pela regra pura são os do banco.
+  for (const regraId of ids) assert.deepEqual(cont[regraId] ?? {}, await contadores(regraId), regraId);
+  assert.deepEqual([...motivos].sort(), ["divisao", "limite", "regra_inativa"], "os casos passaram por todos os caminhos");
+  for (const r of ids) await um(GG, `select public.cfg_regra_excluir($1) r`, [r]);
+});
 test("rodar o SQL de novo não desfaz o que o gerente geral ajustou", async () => {
   await db.exec(`update interno.lead_fontes set remetentes = '{leads@portal.test}' where slug = 'zap'`);
   await db.exec(ler("direcionador.sql"));
