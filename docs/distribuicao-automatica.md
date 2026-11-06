@@ -62,7 +62,7 @@ As chaves são colunas de `distribuicao_config` (seção 3.1), alteradas só pel
 | **Prazo estourado manda ao fim da fila** (`fim_da_fila`) | Quem deixa estourar vai ao fim, com aviso no celular | Só pula, mantendo a posição, enquanto tiver lead estourado na carteira | Os créditos já mexidos ficam como estão |
 | **Lead repetido vai ao dono** (`repetido_ao_dono`) | Pessoa com lead ativo: a mensagem entra no lead dela, o dono é avisado e tem 15 min para responder. Lead descartado: reativa e vai pela roleta | Cria lead novo e passa pela roleta, com o aviso de duplicado de hoje | Os prazos de resposta já abertos continuam até a resposta ou o estouro |
 | **Atribuição à mão conta como vez** (`manual_conta`) | Quem recebe lead da empresa à mão vai ao fim da fila | A atribuição à mão não mexe na fila | Nada a corrigir |
-| **Transparência para o corretor** (`transparencia`) | O corretor vê "Minhas vezes", a posição e os motivos | "Minhas vezes" e a posição somem para o corretor. O gerente continua vendo | O registro de decisões continua sendo gravado. Ao ligar, o corretor vê também o passado |
+| **Transparência para o corretor** (`transparencia`) | O corretor vê a "Fila de leads", a posição e os motivos | A "Fila de leads" e a posição somem para o corretor. O gerente continua vendo | O registro de decisões continua sendo gravado. Ao ligar, o corretor vê também o passado |
 | **Períodos pelo check-in** (`periodos_checkin`, **Etapa 2**) | O check-in gera o lançamento pendente do período | Os períodos voltam a ser registrados à mão, pela recepção e pelo gerente, como hoje. O check-in serve só à distribuição (se ligado) | **Ao desligar:** os pendentes já gerados ficam pendentes, para aprovar ou recusar. Nenhum novo é gerado. Desenho na Etapa 2 |
 | **Aprovação pelo gerente da equipe** (`aprova_gerente`, **Etapa 2**) | Aprovam o gerente da equipe e o gerente geral | Só o gerente geral aprova, como em 29/10 | As aprovações já feitas valem. Desenho na Etapa 2 |
 
@@ -458,7 +458,7 @@ Todas `security definer`, com `auth.uid()` ativo, e leem a config.
 | `distribuicao_participa(p_corretor, p_sim)` | Gerente da equipe e gerente geral | Tira ou põe na distribuição |
 | `distribuicao_produtos_salvar(p_corretor, p_nao_atende uuid[])` | `distribuicao.produtos`; o gerente só da equipe | As exceções |
 | `distribuicao_fila(p_equipe uuid)` | Corretor da equipe (com `transparencia`), gerente da equipe, gerente geral | A fila agora: apelido, posição, faixa (com `pesos`), situação (apto, fora do stand, sem sinal, em visita, em pausa, fora da fila) e quem recebeu por último. **Sem dado de lead** |
-| `distribuicao_minhas_vezes(p_de, p_ate)` | O próprio (com `transparencia`) | Cada lead recebido (o nome, porque é dele) e cada pulo dele, com o motivo e se manteve a posição. Nunca o nome do lead de outro |
+| `distribuicao_minha_fila(p_de, p_ate)` | O próprio (com `transparencia`) | Cada lead recebido (o nome, porque é dele) e cada pulo dele, com o motivo e se manteve a posição. Nunca o nome do lead de outro |
 | `distribuicao_equipe(p_equipe, p_de, p_ate)` | Gerente da equipe e gerente geral | As decisões da equipe, com os pulos e os motivos de todos |
 | `distribuicao_como_calculado(p_corretor)` | O próprio, o gerente da equipe e o gerente geral | Os números da seção 7 |
 | `distribuicao_a_distribuir()` | `leads.distribuir` | A fila de "A distribuir" e os represados |
@@ -587,77 +587,79 @@ flowchart TD
 
 Celular primeiro, no DS (skill `tela-ds-mbigucci`): card com barra de 4px, uma ação vermelha por grupo, sem sombra, sem ícone nem emoji, glifos ✓ ! ✕ – →. **O que a chave desligou some da tela.** Nenhum texto diz que o cálculo muda pontos ou verba.
 
+**Revisão do Felipe no mockup (05/11/2026):** as telas estavam grandes, com muita informação e muito explicativas. Os textos longos foram trocados por estados curtos, com o detalhe num popup. Regras para todas as telas da distribuição:
+- botões e cards compactos;
+- **uma linha de estado** em vez de parágrafo;
+- explicação e detalhe **atrás de um toque** (folha ou popup);
+- texto explicativo **só no primeiro uso do dia**;
+- **o escopo sempre visível**: "Sua equipe" ou "Empresa toda", conforme o modo;
+- configuração principal no topo, avançada recolhida;
+- configuração (produtos, participação) fica fora da tela do dia a dia.
+
+**Nome da tela:** **"Fila de leads"** (recomendado) no lugar de "Minhas vezes". A alternativa é "Minha posição". "Fila de leads" diz o que a tela mostra, e o mesmo nome serve para o corretor, o gerente e o gerente geral. No banco, `distribuicao_minha_fila()` substitui `distribuicao_minhas_vezes()`.
+
+**Escopo por modo:**
+
+| Modo | Corretor vê | Gerente vê | Gerente geral vê |
+| --- | --- | --- | --- |
+| Equipe e depois corretor | "Sua equipe": a fila da equipe dele | "Sua equipe": a fila da equipe, com créditos e motivos | Cada equipe, e a vez entre equipes ("Empresa toda") |
+| Direto ao corretor | "Empresa toda": a fila única, com a equipe de cada um | "Empresa toda": a fila única. Créditos e motivos só da equipe dele; os outros só com nome e equipe | "Empresa toda", com tudo |
+| Só gerentes | Sem fila: o botão e a posição somem | "Sua equipe": os leads esperando repasse | A vez entre equipes |
+
 ### 13.1 Corretor
 
-**Cabeçalho do celular e topo da Lista do dia: o card "Distribuição automática"**
+**Cabeçalho fixo, em todas as telas:** o botão de recebimento e a posição.
 
-| Estado | Texto | Ação |
-| --- | --- | --- |
-| Botão desligado | "– Você não está recebendo leads da empresa." | **"Começar a receber"** (vermelho) |
-| Ligado, sem check-in (horário) | "! Faça o check-in no stand para receber leads da empresa." | **"Fazer check-in"** (vermelho) · "Parar de receber" |
-| Ligado e no stand | "✓ Recebendo leads · Marco Zero desde 9h04 · você é o 3º da fila" | "Saí para visita" · "Fazer check-out" · "Parar de receber" |
-| Ligado e na vez da recepção (6.1.1) | "✓ Recebendo leads · na vez do Marco Zero desde 8h52 · você é o 3º da fila" · "A saída e a volta são marcadas pela recepção." | "Parar de receber" |
-| Ausente | "! Fora do stand desde 10h40. Você mantém a posição." | **"Voltei ao stand"** |
-| Em visita | "→ Em visita desde 14h10. Você mantém a posição." | **"Voltei"** |
-| Sem sinal | "! Sem sinal desde 11h05. Abra o Vendas no stand para continuar recebendo." | (o próprio abrir resolve) |
-| Plantão (fora do horário) | "✓ De plantão · recebendo leads até você parar de usar o Vendas por 30 min" | "Parar de receber" |
-| Em pausa | "– Em pausa até 12/11." | "Voltar a receber" |
-| Fora pelo gerente | "– Seu gerente tirou você da distribuição. Fale com ele." | — |
+| Estado | Botão | Posição | Folha ao tocar |
+| --- | --- | --- | --- |
+| Desligado | **"Receber leads"** (vermelho) | – | "Fazer check-in" ou "Receber leads" |
+| Ligado, falta check-in | "! Faça check-in" | – | "Fazer check-in" |
+| No stand | "✓ Recebendo" | "3º na fila" | Opções: Saí para visita · Check-out · Pausar · Parar de receber |
+| Na vez da recepção | "✓ Na vez do stand" | "3º" | Pausar · Parar de receber |
+| Fora do stand | "! Fora do stand" | "3º" | Voltei ao stand |
+| Em visita | "→ Em visita" | "3º" | Voltei |
+| Sem sinal | "! Sem sinal" | "3º" | "Abra o Vendas no stand para voltar a receber." |
+| De plantão | "✓ De plantão" | "1º" | Parar de receber |
+| Pausa | "– Pausa até 12/11" | – | Voltar a receber |
+| Fora pelo gerente | "– Fora da distribuição" | – | "Seu gerente tirou você da distribuição." |
 
-- Chave `exigir_checkin` desligada: os estados de stand somem; ligado é "✓ Recebendo leads · você é o 3º da fila".
-- Chave `transparencia` desligada: some "você é o 3º da fila" e o link "Minhas vezes".
+- **Linha abaixo do cabeçalho**, só na Lista do dia: "Marco Zero · check-in 9h04 · Opções".
+- **Primeira vez do dia** (folha): "Receber leads da empresa hoje" · "Faça o check-in no stand. Depois, o botão fica no topo da tela para ligar e desligar." · **"Fazer check-in"** · "Agora não". Não volta no mesmo dia.
+- **Toque em "3º na fila"** (folha): "Fila de leads" + escopo, as 4 primeiras posições com sinal curto (✓, ! fora, → visita), "Última: Carla, 10h12" e "Ver tudo".
+- **Pergunta do sinal** (folha): "Saiu do stand?" · "Fora do stand você não recebe e mantém o lugar." · **"Saí"** · "Estou no stand".
+- **Check-in, resultados** (uma linha): "✓ Check-in no Marco Zero, 9h04" · "! A 480 m do stand. Chegue mais perto." · "! Localização imprecisa. Tente num lugar aberto." · "! Localização bloqueada. Libere no navegador." O aviso de uso da localização aparece só no primeiro check-in: "O Vendas usa sua localização só com o check-in aberto, para saber se você está no stand. Não guarda o ponto no mapa."
+- Chave `exigir_checkin` desligada: o botão vai direto de "Receber leads" a "✓ Recebendo", sem check-in nem "Opções" de stand.
+- Chave `transparencia` desligada: a posição e a "Fila de leads" somem para o corretor.
 
-**Pergunta do sinal (diálogo):** "Você saiu do stand?" · "Seu celular está a 600 m do Marco Zero. Enquanto estiver fora, você não recebe leads e mantém a posição na fila." Botões: **"Saí"** · "Estou no stand".
+**"Fila de leads"** (página):
+- Título com o escopo ("Sua equipe · Equipe Norte" ou "Empresa toda").
+- Uma linha: "Você: 3º · na média · Como é calculado". Sem a chave `pesos`, sem a faixa.
+- A fila: posição, apelido (e equipe, no modo direto) e um sinal curto. No modo direto, mostra o começo da fila, "…" e a vizinhança do corretor.
+- "Hoje": uma linha por vez ("✓ Recebeu Ana Souza · 10h12", "→ Pulado: fora do stand · 11h40", "! Fim da fila: prazo · 15h30"). O motivo completo e o "manteve a posição" abrem num toque.
 
-**Check-in, resultados:**
-- "✓ Check-in no Marco Zero às 9h04. Você já pode receber leads da empresa."
-- "! Você está a 480 m do Marco Zero. Chegue mais perto e tente de novo."
-- "! Não foi possível confirmar onde você está. Vá para um lugar aberto e tente de novo."
-- "! O Vendas não pode usar sua localização. Libere nas configurações do navegador e tente de novo."
-- **Primeira vez (aviso de uso da localização):** "O Vendas usa sua localização só com o check-in aberto e o Vendas na tela, para saber se você está no stand e pode receber leads da empresa. Não acompanha seu trajeto e não guarda o ponto no mapa: guarda só se você está dentro ou fora do stand." Botão: "Entendi".
+**"Como é calculado"** fica como estava (aprovada na revisão): o texto da R4-12, com os números do corretor e a frase "Este cálculo não muda seus pontos nem sua verba."
 
-**"Minhas vezes"**
-- Topo: "Você é o 3º da fila da Equipe Norte." · faixa (com `pesos`): "Desempenho na distribuição: na média" · link "Como é calculado".
-- A fila da equipe: "1º Carla · acima da média · apta", "2º Diego · na média · fora do stand", "3º Você · na média · apta", "– Bruno · em pausa". Último a receber: "Carla, às 10h12".
-- Lista das vezes, mais novas primeiro:
-  - "✓ Recebeu Ana Souza · Marco Zero One · 10h12"
-  - "→ Pulado às 11h40 · Fora do stand · manteve a posição"
-  - "→ Pulado às 14h02 · Não atende Easy · manteve a posição"
-  - "! Fim da fila às 15h30 · O prazo de Paulo Lima estourou"
+**Minha conta:** "Pausar o recebimento", com data de volta opcional.
 
-**"Como é calculado"** (R4-12, com os números do corretor):
-> **Nota do CRM:** nos últimos 30 dias você respondeu 18 de 23 leads da empresa em até 15 min (78%) e, em média, 85% da sua carteira ficou com o follow-up em dia.
-> **Nota do plantão:** sua atividade no plantão foi 12% acima da média da empresa.
-> Cada nota vale metade. No total você ficou 8% acima da média da empresa, então está **na média** (até 10% acima ou abaixo). Na média você recebe 2 leads a cada 3 de quem está acima e 1 de quem está abaixo. Recalculado toda segunda.
-> **Este cálculo não muda seus pontos nem sua verba.** Serve só para a ordem da distribuição.
+### 13.2 Gerente
 
-Texto fixo abaixo: a ordem da fila, os motivos de pulo, "Só o prazo de 15 min estourado manda você ao fim da fila", e "Desligar o recebimento ou pausar não tira sua posição; enquanto isso a fila anda sem você".
+**"Fila de leads"** (computador e celular):
+- Título com o escopo e o modo ("Sua equipe · Equipe Norte · Modo: equipe e depois corretor"), e uma linha de resumo: "5 aptos · 2 fora · 1 pausa".
+- Tabela compacta: posição, corretor, situação em uma linha, desempenho, créditos, recebidos hoje e "…", que abre pausar, tirar da distribuição, decisões e como é calculado.
+- **Indicador de produto discreto:** uma etiqueta "não atende 1" ao lado do nome, só quando há exceção.
+- "Última decisão": "Lucas F. · Easy → ✓ Felipa" e uma linha com os pulados. "Todas" abre a lista de decisões.
+- Modo só gerentes: um card por lead esperando ("Ana Souza · ! 12 min · Repassar").
 
-Com `pesos` desligado: "Hoje todos recebem na mesma proporção, sem desempenho." e só o texto fixo.
-
-**Minha conta:** "Pausar o recebimento" com data opcional ("Volto em"), "Produtos que você atende" (só leitura: "Você atende todos os produtos" ou a lista dos que não atende, marcada pelo gerente).
-
-### 13.2 Gerente (equipe)
-
-**"Distribuição" (a fila da equipe, computador e celular):**
-- Topo: "Equipe Norte · 6 na fila · 2 fora do stand · 1 em pausa". Modo só gerentes: card vermelho "Lead na fila da equipe: Ana Souza · Marco Zero One · repasse em 12 min" com **"Repassar"**.
-- Tabela: posição, apelido, situação, faixa, créditos (só para o gerente), recebidos hoje, prazos estourados em 30 dias, ações ("Pausar", "Tirar da distribuição", "Produtos", "Como é calculado").
-- Aba "Decisões": cada lead da equipe, quem recebeu e quem foi pulado, com os motivos de todos.
-- Produtos (diálogo): "Produtos que Diego atende" · lista do catálogo com marca "Atende" (todos marcados por padrão) · "Desmarque o que ele não atende." · **"Salvar"**.
-- Pausa (diálogo): "Pausar Diego" · "Volta em (opcional)" · **"Pausar"** · "Fica registrado quem pausou e quando."
+**Produtos e participação saem da tela do dia a dia.** Ficam no cadastro do corretor, em **Equipe › corretor**: "Produtos que atende" (lista com ✓ e –, "Todos menos 1") e "Na distribuição" (sim ou não). Quem pode marcar segue a permissão `distribuicao.produtos`.
 
 ### 13.3 Gerente geral
 
-**Configurações > Distribuição automática:**
-- Chave geral no topo, com o estado: "✓ Ligada desde 06/11 às 9h" / "– Desligada. Os leads da entrada vão para A distribuir."
-- Modo: três opções, com uma frase cada:
-  - "Equipe e depois corretor: as equipes se revezam, e dentro da equipe vale a fila";
-  - "Direto ao corretor: uma fila só com todos";
-  - "Só gerentes: o lead vai à fila da equipe, e o gerente repassa em até 15 min".
-- Uma linha por chave, com o nome, a frase "Ligada: …" e "Desligada: …" da tabela da seção 2 e o interruptor. Sinal com o check-in desligado: "Só vale com o check-in ligado".
-- "Histórico das mudanças": quem, quando, de e para.
-- **"A distribuir"** (gerente geral e `leads.distribuir`): os leads sem dono (A distribuir e represados), com a hora de chegada, o produto, a fonte e o motivo ("Chave desligada", "Ninguém apto desde 9h", "Represado até a abertura"); botão **"Atribuir"** por lead, que abre a escolha do corretor; "Mandar todos à distribuição" quando a chave está ligada.
-- **Fila entre equipes:** a ordem das equipes, quem recebeu por último e o motivo de cada equipe pulada hoje.
+**"Distribuição automática" tem página própria no menu**, com acesso direto. Em Configurações fica só um atalho para ela.
+- No topo: a chave geral com o estado ("✓ Ligada desde 9h") e o modo, num seletor de três opções.
+- **Principais à vista:** peso por desempenho, exigir check-in, redistribuição pelo prazo e plantão fora do horário.
+- **"Avançadas (8)", recolhidas:** sinal de localização, represar, produtos, fim da fila, lead repetido, atribuição à mão, fila visível para o corretor e o histórico das mudanças.
+- O que cada chave faz ligada e desligada (a tabela da seção 2) abre num toque no nome. Com o check-in desligado, o sinal fica cinza com "Só vale com o check-in ligado".
+- Ao lado: **"A distribuir"**, com uma linha por lead (nome, motivo curto, "Atribuir") e "Abrir" para a lista completa; e a vez entre as **equipes**, com o escopo "Empresa toda".
 
 ## 14. Testes da Etapa 1.2
 

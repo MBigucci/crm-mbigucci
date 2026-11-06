@@ -3,7 +3,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: mesa de protótipos (celular 375px e computador), por perfil; tokens do MBigucci DS (docs/design-system.md), claro e escuro */
+/* Layout: mesa de protótipos compactos (celular 375px e computador), por perfil; tokens do MBigucci DS, claro e escuro. Revisão do Felipe 05/11: estado em uma linha, detalhe atrás de um toque */
 :root{
   --paper:#f7f6f2;--surface:#ffffff;--ink:#0d0e11;--soft:#4a4b52;--conc:#6f6b63;--line:#e5e3dd;--ctl:#76736c;
   --brand:#e11119;--brand-d:#b90d14;--ok:#1f7a45;--wa:#925600;--tint:#fff6f6;--dis:#eeede9;--neutral:#5a5b60;
@@ -21,105 +21,114 @@
   --brand:#ff6b70;--brand-d:#ff9296;--ok:#68ce92;--wa:#f0b65b;--tint:#332024;--dis:#303138;--neutral:#b7b8c0;
   --on-brand:#151619;--sec:#303138;--sec-edge:#878995;--mesa:#0e0f11;color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--mesa);color:var(--ink);font:14px/1.45 var(--body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+body{background:var(--mesa);color:var(--ink);font:14px/1.4 var(--body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
 h1,h2,h3{font-family:var(--display);letter-spacing:-.01em;margin:0;text-wrap:balance}
+p{margin:0}
 .wrap{max-width:1320px;margin:0 auto}
 .nota{padding-top:24px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;align-items:flex-end}
 .nota h1{font-size:26px;font-weight:800}
-.nota p{margin:6px 0 0;color:var(--soft);max-width:70ch}
-.tema{display:flex;gap:0;border:1px solid var(--ctl);border-radius:2px;overflow:hidden}
+.nota p{margin-top:6px;color:var(--soft);max-width:72ch}
+.tema{display:flex;border:1px solid var(--ctl);border-radius:2px;overflow:hidden}
 .tema button{font:600 13px var(--body);padding:8px 12px;background:var(--surface);color:var(--ink);border:0;cursor:pointer}
 .tema button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
-.tema button:focus-visible,.btn:focus-visible,.sw:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
-.secao{margin-top:36px}
+button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.secao{margin-top:34px}
 .secao>h2{font-size:20px;font-weight:700}
-.secao>p{margin:4px 0 14px;color:var(--soft);max-width:75ch}
+.secao>p{margin:4px 0 14px;color:var(--soft);max-width:78ch}
 .rot{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--conc);margin:0 0 6px}
-.mesa{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
-.tela{width:375px;max-width:100%;min-width:0}
-.fone{background:var(--paper);border:1px solid var(--ctl);border-radius:4px;overflow:hidden;position:relative}
-.topo{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--paper)}
-.logo{font:800 16px var(--display);color:var(--ink)}.logo i{font-style:normal;color:var(--brand)}.logo span{font:600 13px var(--body);color:var(--soft);margin-left:4px}
-.ham{width:22px;display:grid;gap:4px}.ham i{height:2px;background:var(--ink);display:block}.ham i:nth-child(2){width:15px}
-.corpo{padding:14px 16px 18px;display:grid;gap:12px}
+.mesa{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start}
+.tela{width:340px;max-width:100%;min-width:0}
+.fone{background:var(--paper);border:1px solid var(--ctl);border-radius:4px;overflow:hidden;position:relative;min-height:420px}
+/* cabeçalho do celular, com o botão fixo */
+.topo{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--paper)}
+.logo{font:800 15px var(--display);color:var(--ink);white-space:nowrap}.logo i{font-style:normal;color:var(--brand)}
+.ham{width:20px;display:grid;gap:4px;margin-left:4px;flex:none}.ham i{height:2px;background:var(--ink);display:block}.ham i:nth-child(2){width:13px}
+.receber{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font:600 12px var(--body);border-radius:2px;padding:6px 9px;border:1px solid var(--ctl);background:var(--surface);color:var(--ink);white-space:nowrap;cursor:pointer}
+.receber.on{border-color:var(--ok);color:var(--ok)}
+.receber.off{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.receber.wa{border-color:var(--wa);color:var(--wa)}
+.posicao{font:700 12px var(--display);font-variant-numeric:tabular-nums;border:1px solid var(--line);border-radius:2px;padding:6px 8px;background:var(--surface);color:var(--ink);white-space:nowrap;cursor:pointer}
+.linha{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:7px 12px;border-bottom:1px solid var(--line);font-size:12px;color:var(--soft)}
+.linha b{color:var(--ink);font-weight:600}
+.corpo{padding:12px;display:grid;gap:10px}
 .eyebrow{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--conc)}
-.tp{font:800 24px/1.1 var(--display)}
-.tc{font:700 16px/1.2 var(--display)}
+.tp{font:800 21px/1.1 var(--display)}
+.tc{font:700 15px/1.2 var(--display)}
 .num{font-family:var(--display);font-variant-numeric:tabular-nums}
-.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:14px 14px 14px 18px}
+.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:10px 12px 10px 16px}
 .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--ink)}
 .card.b::before{background:var(--brand)}
 .card.tint{background:var(--tint)}
-.card p{margin:4px 0 0}
-.acoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border:1px solid transparent;border-radius:2px;font:600 14px/1.2 var(--body);padding:10px 14px;cursor:pointer;background:var(--sec);border-color:var(--sec-edge);color:var(--ink)}
+.lin{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.acoes{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:36px;border:1px solid var(--sec-edge);border-radius:2px;font:600 13px/1.2 var(--body);padding:7px 12px;cursor:pointer;background:var(--sec);color:var(--ink)}
 .btn.red{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
-.btn.full{width:100%}
-.pc .btn{min-height:36px;font-size:13px;padding:7px 12px}
-.btn.mini{min-height:30px!important;padding:4px 9px!important;font-size:12px!important}
-.link{color:var(--brand-d);font-weight:600;text-decoration:underline;text-underline-offset:2px}
+.btn.mini{min-height:28px;padding:3px 8px;font-size:12px}
+.link{color:var(--brand-d);font-weight:600;text-decoration:underline;text-underline-offset:2px;background:none;border:0;padding:0;font:inherit;font-weight:600;cursor:pointer}
 .ok{color:var(--ok);font-weight:600}.wa{color:var(--wa);font-weight:600}.er{color:var(--brand);font-weight:600}.nt{color:var(--neutral);font-weight:600}
 .sm{font-size:13px;color:var(--soft)}
 .aux{font-size:12px;color:var(--conc)}
 .lista{display:grid}
-.lista>div{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--line);align-items:baseline}
+.lista>div{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line);align-items:center;font-size:13px}
 .lista>div:first-child{border-top:0}
-.lista .q{font-weight:600}
-.pos{font:800 15px var(--display);font-variant-numeric:tabular-nums;color:var(--soft);width:26px;flex:none}
-.eu{background:var(--paper);box-shadow:inset 3px 0 0 var(--ink);padding-left:8px!important}
-.prosa p{margin:0 0 8px;max-width:62ch}
-.destaque{border-top:1px solid var(--line);padding-top:10px;font-weight:600}
-/* diálogo */
-.dialogo{position:absolute;inset:0;background:var(--overlay);display:flex;align-items:flex-end}
-.folha{background:var(--surface);width:100%;border-top:4px solid var(--ink);padding:18px 16px 16px}
+.pos{font:800 13px var(--display);font-variant-numeric:tabular-nums;color:var(--soft);width:22px;flex:none}
+.cresce{flex:1;min-width:0}
+.eu{background:var(--paper);box-shadow:inset 3px 0 0 var(--ink);padding-left:6px!important}
+.escopo{display:inline-flex;align-items:center;gap:6px;font:600 12px var(--body);border:1px solid var(--ink);border-radius:2px;padding:3px 8px;background:var(--surface);white-space:nowrap}
+.escopo span{color:var(--soft);font-weight:500}
+/* folha (popup) */
+.veu{position:absolute;inset:0;background:var(--overlay);display:flex;align-items:flex-end}
+.folha{background:var(--surface);width:100%;border-top:4px solid var(--ink);padding:14px 12px 12px;display:grid;gap:8px}
 .folha .acoes .btn{flex:1}
+.puxador{width:36px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 2px}
 /* computador */
-.pc{width:100%;background:var(--paper);border:1px solid var(--ctl);border-radius:4px;overflow:hidden;display:grid;grid-template-columns:180px minmax(0,1fr)}
-.lateral{background:var(--nav);color:var(--on-dark-soft);padding:16px 0;font-size:13px;font-weight:600}
-.lateral div{padding:9px 16px}
+.pc{width:100%;background:var(--paper);border:1px solid var(--ctl);border-radius:4px;overflow:hidden;display:grid;grid-template-columns:170px minmax(0,1fr)}
+.lateral{background:var(--nav);color:var(--on-dark-soft);padding:14px 0;font-size:13px;font-weight:600}
+.lateral div{padding:8px 16px}
 .lateral .at{background:var(--nav-ativo);color:var(--on-dark);box-shadow:inset 3px 0 0 var(--nav-marca)}
-.pccorpo{padding:18px 22px 24px;display:grid;gap:14px;min-width:0}
+.pccorpo{padding:16px 20px 20px;display:grid;gap:12px;min-width:0;align-content:start}
+.cab{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px}
 .rolavel{overflow-x:auto}
-table{border-collapse:collapse;width:100%;min-width:760px}
-th{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--conc);text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
-td{padding:8px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--conc);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:6px 8px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
 td.n{font-family:var(--display);font-variant-numeric:tabular-nums;font-weight:700;color:var(--soft);width:34px}
-td.r{text-align:right;white-space:nowrap}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+td.r{text-align:right}
 tr.fora td{color:var(--conc)}
-.abas{display:flex;gap:4px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-.abas span{padding:7px 12px;font-size:13px;font-weight:600;color:var(--soft);border-bottom:2px solid transparent;margin-bottom:-1px}
-.abas span.on{color:var(--ink);border-color:var(--ink)}
-.grade2{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px;align-items:start}
-.cab{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px}
+tr.outra td{color:var(--conc)}
+.tag{font-size:11px;font-weight:600;border:1px solid var(--line);border-radius:2px;padding:1px 6px;color:var(--soft);white-space:nowrap}
+.grade2{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:12px;align-items:start}
 /* chaves */
-.chave{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;padding:11px 0;border-top:1px solid var(--line);align-items:center}
-.chave:first-of-type{border-top:0}
-.chave .nm{font-weight:600}
-.chave .ex{font-size:12px;color:var(--soft);grid-column:1}
-.chave.off .nm{color:var(--soft)}
-.sw{display:inline-flex;align-items:center;gap:8px;font:600 12px var(--body);color:var(--ink);background:none;border:0;cursor:pointer;padding:4px 0}
-.sw i{width:38px;height:22px;border-radius:11px;background:var(--ink);position:relative;display:block}
-.sw i::after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:var(--surface);top:3px;left:19px}
+.chave{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line);align-items:center}
+.chave:first-child{border-top:0}
+.chave .nm{font-weight:600;font-size:13px}
+.chave .ex{font-size:12px;color:var(--soft)}
+.sw{display:inline-flex;align-items:center;gap:6px;font:600 12px var(--body);color:var(--ink);background:none;border:0;cursor:pointer;padding:2px 0;flex:none}
+.sw i{width:34px;height:20px;border-radius:10px;background:var(--ink);position:relative;display:block}
+.sw i::after{content:"";position:absolute;width:14px;height:14px;border-radius:50%;background:var(--surface);top:3px;left:17px}
 .sw[aria-checked="false"] i{background:var(--dis);box-shadow:inset 0 0 0 1px var(--ctl)}
 .sw[aria-checked="false"] i::after{left:3px;background:var(--ctl)}
-.modos{display:grid;gap:6px;margin-top:10px}
-.modo{border:1px solid var(--ctl);border-radius:2px;padding:9px 12px;background:var(--surface)}
-.modo.on{border-color:var(--ink);box-shadow:inset 3px 0 0 var(--ink)}
-.modo b{display:block}
-.indic{font-size:12px;border:1px solid var(--line);border-radius:2px;padding:3px 7px;background:var(--surface);white-space:nowrap;margin-left:auto}
-.legenda{margin-top:28px;color:var(--soft);font-size:13px;max-width:80ch}
+.seg{display:inline-flex;border:1px solid var(--ctl);border-radius:2px;overflow:hidden;flex-wrap:wrap}
+.seg span{padding:6px 10px;font-size:12px;font-weight:600;background:var(--surface);border-left:1px solid var(--line)}
+.seg span:first-child{border-left:0}
+.seg span.on{background:var(--ink);color:var(--surface)}
+details{border-top:1px solid var(--line);padding-top:8px;margin-top:4px}
+summary{cursor:pointer;font-weight:600;font-size:13px;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"+ ";color:var(--soft)}
+details[open] summary::before{content:"– "}
+.legenda{margin-top:28px;color:var(--soft);font-size:13px;max-width:82ch}
 .legenda li{margin-bottom:4px}
 @media (max-width:900px){.pc{grid-template-columns:minmax(0,1fr)}.lateral{display:none}.grade2{grid-template-columns:minmax(0,1fr)}}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
 <div class="wrap">
   <div class="nota">
     <div>
-      <div class="eyebrow">Base360 Vendas · mockup da Etapa 1.1 · 05/11/2026</div>
+      <div class="eyebrow">Base360 Vendas · mockup da Etapa 1.1 · revisão do Felipe, 05/11/2026</div>
       <h1>Distribuição automática</h1>
-      <p>Protótipo para o Felipe ver antes do código. Dados fictícios. Desenho completo em <code>docs/distribuicao-automatica.md</code>. As telas mostram o que cada perfil vê e o que some quando uma chave está desligada.</p>
+      <p>Versão compacta: o botão "Recebendo leads" e a posição ficam fixos no cabeçalho, o estado cabe em uma linha e o detalhe abre num toque. O escopo ("Sua equipe" ou "Empresa toda") aparece sempre. Dados fictícios.</p>
     </div>
     <div class="tema" role="group" aria-label="Tema do protótipo">
       <button type="button" id="t-auto" aria-pressed="true">Automático</button>
@@ -131,137 +140,173 @@ tr.fora td{color:var(--conc)}
   <!-- ===================== CORRETOR ===================== -->
   <section class="secao">
     <h2>Corretor, no celular</h2>
-    <p>O card "Distribuição automática" fica no topo da Lista do dia. Uma ação vermelha por card. Os números do desempenho nunca aparecem como pontos.</p>
+    <p>O botão fica sempre no cabeçalho, em todas as telas. A explicação aparece só na primeira vez do dia.</p>
     <div class="mesa">
 
       <div class="tela">
-        <div class="rot">1. Lista do dia · ainda sem check-in</div>
+        <div class="rot">1. Primeira vez do dia</div>
         <div class="fone">
-          <div class="topo"><div class="logo">Base<i>360</i><span>Vendas</span></div><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="topo"><div class="logo">Base<i>360</i></div><button class="receber off" type="button">Receber leads</button><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
           <div class="corpo">
-            <div><div class="eyebrow">Quinta, 06/11</div><div class="tp">Lista do dia</div></div>
-            <div class="card b tint">
-              <div class="eyebrow">Distribuição automática</div>
-              <p class="wa">! Faça o check-in no stand para receber leads da empresa.</p>
-              <p class="sm">Você está com "Recebendo leads" ligado.</p>
-              <div class="acoes"><button class="btn red full" type="button">Fazer check-in</button><button class="btn full" type="button">Parar de receber</button></div>
-            </div>
-            <div class="card"><div class="eyebrow">Aguardando primeiro contato</div><p class="sm">Nenhum lead da empresa agora.</p></div>
-            <div class="card"><div class="eyebrow">Para hoje</div>
-              <div class="lista"><div><span class="q">Marina Prado</span><span class="sm">10h · WhatsApp</span></div><div><span class="q">Rafael Nunes</span><span class="sm">15h · Ligar</span></div></div>
+            <div class="tp">Lista do dia</div>
+            <div class="card"><div class="lin"><span>Marina Prado</span><span class="aux">10h</span></div></div>
+          </div>
+          <div class="veu">
+            <div class="folha" role="dialog" aria-label="Receber leads da empresa hoje">
+              <div class="puxador"></div>
+              <h3 class="tc">Receber leads da empresa hoje</h3>
+              <p class="sm">Faça o check-in no stand. Depois, o botão fica no topo da tela para ligar e desligar.</p>
+              <div class="acoes"><button class="btn red" type="button">Fazer check-in</button><button class="btn" type="button">Agora não</button></div>
             </div>
           </div>
         </div>
       </div>
 
       <div class="tela">
-        <div class="rot">2. No stand e recebendo (com o sinal no cabeçalho)</div>
+        <div class="rot">2. Recebendo, no dia a dia</div>
         <div class="fone">
-          <div class="topo"><div class="logo">Base<i>360</i><span>Vendas</span></div><span class="indic ok">✓ Recebendo · 3º</span><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="topo"><div class="logo">Base<i>360</i></div><button class="receber on" type="button">✓ Recebendo</button><button class="posicao" type="button">3º na fila</button><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="linha"><span><b>Marco Zero</b> · check-in 9h04</span><button class="link" type="button">Opções</button></div>
           <div class="corpo">
-            <div><div class="eyebrow">Quinta, 06/11</div><div class="tp">Lista do dia</div></div>
-            <div class="card">
-              <div class="eyebrow">Distribuição automática</div>
-              <p class="ok">✓ Recebendo leads · Marco Zero desde 9h04</p>
-              <p>Você é o <b class="num">3º</b> da fila da Equipe Norte. <a class="link" href="#minhas-vezes">Minhas vezes</a></p>
-              <div class="acoes"><button class="btn" type="button">Saí para visita</button><button class="btn" type="button">Fazer check-out</button><button class="btn" type="button">Parar de receber</button></div>
-            </div>
+            <div class="tp">Lista do dia</div>
             <div class="card b">
-              <div class="eyebrow">Aguardando primeiro contato</div>
-              <div class="tc">Ana Souza</div>
-              <p class="sm">Marco Zero One · pela distribuição automática</p>
-              <p class="wa">! Responder em 12 min</p>
-              <div class="acoes"><button class="btn red" type="button">WhatsApp</button><button class="btn" type="button">Ligar</button></div>
+              <div class="lin"><span class="tc">Ana Souza</span><span class="wa">! 12 min</span></div>
+              <p class="aux">Marco Zero One · lead da empresa</p>
+              <div class="acoes"><button class="btn red mini" type="button">WhatsApp</button><button class="btn mini" type="button">Ligar</button></div>
+            </div>
+            <div class="card"><div class="lin"><span>Marina Prado</span><span class="aux">10h</span></div></div>
+            <div class="card"><div class="lin"><span>Rafael Nunes</span><span class="aux">15h</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tela">
+        <div class="rot">3. Toque em "3º na fila"</div>
+        <div class="fone">
+          <div class="topo"><div class="logo">Base<i>360</i></div><button class="receber on" type="button">✓ Recebendo</button><button class="posicao" type="button">3º na fila</button><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="corpo"><div class="tp">Lista do dia</div></div>
+          <div class="veu">
+            <div class="folha" role="dialog" aria-label="Fila de leads">
+              <div class="puxador"></div>
+              <div class="lin"><h3 class="tc">Fila de leads</h3><span class="escopo">Sua equipe <span>Equipe Norte</span></span></div>
+              <div class="lista">
+                <div><span class="pos">1º</span><span class="cresce">Carla</span><span class="ok">✓</span></div>
+                <div><span class="pos">2º</span><span class="cresce">Diego</span><span class="wa">! fora</span></div>
+                <div class="eu"><span class="pos">3º</span><span class="cresce"><b>Você</b></span><span class="ok">✓</span></div>
+                <div><span class="pos">4º</span><span class="cresce">Edu</span><span>→ visita</span></div>
+              </div>
+              <div class="lin"><span class="aux">Última: Carla, 10h12</span><button class="link" type="button">Ver tudo</button></div>
             </div>
           </div>
         </div>
       </div>
 
       <div class="tela">
-        <div class="rot">3. O sinal caiu fora do raio</div>
-        <div class="fone" style="min-height:520px">
-          <div class="topo"><div class="logo">Base<i>360</i><span>Vendas</span></div><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
-          <div class="corpo">
-            <div><div class="eyebrow">Quinta, 06/11</div><div class="tp">Lista do dia</div></div>
-            <div class="card"><div class="eyebrow">Distribuição automática</div><p class="ok">✓ Recebendo leads · Marco Zero desde 9h04</p></div>
+        <div class="rot">4. Toque em "Opções"</div>
+        <div class="fone">
+          <div class="topo"><div class="logo">Base<i>360</i></div><button class="receber on" type="button">✓ Recebendo</button><button class="posicao" type="button">3º na fila</button><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="linha"><span><b>Marco Zero</b> · check-in 9h04</span><button class="link" type="button">Opções</button></div>
+          <div class="veu">
+            <div class="folha" role="dialog" aria-label="Opções do recebimento">
+              <div class="puxador"></div>
+              <div class="acoes" style="margin-top:0"><button class="btn" type="button">Saí para visita</button><button class="btn" type="button">Check-out</button></div>
+              <div class="acoes" style="margin-top:0"><button class="btn" type="button">Pausar</button><button class="btn" type="button">Parar de receber</button></div>
+            </div>
           </div>
-          <div class="dialogo" role="dialog" aria-label="Você saiu do stand?">
-            <div class="folha">
-              <h3 class="tc">Você saiu do stand?</h3>
-              <p class="sm">Seu celular está a <span class="num">600 m</span> do Marco Zero. Enquanto estiver fora, você não recebe leads e mantém a posição na fila.</p>
+        </div>
+      </div>
+
+      <div class="tela">
+        <div class="rot">5. O sinal caiu fora do stand</div>
+        <div class="fone">
+          <div class="topo"><div class="logo">Base<i>360</i></div><button class="receber on" type="button">✓ Recebendo</button><button class="posicao" type="button">3º na fila</button><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="veu">
+            <div class="folha" role="dialog" aria-label="Saiu do stand?">
+              <div class="puxador"></div>
+              <h3 class="tc">Saiu do stand?</h3>
+              <p class="sm">Fora do stand você não recebe e mantém o lugar.</p>
               <div class="acoes"><button class="btn red" type="button">Saí</button><button class="btn" type="button">Estou no stand</button></div>
-              <p class="aux">Sem resposta em 5 min, você fica fora do stand até o próximo sinal dentro.</p>
             </div>
           </div>
         </div>
       </div>
 
       <div class="tela">
-        <div class="rot">4. Outros estados do card</div>
+        <div class="rot">6. Estados do cabeçalho (uma linha)</div>
+        <div class="fone" style="min-height:0">
+          <div class="topo"><div class="logo">Base<i>360</i></div><button class="receber off" type="button">Receber leads</button><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="topo"><div class="logo">Base<i>360</i></div><button class="receber wa" type="button">! Faça check-in</button><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="topo"><div class="logo">Base<i>360</i></div><button class="receber wa" type="button">! Fora do stand</button><button class="posicao" type="button">3º</button><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="topo"><div class="logo">Base<i>360</i></div><button class="receber" type="button">→ Em visita</button><button class="posicao" type="button">3º</button><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="topo"><div class="logo">Base<i>360</i></div><button class="receber wa" type="button">! Sem sinal</button><button class="posicao" type="button">3º</button><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="topo"><div class="logo">Base<i>360</i></div><button class="receber on" type="button">✓ Na vez do stand</button><button class="posicao" type="button">3º</button><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="topo"><div class="logo">Base<i>360</i></div><button class="receber on" type="button">✓ De plantão</button><button class="posicao" type="button">1º</button><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="topo"><div class="logo">Base<i>360</i></div><button class="receber" type="button">– Pausa até 12/11</button><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="corpo"><p class="aux">Tocar no botão abre as opções do estado: voltar, check-in, parar. A frase de cada estado aparece na folha, não no cabeçalho.</p></div>
+        </div>
+      </div>
+
+      <div class="tela" id="fila">
+        <div class="rot">7. Fila de leads · modo equipe</div>
         <div class="fone">
+          <div class="topo"><div class="logo">Base<i>360</i></div><button class="receber on" type="button">✓ Recebendo</button><button class="posicao" type="button">3º na fila</button><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
           <div class="corpo">
-            <div class="card"><p class="ok">✓ Recebendo leads · na vez do Marco Zero desde 8h52</p><p class="sm">A saída e a volta são marcadas pela recepção.</p><div class="acoes"><button class="btn full" type="button">Parar de receber</button></div></div>
-            <div class="card b tint"><p class="wa">! Fora do stand desde 10h40. Você mantém a posição.</p><div class="acoes"><button class="btn red full" type="button">Voltei ao stand</button></div></div>
-            <div class="card"><p>→ Em visita desde 14h10. Você mantém a posição.</p><div class="acoes"><button class="btn full" type="button">Voltei</button></div></div>
-            <div class="card b tint"><p class="wa">! Sem sinal desde 11h05. Abra o Vendas no stand para continuar recebendo.</p></div>
-            <div class="card"><p class="ok">✓ De plantão</p><p class="sm">Recebendo leads até você parar de usar o Vendas por 30 min. O prazo de 15 min corre na hora.</p><p class="sm">→ 4 leads esperando a abertura. Você recebe o próximo quando responder este.</p><div class="acoes"><button class="btn full" type="button">Parar de receber</button></div></div>
-            <div class="card"><p class="nt">– Em pausa até 12/11.</p><div class="acoes"><button class="btn full" type="button">Voltar a receber</button></div></div>
-            <div class="card"><p class="nt">– Você não está recebendo leads da empresa.</p><div class="acoes"><button class="btn red full" type="button">Começar a receber</button></div></div>
+            <div class="lin"><div class="tp">Fila de leads</div><span class="escopo">Sua equipe <span>Equipe Norte</span></span></div>
+            <div class="lin sm"><span>Você: <b class="num">3º</b> · na média</span><button class="link" type="button">Como é calculado</button></div>
+            <div class="card">
+              <div class="lista">
+                <div><span class="pos">1º</span><span class="cresce">Carla</span><span class="ok">✓ apta</span></div>
+                <div><span class="pos">2º</span><span class="cresce">Diego</span><span class="wa">! fora do stand</span></div>
+                <div class="eu"><span class="pos">3º</span><span class="cresce"><b>Você</b></span><span class="ok">✓ apto</span></div>
+                <div><span class="pos">4º</span><span class="cresce">Edu</span><span>→ em visita</span></div>
+                <div><span class="pos">–</span><span class="cresce">Bruno</span><span class="nt">– pausa</span></div>
+              </div>
+            </div>
+            <div class="eyebrow">Hoje</div>
+            <div class="card">
+              <div class="lista">
+                <div><span class="ok">✓ Recebeu Ana Souza</span><span class="aux">10h12</span></div>
+                <div><span>→ Pulado: fora do stand</span><span class="aux">11h40</span></div>
+                <div><span class="er">! Fim da fila: prazo</span><span class="aux">15h30</span></div>
+              </div>
+            </div>
+            <p class="aux">Toque numa linha para ver o motivo.</p>
           </div>
         </div>
       </div>
 
-      <div class="tela" id="minhas-vezes">
-        <div class="rot">5. Minhas vezes</div>
+      <div class="tela">
+        <div class="rot">8. Fila de leads · modo direto</div>
         <div class="fone">
-          <div class="topo"><div class="logo">Base<i>360</i><span>Vendas</span></div><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="topo"><div class="logo">Base<i>360</i></div><button class="receber on" type="button">✓ Recebendo</button><button class="posicao" type="button">12º na fila</button><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
           <div class="corpo">
-            <div><div class="eyebrow">Distribuição automática</div><div class="tp">Minhas vezes</div></div>
+            <div class="lin"><div class="tp">Fila de leads</div><span class="escopo">Empresa toda</span></div>
+            <div class="lin sm"><span>Você: <b class="num">12º</b> de <b class="num">38</b> · na média</span><button class="link" type="button">Como é calculado</button></div>
             <div class="card">
-              <p>Você é o <b class="num">3º</b> da fila da Equipe Norte.</p>
-              <p class="sm">Desempenho na distribuição: <b>na média</b>. <a class="link" href="#como">Como é calculado</a></p>
-            </div>
-            <div class="card">
-              <div class="eyebrow">Fila agora</div>
               <div class="lista">
-                <div><span class="pos">1º</span><span style="flex:1"><span class="q">Carla</span> <span class="aux">acima da média</span></span><span class="ok">✓ Apta</span></div>
-                <div><span class="pos">2º</span><span style="flex:1"><span class="q">Diego</span> <span class="aux">na média</span></span><span class="wa">! Fora do stand</span></div>
-                <div class="eu"><span class="pos">3º</span><span style="flex:1"><span class="q">Você</span> <span class="aux">na média</span></span><span class="ok">✓ Apto</span></div>
-                <div><span class="pos">4º</span><span style="flex:1"><span class="q">Edu</span> <span class="aux">abaixo da média</span></span><span>→ Em visita</span></div>
-                <div><span class="pos">–</span><span style="flex:1"><span class="q">Bruno</span></span><span class="nt">– Em pausa</span></div>
-              </div>
-              <p class="aux">Última a receber: Carla, às 10h12.</p>
-            </div>
-            <div class="card">
-              <div class="eyebrow">Suas vezes hoje</div>
-              <div class="lista">
-                <div><span class="ok">✓ Recebeu Ana Souza</span><span class="sm">10h12</span></div>
-                <div><span>→ Pulado · Fora do stand · manteve a posição</span><span class="sm">11h40</span></div>
-                <div><span>→ Pulado · Não atende Easy · manteve a posição</span><span class="sm">14h02</span></div>
-                <div><span class="er">! Fim da fila · o prazo de Paulo Lima estourou</span><span class="sm">15h30</span></div>
+                <div><span class="pos">1º</span><span class="cresce">Carla <span class="aux">Norte</span></span><span class="ok">✓</span></div>
+                <div><span class="pos">2º</span><span class="cresce">Paula <span class="aux">Sul</span></span><span class="ok">✓</span></div>
+                <div><span class="pos">…</span><span class="cresce aux">9 corretores</span><span></span></div>
+                <div class="eu"><span class="pos">12º</span><span class="cresce"><b>Você</b> <span class="aux">Norte</span></span><span class="ok">✓</span></div>
+                <div><span class="pos">13º</span><span class="cresce">Rita <span class="aux">Oeste</span></span><span class="wa">!</span></div>
               </div>
             </div>
+            <p class="aux">No modo equipe aparece "Sua equipe". No direto, "Empresa toda". No modo só gerentes, o corretor não tem fila, e o botão some.</p>
           </div>
         </div>
       </div>
 
       <div class="tela" id="como">
-        <div class="rot">6. Como é calculado</div>
+        <div class="rot">9. Como é calculado (aprovada)</div>
         <div class="fone">
-          <div class="topo"><div class="logo">Base<i>360</i><span>Vendas</span></div><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
-          <div class="corpo prosa">
-            <div><div class="eyebrow">Distribuição automática</div><div class="tp">Como é calculado</div></div>
-            <div class="card">
+          <div class="topo"><div class="logo">Base<i>360</i></div><button class="receber on" type="button">✓ Recebendo</button><button class="posicao" type="button">3º na fila</button><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="corpo">
+            <div class="tp">Como é calculado</div>
+            <div class="card sm" style="display:grid;gap:8px">
               <p><b>Nota do CRM:</b> nos últimos 30 dias você respondeu <span class="num">18</span> de <span class="num">23</span> leads da empresa em até 15 min (<span class="num">78%</span>) e, em média, <span class="num">85%</span> da sua carteira ficou com o follow-up em dia.</p>
               <p><b>Nota do plantão:</b> sua atividade no plantão foi <span class="num">12%</span> acima da média da empresa.</p>
-              <p>Cada nota vale metade. No total você ficou <span class="num">8%</span> acima da média da empresa, então está <b>na média</b> (até 10% acima ou abaixo). Na média você recebe 2 leads a cada 3 de quem está acima e 1 de quem está abaixo. Recalculado toda segunda.</p>
-              <p class="destaque">Este cálculo não muda seus pontos nem sua verba. Serve só para a ordem da distribuição.</p>
-            </div>
-            <div class="card">
-              <div class="eyebrow">Como a fila anda</div>
-              <p class="sm">Recebe quem está na frente e pode atender o lead. Quem está fora do stand, em visita, não atende o produto ou já teve o lead é pulado e mantém a posição.</p>
-              <p class="sm">Só o prazo de 15 min estourado manda você ao fim da fila.</p>
-              <p class="sm">Desligar o recebimento ou pausar não tira sua posição. Enquanto isso a fila anda sem você.</p>
+              <p>Cada nota vale metade. No total você ficou <span class="num">8%</span> acima da média, então está <b>na média</b>. Recalculado toda segunda.</p>
+              <p><b>Este cálculo não muda seus pontos nem sua verba.</b></p>
             </div>
           </div>
         </div>
@@ -272,96 +317,90 @@ tr.fora td{color:var(--conc)}
 
   <!-- ===================== GERENTE ===================== -->
   <section class="secao">
-    <h2>Gerente da equipe, no computador</h2>
-    <p>A fila da equipe, com os créditos (só para o gerente), as decisões com os motivos de todos e as ações de pausa, produtos e participação.</p>
+    <h2>Gerente da equipe</h2>
+    <p>O escopo fica no título. No modo equipe, o gerente vê a fila da equipe dele. No modo direto, vê a fila da empresa toda, com o detalhe (créditos e motivos) só da equipe dele. Os produtos saíram daqui: são configuração do corretor.</p>
     <div class="pc">
-      <nav class="lateral" aria-label="Menu do protótipo"><div>Lista do dia</div><div>Leads</div><div>Agenda</div><div class="at">Distribuição</div><div>Painel</div></nav>
+      <nav class="lateral" aria-label="Menu do protótipo"><div>Lista do dia</div><div>Leads</div><div>Agenda</div><div class="at">Fila de leads</div><div>Equipe</div><div>Painel</div></nav>
       <div class="pccorpo">
         <div class="cab">
-          <div><div class="eyebrow">Equipe Norte · quinta, 06/11 · 11h52</div><h2 class="tp">Distribuição</h2></div>
-          <p class="sm" style="margin:0"><b class="num">6</b> na fila · <b class="num">2</b> fora do stand · <b class="num">1</b> em pausa</p>
+          <div class="lin" style="gap:10px;flex-wrap:wrap"><h2 class="tp">Fila de leads</h2><span class="escopo">Sua equipe <span>Equipe Norte</span></span><span class="aux">Modo: equipe e depois corretor</span></div>
+          <p class="sm"><b class="num">5</b> aptos · <b class="num">2</b> fora · <b class="num">1</b> pausa</p>
         </div>
-        <div class="abas"><span class="on">Fila agora</span><span>Decisões</span><span>Produtos</span></div>
         <div class="grade2">
           <div class="card" style="padding-right:0">
             <div class="rolavel">
               <table>
-                <thead><tr><th>Pos.</th><th>Corretor</th><th>Situação</th><th>Desempenho</th><th class="num">Créditos</th><th class="num">Hoje</th><th class="num">Estouros 30d</th><th></th></tr></thead>
+                <thead><tr><th>Pos.</th><th>Corretor</th><th>Situação</th><th>Desempenho</th><th class="num">Créditos</th><th class="num">Hoje</th><th></th></tr></thead>
                 <tbody>
-                  <tr><td class="n">1º</td><td><b>Carla</b></td><td class="ok">✓ Apta · Marco Zero</td><td>Acima da média</td><td class="num">5</td><td class="num">2</td><td class="num">0</td><td class="r"><button class="btn mini" type="button">Pausar</button></td></tr>
-                  <tr><td class="n">2º</td><td><b>Diego</b></td><td class="wa">! Fora do stand desde 10h40</td><td>Na média</td><td class="num">4</td><td class="num">1</td><td class="num">1</td><td class="r"><button class="btn mini" type="button">Pausar</button></td></tr>
-                  <tr><td class="n">3º</td><td><b>Felipa</b></td><td class="ok">✓ Apta · Marco Zero</td><td>Na média</td><td class="num">2</td><td class="num">1</td><td class="num">0</td><td class="r"><button class="btn mini" type="button">Pausar</button></td></tr>
-                  <tr><td class="n">4º</td><td><b>Edu</b></td><td>→ Em visita desde 11h20</td><td>Abaixo da média</td><td class="num">1</td><td class="num">0</td><td class="num">3</td><td class="r"><button class="btn mini" type="button">Pausar</button></td></tr>
-                  <tr><td class="n">5º</td><td><b>Gil</b></td><td class="wa">! Sem sinal desde 11h05</td><td>Na média</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="r"><button class="btn mini" type="button">Pausar</button></td></tr>
-                  <tr class="fora"><td class="n">–</td><td><b>Bruno</b></td><td>– Em pausa até 12/11 (pausou: Bruno)</td><td>Na média</td><td class="num">3</td><td class="num">0</td><td class="num">0</td><td class="r"><button class="btn mini" type="button">Voltar</button></td></tr>
-                  <tr class="fora"><td class="n">–</td><td><b>Hugo</b></td><td>– Recebimento desligado</td><td>Novo · na média</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="r"><button class="btn mini" type="button">Tirar da distribuição</button></td></tr>
+                  <tr><td class="n">1º</td><td><b>Carla</b> <span class="tag">não atende 1</span></td><td class="ok">✓ Apta</td><td>Acima</td><td class="num">5</td><td class="num">2</td><td class="r"><button class="btn mini" type="button">…</button></td></tr>
+                  <tr><td class="n">2º</td><td><b>Diego</b></td><td class="wa">! Fora 10h40</td><td>Na média</td><td class="num">4</td><td class="num">1</td><td class="r"><button class="btn mini" type="button">…</button></td></tr>
+                  <tr><td class="n">3º</td><td><b>Felipa</b></td><td class="ok">✓ Apta</td><td>Na média</td><td class="num">2</td><td class="num">1</td><td class="r"><button class="btn mini" type="button">…</button></td></tr>
+                  <tr><td class="n">4º</td><td><b>Edu</b></td><td>→ Visita</td><td>Abaixo</td><td class="num">1</td><td class="num">0</td><td class="r"><button class="btn mini" type="button">…</button></td></tr>
+                  <tr><td class="n">5º</td><td><b>Gil</b></td><td class="wa">! Sem sinal</td><td>Na média</td><td class="num">0</td><td class="num">0</td><td class="r"><button class="btn mini" type="button">…</button></td></tr>
+                  <tr class="fora"><td class="n">–</td><td><b>Bruno</b></td><td>– Pausa até 12/11</td><td>Na média</td><td class="num">3</td><td class="num">0</td><td class="r"><button class="btn mini" type="button">…</button></td></tr>
                 </tbody>
               </table>
             </div>
+            <p class="aux" style="padding:6px 8px 0">"…" abre: pausar, tirar da distribuição, decisões, como é calculado.</p>
           </div>
-          <div style="display:grid;gap:14px">
-            <div class="card">
-              <div class="eyebrow">Última decisão · 11h40</div>
-              <div class="tc">Lucas Ferreira · Easy</div>
-              <div class="lista">
-                <div><span>→ Diego · Fora do stand</span><span class="aux">mantém</span></div>
-                <div><span>→ Carla · Não atende Easy</span><span class="aux">mantém</span></div>
-                <div><span class="ok">✓ Felipa recebeu</span><span class="aux">−9 créditos</span></div>
-              </div>
-            </div>
-            <div class="card">
-              <div class="eyebrow">Produtos de Diego</div>
-              <p class="sm">Desmarque o que ele não atende. Empreendimento novo já entra como atendido.</p>
-              <div class="lista">
-                <div><span>Marco Zero One</span><span class="ok">✓ Atende</span></div>
-                <div><span>Easy</span><span class="nt">– Não atende</span></div>
-                <div><span>Elleva</span><span class="ok">✓ Atende</span></div>
-              </div>
-              <div class="acoes"><button class="btn red" type="button">Salvar</button></div>
-            </div>
+          <div class="card">
+            <div class="lin"><span class="eyebrow">Última decisão · 11h40</span><button class="link" type="button">Todas</button></div>
+            <p><b>Lucas F.</b> · Easy → <span class="ok">✓ Felipa</span></p>
+            <p class="aux">Pulados: Diego (fora), Carla (não atende Easy)</p>
           </div>
-        </div>
-        <div class="card b tint">
-          <div class="eyebrow">Modo só gerentes (exemplo, quando o Felipe escolhe esse modo)</div>
-          <p><b>Ana Souza · Marco Zero One</b> está na fila da equipe.</p>
-          <p class="wa">! Repasse em 12 min</p>
-          <div class="acoes"><button class="btn red" type="button">Repassar</button></div>
         </div>
       </div>
     </div>
 
-    <div class="mesa" style="margin-top:24px">
+    <div class="mesa" style="margin-top:22px">
       <div class="tela">
-        <div class="rot">Gerente no celular · fila da equipe</div>
+        <div class="rot">Gerente no celular · modo direto</div>
         <div class="fone">
-          <div class="topo"><div class="logo">Base<i>360</i><span>Vendas</span></div><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
+          <div class="topo"><div class="logo">Base<i>360</i></div><div class="ham" aria-hidden="true" style="margin-left:auto"><i></i><i></i><i></i></div></div>
           <div class="corpo">
-            <div><div class="eyebrow">Equipe Norte · 11h52</div><div class="tp">Distribuição</div></div>
-            <div class="card b tint">
-              <div class="eyebrow">Fila da equipe · modo só gerentes</div>
-              <div class="tc">Ana Souza</div>
-              <p class="sm">Marco Zero One · site</p>
-              <p class="wa">! Repasse em 12 min</p>
-              <div class="acoes"><button class="btn red full" type="button">Repassar</button></div>
-            </div>
+            <div class="lin"><div class="tp">Fila de leads</div><span class="escopo">Empresa toda</span></div>
+            <p class="aux">Detalhe só da Equipe Norte</p>
             <div class="card">
-              <div class="eyebrow">Fila agora · 6 na fila</div>
               <div class="lista">
-                <div><span class="pos">1º</span><span style="flex:1"><span class="q">Carla</span> <span class="aux">5 créditos</span></span><span class="ok">✓ Apta</span></div>
-                <div><span class="pos">2º</span><span style="flex:1"><span class="q">Diego</span> <span class="aux">4</span></span><span class="wa">! Fora do stand</span></div>
-                <div><span class="pos">3º</span><span style="flex:1"><span class="q">Felipa</span> <span class="aux">2</span></span><span class="ok">✓ Apta</span></div>
-                <div><span class="pos">4º</span><span style="flex:1"><span class="q">Edu</span> <span class="aux">1</span></span><span>→ Em visita</span></div>
-                <div><span class="pos">–</span><span style="flex:1"><span class="q">Bruno</span></span><span class="nt">– Em pausa</span></div>
+                <div><span class="pos">1º</span><span class="cresce"><b>Carla</b></span><span class="ok">✓</span></div>
+                <div><span class="pos">2º</span><span class="cresce aux">Paula · Sul</span><span></span></div>
+                <div><span class="pos">3º</span><span class="cresce aux">Ivo · Oeste</span><span></span></div>
+                <div><span class="pos">4º</span><span class="cresce"><b>Diego</b></span><span class="wa">! fora</span></div>
               </div>
-              <div class="acoes"><button class="btn full" type="button">Ver decisões</button></div>
             </div>
+          </div>
+        </div>
+      </div>
+      <div class="tela">
+        <div class="rot">Gerente no celular · modo só gerentes</div>
+        <div class="fone">
+          <div class="topo"><div class="logo">Base<i>360</i></div><div class="ham" aria-hidden="true" style="margin-left:auto"><i></i><i></i><i></i></div></div>
+          <div class="corpo">
+            <div class="lin"><div class="tp">Fila de leads</div><span class="escopo">Sua equipe</span></div>
+            <div class="card b tint">
+              <div class="lin"><span class="tc">Ana Souza</span><span class="wa">! 12 min</span></div>
+              <p class="aux">Marco Zero One · site</p>
+              <div class="acoes"><button class="btn red mini" type="button">Repassar</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tela">
+        <div class="rot">Equipe › Diego · configuração</div>
+        <div class="fone">
+          <div class="topo"><div class="logo">Base<i>360</i></div><div class="ham" aria-hidden="true" style="margin-left:auto"><i></i><i></i><i></i></div></div>
+          <div class="corpo">
+            <div class="tp">Diego Lima</div>
             <div class="card">
-              <div class="eyebrow">Pausar Diego</div>
-              <p class="sm">Volta em (opcional)</p>
-              <p class="num">12/11/2026</p>
-              <div class="acoes"><button class="btn full" type="button">Pausar</button></div>
-              <p class="aux">Fica registrado quem pausou e quando.</p>
+              <div class="lin"><span class="eyebrow">Produtos que atende</span><span class="aux">Todos menos 1</span></div>
+              <div class="lista">
+                <div><span>Marco Zero One</span><span class="ok">✓</span></div>
+                <div><span>Easy</span><span class="nt">–</span></div>
+                <div><span>Elleva</span><span class="ok">✓</span></div>
+              </div>
+              <div class="acoes"><button class="btn red mini" type="button">Salvar</button></div>
             </div>
+            <div class="card"><div class="lin"><span>Na distribuição</span><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Sim</button></div></div>
           </div>
         </div>
       </div>
@@ -370,100 +409,56 @@ tr.fora td{color:var(--conc)}
 
   <!-- ===================== GERENTE GERAL ===================== -->
   <section class="secao">
-    <h2>Gerente geral, no computador</h2>
-    <p>Configurações &gt; Distribuição automática, com todas as chaves. Neste exemplo "Exigir check-in" está desligado: o Sinal de localização avisa que não vale, e o check-in some das telas do corretor (tela 7, ao lado).</p>
+    <h2>Gerente geral</h2>
+    <p>A Distribuição automática tem página própria no menu. O principal fica no topo; as chaves avançadas ficam recolhidas.</p>
     <div class="pc">
-      <nav class="lateral" aria-label="Menu do protótipo"><div>Lista do dia</div><div>Leads</div><div>A distribuir</div><div>Painel</div><div class="at">Configurações</div></nav>
+      <nav class="lateral" aria-label="Menu do protótipo"><div>Lista do dia</div><div>Leads</div><div class="at">Distribuição</div><div>Painel</div><div>Configurações</div></nav>
       <div class="pccorpo">
-        <div><div class="eyebrow">Configurações · só o gerente geral</div><h2 class="tp">Distribuição automática</h2></div>
+        <div class="cab">
+          <h2 class="tp">Distribuição automática</h2>
+          <div class="lin" style="gap:10px"><span class="ok">✓ Ligada desde 9h</span><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
+        </div>
         <div class="grade2">
-          <div style="display:grid;gap:14px">
-            <div class="card b">
-              <div class="chave" style="border-top:0">
-                <div><div class="nm">Distribuição automática</div><div class="ex ok">✓ Ligada desde 06/11 às 9h</div></div>
-                <button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button>
-              </div>
-              <div class="eyebrow" style="margin-top:8px">Modo</div>
-              <div class="modos">
-                <div class="modo on"><b>Equipe e depois corretor</b><span class="sm">As equipes se revezam, e dentro da equipe vale a fila.</span></div>
-                <div class="modo"><b>Direto ao corretor</b><span class="sm">Uma fila só com todos.</span></div>
-                <div class="modo"><b>Só gerentes</b><span class="sm">O lead vai à fila da equipe, e o gerente repassa em até 15 min.</span></div>
-              </div>
+          <div class="card b">
+            <div class="eyebrow">Modo</div>
+            <div class="seg" style="margin-top:6px"><span class="on">Equipe e depois corretor</span><span>Direto ao corretor</span><span>Só gerentes</span></div>
+            <div style="margin-top:10px">
+              <div class="chave"><div><div class="nm">Peso por desempenho</div></div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
+              <div class="chave"><div><div class="nm">Exigir check-in no horário</div></div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
+              <div class="chave"><div><div class="nm">Redistribuição pelo prazo</div></div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
+              <div class="chave"><div><div class="nm">Plantão fora do horário</div></div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
             </div>
-            <div class="card">
-              <div class="eyebrow">Chaves</div>
-              <div class="chave"><div><div class="nm">Peso por desempenho</div><div class="ex">Ligada: 3, 2 e 1 pela faixa. Desligada: todos recebem igual.</div></div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
-              <div class="chave off"><div><div class="nm">Exigir check-in no horário</div><div class="ex">Ligada: só recebe quem fez check-in. Desligada: vale só o botão "Recebendo leads".</div></div><button class="sw" type="button" role="switch" aria-checked="false"><i></i>Desligada</button></div>
-              <div class="chave off"><div><div class="nm">Sinal de localização</div><div class="ex wa">! Só vale com o check-in ligado.</div></div><button class="sw" type="button" role="switch" aria-checked="true" disabled><i></i>Ligada</button></div>
-              <div class="chave"><div><div class="nm">Plantão fora do horário</div><div class="ex">Ligada: recebe quem está com o botão ligado e usou o Vendas há até 30 min. Desligada: ninguém recebe fora do horário.</div></div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
-              <div class="chave"><div><div class="nm">Represar quando não há ninguém</div><div class="ex">Ligada: o lead espera a abertura. Desligada: distribui na hora entre todos, com o prazo na abertura.</div></div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
-              <div class="chave"><div><div class="nm">Produtos que o corretor atende</div><div class="ex">Desligada: todos atendem todos.</div></div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
-              <div class="chave"><div><div class="nm">Redistribuição pelo prazo</div><div class="ex">Ligada: passa sozinho adiante até alguém atender, primeiro na mesma equipe, nunca a quem já teve. Desligada: o gerente usa o Lead perdido.</div></div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
-              <div class="chave"><div><div class="nm">Prazo estourado manda ao fim da fila</div><div class="ex">Desligada: só pula, mantendo a posição.</div></div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
-              <div class="chave"><div><div class="nm">Lead repetido vai ao dono</div><div class="ex">Desligada: cria lead novo pela roleta.</div></div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
-              <div class="chave"><div><div class="nm">Atribuição à mão conta como vez</div><div class="ex">Desligada: não mexe na fila.</div></div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
-              <div class="chave"><div><div class="nm">Transparência para o corretor</div><div class="ex">Desligada: "Minhas vezes" some para o corretor; o gerente continua vendo.</div></div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
-            </div>
+            <details>
+              <summary>Avançadas (8)</summary>
+              <div style="margin-top:6px">
+                <div class="chave"><div class="nm">Sinal de localização</div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
+                <div class="chave"><div class="nm">Represar quando não há ninguém</div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
+                <div class="chave"><div class="nm">Produtos que o corretor atende</div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
+                <div class="chave"><div class="nm">Prazo estourado manda ao fim da fila</div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
+                <div class="chave"><div class="nm">Lead repetido vai ao dono</div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
+                <div class="chave"><div class="nm">Atribuição à mão conta como vez</div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
+                <div class="chave"><div class="nm">Fila visível para o corretor</div><button class="sw" type="button" role="switch" aria-checked="true"><i></i>Ligada</button></div>
+                <div class="chave"><div class="nm">Histórico das mudanças</div><button class="link" type="button">Ver</button></div>
+              </div>
+            </details>
+            <p class="aux" style="margin-top:8px">Toque no nome de uma chave para ver o que acontece ligada e desligada.</p>
           </div>
-          <div style="display:grid;gap:14px">
+          <div style="display:grid;gap:12px">
             <div class="card b tint">
-              <div class="eyebrow">A distribuir · 3 leads</div>
+              <div class="lin"><span class="eyebrow">A distribuir · 3</span><button class="link" type="button">Abrir</button></div>
               <div class="lista">
-                <div><span><b>Paulo Lima</b> · Elleva · Zap<br><span class="aux">Prazo estourado com 6 corretores, ninguém sobrando</span></span><button class="btn red mini" type="button">Atribuir</button></div>
-                <div><span><b>Teresa Reis</b> · sem produto · site<br><span class="aux">Represado até a abertura</span></span><button class="btn mini" type="button">Atribuir</button></div>
-                <div><span><b>Caio Matos</b> · Easy · OLX<br><span class="aux">Chave desligada às 8h50</span></span><button class="btn mini" type="button">Atribuir</button></div>
-              </div>
-              <div class="acoes"><button class="btn" type="button">Mandar todos à distribuição</button></div>
-            </div>
-            <div class="card">
-              <div class="eyebrow">Fila entre equipes</div>
-              <div class="lista">
-                <div><span class="pos">1º</span><span style="flex:1"><b>Equipe Sul</b></span><span class="sm">recebeu às 10h05</span></div>
-                <div><span class="pos">2º</span><span style="flex:1"><b>Equipe Oeste</b></span><span class="wa">! pulada 11h40 · ninguém no stand</span></div>
-                <div><span class="pos">3º</span><span style="flex:1"><b>Equipe Norte</b></span><span class="sm">recebeu às 11h40</span></div>
+                <div><span><b>Paulo Lima</b> <span class="aux">· ninguém sobrando</span></span><button class="btn red mini" type="button">Atribuir</button></div>
+                <div><span><b>Teresa Reis</b> <span class="aux">· até a abertura</span></span><button class="btn mini" type="button">Atribuir</button></div>
               </div>
             </div>
             <div class="card">
-              <div class="eyebrow">Histórico das mudanças</div>
+              <div class="lin"><span class="eyebrow">Equipes · empresa toda</span></div>
               <div class="lista">
-                <div><span>Exigir check-in: ligada → desligada</span><span class="sm">Felipe · 06/11 8h50</span></div>
-                <div><span>Distribuição automática: desligada → ligada</span><span class="sm">Felipe · 06/11 9h00</span></div>
+                <div><span class="pos">1º</span><span class="cresce">Sul</span><span class="aux">10h05</span></div>
+                <div><span class="pos">2º</span><span class="cresce">Oeste</span><span class="wa">! ninguém no stand</span></div>
+                <div><span class="pos">3º</span><span class="cresce">Norte</span><span class="aux">11h40</span></div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="mesa" style="margin-top:24px">
-      <div class="tela">
-        <div class="rot">7. Corretor com o check-in desligado</div>
-        <div class="fone">
-          <div class="topo"><div class="logo">Base<i>360</i><span>Vendas</span></div><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
-          <div class="corpo">
-            <div><div class="eyebrow">Quinta, 06/11</div><div class="tp">Lista do dia</div></div>
-            <div class="card">
-              <div class="eyebrow">Distribuição automática</div>
-              <p class="ok">✓ Recebendo leads</p>
-              <p>Você é o <b class="num">3º</b> da fila da Equipe Norte. <a class="link" href="#minhas-vezes">Minhas vezes</a></p>
-              <div class="acoes"><button class="btn full" type="button">Parar de receber</button></div>
-            </div>
-            <p class="aux">Sem check-in, check-out, visita nem pergunta do sinal: a chave desligada tira tudo isso da tela.</p>
-          </div>
-        </div>
-      </div>
-      <div class="tela">
-        <div class="rot">8. Corretor com a transparência desligada</div>
-        <div class="fone">
-          <div class="topo"><div class="logo">Base<i>360</i><span>Vendas</span></div><div class="ham" aria-hidden="true"><i></i><i></i><i></i></div></div>
-          <div class="corpo">
-            <div><div class="eyebrow">Quinta, 06/11</div><div class="tp">Lista do dia</div></div>
-            <div class="card">
-              <div class="eyebrow">Distribuição automática</div>
-              <p class="ok">✓ Recebendo leads · Marco Zero desde 9h04</p>
-              <div class="acoes"><button class="btn" type="button">Saí para visita</button><button class="btn" type="button">Fazer check-out</button></div>
-            </div>
-            <p class="aux">Sem posição na fila e sem "Minhas vezes".</p>
           </div>
         </div>
       </div>
@@ -471,10 +466,9 @@ tr.fora td{color:var(--conc)}
   </section>
 
   <ul class="legenda">
-    <li>Dados e nomes fictícios. Nada aqui grava no banco.</li>
-    <li>Os créditos aparecem só para o gerente e o gerente geral. O corretor vê a posição e a faixa.</li>
-    <li>"Nota do plantão" usa os pontos aprovados só como medida de atividade, e a tela nunca mostra pontos.</li>
-    <li>Navegação no computador: lateral grafite com ícone + rótulo no app real (aqui só o rótulo).</li>
+    <li><b>Nome da tela:</b> "Fila de leads" (recomendado) no lugar de "Minhas vezes". Alternativa: "Minha posição".</li>
+    <li>O escopo aparece sempre: "Sua equipe" no modo equipe e no só gerentes, "Empresa toda" no modo direto e na fila entre equipes.</li>
+    <li>Explicações longas só na primeira vez do dia (tela 1) e atrás de um toque. Dados e nomes fictícios.</li>
   </ul>
 </div>
 
@@ -489,12 +483,11 @@ tr.fora td{color:var(--conc)}
     Object.keys(b).forEach(function(k){b[k].setAttribute('aria-pressed',String(k===m));});
   }
   Object.keys(b).forEach(function(k){b[k].addEventListener('click',function(){aplicar(k);});});
-  document.querySelectorAll('.sw:not([disabled])').forEach(function(s){
+  document.querySelectorAll('.sw').forEach(function(s){
     s.addEventListener('click',function(){
       var on=s.getAttribute('aria-checked')!=='true';
       s.setAttribute('aria-checked',String(on));
-      s.lastChild.textContent=on?'Ligada':'Desligada';
-      var c=s.closest('.chave'); if(c) c.classList.toggle('off',!on);
+      var t=s.lastChild; if(t&&t.nodeType===3) t.textContent=on?(t.textContent==='Não'?'Sim':'Ligada'):(t.textContent==='Sim'?'Não':'Desligada');
     });
   });
 })();
