@@ -4,6 +4,25 @@
 >
 > **Sigilo:** para onde parte dos leads vai nunca é nomeado. Esse destino se chama **"Distribuição manual"**, e o nome é um dado do banco, não um texto do código.
 
+## Sumário
+No topo: as decisões do Felipe em rodadas (quarta, terceira, segunda e a primeira, com as perguntas respondidas). Depois:
+1. Resumo da recomendação
+2. O que chega hoje: o site e os 4 portais (pesquisa)
+3. As três formas de entrada e a recomendada
+4. Fluxo de ponta a ponta
+5. Como as regras decidem
+6. Banco e RLS do sigilo
+7. "Não fica registrado": onde o dado ainda pode ficar
+8. O lead que vai para o Vendas
+9. Como o produto é reconhecido
+10. Site do módulo: pasta própria ou telas no Vendas
+11. Porta de entrada da distribuição manual
+12. O que o Felipe e o TI precisam fazer
+13. Perguntas ao Felipe
+14. O Marketing (substituto do RD Station)
+15. Pesquisado e suposição, com as fontes
+16. Como ficou (código, 06/11/2026)
+
 ## Quarta rodada: divisão por porcentagem e limite por dia (Felipe, 05/11/2026)
 
 **Para que serve:** quando o volume cresce e um destino não dá conta de atender, parte dos leads volta para os corretores do Base360.
@@ -63,23 +82,6 @@ Respostas às perguntas da seção 13. **Onde o texto abaixo diverge, valem esta
 - **Mesmo login:** o Vendas e o Marketing ficam na mesma origem, então a sessão do Supabase é a mesma. O código do direcionador não entra no app do Vendas.
 - **Sem histórico de regras:** sai a tabela `direcionador_regras_historico`.
 - **Próxima frente:** o estudo da roleta automática do lead da empresa, de que o direcionador depende para ir ao ar.
-
-## Sumário
-1. Resumo da recomendação
-2. O que chega hoje: o site e os 4 portais (pesquisa)
-3. As três formas de entrada e a recomendada
-4. Fluxo de ponta a ponta
-5. Como as regras decidem
-6. Banco e RLS do sigilo
-7. "Não fica registrado": onde o dado ainda pode ficar
-8. O lead que vai para o Vendas
-9. Como o produto é reconhecido
-10. Site do módulo: pasta própria ou telas no Vendas
-11. Porta de entrada da distribuição manual
-12. O que o Felipe e o TI precisam fazer
-13. Perguntas ao Felipe
-14. O Marketing (substituto do RD Station)
-15. Pesquisado e suposição, com as fontes
 
 ---
 
@@ -268,6 +270,8 @@ Até a porta existir, a entrega é por e-mail para o endereço configurado. Quan
 
 ## 12. O que o Felipe e o TI precisam fazer
 
+> **O passo a passo valendo está em `docs/direcionador/instalacao.md`** (06/11/2026), na ordem certa e com o caminho de volta de cada passo. A lista abaixo é a do estudo e fica como registro; onde divergir, vale a instalação (por exemplo, a regra do Outlook apaga o original, decisão 6, e só é ligada depois do modo de teste).
+
 **Felipe (fase 1):**
 1. Pedir ao TI a caixa compartilhada de entrada e o app (abaixo).
 2. Criar a regra do Outlook: mensagens dos remetentes dos portais e do site → **Redirecionar para** a caixa de entrada. Manter a cópia na caixa dele.
@@ -354,3 +358,72 @@ Saiu deste arquivo: o roteiro do Marketing está em `docs/marketing/roteiro.md`.
 - O rastreamento de mensagens do Exchange guarda remetente, destinatário e assunto por até 90 dias.
 - A lista de tabelas em `/rest/v1/` aparece para um usuário logado no Supabase da MBigucci. A conferir antes do código.
 - O validador e a homologação do Grupo OLX aceitam um sistema próprio da construtora, e não só CRMs de mercado.
+
+## 16. Como ficou (código, 06/11/2026)
+
+Brief: `docs/codex-direcionador.md`. Etapas 1 a 4 nos commits `96ca499`, `c4ea7b9`, `61b77ad` e `9c9823f`. A instalação, passo a passo, está em `docs/direcionador/instalacao.md`.
+
+**Onde está cada parte**
+
+| Parte | Arquivo | Testes |
+| --- | --- | --- |
+| Banco: tabelas, funções, trava e contatos do Marketing | `crm/supabase/direcionador.sql` | `crm/supabase/testes/direcionador.test.mjs` (no `test:banco`) |
+| Regra pura: casar a regra, divisão, limite, depois da entrega | `marketing/src/lib/direcionador.ts` | `direcionador.test.ts`; e a paridade com o banco no teste do banco |
+| Leitor de e-mail: fonte, campos e produto | `marketing/src/lib/leitor-email.ts` (usa as cópias do Cadastro Mágico e do catálogo) | `leitor-email.test.ts`, `copias.test.ts` |
+| Edge Function `entrada-leads` | fonte `crm/supabase/functions/entrada-leads/entrada.ts`; o `index.ts` (arquivo só, para o Supabase) é **gerado** por `gerar.mjs` | `entrada.test.ts` (no `npm test` do `crm/`) |
+| Agendador | `crm/supabase/agendar-entrada.sql` (pg_cron a cada minuto, segredo no Vault) | conferência no Supabase real |
+| Tela Direcionador | `marketing/` (Next.js estático, `BASE_PATH=/marketing`), `src/app/direcionador/` e `src/lib/telas.ts` | `telas.test.ts`; `npm test` em `marketing/` |
+
+**Banco e sigilo**
+- As tabelas ficam no esquema `interno`, que **não** vai em "Exposed schemas". Ninguém tem grant nelas, nem o gerente geral; tudo passa por funções. O RLS com `is_gerente_geral()` fica ligado como segunda camada.
+  - `direcionador_config`, `direcionador_destinos`, `direcionador_regras`, `direcionador_regra_partes`, `direcionador_contadores`, `direcionador_contagem_dia`, `lead_fontes` e `entrada_turno`.
+- As funções públicas têm nomes e parâmetros neutros, porque aparecem na lista da API. Um teste confere que nenhuma tem "direcionador", "destino" ou "distribui" no nome ou nos parâmetros.
+  - **Tela** (`authenticated`; cada uma confere `is_gerente_geral()`): `cfg_ler`, `cfg_salvar` (chave geral), `cfg_item_salvar`, `cfg_item_excluir`, `cfg_item_endereco_salvar`, `cfg_item_endereco` (mascarado), `cfg_regra_salvar`, `cfg_regra_ligar`, `cfg_regra_ordem` e `cfg_regra_excluir`. Para os outros perfis, a leitura volta com zero linhas e a gravação dá erro 42501.
+  - **Edge Function** (só `service_role`): `cfg_motor`, `cfg_escolher`, `cfg_desfazer`, `cfg_item_entrega` (endereço inteiro), `mkt_registrar_envio`, `entrada_segredo_ok`, `entrada_turno_pegar` e `entrada_turno_devolver`.
+- **Endereços** só no Vault, um segredo por destino com nome neutro (`cfg_end_<id>`). A tela recebe só a versão mascarada (`c••••@e••••.com.br`), e a chave da porta nunca volta.
+- **Contatos do Marketing:** `mkt_contatos` e `mkt_contato_eventos` (`enviado_parceiro`) só recebem envios a destinos com "Registrar os envios" ligado. Só o gerente geral lê. O `parceiro_id` não tem chave estrangeira para o esquema interno, para o nome da tabela não aparecer na API.
+- **Seed:** só a linha do Base360 Vendas, a chave geral desligada e as 6 fontes (sem padrões de remetente). Nenhum destino externo. Os nomes dos destinos são dados que o Felipe digita na tela.
+
+**Como decide e conta**
+- Regra pura e banco fazem a mesma conta: o teste de paridade passa 80 leads pelos dois.
+- **Escolha com trava:** `cfg_escolher` usa `pg_advisory_xact_lock`. Com 20 leads ao mesmo tempo num Postgres de verdade, a divisão sai exata e o limite não estoura.
+- **Contadores** (decisões a–f do cabeçalho do SQL, aceitas em 05/11/2026):
+  - a escolha soma 1 na hora, e `cfg_desfazer` tira esse 1 quando a entrega falha;
+  - acima do limite do dia nada conta;
+  - salvar a regra zera os contadores dela; ligar, desligar e mudar a ordem não zeram;
+  - parte com destino desligado é pulada;
+  - a ordem das partes decide o empate, e a tela mantém essa ordem ao editar.
+- **Passada repetida:** se o e-mail não for apagado, a passada seguinte conta de novo. É um desvio pequeno, aceito, porque evitá-lo exigiria guardar o id da mensagem, e um destino sem registro não pode deixar nada.
+
+**Edge Function**
+- **Turno:** pega o turno (`entrada_turno_pegar`, validade de 2 min), lê até 5 não lidos e devolve o turno ao fim. Outra passada no meio sai sem fazer nada, e assim o mesmo lead nunca vai para dois lugares.
+- **Destino externo:** uma tentativa só.
+  - Por **e-mail:** `sendMail` com `saveToSentItems: false` e assunto "Novo contato".
+  - Pela **porta:** POST da especificação 1.0, com 10 s de tempo.
+  - Falhou ou passou do limite: o lead vai na mesma passada para o Vendas, e o `cfg_desfazer` só roda quando o motivo foi a divisão.
+- **Vendas:** chama `lead_empresa_entrada` com a assinatura fechada. O `p_recebido_em` é o `receivedDateTime`. Só um erro lançado deixa o e-mail na caixa.
+- **Id do lead:** um UUID derivado do `internetMessageId` (SHA-256). Vai no POST, na linha `Id:` do e-mail e no log.
+- **Logs:** só o id, a hora e o código (por exemplo `vendas:sem_regra:criado` ou `externo:entregue`). Um teste procura nome, telefone, e-mail, mensagem, remetente e endereço nos logs e falha se achar. A resposta da função (guardada pelo pg_net) tem só `{ok, modo, ocupado, lidos}`.
+- **Modo de teste** (`MODO` diferente de `producao`, que é o padrão): decide e registra só o código. Não entrega, não grava, não apaga e não marca como lido. O mesmo e-mail aparece no log a cada passada.
+
+**Tela (`/marketing/direcionador/`)**
+- Mobile primeiro, nos dois temas, com a casca do Vendas e o logo "Base360 · Marketing". O menu Direcionador aparece só para o gerente geral.
+- **Chave geral:** liga e desliga o direcionador inteiro.
+- **Regras:** ligar, subir, descer, editar e excluir com confirmação. Cada regra mostra os contadores desde que foi salva.
+- **Simulador:** usa a mesma regra pura, com os contadores e totais de agora.
+- **Destinos:** entrega, endereço mascarado, limite, total de hoje e registro, com o editor de destino.
+- Capturas de 06/11/2026, de um teste isolado com dados fictícios: `marketing/local/capturas/`, fora do Git.
+
+**Pendências**
+1. **Avisos ao gerente geral:** quando a porta responde 400, 401, 403 ou 422 (configuração quebrada) e quando a fonte é desconhecida. Hoje são só códigos no log (`falha_configuracao`, `:fonte_desconhecida`).
+2. **Logo:** a palavra "Marketing" do logo está como texto em Inter; falta o desenho em curvas, como o do "Vendas".
+3. **E-mails reais de exemplo:** os testes do leitor usam e-mails fictícios. Trocar pelos reais do Felipe, com os dados do cliente trocados, e ajustar o leitor.
+4. **Remetentes dos portais:** o leitor usa os domínios públicos (`REMETENTES_SUGERIDOS`) enquanto `lead_fontes` estiver vazia. A confirmar com os e-mails reais e gravar em `lead_fontes`.
+5. **Tela para editar `lead_fontes`:** não existe; hoje é só por SQL.
+6. **Só no Supabase real:**
+   - `delete from vault.secrets` como `postgres` (usado ao excluir um destino ou trocar o modo);
+   - o que `/rest/v1/` lista para um usuário logado;
+   - se o runtime das Edge Functions aceita `namespace` (o `index.ts` gerado usa);
+   - o `permanentDelete` e o `internetMessageId` depois do redirecionamento do Outlook;
+   - os logs sem corpo de chamada.
+7. **Ordem de carga no teste do banco:** quando o `distribuicao.sql` existir, o teste carrega schema → distribuição → direcionador.

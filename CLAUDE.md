@@ -15,6 +15,7 @@ O CRM de corretores da MBigucci (construtora em São Bernardo do Campo). O usuá
 ## Comandos não óbvios
 - `npm run build` gera `out/`, que é a pasta enviada por FTP para o WordPress. O `BASE_PATH` define a pasta do site (a pesquisa usa `/pesquisa-crm`; o CRM, que é o módulo de Vendas do Base360, fica em `base360.mbigucci.com.br/vendas`, um site estático próprio fora do WordPress, com `BASE_PATH=/vendas npm run build`). Confira os caminhos de `/_next/` no site publicado.
 - Depois de editar o Apps Script, use Implantar > Gerenciar implantações > **Nova versão**. Uma implantação nova troca a URL.
+- `marketing/` (Base360 Marketing) vai em `base360.mbigucci.com.br/marketing`, com `BASE_PATH=/marketing npm run build`. A Edge Function `entrada-leads` é um arquivo gerado: depois de mexer em `entrada.ts` ou em `marketing/src/lib`, rode `node supabase/functions/entrada-leads/gerar.mjs` em `crm/` (o `npm test` acusa o `index.ts` desatualizado).
 
 ## Convenções
 - Use o visual do **MBigucci Design System**: card com barra de 4px à esquerda, uma ação vermelha por grupo, sem sombra, sem ícones nem emoji, sinais em glifos ✓ ! ✕. Detalhes em `docs/design-system.md`.
@@ -60,7 +61,7 @@ O CRM de corretores da MBigucci (construtora em São Bernardo do Campo). O usuá
 - `docs/candidatos-automacao.md`: abra ao criar testes, hooks ou skills, ou quando um hook bloquear algo e você precisar entender por quê.
 - `docs/teste-carga.md`: abra ao mexer em RLS, gatilhos, gravações do app (salvar, cadastrar, Desfazer) ou no plano do Supabase. Tem o teste de carga (`npm run test:carga`), o id gerado no aparelho contra duplicados e o que ficou pendente.
 - `docs/marketing/roteiro.md`: abra ao mexer no módulo de Marketing (substituto do RD Station).
-- `docs/direcionador/direcionador.md`: abra ao mexer no direcionador de leads, a primeira tela do Marketing (entrada por e-mail e Graph, regras, destinos, sigilo da distribuição manual). Decisões do Felipe no topo, em rodadas. A especificação para os sistemas de destino está em `docs/direcionador/porta-de-entrada-leads.md`.
+- `docs/direcionador/direcionador.md`: abra ao mexer no direcionador de leads, a primeira tela do Marketing (entrada por e-mail e Graph, regras, destinos, sigilo da distribuição manual, Edge Function `entrada-leads`). Decisões do Felipe no topo, em rodadas; o que foi construído e as pendências na seção 16. A instalação (caixa, Entra, RBAC, Secrets, SQL, deploy, Outlook, modo de teste) está em `docs/direcionador/instalacao.md`, e a especificação para os sistemas de destino em `docs/direcionador/porta-de-entrada-leads.md`.
 - `docs/estudo-roleta-leads.md`: abra ao mexer na distribuição automática do lead da empresa (modos, rodízio por créditos e desempenho, produtos, check-in e presença, fila visível e motivos de pulo, redistribuição pelo prazo, "A distribuir", lead repetido). Decisões do Felipe no topo, em rodadas.
 - `docs/apresentacao/`: o deck da reunião de novembro (Artifact Slides, fontes em `project/`). Abra ao mexer na apresentação ou ao conferir o que foi anunciado a corretores e gerentes.
 
