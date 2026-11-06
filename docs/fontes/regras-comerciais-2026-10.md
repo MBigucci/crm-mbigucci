@@ -23,6 +23,8 @@
 
 A verba de leads do Google será cortada. Os leads da empresa passam a ser **distribuídos pelo gerente**, e cada corretor recebe uma verba para impulsionar os próprios anúncios.
 
+> **Nota (05/11/2026):** o Felipe corrigiu: a roleta que acabou foi a dos leads do **Meta**; o Google continua. O texto acima é o original e fica como está.
+
 ### 3.1 Primeiro mês
 
 - **R$ 1.000 para todos os corretores**, sem exigência de pontuação.

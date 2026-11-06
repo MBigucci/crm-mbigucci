@@ -31,7 +31,7 @@ Cada corretor pertence a **um único gerente** (equipe).
 
 ## Origem dos leads
 
-- Os leads da empresa deixam de vir da roleta do Google e passam a ser **distribuídos pelo gerente**.
+- Os leads da empresa deixam de vir da roleta dos leads do **Meta** (o Google continua; correção do Felipe em 05/11/2026: as regras de outubro dizem "Google", mas a roleta que acabou foi a do Meta) e passam a ser **distribuídos pelo gerente**. A distribuição automática (`docs/estudo-roleta-leads.md`) muda isso: a roleta escolhe a equipe e o corretor sozinha, e o gerente acompanha.
 - O CRM precisa da ação "atribuir lead a um corretor da minha equipe".
 - A origem do lead fica registrada como **Empresa (gerente)** ou **Próprio (campanha do corretor)**.
 - Todo lead das campanhas do corretor é cadastrado **à mão** no CRM. Não há integração nem webhook de leads externos.

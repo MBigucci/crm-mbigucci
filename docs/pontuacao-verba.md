@@ -8,7 +8,7 @@
 
 ## Contexto
 
-A MBigucci sai do tráfego pago centralizado (roleta de leads do Google) e passa a dar uma verba mensal a cada corretor, que impulsiona os próprios anúncios. A verba vem dos pontos.
+A MBigucci sai do tráfego pago centralizado (roleta de leads do Meta; as regras de outubro dizem "Google", corrigido pelo Felipe em 05/11/2026) e passa a dar uma verba mensal a cada corretor, que impulsiona os próprios anúncios. A verba vem dos pontos.
 
 **Conciliação do fim do mês (decisão do Felipe em 04/11/2026):** o **marketing** confere os leads das campanhas de cada corretor contra os leads cadastrados no CRM. Diferença **não desconta** nada sozinha: vira conversa e um **alerta para o gerente** da equipe. Ainda não implementada (entra com os relatórios, `docs/estudo-relatorios.md`).
 
