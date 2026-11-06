@@ -380,6 +380,17 @@ test("registro dos envios: só com a chave ligada; sem ela, nada fica", async ()
   assert.deepEqual(ev, [{ tipo: "enviado_parceiro", parceiro_id: REG, fonte: "olx" }]);
 });
 
+test("segredo do agendador da entrada: só a chave de serviço confere, e só o segredo certo", async () => {
+  const certo = "e".repeat(64);
+  await db.query(`insert into vault.secrets (name, description, secret) values ('entrada_segredo', 'x', $1)`, [certo]);
+  assert.equal(await um("servico", `select public.entrada_segredo_ok($1) r`, [certo]), true);
+  for (const errado of ["e".repeat(63) + "f", "e".repeat(31), "", null])
+    assert.equal(await um("servico", `select public.entrada_segredo_ok($1) r`, [errado]), false, String(errado));
+  for (const n of [GG, COR, "anon"])
+    await assert.rejects(q(n, `select public.entrada_segredo_ok($1)`, [certo]), /permission denied/, String(n));
+  await db.query(`delete from vault.secrets where name = 'entrada_segredo'`);
+});
+
 test("regra pura (marketing/src/lib/direcionador.ts) e cfg_escolher dão o mesmo resultado nos mesmos casos", async () => {
   // Três regras com divisões diferentes (uma com o Vendas primeiro) e o destino
   // com limite de 2 por dia; 80 leads em dois dias de São Paulo, com horários

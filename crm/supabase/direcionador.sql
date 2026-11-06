@@ -858,6 +858,23 @@ begin
 end;
 $$;
 
+-- Confere o segredo do agendador (cabeçalho x-entrada-segredo), guardado no
+-- Vault por agendar-entrada.sql. Só a service_role.
+create or replace function public.entrada_segredo_ok(p_segredo text)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  return coalesce(length(p_segredo), 0) >= 32 and exists (
+    select 1 from vault.decrypted_secrets where name = 'entrada_segredo' and decrypted_secret = p_segredo);
+exception when undefined_table or invalid_schema_name then
+  return false;
+end;
+$$;
+
 -- O endereço inteiro de um destino, para a entrega. Só a service_role.
 create or replace function public.cfg_item_entrega(p_id uuid)
 returns jsonb
@@ -1000,7 +1017,7 @@ begin
     'public.cfg_regra_ligar(uuid, boolean)', 'public.cfg_regra_ordem(uuid[])', 'public.cfg_regra_excluir(uuid)',
     'public.cfg_motor()', 'public.cfg_escolher(uuid, timestamptz)',
     'public.cfg_desfazer(uuid, uuid, timestamptz)', 'public.cfg_item_entrega(uuid)',
-    'public.mkt_registrar_envio(jsonb)'
+    'public.mkt_registrar_envio(jsonb)', 'public.entrada_segredo_ok(text)'
   ] loop
     execute format('revoke all on function %s from public, anon, authenticated, service_role', f);
   end loop;
@@ -1019,5 +1036,5 @@ grant execute on function
 grant execute on function
   public.cfg_motor(), public.cfg_escolher(uuid, timestamptz),
   public.cfg_desfazer(uuid, uuid, timestamptz), public.cfg_item_entrega(uuid),
-  public.mkt_registrar_envio(jsonb)
+  public.mkt_registrar_envio(jsonb), public.entrada_segredo_ok(text)
   to service_role;
