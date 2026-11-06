@@ -148,7 +148,7 @@ export type Etapa = { slug: string; nome: string; ordem: number; ativo: boolean 
 
 /** Sinal + palavra + cor: o estado nunca depende só da cor. */
 export const TEMPERATURAS: { slug: Temperatura; nome: string; sinal: string; cor: string }[] = [
-  { slug: "quente", nome: "Quente", sinal: "!", cor: "text-brand" },
+  { slug: "quente", nome: "Quente", sinal: "!", cor: "text-ink" }, // neutro desde 06/11/2026: o vermelho fica para urgência e ação
   { slug: "morno", nome: "Morno", sinal: "○", cor: "text-wa" },
   { slug: "frio", nome: "Frio", sinal: "–", cor: "text-neutral-mark" },
 ];

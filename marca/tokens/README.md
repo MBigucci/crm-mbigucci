@@ -22,6 +22,8 @@ node marca/tokens/gerar.mjs
 
 Os dois rodam sem instalar nada. O `conferir.mjs` lê o `:root`, o `[data-tema="escuro"]`, o bloco automático (`prefers-color-scheme`) e o de impressão do `globals.css`, e também confere o vidro do cabeçalho e do aviso (85%, 12px), o hover da navegação, as larguras da lateral (180/64px), o alvo de toque (44px), o padding do botão e a barra do item atual. Token que existe no CRM e falta no `tokens.json` também conta como divergência.
 
+**Revisão de conforto (06/11/2026):** nenhuma cor mudou. Mudaram regras de uso, registradas no `tokens.json`: dois estilos de texto novos (`numero-leitura` e `linha-de-trabalho`), o `touch-target` vale para todo controle de escolha, o `brand` fica só para urgência real e ação principal, e a faixa (`band`) ganha borda `line` no escuro. O porquê está em `docs/estudo-conforto-uso.md`.
+
 **Ao mudar um valor:** mude no `globals.css` e no `tokens.json`, rode o `conferir.mjs` até dar 0 divergências e publique o `tokens.json` no artifact (inteiro, no formato de listas). Os CSS de `dist/` não se editam à mão.
 
 ## Como o CRM vai importar (etapa seguinte, com o ok do Felipe)

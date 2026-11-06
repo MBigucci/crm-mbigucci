@@ -51,10 +51,10 @@ export function EscolhaTemperatura({
             disabled={desabilitado}
             onClick={() => onChange(marcado && podeLimpar ? null : t.slug)}
             className={clsx(
-              "focus-ring rounded-sm border px-2 py-3 text-[14px] font-semibold transition-colors disabled:opacity-45",
-              marcado
-                ? clsx("bg-surface", t.cor === "text-wa" ? "border-wa text-ink-soft" : `border-current ${t.cor}`)
-                : "border-line bg-surface text-ink-soft hover:border-ink",
+              "opcao focus-ring rounded-sm border px-2 py-3 text-[14px] font-semibold transition-colors disabled:opacity-45",
+              // Marcado invertido, como as outras opções (Felipe, 06/11/2026): com o Quente neutro,
+              // a cor sozinha não separava mais o marcado do desmarcado.
+              marcado ? "border-ink bg-ink text-surface" : "border-line bg-surface text-ink-soft hover:border-ink",
             )}
           >
             <span aria-hidden>{t.sinal}</span> {t.nome}
@@ -65,12 +65,15 @@ export function EscolhaTemperatura({
   );
 }
 
-/** Quando é o próximo contato; atrasado vem com ! e em brand. */
-export function ProximoContato({ iso, agora }: { iso: string | null; agora: Date }) {
+/**
+ * Quando é o próximo contato; atrasado vem com ! e em brand. `forte={false}` (card da
+ * lista, quando outra linha é a mais urgente) tira o negrito e o tamanho maior.
+ */
+export function ProximoContato({ iso, agora, forte }: { iso: string | null; agora: Date; forte?: boolean }) {
   if (!iso) return <span className="text-ink-soft">Sem próximo contato</span>;
   const atrasado = new Date(iso).getTime() < agora.getTime();
   return (
-    <span className={clsx("num", atrasado ? "text-[15px] font-bold text-brand" : "text-ink")}>
+    <span className={clsx("num", atrasado ? (forte === false ? "text-brand" : "text-[15px] font-bold text-brand") : "text-ink")}>
       {atrasado && "! Atrasado · "}
       {formatarQuando(iso, agora)}
     </span>
@@ -83,16 +86,18 @@ export function SemContato({
   agora,
   className,
   comTentativas = true,
+  forte,
 }: {
   lead: Lead;
   agora: Date;
   className?: string;
   comTentativas?: boolean;
+  forte?: boolean;
 }) {
   const s = seloSemContato(lead, agora, comTentativas);
   if (!s) return null;
   return (
-    <span className={clsx("num font-semibold", s.nivel === "alerta" ? "text-brand" : "text-ink-soft", className)}>
+    <span className={clsx("num", forte !== false && "font-semibold", s.nivel === "alerta" ? "text-brand" : "text-ink-soft", className)}>
       <span aria-hidden>! </span>
       {s.texto}
     </span>
@@ -108,30 +113,39 @@ export function PrazoPrimeiroContato({
   agora,
   horario,
   className,
+  forte,
 }: {
   lead: Lead;
   agora: Date;
   horario: HorarioAtendimento;
   className?: string;
+  forte?: boolean;
 }) {
   const p = prazoDoLead(lead, agora, horario);
   if (!p) return null;
-  return <SeloDoPrazo s={seloPrazo(p, agora)} className={className} />;
+  return <SeloDoPrazo s={seloPrazo(p, agora)} className={className} forte={forte} />;
 }
 
 /** "! Responder até 14h32 · mensagem nova": mensagem nova num lead ativo (lead repetido que foi ao dono). */
-export function RespostaMensagemNova({ lead, agora, className }: { lead: Lead; agora: Date; className?: string }) {
+export function RespostaMensagemNova({ lead, agora, className, forte }: { lead: Lead; agora: Date; className?: string; forte?: boolean }) {
   const s = seloResposta(lead, agora);
   if (!s) return null;
-  return <SeloDoPrazo s={s} className={className} ambar />;
+  return <SeloDoPrazo s={s} className={className} forte={forte} />;
 }
 
-function SeloDoPrazo({ s, className, ambar }: { s: ReturnType<typeof seloPrazo>; className?: string; ambar?: boolean }) {
+/**
+ * Estourado em vermelho, correndo em âmbar ("! Responder em 12 min", docs/leads.md,
+ * seção 4; corrigido em 06/11/2026) e aguardando a abertura em tinta.
+ */
+function SeloDoPrazo({ s, className, forte }: { s: ReturnType<typeof seloPrazo>; className?: string; forte?: boolean }) {
   return (
     <span
       className={clsx(
-        "num font-semibold",
-        s.nivel === "estourado" ? "text-[15px] font-bold text-brand" : ambar ? "text-wa" : "text-ink",
+        "num",
+        forte !== false && "font-semibold",
+        s.nivel === "estourado"
+          ? forte === false ? "text-brand" : "text-[15px] font-bold text-brand"
+          : s.nivel === "correndo" ? "text-wa" : "text-ink",
         className,
       )}
     >
@@ -148,11 +162,11 @@ export function quandoNaFrase(iso: string, agora: Date): string {
 }
 
 /** "! Abriu o WhatsApp hoje, 10:42": o toque que falta detalhar (sinal + palavra + cor). */
-export function SeloADetalhar({ lead, agora, className }: { lead: Lead; agora: Date; className?: string }) {
+export function SeloADetalhar({ lead, agora, className, forte }: { lead: Lead; agora: Date; className?: string; forte?: boolean }) {
   const t = aDetalhar(lead);
   if (!t) return null;
   return (
-    <span className={clsx("num font-semibold text-wa", className)}>
+    <span className={clsx("num text-wa", forte !== false && "font-semibold", className)}>
       <span aria-hidden>! </span>
       {TOQUE[t.tipo].texto} {quandoNaFrase(t.em, agora)}
     </span>
@@ -184,28 +198,41 @@ export function CardLead({
 }) {
   const prazo = prazoDoLead(lead, agora, horario);
   const detalhar = !!onToque && !!aDetalhar(lead);
+  // Negrito só no nome e na linha mais urgente do card (Felipe, 06/11/2026). As linhas de trabalho em 14px.
+  const urgente: "resposta" | "prazo" | "atrasado" | "detalhar" | "sem_contato" | null = seloResposta(lead, agora)
+    ? "resposta"
+    : prazo
+      ? "prazo"
+      : lead.proximo_contato && new Date(lead.proximo_contato).getTime() < agora.getTime()
+        ? "atrasado"
+        : detalhar
+          ? "detalhar"
+          : seloSemContato(lead, agora, true)
+            ? "sem_contato"
+            : null;
+  const linha = "mt-1 block text-[14px]";
   return (
     <li className={clsx("card", destaque && "bar-brand")}>
       <div className="flex items-start justify-between gap-3">
         <Link href={`/leads/ficha/?id=${lead.id}`} className="focus-ring min-w-0 flex-1">
           <span className="titulo-card block truncate">{lead.nome}</span>
-          <RespostaMensagemNova lead={lead} agora={agora} className="mt-1 block text-[13px]" />
+          <RespostaMensagemNova lead={lead} agora={agora} className={linha} forte={urgente === "resposta"} />
           {prazo ? (
             <>
-              <PrazoPrimeiroContato lead={lead} agora={agora} horario={horario} className="mt-1 block text-[13px]" />
+              <PrazoPrimeiroContato lead={lead} agora={agora} horario={horario} className={linha} forte={urgente === "prazo"} />
               {lead.proximo_contato && (
-                <span className="mt-1 block text-[13px]">
-                  <ProximoContato iso={lead.proximo_contato} agora={agora} />
+                <span className={linha}>
+                  <ProximoContato iso={lead.proximo_contato} agora={agora} forte={false} />
                 </span>
               )}
             </>
           ) : (
             <>
-              {detalhar && <SeloADetalhar lead={lead} agora={agora} className="mt-1 block text-[13px]" />}
-              <span className="mt-1 block text-[13px]">
-                <ProximoContato iso={lead.proximo_contato} agora={agora} />
+              {detalhar && <SeloADetalhar lead={lead} agora={agora} className={linha} forte={urgente === "detalhar"} />}
+              <span className={linha}>
+                <ProximoContato iso={lead.proximo_contato} agora={agora} forte={urgente === "atrasado"} />
               </span>
-              <SemContato lead={lead} agora={agora} className="mt-1 block text-[13px]" />
+              <SemContato lead={lead} agora={agora} className={linha} forte={urgente === "sem_contato"} />
             </>
           )}
           {dono && <span className="mt-1 block truncate text-[12px] text-ink-soft">{dono}</span>}
@@ -313,7 +340,7 @@ export function CampoProximoContato({
               aria-pressed={marcado}
               onClick={() => onChange({ data: dia, hora: hora || "09:00" })}
               className={clsx(
-                "focus-ring rounded-sm border px-1 py-2 text-[13px] font-semibold transition-colors",
+                "opcao focus-ring rounded-sm border px-1 py-2 text-[13px] font-semibold transition-colors",
                 marcado ? "border-ink bg-ink text-surface" : "border-line bg-surface text-ink hover:border-ink",
               )}
             >

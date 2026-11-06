@@ -540,7 +540,7 @@ function FormMeta({
                 aria-pressed={marcado}
                 onClick={() => setPeriodo(p.slug)}
                 className={clsx(
-                  "focus-ring rounded-sm border px-1 py-[11px] text-[13px] font-semibold",
+                  "opcao focus-ring rounded-sm border px-1 py-[11px] text-[13px] font-semibold",
                   marcado ? "border-ink bg-ink text-surface" : "border-line bg-surface text-ink hover:border-ink",
                 )}
               >

@@ -23,6 +23,7 @@ Revisão de 30/10/2026. Escopo: hierarquia, destaque, legibilidade e repetição
 15. [Pendências de média e baixa](#pendências-de-média-e-baixa)
 16. [Validação e reprodução](#validação-e-reprodução)
 17. [Modo escuro (item 18)](#modo-escuro-item-18)
+18. [Conforto de uso (06/11/2026)](#conforto-de-uso-06112026)
 
 ## Método e critérios
 
@@ -588,3 +589,43 @@ node scripts/visual-temas.mjs --pre-subida
 A preparação usa o adaptador fictício da revisão anterior. O roteiro de novembro acrescenta dados de recepção e parcerias e prepara na cópia os estados transitórios de Anuncie, confirmação e disponibilidade de avisos. O Chrome recebeu os arquivos de `.visual-preview/out/` por interceptação local, pois o isolamento do Windows bloqueou o servidor de loopback. O roteiro só atende leituras desse export, bloqueia as demais requisições e desativa os service workers.
 
 **Limites.** Os avisos na linha foram amostrados com o conflito de outra carteira. Repetição no dia, mudança concorrente da vez, demais tipos de anúncio, temporização real de Desfazer e retorno de gravação ficam para homologação funcional. A página pública é o HTML avulso de conferência da pasta WordPress. Tema instalado, envio do cadastro, entrega de push, WhatsApp externo e permissões reais ficam fora desta revisão. As medidas se referem aos dados fictícios e estados capturados.
+
+## Conforto de uso (06/11/2026)
+
+Revisão do tema pensando no uso o dia inteiro. O diagnóstico, as tarefas e as decisões estão no [estudo](estudo-conforto-uso.md), a comparação em [mockups/conforto-uso.html](mockups/conforto-uso.html) e a regra no [DS](design-system.md#conforto-de-uso--061126).
+
+**Antes e depois**, medidos na prévia isolada (dados fictícios, Chrome headless de teste):
+
+| Medida | Antes | Depois |
+| --- | ---: | ---: |
+| Pontos vermelhos na primeira tela da Lista do dia, 375 / 1366 | 7 / 8 | 6 / 6 (5 sem o "Opções" da linha do stand, que é da distribuição e não foi tocado) |
+| Usos de vermelho no card: Bruno / Ana / Rita / Sofia | 6 / 7 / 6 / 3 | 4 / 3 / 3 / 0 |
+| Textos com peso ≥ 600 no card: Ana / Rita | 10 de 13 / 7 de 10 | 6 de 13 / 5 de 10 (o resto são o selo e os botões) |
+| Próximo contato, sem contato, toque no card | 13px, 600 | 14px, 400 (a linha mais urgente com peso) |
+| Números de tabela e datas do card | Bricolage | Inter tabular |
+| "Como foi" no celular | 94 × 37px | 44px de altura |
+| Links da faixa no celular | 32px | 44px |
+| Faixa a 375 × 812 / primeiro card visível | 264px / 99% | 310px / 91%, com os dois botões à vista |
+| Número da tabela do painel: área de toque | 9 × 20px | 45 × 44px (toque a 18px do número ainda acerta) |
+| Aviso sem conexão sobre o campo em foco, ficha a 375 | cobre | não cobre: o campo rola para baixo do aviso |
+| Faixa no tema escuro | sem borda (1,07:1) | borda `line` de 1px |
+
+**Capturas** (fora do Git): `docs/revisao-visual/conforto/tarefas/` (antes) e `docs/revisao-visual/conforto/depois/` (`tarefas/` com o mesmo roteiro, `extra/` com vermelho por tela, aviso com foco e alvos). Cada pasta tem o `medidas.json`.
+
+**Reprodução em `crm/`**, sem `npm run dev` ligado:
+
+```sh
+node scripts/visual-preview.mjs
+npm --prefix .visual-preview run build
+node scripts/visual-preview.mjs --serve
+```
+
+Com um Chrome headless de teste aberto na porta 9555 e perfil em `crm/local/perfil-conforto`:
+
+```sh
+node scripts/capturar-conforto.mjs ../docs/revisao-visual/conforto/depois/tarefas tarefas
+node scripts/capturar-conforto.mjs ../docs/revisao-visual/conforto/depois/extra depois
+```
+
+**Limites.** A prévia bloqueia gravações: o "✓ Interação registrada" e os textos de erro sem conexão foram conferidos no código e no teste de `erroAoSalvar`, não na tela. Conferir no celular real, ao longo de um dia, fica com o Felipe.
+

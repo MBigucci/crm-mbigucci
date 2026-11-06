@@ -122,7 +122,7 @@ export function Opcao({
       aria-pressed={marcado}
       onClick={onClick}
       className={clsx(
-        "focus-ring rounded-sm border py-2 text-[13px] font-semibold transition-colors",
+        "opcao focus-ring rounded-sm border py-2 text-[13px] font-semibold transition-colors",
         /\bpx-/.test(className ?? "") ? null : "px-3",
         marcado ? "border-ink bg-ink text-surface" : "border-line bg-surface text-ink hover:border-ink",
         className,

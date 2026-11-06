@@ -106,7 +106,7 @@ function Relatorio() {
                 type="button"
                 aria-pressed={tipo === t.slug}
                 className={clsx(
-                  "focus-ring rounded-sm border px-3 py-[9px] text-[13px] font-semibold",
+                  "opcao focus-ring rounded-sm border px-3 py-[9px] text-[13px] font-semibold",
                   tipo === t.slug ? "border-ink bg-ink text-surface" : "border-control bg-surface",
                 )}
                 onClick={() => {

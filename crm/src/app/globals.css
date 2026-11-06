@@ -139,9 +139,16 @@
   .titulo-card {
     @apply font-display text-[17px] font-bold leading-[1.15];
   }
+  /* Números (Felipe, 06/11/2026): Inter tabular na leitura contínua (cards, tabelas,
+     campos, datas em frase); Bricolage nos títulos e nos números de síntese, isto é,
+     dentro de títulos e da faixa, com 17px ou mais, ou em extrabold. */
   .num {
-    @apply font-display;
+    font-family: theme("fontFamily.sans");
     font-variant-numeric: tabular-nums;
+  }
+  :is(h1, h2, h3, .titulo-pagina, .titulo-card, .titulo-secao, .veredito, .font-display) .num,
+  .num:is(.font-extrabold, .text-\[17px\], .text-\[18px\], .text-\[20px\], .text-\[22px\], .text-\[24px\], .text-\[26px\], .text-\[28px\], .text-\[30px\], .text-\[32px\], .text-\[34px\], .text-\[36px\]) {
+    font-family: theme("fontFamily.display");
   }
 
   /* Título de seção que orienta uma decisão; eyebrow fica só como apoio. */
@@ -152,6 +159,12 @@
   /* Faixa de síntese do DS (Veredito), com uma única barra de destaque. */
   .veredito {
     @apply rounded-md border border-band border-l-bar border-l-brand bg-band p-4 text-on-dark;
+  }
+  /* No tema escuro a faixa é quase o fundo (1,07:1): borda fina line, como a lateral (06/11/2026). */
+  :root[data-tema="escuro"] .veredito {
+    border-top-color: rgb(var(--line));
+    border-right-color: rgb(var(--line));
+    border-bottom-color: rgb(var(--line));
   }
 
   /* Card: branco, borda fina, barra de 4px à esquerda (ink; brand em destaque) */
@@ -192,6 +205,14 @@
   /* Celular: alvo de toque mínimo de 44 px em todo botão. */
   @media (max-width: 767px) {
     .btn {
+      min-height: 44px;
+    }
+  }
+  /* .opcao: todo controle de escolha (Como foi, temperatura, origem, atalhos de data,
+     escolhas da recepção, das visitas e das metas). Abaixo de 768px, 44px de alvo,
+     como o .btn (Felipe, 06/11/2026). O desenho de cada um continua no componente. */
+  @media (max-width: 767px) {
+    .opcao {
       min-height: 44px;
     }
   }
@@ -373,6 +394,16 @@
       top: 76px;
       left: auto;
       right: 24px;
+      max-width: 360px;
+    }
+  }
+  /* Com o aviso na tela, o campo em foco rola para baixo dele, sem deslocar o conteúdo. */
+  html:has(.aviso-conexao) {
+    scroll-padding-top: 136px;
+  }
+  @media (min-width: 1024px) {
+    html:has(.aviso-conexao) {
+      scroll-padding-top: 140px;
     }
   }
   .dica-lateral {

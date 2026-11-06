@@ -178,7 +178,7 @@ export function DialogoMensagem({
                     aria-pressed={marcado}
                     onClick={() => escolher(m.slug)}
                     className={clsx(
-                      "focus-ring rounded-sm border px-2 py-2 text-left text-[13px] font-semibold leading-snug transition-colors",
+                      "opcao focus-ring rounded-sm border px-2 py-2 text-left text-[13px] font-semibold leading-snug transition-colors",
                       marcado ? "border-ink bg-ink text-surface" : "border-line bg-surface text-ink hover:border-ink",
                     )}
                   >

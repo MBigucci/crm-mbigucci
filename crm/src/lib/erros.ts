@@ -27,6 +27,27 @@ export function mensagemErro(e: { message?: string } | null | undefined): string
   return m;
 }
 
+/** Falha de rede (sem internet ou o servidor fora do alcance). */
+export const ehSemConexao = (e: { message?: string } | null | undefined): boolean =>
+  /failed to fetch|network|load failed/i.test(e?.message ?? "");
+
+/** Toque sem rascunho (etapa, temperatura, descarte): nada ficou guardado. */
+export const SEM_CONEXAO_REFAZER = "Não foi salvo: sem conexão. Faça de novo quando a internet voltar.";
+
+/** Formulário com rascunho no aparelho (rascunho.ts): o texto continua guardado. */
+export const semConexaoComRascunho = (botao: string) =>
+  `Não foi salvo: sem conexão. O texto ficou guardado neste aparelho. Toque em ${botao} quando a internet voltar.`;
+
+/**
+ * Erro de uma gravação. Sem conexão, diz o efeito no trabalho (Felipe, 06/11/2026):
+ * com `botaoDoRascunho`, o texto ficou no aparelho; sem ele, é preciso refazer.
+ * Os outros erros seguem `mensagemErro`. Leitura continua com `mensagemErro`.
+ */
+export function erroAoSalvar(e: { message?: string } | null | undefined, botaoDoRascunho?: string): string {
+  if (ehSemConexao(e)) return botaoDoRascunho ? semConexaoComRascunho(botaoDoRascunho) : SEM_CONEXAO_REFAZER;
+  return mensagemErro(e);
+}
+
 /** O update não alterou nenhuma linha: o RLS não dá erro, só não grava (o lead mudou de dono, por exemplo). */
 export const NAO_SALVOU = "Não foi salvo: este lead mudou de dono ou você não tem mais acesso a ele. Recarregue a página.";
 

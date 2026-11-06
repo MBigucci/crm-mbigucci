@@ -130,7 +130,7 @@ function LinhaStand({ stand, onGravar }: { stand: Stand; onGravar: (c: Partial<S
               type="button"
               aria-pressed={stand.tem_especialista === v}
               className={clsx(
-                "focus-ring rounded-sm border px-3 py-[5px] text-[13px] font-semibold",
+                "opcao focus-ring rounded-sm border px-3 py-[5px] text-[13px] font-semibold",
                 stand.tem_especialista === v ? "border-ink bg-ink text-surface" : "border-control bg-surface",
               )}
               onClick={() => stand.tem_especialista !== v && onGravar({ tem_especialista: v })}

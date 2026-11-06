@@ -28,7 +28,7 @@ export function AvisoOffline() {
     <div role="status">
       {!online && (
         <p className="aviso-conexao sem-impressao">
-          <span className="text-wa">!</span> Sem conexão
+          <span className="text-wa">!</span> Sem conexão. Nada é gravado no Base360 até a internet voltar.
         </p>
       )}
     </div>

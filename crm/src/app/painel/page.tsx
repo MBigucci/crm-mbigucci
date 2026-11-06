@@ -349,7 +349,8 @@ function Numero({
     <button
       type="button"
       className={clsx(
-        "num focus-ring font-semibold underline decoration-line underline-offset-4 hover:decoration-ink",
+        // No celular, área de toque de 44px em volta do número, sem mudar a tabela (06/11/2026).
+        "num focus-ring relative font-semibold underline decoration-line underline-offset-4 hover:decoration-ink after:content-[''] max-md:after:absolute max-md:after:-inset-x-[18px] max-md:after:-inset-y-3",
         destaque && "text-brand",
         className,
       )}

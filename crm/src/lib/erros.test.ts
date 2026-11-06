@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { jaEstavaSalvo, mensagemErro } from "./erros.ts";
+import { erroAoSalvar, jaEstavaSalvo, mensagemErro } from "./erros.ts";
 
 test("reenvio: só a chave primária repetida conta como já salvo", () => {
   assert.equal(jaEstavaSalvo({ code: "23505", message: 'duplicate key value violates unique constraint "leads_pkey"' }), true);
@@ -15,6 +15,17 @@ test("sessão expirada e sem conexão viram frases para a tela", () => {
   assert.match(mensagemErro({ message: "JWT expired" }), /sessão expirou/);
   assert.match(mensagemErro({ message: "TypeError: Failed to fetch" }), /Sem conexão/);
   assert.match(mensagemErro({ message: "Request rate limit reached" }), /Espere um minuto/);
+});
+
+test("gravação sem conexão diz o efeito: rascunho guardado ou refazer", () => {
+  const rede = { message: "TypeError: Failed to fetch" };
+  assert.equal(
+    erroAoSalvar(rede, "Registrar"),
+    "Não foi salvo: sem conexão. O texto ficou guardado neste aparelho. Toque em Registrar quando a internet voltar.",
+  );
+  assert.equal(erroAoSalvar(rede), "Não foi salvo: sem conexão. Faça de novo quando a internet voltar.");
+  // Outros erros seguem a tradução de sempre.
+  assert.equal(erroAoSalvar({ message: "permission denied for table leads" }, "Registrar"), "Você não tem permissão para isso.");
 });
 
 test("apelido repetido entre corretores ativos vira texto da tela", () => {

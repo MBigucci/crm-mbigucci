@@ -7,7 +7,7 @@ import { Casca } from "@/components/casca";
 import { CampoProximoContato, EscolhaTemperatura, RodapeAcao, SeloCampo } from "@/components/leads/partes";
 import { db, novoId } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
-import { jaEstavaSalvo, mensagemErro } from "@/lib/erros";
+import { erroAoSalvar, jaEstavaSalvo, mensagemErro } from "@/lib/erros";
 import { COLUNAS_LEAD, deCampos, formatarWhatsapp, normalizarWhatsapp, textoDuplicado, type Lead, type Temperatura } from "@/lib/leads";
 import { camposEncontrados, lerMensagem, type LeadLido } from "@/lib/cadastro-magico";
 import {
@@ -248,7 +248,7 @@ function NovoLead() {
       : inserido;
     if (error) {
       setSalvando(false);
-      return setErro(mensagemErro(error));
+      return setErro(erroAoSalvar(error, "Cadastrar"));
     }
     gravarUltimaOrigem(eu.id, origemAtual.slug);
     if (mensagem) {
@@ -423,7 +423,7 @@ function NovoLead() {
                 aria-pressed={marcada}
                 onClick={() => setOrigem(o.slug)}
                 className={clsx(
-                  "focus-ring rounded-sm border px-3 py-3 text-left text-[14px] font-semibold transition-colors",
+                  "opcao focus-ring rounded-sm border px-3 py-3 text-left text-[14px] font-semibold transition-colors",
                   marcada ? "border-ink bg-ink text-surface" : "border-line bg-surface text-ink hover:border-ink",
                 )}
               >

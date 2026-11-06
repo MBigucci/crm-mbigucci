@@ -89,6 +89,8 @@ export function ListaDoDia() {
     g.grupo === "primeiro_contato" || g.grupo === "detalhar" || g.grupo === "atrasados";
   const urgentes = grupos.filter(ehUrgente);
   const demais = grupos.filter((g) => !ehUrgente(g));
+  // Uma barra vermelha por tela (Felipe, 06/11/2026): só o primeiro card do primeiro grupo mostrado.
+  const grupoEmDestaque = (urgentes[0] ?? demais[0])?.grupo;
 
   const mostrarGrupo = (g: (typeof grupos)[number]) => (
     <section key={g.grupo} id={`grupo-${g.grupo}`} aria-labelledby={`titulo-${g.grupo}`} className="scroll-mt-24">
@@ -98,7 +100,7 @@ export function ListaDoDia() {
       <ul className="grid gap-3 md:grid-cols-2">
         {g.leads.map((l, i) => (
           <CardLead key={l.id} lead={l} agora={agora} horario={horario} etapa={nomeEtapa(l.etapa)}
-            destaque={i === 0} onToque={tocar(l)} />
+            destaque={i === 0 && g.grupo === grupoEmDestaque} onToque={tocar(l)} />
         ))}
       </ul>
     </section>
@@ -137,14 +139,14 @@ export function ListaDoDia() {
           <h2 className="font-display text-[18px] font-bold">Contatos que precisam de atenção</h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {urgentes.map((g) => (
-              <a key={g.grupo} href={`#grupo-${g.grupo}`} className="focus-ring flex items-baseline gap-3 text-on-dark">
+              <a key={g.grupo} href={`#grupo-${g.grupo}`} className="focus-ring flex min-h-[44px] items-center gap-3 text-on-dark md:min-h-0 md:items-baseline">
                 <span className="num text-[32px] font-extrabold leading-none">{g.leads.length}</span>
                 <span className="text-[14px] underline underline-offset-4">{TITULOS_GRUPO[g.grupo]} →</span>
               </a>
             ))}
           </div>
           {doDia.hoje.length > 0 && (
-            <a href="#bloco-visitas-hoje" className="focus-ring mt-3 inline-block border-t border-on-dark-muted/40 pt-3 text-[14px] text-on-dark-soft">
+            <a href="#bloco-visitas-hoje" className="focus-ring mt-3 inline-block min-h-[44px] border-t border-on-dark-muted/40 pt-3 text-[14px] text-on-dark-soft md:min-h-0">
               <span className="num font-semibold text-on-dark">{doDia.hoje.length}</span>{" "}
               {doDia.hoje.length === 1 ? "visita hoje" : "visitas hoje"}
               {proximaVisita ? ` · próxima às ${proximaVisita}` : ""} <span className="underline underline-offset-4">Ver visitas →</span>

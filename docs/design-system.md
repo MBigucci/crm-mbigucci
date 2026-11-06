@@ -8,6 +8,7 @@
 2. [Regras que mais aparecem](#regras-que-mais-aparecem)
 3. [Temas do CRM — item 18](#temas-do-crm--item-18)
 4. [Tema e navegação do CRM — 05/11/26](#tema-e-navegação-do-crm--051126)
+5. [Conforto de uso — 06/11/26](#conforto-de-uso--061126)
 
 ## Onde os tokens já estão em código
 
@@ -21,16 +22,16 @@
 
 ## Regras que mais aparecem
 
-- **Fontes:** Bricolage Grotesque nos títulos e em **todo número**, com algarismos tabulares (`.num`). Inter no corpo.
+- **Fontes:** Bricolage Grotesque nos títulos e nos números de síntese; Inter no corpo e nos números de leitura. Todo número usa `.num` (algarismos tabulares). No CRM, desde 06/11/2026, `.num` é Inter e só vira Bricolage em título, na faixa, com 17px ou mais ou em extrabold (veja [Conforto de uso](#conforto-de-uso--061126)).
 - **Fundo e cards:** fundo `paper`. Cards em `surface` (brancos no claro) com borda decorativa `line` e **barra de 4px à esquerda**, em `ink` por padrão ou `brand` no destaque. Uma barra vermelha por área de tela. Campos e botões usam `control`.
 - **Sem sombra:** bordas finas no lugar de sombras e raios pequenos.
-- **Vermelho:** só em **uma ação principal por grupo**, no destaque e no foco. O foco é um contorno sólido de 2px em `brand`, afastado 2px.
+- **Vermelho:** só em **uma ação principal por grupo**, no destaque, na urgência real e no foco. Temperatura não é urgência: "! Quente" é neutro. O foco é um contorno sólido de 2px em `brand`, afastado 2px.
 - **Sem ícones e sem emoji:** sinais em glifos de texto (✓ ! ✕ – → +). O estado é sempre **sinal + palavra + cor**, nunca só cor. **Exceção no CRM (aprovada em 05/11/2026):** a navegação, na lateral e no menu do celular, usa ícone + rótulo (veja [Tema e navegação](#tema-e-navegação-do-crm--051126)). Cards, estados e ações das telas continuam sem ícones.
 - **`concrete`:** só para eyebrow e texto auxiliar; no CRM foi ajustado para atingir 4,5:1 nos dois temas. O que precisa orientar uma decisão continua em `ink` ou `ink-soft`.
 - **Textos:** português do Brasil, frases curtas, imperativo, caixa de frase em títulos e botões, sem exclamação. Eyebrows ficam em caixa alta pelo CSS.
 - **Números:** `R$ 3.398.300`, `60,60%`, datas `dd/mm/aaaa`.
 - **Movimento:** o DS só tem o + do acordeão. As transições curtas entre etapas da pesquisa são um acréscimo e respeitam `prefers-reduced-motion`.
-- **Celular:** campos com 16px, para o iOS não dar zoom, e ações fixas no rodapé, ao alcance do polegar.
+- **Celular:** campos com 16px, para o iOS não dar zoom, e ações fixas no rodapé, ao alcance do polegar. Todo botão e todo controle de escolha (`.opcao`) têm 44px de alvo.
 
 ## Temas do CRM — item 18
 
@@ -155,3 +156,25 @@ Raio de 2px, sem sombra, 36px de altura no computador. Abaixo de 768px, todo `.b
 - **Ícones:** desenhos do Lucide (licença ISC, aviso no arquivo), 17px, traço de 2px, sempre `aria-hidden`. Ícone novo de destino entra em `icones-menu.tsx`; destino sem ícone recebe um círculo neutro.
 - `.area-principal` recua o conteúdo pela largura da lateral e leva junto os rodapés `fixed inset-x-0` das telas. Na impressão, a lateral some e o recuo zera.
 - Em 1366px a área principal mede 1186px com a lateral aberta e 1302px recolhida. A Lista do dia fica com 1140px úteis nos dois casos. Com a barra de rolagem clássica do Windows (15px), a lateral aberta deixa 1131px úteis.
+
+## Conforto de uso — 06/11/26
+
+Aprovado pelo Felipe em 06/11/2026, a partir do [estudo](estudo-conforto-uso.md) com medidas e do [mockup](mockups/conforto-uso.html). A marca não mudou: logo, vermelho, fundos quentes e faixas escuras continuam. Mudou a distribuição deles.
+
+| Regra | Como ficou | Onde está |
+| --- | --- | --- |
+| Temperatura | "! Quente" em selo neutro (`ink`), com o sinal e a palavra. Morno (○, âmbar) e Frio (–, neutro) não mudaram. Na escolha (Novo lead e ficha), a opção marcada fica invertida (`bg-ink text-surface`), como as outras opções | `TEMPERATURAS` em `crm/src/lib/leads.ts` |
+| Barra vermelha | Na Lista do dia, só o **primeiro card da tela** (o primeiro do primeiro grupo mostrado) tem barra e botão vermelhos. Os primeiros dos outros grupos ficam com barra `ink` e botão secundário. Exceção: os cards de visita ("Confirmar no WhatsApp") e de aniversário ("Mandar parabéns") mantêm a sua ação vermelha, uma por grupo | `grupoEmDestaque` em `lista-do-dia.tsx` |
+| Números | `.num` é Inter com algarismos tabulares: datas e horas nos cards, células de tabela, campos. Vira Bricolage dentro de título (`h1–h3`, `.titulo-*`), na faixa (`.veredito`), com `font-display`, em extrabold ou com 17px ou mais (contadores da faixa, indicadores do painel, hora da visita, meta). As duas fontes alinham colunas com tabular-nums (medido) | `.num` em `globals.css` |
+| Linhas de trabalho do card | Próximo contato, prazo, sem contato e toque em **14px** (apoio continua em 13px e etapa em 12px). Negrito só no **nome** e na **linha mais urgente**, nesta ordem: mensagem nova, prazo do primeiro contato, atrasado, toque a detalhar, sem contato. A urgência real (prazo estourado, atrasado) em 15px, peso 700; as outras em 400, com sinal e cor | `CardLead` e a prop `forte` em `partes.tsx` |
+| Prazo correndo | "! Responder em N min" em âmbar (`wa`), como em `docs/leads.md`, seção 4. Estourado continua vermelho; "→ Responder até…" em tinta | `SeloDoPrazo` em `partes.tsx` |
+| Controles de escolha | Classe `.opcao` (Como foi, temperatura, origem, atalhos de data, escolhas da recepção, visitas, metas e parceiros): **44px** de alvo abaixo de 768px, como o `.btn`. O desenho de cada um continua no componente | `.opcao` em `globals.css` |
+| Alvos fora do botão | Links da faixa da Lista do dia com 44px no celular. No celular, os números clicáveis das tabelas do painel ganham área de toque de 45 × 44px em volta (pseudo-elemento), sem mudar a tabela; no computador, não, porque as linhas têm cerca de 37px | `lista-do-dia.tsx`, `Numero` em `painel/page.tsx` |
+| Faixa no tema escuro | Borda de 1px `line` (band sobre paper dá 1,07:1), como a lateral; a barra `brand` continua | `.veredito` em `globals.css` |
+| Aviso sem conexão | "! Sem conexão. Nada é gravado no Base360 até a internet voltar." No computador, até 360px de largura. Com o aviso na tela, `scroll-padding-top` (136px no celular, 140px no computador) faz o campo em foco rolar para baixo dele, sem deslocar o conteúdo | `aviso-offline.tsx`, `globals.css` |
+| Erro de gravação sem conexão | `erroAoSalvar`: formulário com rascunho diz "Não foi salvo: sem conexão. O texto ficou guardado neste aparelho. Toque em <botão> quando a internet voltar."; toque sem rascunho diz "Não foi salvo: sem conexão. Faça de novo quando a internet voltar." Leitura continua com `mensagemErro` | `crm/src/lib/erros.ts` (Registrar interação, Novo lead, perfil e toques da ficha via `alterarLead`) |
+| Confirmação | "✓ Interação registrada" por 6 segundos depois de registrar, num `role="status"` | `RegistrarInteracao` na ficha |
+| Mantidos | Lateral em 180px (nenhum dos 19 rótulos corta); "Linktree ↗" (o Felipe não quis trocar) | — |
+
+Fora desta revisão, no roadmap: o toque em WhatsApp sem internet (hoje se perde sem aviso) e o painel no celular (as tabelas pedem rolagem lateral).
+

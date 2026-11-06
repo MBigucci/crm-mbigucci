@@ -250,7 +250,7 @@ export const RegistrarCliente = forwardRef<
       aria-checked={tipo === t.slug}
       tabIndex={tipo === t.slug ? 0 : -1}
       className={clsx(
-        "focus-ring rounded-sm border px-3 py-2 text-[13px] font-semibold",
+        "opcao focus-ring rounded-sm border px-3 py-2 text-[13px] font-semibold",
         tipo === t.slug ? "border-ink bg-ink text-surface" : "border-control bg-surface text-ink",
         !p && "py-3 text-[14px]",
       )}
@@ -387,7 +387,7 @@ export const RegistrarCliente = forwardRef<
               type="button"
               aria-pressed={marcadas.includes(m.slug)}
               className={clsx(
-                "focus-ring rounded-sm border px-3 py-[7px] text-left text-[13px] font-semibold",
+                "opcao focus-ring rounded-sm border px-3 py-[7px] text-left text-[13px] font-semibold",
                 marcadas.includes(m.slug) ? "border-ink bg-ink text-surface" : "border-control bg-surface text-ink",
                 !p && "py-[10px] text-[14px]",
               )}
@@ -453,7 +453,7 @@ export const RegistrarCliente = forwardRef<
           type="button"
           aria-pressed={sozinho}
           className={clsx(
-            "focus-ring rounded-sm border px-3 py-[9px] text-[13px] font-semibold",
+            "opcao focus-ring rounded-sm border px-3 py-[9px] text-[13px] font-semibold",
             sozinho ? "border-ink bg-ink text-surface" : "border-control bg-surface text-ink",
             !p && "py-3",
           )}
@@ -543,7 +543,7 @@ export const RegistrarCliente = forwardRef<
                   type="button"
                   aria-pressed={procura === m}
                   className={clsx(
-                    "focus-ring rounded-sm border px-3 py-[7px] text-[13px] font-semibold",
+                    "opcao focus-ring rounded-sm border px-3 py-[7px] text-[13px] font-semibold",
                     procura === m ? "border-ink bg-ink text-surface" : "border-control bg-surface text-ink",
                   )}
                   onClick={() => setProcura(m)}

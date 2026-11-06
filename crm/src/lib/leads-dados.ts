@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { db, novoId } from "./supabase";
-import { mensagemErro, NAO_SALVOU } from "./erros";
+import { erroAoSalvar, mensagemErro, NAO_SALVOU } from "./erros";
 import { COLUNAS_DISTRIBUICAO_LEAD, COLUNAS_LEAD, COLUNAS_TOQUE, type Etapa, type Origem } from "./leads";
 import { TOQUE, type TipoToque } from "./followup";
 import { HORARIO_PADRAO, type HorarioAtendimento } from "./prazo";
@@ -109,11 +109,12 @@ export async function alterarLead(
   id: string,
   campos: Record<string, unknown>,
   seAinda?: Record<string, unknown>,
+  botaoDoRascunho?: string,
 ): Promise<string | null> {
   let q = db().from("leads").update(campos).eq("id", id);
   for (const [k, v] of Object.entries(seAinda ?? {})) q = v === null ? q.is(k, null) : q.eq(k, v);
   const { data, error } = await q.select("id");
-  if (error) return mensagemErro(error);
+  if (error) return erroAoSalvar(error, botaoDoRascunho);
   if (data?.length) return null;
   return seAinda ? "Não deu para desfazer: o lead mudou depois. Confira a ficha." : NAO_SALVOU;
 }

@@ -10,7 +10,7 @@ Leia `docs/design-system.md` primeiro. A fonte da verdade é o artifact citado l
 ## Antes de escrever
 - [ ] Já existe um componente parecido no app? Reaproveite: `Cabecalho`, `OpcaoCard`, `.card`, `.btn`, `.input`, `.field-label`.
 - [ ] Qual é a **única** ação principal da tela? Só ela é `btn-red`. As demais são `btn-ghost`.
-- [ ] A tela vai ser usada no celular? Então as ações ficam no rodapé fixo, os alvos de toque são grandes e os campos têm 16px.
+- [ ] A tela vai ser usada no celular? Então as ações ficam no rodapé fixo, os campos têm 16px e todo botão ou controle de escolha tem 44px de alvo (`.btn` ou `.opcao`).
 
 ## Estrutura
 - [ ] O fundo é `paper` e os blocos são `.card`, com a barra à esquerda em `ink`. Use `.bar-brand` só no destaque, e uma vez por área de tela.
@@ -19,7 +19,9 @@ Leia `docs/design-system.md` primeiro. A fonte da verdade é o artifact citado l
 
 ## Texto e números
 - [ ] Português do Brasil, frases curtas, imperativo, caixa de frase em títulos e botões, sem exclamação. O eyebrow fica em caixa alta pelo CSS.
-- [ ] Todo número vem em Bricolage com `.num` e no formato `R$ 1.300`, `60,60%` ou `dd/mm/aaaa`.
+- [ ] Todo número vem com `.num` (tabular) e no formato `R$ 1.300`, `60,60%` ou `dd/mm/aaaa`. No CRM, `.num` é Inter na leitura (cards, tabelas, campos) e Bricolage só em título, na faixa ou com 17px ou mais.
+- [ ] Vermelho só na ação principal e na urgência real. Temperatura não é urgência. Na lista, uma barra vermelha por tela.
+- [ ] No card, negrito só no nome e na linha mais urgente; linhas de trabalho em 14px, apoio em 13px.
 - [ ] O erro diz o que houve e o que fazer, começa com ✕ e tem a barra `brand`. O estado vazio diz o próximo passo.
 
 ## Estado e acessibilidade

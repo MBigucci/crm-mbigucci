@@ -463,7 +463,7 @@ function Corrigir({
               aria-pressed={status === s}
               onClick={() => setStatus(s)}
               className={clsx(
-                "focus-ring rounded-sm border px-2 py-2 text-[13px] font-semibold",
+                "opcao focus-ring rounded-sm border px-2 py-2 text-[13px] font-semibold",
                 status === s ? "border-ink bg-ink text-surface" : "border-line bg-surface text-ink hover:border-ink",
               )}
             >

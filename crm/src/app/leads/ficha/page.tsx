@@ -20,7 +20,7 @@ import { BotaoLigar, BotaoMensagem } from "@/components/leads/mensagem";
 import { AvisarCorretor } from "@/components/leads/repasse";
 import { db, novoId } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
-import { jaEstavaSalvo, mensagemErro } from "@/lib/erros";
+import { erroAoSalvar, jaEstavaSalvo, mensagemErro } from "@/lib/erros";
 import {
   COLUNAS_EVENTO,
   COLUNAS_INTERACAO,
@@ -206,7 +206,7 @@ function Ficha({ id }: { id: string }) {
     const atual = leadCompleto as Record<string, unknown>;
     const mudou = Object.fromEntries(Object.entries(campos).filter(([k, v]) => (v ?? null) !== (atual[k] ?? null)));
     if (!Object.keys(mudou).length) return null;
-    const e = await alterarLead(id, mudou);
+    const e = await alterarLead(id, mudou, undefined, "Salvar perfil");
     if (e) return e;
     await Promise.all([carregar(), recarregarPerfil()]);
     return null;
@@ -657,6 +657,13 @@ function RegistrarInteracao({
   const [contato, setContato] = useState({ data: "", hora: "" });
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+  // "✓ Interação registrada" por alguns segundos depois de gravar (Felipe, 06/11/2026).
+  const [registrado, setRegistrado] = useState(false);
+  useEffect(() => {
+    if (!registrado) return;
+    const t = setTimeout(() => setRegistrado(false), 6000);
+    return () => clearTimeout(t);
+  }, [registrado]);
   // Mesmo id até gravar: se a resposta se perder e a pessoa tocar de novo, não duplica.
   const idEnvio = useRef<string | null>(null);
   const restauradoRef = useRef(false);
@@ -716,6 +723,7 @@ function RegistrarInteracao({
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
     setErro(null);
+    setRegistrado(false);
     if (!texto.trim()) return setErro("Escreva o que aconteceu.");
     if (!contato.data || !contato.hora) return setErro("Marque o dia e a hora do próximo contato.");
     const proximo = deCampos(contato.data, contato.hora);
@@ -726,13 +734,14 @@ function RegistrarInteracao({
       .from("lead_interacoes")
       .insert({ id: idEnvio.current, lead_id: leadId, tipo, texto: texto.trim(), proximo_contato: proximo });
     setSalvando(false);
-    if (error && !jaEstavaSalvo(error)) return setErro(mensagemErro(error));
+    if (error && !jaEstavaSalvo(error)) return setErro(erroAoSalvar(error, "Registrar"));
     idEnvio.current = null;
     antesDoSemResposta.current = null;
     limparRascunho(chaveRascunhoInteracao(leadId));
     setTipo("whatsapp");
     setTexto("");
     setContato({ data: "", hora: "" });
+    setRegistrado(true);
     await onSalvo();
   }
 
@@ -759,7 +768,7 @@ function RegistrarInteracao({
                 aria-pressed={marcado}
                 onClick={() => escolher(t.slug)}
                 className={clsx(
-                  "focus-ring rounded-sm border px-1 py-2 text-[13px] font-semibold transition-colors",
+                  "opcao focus-ring rounded-sm border px-1 py-2 text-[13px] font-semibold transition-colors",
                   marcado ? "border-ink bg-ink text-surface" : "border-line bg-surface text-ink hover:border-ink",
                 )}
               >
@@ -786,6 +795,9 @@ function RegistrarInteracao({
         <CampoProximoContato idBase="interacao-contato" {...contato} onChange={setContato} />
       </div>
       {erro && <p className="aviso-erro">! {erro}</p>}
+      <p role="status" className={registrado ? "aviso-ok" : "sr-only"}>
+        {registrado ? "✓ Interação registrada" : ""}
+      </p>
       <button type="submit" className="btn btn-red btn-lg focus-ring" disabled={salvando}>
         {salvando
           ? "Salvando…"

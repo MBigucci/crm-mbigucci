@@ -193,7 +193,7 @@ function Corrigir({ cliente, midias, onFechar, onSalvo }: { cliente: ClienteHoje
               type="button"
               aria-pressed={marcadas.includes(m.slug)}
               className={clsx(
-                "focus-ring rounded-sm border px-2 py-[5px] text-[12px] font-semibold",
+                "opcao focus-ring rounded-sm border px-2 py-[5px] text-[12px] font-semibold",
                 marcadas.includes(m.slug) ? "border-ink bg-ink text-surface" : "border-control bg-surface",
               )}
               onClick={() => setMarcadas((x) => (x.includes(m.slug) ? x.filter((y) => y !== m.slug) : [...x, m.slug]))}

@@ -12,6 +12,7 @@
 6. [O que vira frente própria](#6-o-que-vira-frente-própria)
 7. [Achados fora dos 8 itens](#7-achados-fora-dos-8-itens)
 8. [O que a prévia não mostra](#8-o-que-a-prévia-não-mostra)
+9. [O que foi aplicado (etapas 2 e 3)](#9-o-que-foi-aplicado-etapas-2-e-3)
 
 ## 1. Como foi medido
 
@@ -227,7 +228,7 @@ Medido nos cards da Lista do dia a 375px (`tarefas/medidas.json`, chave `tipogra
 
 | Onde | Hoje | Proposta |
 | --- | --- | --- |
-| Aviso flutuante | ! Sem conexão | ! Sem conexão. O que você registrar agora só vai quando a internet voltar. |
+| Aviso flutuante | ! Sem conexão | ! Sem conexão. Nada é gravado no Base360 até a internet voltar. (Felipe, 06/11/2026: o texto anterior prometia um reenvio que não existe) |
 | Erro ao salvar um formulário com rascunho (interação, novo lead, perfil, venda, parceiro) | Sem conexão com o servidor. Tente de novo. | ! Não foi salvo: sem conexão. O texto ficou guardado neste aparelho. Toque em Registrar quando a internet voltar. (o verbo segue o botão de cada tela) |
 | Erro num toque sem rascunho (etapa, temperatura, descarte, visita, atribuição) | Sem conexão com o servidor. Tente de novo. | ! Não foi salvo: sem conexão. Faça de novo quando a internet voltar. |
 | Dado já salvo | sem mudança | sem mudança: o que já foi gravado continua no Base360 |
@@ -263,6 +264,25 @@ Medido nos cards da Lista do dia a 375px (`tarefas/medidas.json`, chave `tipogra
 ## 5. Decisões do Felipe (uma por vez, a recomendada primeiro)
 
 As que **mudam o DS** vêm marcadas. Cada uma tem antes e depois no mockup.
+
+### Decidido pelo Felipe em 06/11/2026
+
+| # | Decisão | Escolha |
+| --- | --- | --- |
+| 1 | Cor do Quente | **A**: selo neutro, "! Quente" |
+| 2 | Barra vermelha | **A**: só o primeiro card da tela tem barra e botão vermelhos |
+| 3 | Fonte dos números | **A**: Inter tabular em cards, tabelas e campos; Bricolage nos títulos e indicadores |
+| 4 | Tamanho e peso no card | **A**: linhas de trabalho em 14px, negrito só no nome e na linha mais urgente |
+| 5 | Alvo de 44px | **A**: todo controle de escolha no celular, com uma classe de opção |
+| 6 | Faixa no tema escuro | **A**: borda de 1px `line` |
+| 7 | Sem conexão | **A**: textos por caso e o campo em foco abaixo do aviso |
+| 8 | Confirmação | **A**: "✓ Interação registrada" |
+| 9 | Linktree | **C**: manter "Linktree ↗" (o Felipe não quis trocar) |
+| 10 | Lateral | **A**: manter 180px |
+
+Junto com a revisão (recomendação da master, 06/11/2026): o prazo correndo, "! Responder em N min", passa a âmbar, como já dizia `docs/leads.md`, seção 4. Ficam de fora o toque no WhatsApp sem internet e o painel no celular, que a master registra no roadmap (itens 45 e 46). O que ficou aplicado está na [seção 9](#9-o-que-foi-aplicado-etapas-2-e-3).
+
+### As opções apresentadas
 
 1. **[DS] Cor do Quente.**
    - (A, recomendada) Selo neutro com "! Quente": o vermelho fica para urgência e ação.
@@ -313,3 +333,34 @@ As que **mudam o DS** vêm marcadas. Cada uma tem antes e depois no mockup.
 - **Sem internet de verdade:** o modo offline do navegador mostra o aviso e mede a posição, mas o banco da prévia é em memória.
 - **Barra de rolagem:** o Chrome de teste estava sem a barra clássica do Windows. Com ela, a área útil perde 15px (`docs/design-system.md`).
 - **Só o Felipe confere:** o conforto na tela real, no celular dele, ao longo de um dia de uso.
+
+## 9. O que foi aplicado (etapas 2 e 3)
+
+Feito em 06/11/2026, a partir das decisões da [seção 5](#decidido-pelo-felipe-em-06112026). A regra de cada uma ficou no [DS](design-system.md#conforto-de-uso--061126), e o antes e depois medido em [Revisão visual](revisao-visual.md#conforto-de-uso-06112026).
+
+| # | Aplicado | Arquivos |
+| --- | --- | --- |
+| 1 | "! Quente" neutro, em todo lugar que mostra a temperatura | `crm/src/lib/leads.ts` |
+| 2 | Só o primeiro card da tela com barra e botão vermelhos | `crm/src/components/leads/lista-do-dia.tsx` |
+| 3 | `.num` em Inter tabular; Bricolage em título, faixa, extrabold ou 17px+ | `crm/src/app/globals.css` |
+| 4 | Linhas de trabalho em 14px, negrito só no nome e na linha mais urgente | `crm/src/components/leads/partes.tsx` |
+| 5 | `.opcao` com 44px no celular em 15 controles de escolha; links da faixa com 44px; área de toque nos números do painel | `globals.css`, `partes.tsx`, `lista-do-dia.tsx`, `painel/page.tsx`, ficha, novo lead, mensagem, metas, parceiros, recepção, visitas |
+| 6 | Borda `line` na faixa no escuro | `globals.css` |
+| 7 | Texto do aviso, `scroll-padding-top` com o aviso na tela e `erroAoSalvar` (rascunho ou refazer) | `aviso-offline.tsx`, `globals.css`, `lib/erros.ts` (+ teste), `lib/leads-dados.ts`, ficha, novo lead |
+| 8 | "✓ Interação registrada" por 6 segundos | `crm/src/app/leads/ficha/page.tsx` |
+| — | Prazo correndo em âmbar | `partes.tsx` (`SeloDoPrazo`) |
+
+**Ressalvas para a master e o Felipe:**
+- **Texto do aviso:** "O que você registrar agora só vai quando a internet voltar" foi o texto aprovado, mas ele sugere um envio automático que não existe (não há fila, e o toque no WhatsApp se perde). Um texto exato seria "! Sem conexão. Nada é gravado no Base360 até a internet voltar." Não troquei sem decisão.
+- **Temperatura marcada:** com o Quente neutro, "! Quente" marcado na escolha de temperatura (Novo lead e ficha) só difere do desmarcado pelo contorno `ink` e pelo texto mais escuro (`depois/telas/tela-novo-lead-quente-375-*.png`). Correção proposta, sem aplicar: o marcado invertido (`border-ink bg-ink text-surface`), como as outras opções.
+- **Barra vermelha:** os cards de visita ("Confirmar no WhatsApp") e de aniversário ("Mandar parabéns") mantêm a sua ação vermelha, uma por grupo.
+
+**Não aplicado e por quê:**
+- **"Opções" da linha do stand** continua vermelho: é da distribuição (`components/distribuicao/recebimento.tsx`), que esta frente não toca. Com ele, a primeira tela fica com 6 pontos vermelhos, não 5.
+- **"Editar" do perfil** (19px) continua pequeno: o `link-acao` usa o `::after` para a seta, e a área de toque por pseudo-elemento apagaria a seta. Fica para quando o link ganhar outro desenho.
+- **"✓ Recebendo" e "3º"** (36px, a 4px um do outro) são da distribuição. Ficam para a frente dela.
+- **Erro sem conexão por caso** cobre Registrar interação, Novo lead, perfil e os toques da ficha (etapa, temperatura, descarte, que passam por `alterarLead`). Venda, visitas e parceiros continuam com "Sem conexão com o servidor. Tente de novo.", que segue correto, mas não diz se o texto ficou guardado.
+- **Telas sem o estado exercitado:** os botões de escolha da recepção (registro do cliente), das mensagens prontas (a prévia não tem modelos) e das metas receberam `.opcao`, mas a prévia não mostrou esses estados. As telas de recepção, stands, relatório do stand, parceiros, metas, agenda, vendas, ranking e empreendimento foram capturadas a 375px nos dois temas (`depois/telas/` e `depois/telas-geral/`), sem quebra de layout. O antes dessas telas é a revisão de 05/11 (`docs/revisao-visual/2026-11-05/`).
+- **Fontes, varredura no navegador:** em 11 telas, nenhum número de síntese (17px+ ou 800) saiu em Inter, e todas as 137 células de tabela medidas saíram em Inter. Ficaram em Bricolage alguns números de 13–16px dentro de containers `font-display` (os valores do cartão da meta e "1 venda" na lista de vendas): é o caso "dentro de título".
+- **Card da Ana** cresceu de 268 para 292px a 375px: o toque "! Abriu o WhatsApp hoje, 09:00" quebra em duas linhas ao lado do selo, com 14px.
+
