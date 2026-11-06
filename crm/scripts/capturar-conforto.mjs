@@ -1,0 +1,153 @@
+// Revisão de conforto de uso (docs/codex-conforto-uso.md, etapa 1).
+// Capturas e medidas na prévia isolada (scripts/visual-preview.mjs --serve), com dados fictícios.
+// Usa um Chrome headless de teste já aberto na porta 9555, com perfil em crm/local/ (nunca o do usuário):
+//   chrome --headless=new --remote-debugging-port=9555 --user-data-dir=crm/local/perfil-conforto
+// Uso: node scripts/capturar-conforto.mjs <pastaSaida> <conjunto|cenarios.json> [baseUrl]
+//   ex.: node scripts/capturar-conforto.mjs ../docs/revisao-visual/conforto/tarefas tarefas
+//   mockup: baseUrl = file:///<repo>/docs/mockups/conforto-uso.html
+// Cada cenário: {nome, path, w, h, escuro?, css?, antes?, medir?: [nomes de MEDIDAS], inteira?, offline?, semCaptura?}
+// `css` é uma variante injetada só na prévia (comparação), sem mudar o app.
+import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+
+const CONJUNTOS = {"base":[{"nome":"lista-375-claro","path":"/vendas/","w":375,"h":812,"antes":"localStorage.clear();location.reload()","esperaAntes":1800,"medir":["tipografia","vermelho","faixa","alvos","numeros"]},{"nome":"lista-375-escuro","path":"/vendas/","w":375,"h":812,"escuro":true,"medir":["vermelho","faixa"]},{"nome":"lista-375-inteira-claro","path":"/vendas/","w":375,"h":812,"inteira":true},{"nome":"lista-1366-claro","path":"/vendas/","w":1366,"h":768,"medir":["tipografia","vermelho","faixa","lateral"]},{"nome":"lista-1366-escuro","path":"/vendas/","w":1366,"h":768,"escuro":true},{"nome":"lista-1280-claro","path":"/vendas/","w":1280,"h":720,"medir":["lateral","faixa"]}],"tarefas":[{"nome":"t1-lista-375-claro","path":"/vendas/","w":375,"h":812,"escuro":false,"medir":["faixa","vermelho","tipografia"]},{"nome":"t1-toque-faixa-375-claro","path":"/vendas/","w":375,"h":812,"escuro":false,"antes":"document.querySelector(\".veredito a\").click()","medir":["faixa"]},{"nome":"t2-ficha-abre-375-claro","path":"/vendas/leads/ficha/?id=lead-1#registrar","w":375,"h":812,"escuro":false,"medir":["alvos"]},{"nome":"t2-ficha-preenchida-375-claro","path":"/vendas/leads/ficha/?id=lead-1#registrar","w":375,"h":812,"escuro":false,"antes":"const f=document.getElementById(\"registrar\");f.scrollIntoView();const ta=document.getElementById(\"texto\");const set=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,\"value\").set;set.call(ta,\"Falou que quer visitar no sábado de manhã.\");ta.dispatchEvent(new Event(\"input\",{bubbles:true}));const ins=f.querySelectorAll(\"input\");const si=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,\"value\").set;if(ins[0]){si.call(ins[0],\"2026-11-08\");ins[0].dispatchEvent(new Event(\"input\",{bubbles:true}));ins[0].dispatchEvent(new Event(\"change\",{bubbles:true}));}","medir":["fimFormulario"]},{"nome":"t2-ficha-registrar-375-claro","path":"/vendas/leads/ficha/?id=lead-1#registrar","w":375,"h":812,"escuro":false,"antes":"const f=document.getElementById(\"registrar\");const ta=document.getElementById(\"texto\");const set=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,\"value\").set;set.call(ta,\"Falou que quer visitar no sábado.\");ta.dispatchEvent(new Event(\"input\",{bubbles:true}));await new Promise(r=>setTimeout(r,200));f.querySelector(\"button[type=submit]\").click();await new Promise(r=>setTimeout(r,500));document.querySelector(\".aviso-erro\")?.scrollIntoView({block:\"center\"})"},{"nome":"t3-painel-375-claro","path":"/vendas/painel/","w":375,"h":812,"escuro":false,"medir":["painel","alvos"]},{"nome":"t3-painel-inteiro-375-claro","path":"/vendas/painel/","w":375,"h":812,"escuro":false,"inteira":true},{"nome":"t1-lista-1366-claro","path":"/vendas/","w":1366,"h":768,"escuro":false,"medir":["faixa","vermelho","tipografia"]},{"nome":"t1-toque-faixa-1366-claro","path":"/vendas/","w":1366,"h":768,"escuro":false,"antes":"document.querySelector(\".veredito a\").click()","medir":["faixa"]},{"nome":"t2-ficha-abre-1366-claro","path":"/vendas/leads/ficha/?id=lead-1#registrar","w":1366,"h":768,"escuro":false,"medir":["alvos"]},{"nome":"t2-ficha-preenchida-1366-claro","path":"/vendas/leads/ficha/?id=lead-1#registrar","w":1366,"h":768,"escuro":false,"antes":"const f=document.getElementById(\"registrar\");f.scrollIntoView();const ta=document.getElementById(\"texto\");const set=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,\"value\").set;set.call(ta,\"Falou que quer visitar no sábado de manhã.\");ta.dispatchEvent(new Event(\"input\",{bubbles:true}));const ins=f.querySelectorAll(\"input\");const si=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,\"value\").set;if(ins[0]){si.call(ins[0],\"2026-11-08\");ins[0].dispatchEvent(new Event(\"input\",{bubbles:true}));ins[0].dispatchEvent(new Event(\"change\",{bubbles:true}));}","medir":["fimFormulario"]},{"nome":"t2-ficha-registrar-1366-claro","path":"/vendas/leads/ficha/?id=lead-1#registrar","w":1366,"h":768,"escuro":false,"antes":"const f=document.getElementById(\"registrar\");const ta=document.getElementById(\"texto\");const set=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,\"value\").set;set.call(ta,\"Falou que quer visitar no sábado.\");ta.dispatchEvent(new Event(\"input\",{bubbles:true}));await new Promise(r=>setTimeout(r,200));f.querySelector(\"button[type=submit]\").click();await new Promise(r=>setTimeout(r,500));document.querySelector(\".aviso-erro\")?.scrollIntoView({block:\"center\"})"},{"nome":"t3-painel-1366-claro","path":"/vendas/painel/","w":1366,"h":768,"escuro":false,"medir":["painel","alvos"]},{"nome":"t3-painel-inteiro-1366-claro","path":"/vendas/painel/","w":1366,"h":768,"escuro":false,"inteira":true},{"nome":"t1-lista-375-escuro","path":"/vendas/","w":375,"h":812,"escuro":true,"medir":["faixa","vermelho","tipografia"]},{"nome":"t1-toque-faixa-375-escuro","path":"/vendas/","w":375,"h":812,"escuro":true,"antes":"document.querySelector(\".veredito a\").click()","medir":["faixa"]},{"nome":"t2-ficha-abre-375-escuro","path":"/vendas/leads/ficha/?id=lead-1#registrar","w":375,"h":812,"escuro":true,"medir":["alvos"]},{"nome":"t2-ficha-preenchida-375-escuro","path":"/vendas/leads/ficha/?id=lead-1#registrar","w":375,"h":812,"escuro":true,"antes":"const f=document.getElementById(\"registrar\");f.scrollIntoView();const ta=document.getElementById(\"texto\");const set=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,\"value\").set;set.call(ta,\"Falou que quer visitar no sábado de manhã.\");ta.dispatchEvent(new Event(\"input\",{bubbles:true}));const ins=f.querySelectorAll(\"input\");const si=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,\"value\").set;if(ins[0]){si.call(ins[0],\"2026-11-08\");ins[0].dispatchEvent(new Event(\"input\",{bubbles:true}));ins[0].dispatchEvent(new Event(\"change\",{bubbles:true}));}","medir":["fimFormulario"]},{"nome":"t2-ficha-registrar-375-escuro","path":"/vendas/leads/ficha/?id=lead-1#registrar","w":375,"h":812,"escuro":true,"antes":"const f=document.getElementById(\"registrar\");const ta=document.getElementById(\"texto\");const set=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,\"value\").set;set.call(ta,\"Falou que quer visitar no sábado.\");ta.dispatchEvent(new Event(\"input\",{bubbles:true}));await new Promise(r=>setTimeout(r,200));f.querySelector(\"button[type=submit]\").click();await new Promise(r=>setTimeout(r,500));document.querySelector(\".aviso-erro\")?.scrollIntoView({block:\"center\"})"},{"nome":"t3-painel-375-escuro","path":"/vendas/painel/","w":375,"h":812,"escuro":true,"medir":["painel","alvos"]},{"nome":"t3-painel-inteiro-375-escuro","path":"/vendas/painel/","w":375,"h":812,"escuro":true,"inteira":true},{"nome":"t1-lista-1366-escuro","path":"/vendas/","w":1366,"h":768,"escuro":true,"medir":["faixa","vermelho","tipografia"]},{"nome":"t1-toque-faixa-1366-escuro","path":"/vendas/","w":1366,"h":768,"escuro":true,"antes":"document.querySelector(\".veredito a\").click()","medir":["faixa"]},{"nome":"t2-ficha-abre-1366-escuro","path":"/vendas/leads/ficha/?id=lead-1#registrar","w":1366,"h":768,"escuro":true,"medir":["alvos"]},{"nome":"t2-ficha-preenchida-1366-escuro","path":"/vendas/leads/ficha/?id=lead-1#registrar","w":1366,"h":768,"escuro":true,"antes":"const f=document.getElementById(\"registrar\");f.scrollIntoView();const ta=document.getElementById(\"texto\");const set=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,\"value\").set;set.call(ta,\"Falou que quer visitar no sábado de manhã.\");ta.dispatchEvent(new Event(\"input\",{bubbles:true}));const ins=f.querySelectorAll(\"input\");const si=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,\"value\").set;if(ins[0]){si.call(ins[0],\"2026-11-08\");ins[0].dispatchEvent(new Event(\"input\",{bubbles:true}));ins[0].dispatchEvent(new Event(\"change\",{bubbles:true}));}","medir":["fimFormulario"]},{"nome":"t2-ficha-registrar-1366-escuro","path":"/vendas/leads/ficha/?id=lead-1#registrar","w":1366,"h":768,"escuro":true,"antes":"const f=document.getElementById(\"registrar\");const ta=document.getElementById(\"texto\");const set=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,\"value\").set;set.call(ta,\"Falou que quer visitar no sábado.\");ta.dispatchEvent(new Event(\"input\",{bubbles:true}));await new Promise(r=>setTimeout(r,200));f.querySelector(\"button[type=submit]\").click();await new Promise(r=>setTimeout(r,500));document.querySelector(\".aviso-erro\")?.scrollIntoView({block:\"center\"})"},{"nome":"t3-painel-1366-escuro","path":"/vendas/painel/","w":1366,"h":768,"escuro":true,"medir":["painel","alvos"]},{"nome":"t3-painel-inteiro-1366-escuro","path":"/vendas/painel/","w":1366,"h":768,"escuro":true,"inteira":true},{"nome":"i4-geral-1280-180","path":"/vendas/?qa=geral","w":1280,"h":768,"css":"","medir":["lateral"]},{"nome":"i4-geral-1280-208","path":"/vendas/?qa=geral","w":1280,"h":768,"css":":root{--largura-barra:208px}","medir":["lateral"]},{"nome":"i4-geral-1280-224","path":"/vendas/?qa=geral","w":1280,"h":768,"css":":root{--largura-barra:224px}","medir":["lateral"]},{"nome":"i4-geral-1366-180","path":"/vendas/?qa=geral","w":1366,"h":768,"css":"","medir":["lateral"]},{"nome":"i4-geral-1366-208","path":"/vendas/?qa=geral","w":1366,"h":768,"css":":root{--largura-barra:208px}","medir":["lateral"]},{"nome":"i4-geral-1366-224","path":"/vendas/?qa=geral","w":1366,"h":768,"css":":root{--largura-barra:224px}","medir":["lateral"]},{"nome":"i4-geral-1366-rolada","path":"/vendas/?qa=geral","w":1366,"h":768,"antes":"const n=document.querySelector(\"#barra-lateral nav, #barra-lateral ul\")||document.getElementById(\"barra-lateral\");[...document.querySelectorAll(\"#barra-lateral *\")].forEach(e=>{if(e.scrollHeight>e.clientHeight+2)e.scrollTop=e.scrollHeight})"},{"nome":"i5-numeros-painel","path":"/vendas/painel/","w":1366,"h":768,"medir":["numeros"],"semCaptura":true},{"nome":"i6-novo-lead-375","path":"/vendas/leads/novo/","w":375,"h":812,"medir":["alvos","fimFormulario"]},{"nome":"i6-novo-lead-375-fim","path":"/vendas/leads/novo/","w":375,"h":812,"antes":"window.scrollTo(0,document.documentElement.scrollHeight)"},{"nome":"i7-lista-1366-offline","path":"/vendas/","w":1366,"h":768,"offline":true,"medir":["offline"]},{"nome":"i7-lista-375-offline","path":"/vendas/","w":375,"h":812,"offline":true,"medir":["offline"]},{"nome":"i7-ficha-375-offline-foco","path":"/vendas/leads/ficha/?id=lead-1","w":375,"h":812,"offline":true,"depoisOffline":"const t=document.getElementById(\"texto\");const y=t.getBoundingClientRect().top+scrollY-66;window.scrollTo(0,y);t.focus({preventScroll:true})","medir":["offline"]},{"nome":"i7-novo-lead-375-offline-foco","path":"/vendas/leads/novo/","w":375,"h":812,"offline":true,"depoisOffline":"const t=[...document.querySelectorAll(\"main input,main textarea\")][0];t.focus();window.scrollTo(0,0)","medir":["offline"]},{"nome":"i7-ficha-1366-offline","path":"/vendas/leads/ficha/?id=lead-1","w":1366,"h":768,"offline":true,"medir":["offline"]}],"variantes":[{"nome":"v2-vermelho-375","path":"/vendas/","w":375,"h":812,"css":".selo.text-brand{color:rgb(var(--ink))!important;border-color:rgb(var(--ink))!important}","antes":"const cs=[...document.querySelectorAll('main section[id^=grupo-] li.card.bar-brand')];cs.slice(1).forEach(c=>{c.classList.remove('bar-brand');c.querySelectorAll('.btn-red').forEach(b=>{b.classList.remove('btn-red');b.classList.add('btn-ghost')})});const o=[...document.querySelectorAll('main a,main button')].find(a=>a.textContent.trim()==='Opções');if(o)o.style.color='rgb(var(--ink))'","medir":["telaVermelho","vermelho"]},{"nome":"v2-vermelho-1366","path":"/vendas/","w":1366,"h":768,"css":".selo.text-brand{color:rgb(var(--ink))!important;border-color:rgb(var(--ink))!important}","antes":"const cs=[...document.querySelectorAll('main section[id^=grupo-] li.card.bar-brand')];cs.slice(1).forEach(c=>{c.classList.remove('bar-brand');c.querySelectorAll('.btn-red').forEach(b=>{b.classList.remove('btn-red');b.classList.add('btn-ghost')})});const o=[...document.querySelectorAll('main a,main button')].find(a=>a.textContent.trim()==='Opções');if(o)o.style.color='rgb(var(--ink))'","medir":["telaVermelho"]},{"nome":"v3-faixa44-375","path":"/vendas/","w":375,"h":812,"css":".veredito a{min-height:44px;display:flex;align-items:center}","medir":["faixa"]},{"nome":"v3-faixa44-375-escuro","path":"/vendas/","w":375,"h":812,"escuro":true,"css":".veredito a{min-height:44px;display:flex;align-items:center}.veredito{border-color:rgb(var(--line))}"}],"extra":[{"nome":"x-vermelho-tela-375","path":"/vendas/","w":375,"h":812,"semCaptura":true,"medir":["telaVermelho"]},{"nome":"x-vermelho-tela-1366","path":"/vendas/","w":1366,"h":768,"semCaptura":true,"medir":["telaVermelho"]},{"nome":"x-novo-lead-detalhes-375","path":"/vendas/leads/novo/","w":375,"h":812,"antes":"[...document.querySelectorAll('main button,main summary')].find(b=>/Mais detalhes/.test(b.textContent))?.click();await new Promise(r=>setTimeout(r,300));window.scrollTo(0,document.documentElement.scrollHeight)","medir":["fimFormulario"]}],"mockup":[{"nome":"mockup-1280-claro","path":"","w":1280,"h":900,"inteira":true},{"nome":"mockup-375-escuro","path":"","w":375,"h":812,"escuro":true,"antes":"document.querySelector('button[data-tema=escuro]').click()","inteira":true}]};
+
+const [saida, arqCenarios, base = "http://127.0.0.1:4173"] = process.argv.slice(2);
+// Conjuntos usados no estudo de 06/11/2026: passe o nome (base, tarefas, variantes, extra, mockup) ou um .json.
+const cenarios = CONJUNTOS[arqCenarios] ?? JSON.parse(readFileSync(arqCenarios, "utf8"));
+mkdirSync(saida, { recursive: true });
+const porta = 9555;
+const espera = (ms) => new Promise((r) => setTimeout(r, ms));
+const alvo = await (await fetch(`http://127.0.0.1:${porta}/json/new?about:blank`, { method: "PUT" })).json();
+const ws = new WebSocket(alvo.webSocketDebuggerUrl);
+await new Promise((r) => (ws.onopen = r));
+let seq = 0;
+const pend = new Map();
+ws.onmessage = (m) => { const d = JSON.parse(m.data); if (d.id && pend.has(d.id)) { pend.get(d.id)(d); pend.delete(d.id); } };
+const cdp = (method, params = {}) => new Promise((r) => { const id = ++seq; pend.set(id, r); ws.send(JSON.stringify({ id, method, params })); });
+const avaliar = async (expr) => {
+  const r = await cdp("Runtime.evaluate", { expression: expr, awaitPromise: true, returnByValue: true });
+  if (r.result?.exceptionDetails) return { erro: r.result.exceptionDetails.exception?.description || r.result.exceptionDetails.text };
+  return r.result?.result?.value;
+};
+
+// Utilitários comuns às medidas (rodam na página).
+const UTIL = `
+const R=(e)=>{const r=e.getBoundingClientRect();return {x:Math.round(r.left),y:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height),b:Math.round(r.bottom),r:Math.round(r.right)}};
+const vis=(e)=>{if(!e.getClientRects().length)return false;const s=getComputedStyle(e);return s.visibility!=='hidden'&&s.display!=='none'&&+s.opacity>0};
+const brandRgb=()=>{const v=getComputedStyle(document.documentElement).getPropertyValue('--brand').trim().split(/\\s+/).join(', ');return 'rgb('+v+')'};
+const fam=(s)=>s.fontFamily.split(',')[0].replace(/"/g,'').trim();
+const txt=(e)=>(e.innerText||e.textContent||'').replace(/\\s+/g,' ').trim();
+const cabecalho=()=>{const h=document.querySelector('header');return h?Math.round(h.getBoundingClientRect().bottom):0};
+const rodapeFixo=()=>{const f=[...document.querySelectorAll('body *')].filter(e=>{const s=getComputedStyle(e);return s.position==='fixed'&&vis(e)&&Math.abs(e.getBoundingClientRect().bottom-innerHeight)<2&&e.getBoundingClientRect().height<200&&e.getBoundingClientRect().width>innerWidth*0.6});return f.length?Math.round(Math.min(...f.map(e=>e.getBoundingClientRect().top))):innerHeight};
+const interativos=()=>[...document.querySelectorAll('a[href],button,input:not([type=hidden]),select,textarea,label:has(input)')].filter(vis);
+`;
+
+const MEDIDAS = {
+  // Item 1: tamanho, peso e família de cada texto dos primeiros cards da lista.
+  tipografia: `const cards=[...document.querySelectorAll('main li.card')].slice(0,4);
+    return cards.map(c=>{const nome=txt(c.querySelector('.titulo-card')||c).slice(0,40);
+      const folhas=[...c.querySelectorAll('*')].filter(e=>vis(e)&&[...e.childNodes].some(n=>n.nodeType===3&&n.textContent.trim()));
+      const itens=folhas.map(e=>{const s=getComputedStyle(e);return {t:txt(e).slice(0,48),px:parseFloat(s.fontSize),peso:+s.fontWeight,fam:fam(s),cor:s.color}});
+      const pesados=itens.filter(i=>i.peso>=600).length;
+      return {nome,altura:R(c).h,itens,pesados,total:itens.length}})`,
+  // Item 2: quantos elementos de cada card usam o vermelho da marca (texto, fundo, borda ou barra).
+  vermelho: `const b=brandRgb();const cards=[...document.querySelectorAll('main li.card')].slice(0,6);
+    return {brand:b,cards:cards.map(c=>{const usos=[];
+      const barra=getComputedStyle(c,'::before').backgroundColor; if(barra===b) usos.push('barra');
+      for(const e of c.querySelectorAll('*')){if(!vis(e))continue;const s=getComputedStyle(e);const t=txt(e).slice(0,30);
+        const own=[...e.childNodes].some(n=>n.nodeType===3&&n.textContent.trim());
+        if(own&&s.color===b) usos.push('texto: '+t);
+        if(s.backgroundColor===b) usos.push('fundo: '+t);
+        if(s.borderTopColor===b&&parseFloat(s.borderTopWidth)>0) usos.push('borda: '+t);}
+      return {nome:txt(c.querySelector('.titulo-card')||c).slice(0,30),usos:[...new Set(usos)],n:new Set(usos).size}})}`,
+  // Item 3: faixa escura e quanto do primeiro card aparece na abertura.
+  faixa: `const f=document.querySelector('.veredito');const top=cabecalho();const fim=rodapeFixo();
+    const primeiro=document.querySelector('main section[id^=grupo-] li.card');
+    const p=primeiro?R(primeiro):null;
+    const visivel=p?Math.max(0,Math.min(p.b,fim)-Math.max(p.y,top)):0;
+    const links=f?[...f.querySelectorAll('a')].map(a=>({t:txt(a),...R(a)})):[];
+    return {janela:[innerWidth,innerHeight],cabecalho:top,rodapeFixoTopo:fim,areaUtil:fim-top,
+      faixa:f?R(f):null,faixaPctAreaUtil:f?Math.round(100*R(f).h/(fim-top)):null,
+      primeiroCard:p,primeiroCardNome:primeiro?txt(primeiro.querySelector('.titulo-card')).slice(0,30):null,
+      primeiroCardVisivelPx:visivel,primeiroCardVisivelPct:p?Math.round(100*visivel/p.h):0,
+      botoesPrimeiroCardVisiveis:primeiro?[...primeiro.querySelectorAll('.btn')].map(x=>({t:txt(x),visivel:R(x).b<=fim&&R(x).y>=top})):[],
+      linksFaixa:links}`,
+  // Item 4: rótulos da lateral (corte e quebra) e largura útil dos cards.
+  lateral: `const n=document.getElementById('barra-lateral');if(!n||getComputedStyle(n).display==='none')return {sem:true};
+    const itens=[...n.querySelectorAll('a,button')].filter(vis).map(a=>{const sp=[...a.querySelectorAll('span')].filter(s=>txt(s)&&!s.querySelector('svg'));const l=sp[sp.length-1]||a;
+      const s=getComputedStyle(l);const lh=parseFloat(s.lineHeight)||parseFloat(s.fontSize)*1.3;
+      return {t:txt(a),corta:l.scrollWidth>l.clientWidth+1,linhas:Math.round(R(l).h/lh),largRotulo:R(l).w,precisa:l.scrollWidth}});
+    const m=document.querySelector('main');const cs=getComputedStyle(m);
+    return {barra:R(n).w,fonte:getComputedStyle(n.querySelector('a')).fontSize,itens,cortados:itens.filter(i=>i.corta).map(i=>i.t),quebrados:itens.filter(i=>i.linhas>1).map(i=>i.t),
+      main:R(m).w,util:Math.round(m.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight)),
+      cards:[...document.querySelectorAll('main li.card')].slice(0,2).map(c=>R(c).w)}`,
+  // Item 5: algarismos tabulares de fato? Largura de 111111 x 000000 em cada fonte.
+  numeros: `await document.fonts.ready;const fams={Bricolage:'"Bricolage Grotesque"',Inter:'Inter'};const out={};
+    for(const [k,f] of Object.entries(fams)){for(const tnum of [true,false]){const s=document.createElement('span');
+      s.style.cssText='position:absolute;left:-9999px;font-size:20px;font-weight:600;font-family:'+f+';font-variant-numeric:'+(tnum?'tabular-nums':'normal');document.body.appendChild(s);
+      const w=(t)=>{s.textContent=t;return +s.getBoundingClientRect().width.toFixed(2)};
+      out[k+(tnum?' tnum':' sem tnum')]={'111111':w('111111'),'000000':w('000000'),'R$ 1.111.111':w('R$ 1.111.111'),'R$ 3.450.000':w('R$ 3.450.000'),'11/11/2026':w('11/11/2026'),'08/09/2026':w('08/09/2026')};s.remove();}}
+    out.fontesCarregadas={Bricolage:document.fonts.check('600 20px "Bricolage Grotesque"'),Inter:document.fonts.check('400 20px Inter')};
+    out.numsNaTela=[...document.querySelectorAll('main .num')].filter(vis).slice(0,8).map(e=>({t:txt(e).slice(0,30),px:getComputedStyle(e).fontSize,peso:getComputedStyle(e).fontWeight,fam:fam(getComputedStyle(e))}));
+    return out`,
+  // Item 6: alvos de toque abaixo de 44px e vizinhos a menos de 8px.
+  alvos: `const els=interativos().filter(e=>!e.closest('#barra-lateral'));const lst=els.map(e=>({e,t:(txt(e)||e.getAttribute('aria-label')||e.name||e.id||e.tagName).slice(0,36),tag:e.tagName.toLowerCase(),cls:(e.className||'').toString().slice(0,40),...R(e)}));
+    const pequenos=lst.filter(i=>i.h<44||i.w<44).map(({e,...i})=>i);
+    const perto=[];for(let i=0;i<lst.length;i++)for(let j=i+1;j<lst.length;j++){const a=lst[i],b=lst[j];if(a.e.contains(b.e)||b.e.contains(a.e))continue;
+      const sobreV=a.y<b.b&&b.y<a.b, sobreH=a.x<b.r&&b.x<a.r;const gx=sobreV?Math.max(b.x-a.r,a.x-b.r):99, gy=sobreH?Math.max(b.y-a.b,a.y-b.b):99;
+      const g=Math.min(gx,gy);if(g<8&&g>-1)perto.push({a:a.t,b:b.t,gap:g});}
+    const alturasBtn=[...new Set([...document.querySelectorAll('.btn')].filter(vis).map(b=>Math.round(b.getBoundingClientRect().height)))].sort((x,y)=>x-y);
+    return {total:lst.length,pequenos,perto:perto.slice(0,40),alturasBtn,rodapeFixoTopo:rodapeFixo()}`,
+  // Item 6: o último campo do formulário fica acessível acima do rodapé fixo?
+  fimFormulario: `window.scrollTo(0,document.documentElement.scrollHeight);await new Promise(r=>setTimeout(r,300));
+    const campos=[...document.querySelectorAll('main input:not([type=hidden]),main select,main textarea,main button[type=submit]')].filter(vis);
+    const ult=campos[campos.length-1];const fim=rodapeFixo();
+    return {ultimo:ult?(ult.id||ult.name||txt(ult)).slice(0,40):null,ultimoRet:ult?R(ult):null,rodapeFixoTopo:fim,coberto:ult?R(ult).b>fim:null,folga:ult?fim-R(ult).b:null}`,
+  // Item 2: quantos pontos vermelhos a primeira tela tem (sem a navegação).
+  telaVermelho: `const b=brandRgb();const out=[];for(const e of document.querySelectorAll("main *, .area-principal *")){if(!vis(e)||e.closest("#barra-lateral"))continue;const r=e.getBoundingClientRect();if(r.bottom<0||r.top>innerHeight)continue;const s=getComputedStyle(e);const own=[...e.childNodes].some(n=>n.nodeType===3&&n.textContent.trim());
+    if(own&&s.color===b)out.push("texto: "+txt(e).slice(0,30));if(s.backgroundColor===b)out.push("fundo: "+txt(e).slice(0,30));if(s.borderLeftColor===b&&parseFloat(s.borderLeftWidth)>=3)out.push("barra: "+txt(e).slice(0,20));if(getComputedStyle(e,"::before").backgroundColor===b)out.push("barra card: "+txt(e.querySelector(".titulo-card")||e).slice(0,20));}
+    return {n:new Set(out).size,itens:[...new Set(out)]}`,
+  // Item 7: o aviso Sem conexão cobre o quê?
+  offline: `const a=document.querySelector('.aviso-conexao');if(!a)return {aviso:false};const r=a.getBoundingClientRect();
+    const cobre=interativos().filter(e=>{const q=e.getBoundingClientRect();return q.left<r.right&&r.left<q.right&&q.top<r.bottom&&r.top<q.bottom}).map(e=>(txt(e)||e.getAttribute('aria-label')||e.id).slice(0,36));
+    const f=document.activeElement;const q=f&&f!==document.body?f.getBoundingClientRect():null;
+    return {aviso:R(a),texto:txt(a),cobre,foco:f&&f!==document.body?(f.id||txt(f)).slice(0,30):null,focoCoberto:q?(q.left<r.right&&r.left<q.right&&q.top<r.bottom&&r.top<q.bottom):null}`,
+  // Painel: a informação de gestão aparece sem rolar?
+  painel: `const top=cabecalho();const tabs=[...document.querySelectorAll('main table')].filter(vis);
+    return {cabecalho:top,altura:document.documentElement.scrollHeight,tabelas:tabs.map(t=>({titulo:txt(t.closest('section,div')?.querySelector('h2,h3')||t).slice(0,50),...R(t),largura:t.scrollWidth,cabe:t.scrollWidth<=t.parentElement.clientWidth+1}))}`,
+};
+
+await cdp("Page.enable");
+await cdp("Emulation.setFocusEmulationEnabled", { enabled: true });
+await cdp("Runtime.enable");
+await cdp("Network.enable");
+const medidas = {};
+for (const c of cenarios) {
+  const mobile = c.w < 768;
+  await cdp("Emulation.setDeviceMetricsOverride", { width: c.w, height: c.h, deviceScaleFactor: 1, mobile });
+  await cdp("Emulation.setTouchEmulationEnabled", { enabled: mobile });
+  await cdp("Emulation.setEmulatedMedia", { media: "", features: [{ name: "prefers-color-scheme", value: c.escuro ? "dark" : "light" }] });
+  await cdp("Network.emulateNetworkConditions", { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
+  await cdp("Page.navigate", { url: base + c.path });
+  await espera(1800);
+  if (c.css) await avaliar(`(()=>{const s=document.createElement('style');s.id='variante';s.textContent=${JSON.stringify(c.css)};document.head.appendChild(s)})()`);
+  if (c.antes) { const r = await avaliar(`(async()=>{${c.antes}})()`); if (r?.erro) console.log(c.nome, "antes:", r.erro); await espera(c.esperaAntes ?? 700); }
+  if (c.offline) {
+    await cdp("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
+    await espera(700);
+    if (c.depoisOffline) { await avaliar(`(async()=>{${c.depoisOffline}})()`); await espera(400); }
+  }
+  if (c.medir) {
+    medidas[c.nome] = {};
+    for (const m of c.medir) medidas[c.nome][m] = await avaliar(`(async()=>{${UTIL}${MEDIDAS[m]}})()`);
+  }
+  if (!c.semCaptura) {
+    const s = await cdp("Page.captureScreenshot", { format: "png", captureBeyondViewport: !!c.inteira });
+    writeFileSync(join(saida, c.nome + ".png"), Buffer.from(s.result.data, "base64"));
+  }
+  console.log("ok", c.nome);
+}
+writeFileSync(join(saida, "medidas.json"), JSON.stringify(medidas, null, 2));
+ws.close();
+await fetch(`http://127.0.0.1:${porta}/json/close/${alvo.id}`);

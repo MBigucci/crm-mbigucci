@@ -14,6 +14,11 @@ const leads = [
   {...base,id:'lead-3',nome:'Clara Exemplo',temperatura:'morno',proximo_contato:at(0,23),nascimento:'1990-'+day.slice(5)},
   {...base,id:'lead-4',nome:'Daniel Exemplo',dono_id:'corretor-2',temperatura:'frio',etapa:'proposta',proximo_contato:null},
   {...base,id:'sem-telefone',nome:'Rita Exemplo',whatsapp:null,proximo_contato:at(-1)},
+  // Revisão de conforto (06/11/2026): um dia mais cheio, com nome longo e temperaturas diferentes.
+  {...base,id:'lead-5',nome:'Maria Aparecida dos Santos Exemplo',temperatura:'morno',proximo_contato:at(-2,15),ultima_interacao_em:at(-2),ultima_interacao_texto:'Pediu a tabela de preços do três dormitórios e a simulação com FGTS.'},
+  {...base,id:'lead-6',nome:'Lucas Exemplo',temperatura:'frio',proximo_contato:at(0,8),ultima_interacao_em:at(-1),ultima_interacao_texto:'Vai conversar com a esposa e retorna.',tentativas:0},
+  {...base,id:'lead-7',nome:'Sofia Exemplo',origem:'empresa',etapa:'novo',ultima_interacao_em:null,ultima_interacao_texto:null,proximo_contato:null,created_at:new Date(now.getTime()-6*60000).toISOString(),atribuido_em:new Date(now.getTime()-6*60000).toISOString(),atribuido_por:'gerente'},
+  {...base,id:'lead-8',nome:'Tiago Exemplo',temperatura:'morno',proximo_contato:at(0,23),ultima_interacao_em:at(-1),ultima_interacao_texto:'Visitou o decorado. Ligar para falar da proposta.',etapa:'visita_realizada',tentativas:0},
 ];
 const visitas = [
   {id:'visita-1',lead_id:'lead-1',corretor_id:'corretor-1',empreendimento:base.empreendimento,inicio:at(0,23),local:'Plantão do residencial',status:'agendada',observacao:null,baixa_por:null,baixa_em:null,comprovante:null,created_at:at(-3),lead:leads[0]},
