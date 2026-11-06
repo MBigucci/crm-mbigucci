@@ -159,7 +159,7 @@ function Leads() {
                 agora={agora}
                 horario={horario}
                 etapa={nomeEtapa(l.etapa)}
-                dono={f.veOutros ? f.nomeDono.get(l.dono_id) : undefined}
+                dono={f.veOutros ? (l.dono_id ? f.nomeDono.get(l.dono_id) : "A distribuir") : undefined}
               />
             ))}
           </ul>
@@ -180,6 +180,8 @@ function Leads() {
 function resumoPorCorretor(leads: Lead[], agora: Date, horario: HorarioAtendimento) {
   const m = new Map<string, { id: string; ativos: number; estourados: number; atrasados: number; semData: number }>();
   for (const l of leads) {
+    // Sem dono (A distribuir, represado): fica fora do resumo por corretor.
+    if (!l.dono_id) continue;
     const r = m.get(l.dono_id) ?? { id: l.dono_id, ativos: 0, estourados: 0, atrasados: 0, semData: 0 };
     r.ativos++;
     if (prazoDoLead(l, agora, horario)?.estado === "estourado") r.estourados++;

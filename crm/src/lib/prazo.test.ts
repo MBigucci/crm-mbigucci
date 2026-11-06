@@ -10,6 +10,7 @@ import {
   prazoDoLead,
   quandoVence,
   seloPrazo,
+  seloResposta,
   type HorarioAtendimento,
 } from "./prazo.ts";
 import { grupoDoLead, montarListaDoDia } from "./leads.ts";
@@ -69,7 +70,7 @@ test("minutos úteis: mesmo dia, virada de dia e fim de semana", () => {
   assert.equal(minutosUteis(sp("10-29T10:30"), sp("10-29T10:00")), 0);
 });
 
-const lead = (created_at: string, extra: Partial<{ etapa: string; status: "ativo" | "descartado"; atribuido_em: string | null; origem: string }> = {}) => ({
+const lead = (created_at: string, extra: Partial<{ etapa: string; status: "ativo" | "descartado"; atribuido_em: string | null; origem: string; prazo_imediato: boolean }> = {}) => ({
   status: "ativo" as const,
   etapa: "novo",
   origem: "empresa",
@@ -123,6 +124,32 @@ test("prazo do lead: nunca estoura logo depois do cadastro", () => {
 test("prazo do lead: conta da atribuição quando o gerente reatribuiu depois", () => {
   const l = lead(iso(sp("10-28T10:00")), { atribuido_em: iso(sp("10-29T10:00")) });
   assert.equal(prazoDoLead(l, sp("10-29T10:05"))!.estado, "no_prazo");
+});
+
+test("prazo do lead: a entrada carimba atribuido_em antes do cadastro, e o prazo conta dele", () => {
+  // Chegou às 10h00 e foi gravado às 10h04: o prazo vence às 10h15, não às 10h19.
+  const l = lead(iso(sp("10-29T10:04")), { atribuido_em: iso(sp("10-29T10:00")) });
+  assert.equal(iso(prazoDoLead(l, sp("10-29T10:05"))!.fim), iso(sp("10-29T10:15")));
+  assert.equal(prazoDoLead(l, sp("10-29T10:16"))!.estado, "estourado");
+});
+
+test("prazo do lead: recebido de plantão fora do horário conta 15 min de relógio", () => {
+  // 22h, fora do horário: sem prazo_imediato venceria na abertura; com ele, 22h15.
+  const noite = lead(iso(sp("10-29T22:00")), { atribuido_em: iso(sp("10-29T22:00")) });
+  assert.equal(iso(prazoDoLead(noite, sp("10-29T22:05"))!.fim), iso(sp("10-30T09:15")));
+  const plantao = lead(iso(sp("10-29T22:00")), { atribuido_em: iso(sp("10-29T22:00")), prazo_imediato: true });
+  assert.equal(iso(prazoDoLead(plantao, sp("10-29T22:05"))!.fim), iso(sp("10-29T22:15")));
+  assert.equal(prazoDoLead(plantao, sp("10-29T22:20"))!.estado, "estourado");
+});
+
+test("mensagem nova: responder até a hora, âmbar e depois vermelho", () => {
+  const agora = sp("10-29T14:20");
+  const s = seloResposta({ status: "ativo", resposta_ate: iso(sp("10-29T14:32")) }, agora)!;
+  assert.equal(s.texto, "Responder até 14h32 · mensagem nova");
+  assert.equal(s.nivel, "correndo");
+  assert.equal(seloResposta({ status: "ativo", resposta_ate: iso(sp("10-29T14:32")) }, sp("10-29T14:40"))!.nivel, "estourado");
+  assert.equal(seloResposta({ status: "ativo", resposta_ate: null }, agora), null);
+  assert.equal(seloResposta({ status: "descartado", resposta_ate: iso(sp("10-29T14:32")) }, agora), null);
 });
 
 test("prazo do lead: só vale para lead da empresa, ativo e em novo", () => {

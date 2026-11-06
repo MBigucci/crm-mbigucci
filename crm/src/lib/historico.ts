@@ -65,6 +65,12 @@ export function descreverEvento(
     case "dono": {
       const recebeu = `${(e.para && pessoa(e.para)) ?? "outro corretor"}`;
       if (e.detalhe === "perdido") return `! Lead perdido por ${(e.de && pessoa(e.de)) ?? "outro corretor"}. Passado para ${recebeu}`;
+      // Distribuição automática (distribuicao.sql): o banco troca o dono sem usuário.
+      if (!e.para) return "Sem dono: A distribuir";
+      if (e.detalhe === "distribuicao") return `Distribuído a ${recebeu}`;
+      if (e.detalhe === "represado_liberado") return `Distribuído a ${recebeu} na abertura`;
+      if (e.detalhe === "redistribuido") return `! Prazo estourado. Passado para ${recebeu}`;
+      if (e.detalhe === "repetido_reativado") return `Mensagem nova. Reativado para ${recebeu}`;
       return `Atribuído a ${recebeu}`;
     }
   }

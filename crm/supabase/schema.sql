@@ -744,19 +744,27 @@ begin
   end if;
   -- Sem usuário logado (SQL Editor) ou vindo de outro gatilho (a interação
   -- atualizando o lead): as regras de quem pode o quê já foram checadas.
-  if v_eu is null or pg_trigger_depth() > 1 then
+  -- crm.distribuicao: a distribuição automática (distribuicao.sql) mexendo no
+  -- lead dentro das funções dela, mesmo chamadas por um usuário.
+  if v_eu is null or pg_trigger_depth() > 1 or current_setting('crm.distribuicao', true) = '1' then
     return new;
   end if;
 
   -- Quem não é o dono só pode trocar o dono (atribuir), nada mais.
-  if old.dono_id <> v_eu
+  -- is distinct from: o lead sem dono (distribuição automática) também cai aqui.
+  if old.dono_id is distinct from v_eu
      and (to_jsonb(new) - 'dono_id' - 'updated_at' - 'atribuido_por' - 'atribuido_em' - 'ultimo_toque_em' - 'ultimo_toque_tipo')
          is distinct from (to_jsonb(old) - 'dono_id' - 'updated_at' - 'atribuido_por' - 'atribuido_em' - 'ultimo_toque_em' - 'ultimo_toque_tipo') then
     raise exception 'Só o corretor dono do lead altera os dados dele.' using errcode = '42501';
   end if;
 
-  if new.dono_id <> old.dono_id then
-    if not public.pode_atribuir_a(new.dono_id) then
+  if new.dono_id is distinct from old.dono_id then
+    -- Lead sem dono ("A distribuir", distribuicao.sql): também quem tem
+    -- leads.distribuir atribui, a qualquer corretor ativo.
+    if new.dono_id is null
+       or not (public.pode_atribuir_a(new.dono_id)
+               or (old.dono_id is null and public.has_permission('leads.distribuir')
+                   and exists (select 1 from public.profiles p where p.id = new.dono_id and p.ativo and p.perfil = 'corretor'))) then
       raise exception 'Você só pode atribuir leads a corretores ativos da sua equipe.' using errcode = '42501';
     end if;
     new.atribuido_por := v_eu;
@@ -846,6 +854,11 @@ as $$
 declare
   v_conversa boolean := new.tipo in ('whatsapp', 'ligacao', 'email', 'visita', 'plantao');
 begin
+  -- A mensagem nova que a entrada automática anexa a um lead (sem autor,
+  -- distribuicao.sql) não mexe no último contato.
+  if new.tipo = 'mensagem' and new.autor_id is null then
+    return new;
+  end if;
   if new.tipo in ('toque_whatsapp', 'toque_ligacao') then
     update public.leads
        set ultimo_toque_em = new.criado_em,
@@ -1301,7 +1314,9 @@ as $$
           where r.lead_id = e.lead_id and r.tipo in ('criado', 'dono') and r.para = e.de and r.criado_em <= e.criado_em)
   from public.lead_eventos e
   join public.leads l on l.id = e.lead_id
-  where e.tipo = 'dono' and e.detalhe = 'perdido'
+  -- "redistribuido": a passagem automática pelo prazo (distribuicao.sql) conta
+  -- como perdido, junto com o Lead perdido (Felipe, 16.3, 05/11/2026).
+  where e.tipo = 'dono' and e.detalhe in ('perdido', 'redistribuido')
     and e.criado_em >= p_de and e.criado_em < p_ate
     and public.pode_ver_dados_de(e.de::uuid)
   order by e.criado_em;

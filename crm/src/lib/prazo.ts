@@ -89,17 +89,29 @@ export function minutosUteis(de: Date, ate: Date, h: HorarioAtendimento = HORARI
  */
 export const ORIGEM_COM_PRAZO = "empresa";
 
-type LeadPrazo = Pick<Lead, "status" | "etapa" | "created_at"> & Partial<Pick<Lead, "atribuido_em" | "origem">>;
+type LeadPrazo = Pick<Lead, "status" | "etapa" | "created_at"> & Partial<Pick<Lead, "atribuido_em" | "origem" | "prazo_imediato" | "dono_id">>;
 
-/** Lead da empresa, ativo e em "novo": espera o primeiro contato. */
+/** Lead da empresa, ativo e em "novo", com dono: espera o primeiro contato. Sem dono (A distribuir), não há prazo. */
 export const aguardaPrimeiroContato = (l: LeadPrazo) =>
-  l.status === "ativo" && l.etapa === "novo" && l.origem === ORIGEM_COM_PRAZO;
+  l.status === "ativo" && l.etapa === "novo" && l.origem === ORIGEM_COM_PRAZO && l.dono_id !== null;
 
-/** O prazo conta do cadastro ou, se o gerente reatribuiu depois, da atribuição. */
+/**
+ * O prazo conta da atribuição (atribuido_em), quando existe; sem ela, do cadastro.
+ * A entrada da distribuição pode carimbar atribuido_em até 5 min antes do
+ * created_at (o lead chegou antes de ser gravado), e esse é o início que vale.
+ */
 export function inicioDoPrazo(l: Pick<LeadPrazo, "created_at" | "atribuido_em">): Date {
-  const c = new Date(l.created_at).getTime();
-  const a = l.atribuido_em ? new Date(l.atribuido_em).getTime() : 0;
-  return new Date(Math.max(c, a));
+  return new Date(l.atribuido_em ?? l.created_at);
+}
+
+/**
+ * Fim do prazo do lead: 15 min de horário de atendimento desde o início. Recebido
+ * de plantão fora do horário (prazo_imediato), 15 min de relógio (distribuicao.sql,
+ * distribuicao_fim_prazo).
+ */
+export function fimDoPrazoDoLead(l: Pick<LeadPrazo, "created_at" | "atribuido_em" | "prazo_imediato">, h: HorarioAtendimento = HORARIO_PADRAO): Date {
+  const inicio = inicioDoPrazo(l);
+  return l.prazo_imediato ? new Date(inicio.getTime() + PRAZO_MINUTOS * MIN) : fimDoPrazo(inicio, h);
 }
 
 export type Prazo = {
@@ -116,7 +128,7 @@ export type Prazo = {
 export function prazoDoLead(l: LeadPrazo, agora: Date, h: HorarioAtendimento = HORARIO_PADRAO): Prazo | null {
   if (!aguardaPrimeiroContato(l)) return null;
   const inicio = inicioDoPrazo(l);
-  const fim = fimDoPrazo(inicio, h);
+  const fim = fimDoPrazoDoLead(l, h);
   if (agora.getTime() > fim.getTime()) {
     return { estado: "estourado", fim, minutos: Math.max(1, Math.round((agora.getTime() - fim.getTime()) / MIN)), correndo: true };
   }
@@ -161,4 +173,20 @@ export function seloPrazo(p: Prazo, agora: Date): SeloPrazo {
     return { sinal: "!", texto: `Responder em ${Math.min(PRAZO_MINUTOS, Math.max(1, p.minutos))} min`, nivel: "correndo" };
   }
   return { sinal: "→", texto: `Responder até ${quandoVence(p.fim, agora)}`, nivel: "aguardando" };
+}
+
+/**
+ * Mensagem nova num lead ativo (lead repetido que foi ao dono): o dono tem até
+ * resposta_ate para responder. "! Responder até 14h32 · mensagem nova", âmbar;
+ * vermelho depois da hora. A conversa ou o toque limpam resposta_ate (banco).
+ */
+export function seloResposta(l: Partial<Pick<Lead, "status" | "resposta_ate">>, agora: Date): SeloPrazo | null {
+  if (!l.resposta_ate || (l.status && l.status !== "ativo")) return null;
+  const ate = new Date(l.resposta_ate);
+  if (Number.isNaN(ate.getTime())) return null;
+  return {
+    sinal: "!",
+    texto: `Responder até ${quandoVence(ate, agora)} · mensagem nova`,
+    nivel: agora.getTime() > ate.getTime() ? "estourado" : "correndo",
+  };
 }

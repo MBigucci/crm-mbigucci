@@ -298,7 +298,7 @@ function Agenda() {
                   agora={hoje}
                   horario={horario}
                   etapa={nomeEtapa(l.etapa)}
-                  dono={veOutros ? nomes.get(l.dono_id) : undefined}
+                  dono={veOutros ? (l.dono_id ? nomes.get(l.dono_id) : "A distribuir") : undefined}
                   onToque={l.dono_id === eu.id ? tocar(l) : undefined}
                 />
               ))}

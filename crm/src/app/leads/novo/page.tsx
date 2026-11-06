@@ -311,7 +311,7 @@ function NovoLead() {
             no WhatsApp com a mensagem pronta.
           </p>
           <AvisarCorretor
-            corretorId={repasse.dono_id}
+            corretorId={repasse.dono_id ?? ""}
             corretorNome={corretores.find((c) => c.id === repasse.dono_id)?.nome ?? "Corretor"}
             lead={repasse}
             horario={horario}

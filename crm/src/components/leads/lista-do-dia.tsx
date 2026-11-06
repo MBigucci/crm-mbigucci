@@ -14,6 +14,7 @@ import { ListaVisitas } from "@/components/visitas/visitas";
 import { MetasNoInicio } from "@/components/metas/metas";
 import { BotaoMensagem } from "./mensagem";
 import { aniversariantesDeHoje } from "@/lib/perfil";
+import { LinhaDoStand } from "@/components/distribuicao/recebimento";
 
 /** O que a lista do dia lê para os aniversários (só o necessário para o card e a mensagem). */
 const COLUNAS_ANIVERSARIO = "id, nome, whatsapp, empreendimento, etapa, status, ultima_interacao_em, created_at, tentativas, nascimento";
@@ -105,6 +106,7 @@ export function ListaDoDia() {
 
   return (
     <div className="grid gap-5 pb-20 md:pb-0">
+      <LinhaDoStand />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <p className="num text-ink-soft first-letter:uppercase">{hoje}</p>
         <RodapeAcao>

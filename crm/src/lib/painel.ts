@@ -72,7 +72,7 @@ export function deDataIso(s: string | null | undefined): Date | null {
 export type LeadPainel = {
   id: string;
   nome: string;
-  dono_id: string;
+  dono_id: string | null;
   origem: string;
   etapa: string;
   status: string;

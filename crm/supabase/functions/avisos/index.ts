@@ -78,6 +78,21 @@ export type ParceiroAviso = {
   proximo_contato: string | null;
 };
 
+/**
+ * Distribuição automática (06/11/2026): um aviso pendente de distribuicao_avisos
+ * (distribuicao.sql). O banco decide quem recebe; aqui só se monta o texto.
+ */
+export type DistribuicaoAviso = {
+  id: number;
+  para_id: string;
+  tipo: string;
+  lead_id: string | null;
+  criado_em: string;
+  lead_nome: string | null;
+  empreendimento: string | null;
+  dados: Record<string, unknown>;
+};
+
 export type Assinatura = { endpoint: string; usuario_id: string; p256dh: string; auth: string; tipos: string[] };
 
 /** O que avisos_dados() devolve. */
@@ -92,6 +107,8 @@ export type DadosAvisos = {
   equipes?: EquipeAviso[];
   /** Vem do schema.sql com o parcerias.sql; sem eles, nenhum aviso de parceiro. */
   parceiros?: ParceiroAviso[];
+  /** Vem de distribuicao_avisos_pendentes() (distribuicao.sql); sem ele, nenhum aviso da distribuição. */
+  distribuicao?: DistribuicaoAviso[];
 };
 
 export type Aviso = {
@@ -111,6 +128,8 @@ export type Aviso = {
   corretor?: string;
   /** Parcerias: os ids de parceiro_avisos que este aviso cobre (marcados depois do envio). */
   parceiroAvisos?: number[];
+  /** Distribuição automática: os ids de distribuicao_avisos que este aviso cobre. */
+  distribuicaoAvisos?: number[];
 };
 
 /** Lead da empresa: o único com prazo de primeiro contato (docs/leads.md, seção 4). */
@@ -369,6 +388,7 @@ export function montarAvisos(d: DadosAvisos, agora: Date): Aviso[] {
 
   avisos.push(...avisosDaEquipe(d, agora, horario));
   if (aberto) avisos.push(...avisosDeParceiros(d, agora));
+  avisos.push(...avisosDaDistribuicao(d, agora, aberto));
   return avisos;
 }
 
@@ -433,6 +453,85 @@ function avisosDeParceiros(d: DadosAvisos, agora: Date): Aviso[] {
     });
   }
   return avisos;
+}
+
+/** Aviso da distribuição mais velho que isso não sai mais: só é marcado. */
+export const DISTRIBUICAO_VALIDADE_H = 24;
+/** Os que esperam o horário de atendimento (os outros saem a qualquer hora: plantão, sinal). */
+const DISTRIBUICAO_SO_NO_HORARIO = new Set(["lead_novo", "fila_equipe", "perda", "a_distribuir", "repasse_atrasado", "represado_parado",
+  "mensagem_sem_resposta_equipe"]);
+
+const distribuicaoValida = (a: DistribuicaoAviso, agora: Date) =>
+  agora.getTime() - new Date(a.criado_em).getTime() < DISTRIBUICAO_VALIDADE_H * 60 * MIN && !!textoDaDistribuicao(a);
+
+/** O texto de cada tipo (docs/distribuicao-automatica.md, seção 10). Nunca fala de pontos nem de verba. */
+export function textoDaDistribuicao(a: DistribuicaoAviso): { tipo: TipoAviso; titulo: string; corpo: string; url: string } | null {
+  const nome = a.lead_nome?.trim() ? comEmpreendimento(a.lead_nome.trim(), a.empreendimento) : "";
+  const ficha = a.lead_id ? fichaUrl(a.lead_id) : "";
+  switch (a.tipo) {
+    case "lead_novo":
+    case "lead_plantao":
+      return nome ? { tipo: "atribuido", titulo: "Lead novo para você", corpo: `${nome}. Responda em até 15 min.`, url: ficha } : null;
+    case "mensagem_nova":
+      return nome ? { tipo: "atribuido", titulo: `Mensagem nova de ${a.lead_nome!.trim()}`, corpo: "Responda em até 15 min.", url: ficha } : null;
+    case "mensagem_sem_resposta":
+      return nome ? { tipo: "prazo", titulo: "Mensagem sem resposta há 15 min", corpo: `${a.lead_nome!.trim()} mandou mensagem nova. Responda agora.`, url: ficha } : null;
+    case "fim_da_fila":
+      return { tipo: "prazo", titulo: "Você foi para o fim da fila", corpo: nome ? `O prazo de ${a.lead_nome!.trim()} estourou.` : "Um prazo de 15 min estourou.", url: "fila/" };
+    case "sem_sinal":
+      return { tipo: "prazo", titulo: "Abra o Vendas para continuar recebendo leads", corpo: "Você está no stand, mas o Vendas está fechado há 30 min.", url: "" };
+    case "plantao_fim":
+      return { tipo: "atribuido", titulo: "Recebendo leads desligado", corpo: "Sem usar o Vendas há 30 min. Ligue de novo para receber.", url: "" };
+    case "perda":
+      return { tipo: "equipe", titulo: "Lead passado a outro corretor", corpo: nome ? `${nome}: o prazo de 15 min estourou.` : "Um prazo de 15 min estourou.", url: "fila/" };
+    case "mensagem_sem_resposta_equipe":
+      return nome ? { tipo: "equipe", titulo: "Mensagem sem resposta na equipe", corpo: `${a.lead_nome!.trim()} mandou mensagem nova há 15 min.`, url: ficha } : null;
+    case "fila_equipe":
+      return { tipo: "equipe", titulo: "Lead novo na fila da equipe", corpo: nome ? `${nome}. Repasse em até 15 min.` : "Repasse em até 15 min.", url: "fila/" };
+    case "a_distribuir":
+      return { tipo: "equipe", titulo: "Lead em A distribuir", corpo: nome ? `${nome}. Ninguém sobrou para receber.` : "Ninguém sobrou para receber.", url: "distribuicao/" };
+    case "repasse_atrasado":
+      return { tipo: "equipe", titulo: "Lead parado na fila da equipe", corpo: nome ? `${nome}. Há 15 min sem repasse.` : "Há 15 min sem repasse.", url: "distribuicao/" };
+    case "represado_parado":
+      return { tipo: "equipe", titulo: "Lead esperando na distribuição", corpo: nome ? `${nome}. Ninguém apto há 15 min.` : "Ninguém apto há 15 min.", url: "distribuicao/" };
+    default:
+      return null;
+  }
+}
+
+/**
+ * Distribuição automática (06/11/2026): um aviso por pendente. Os de plantão e
+ * de sinal saem a qualquer hora; os outros esperam o horário de atendimento.
+ */
+function avisosDaDistribuicao(d: DadosAvisos, agora: Date, aberto: boolean): Aviso[] {
+  const avisos: Aviso[] = [];
+  for (const a of d.distribuicao ?? []) {
+    if (!distribuicaoValida(a, agora)) continue;
+    if (!aberto && DISTRIBUICAO_SO_NO_HORARIO.has(a.tipo)) continue;
+    const t = textoDaDistribuicao(a)!;
+    avisos.push({
+      usuario_id: a.para_id,
+      tipo: t.tipo,
+      chaves: [`distribuicao:${a.id}`],
+      titulo: t.titulo,
+      corpo: t.corpo,
+      url: t.url,
+      tag: a.lead_id ? `lead-${a.lead_id}` : `distribuicao-${a.tipo}`,
+      distribuicaoAvisos: [a.id],
+    });
+  }
+  return avisos;
+}
+
+/** Pendentes da distribuição que nunca vão sair (velhos ou de tipo desconhecido): só são marcados. */
+export function distribuicaoParaDescartar(d: DadosAvisos, agora: Date): number[] {
+  return (d.distribuicao ?? []).filter((a) => !distribuicaoValida(a, agora)).map((a) => a.id);
+}
+
+/** Os ids de distribuicao_avisos a marcar depois do envio (menos os que voltam). */
+export function distribuicaoParaMarcar(enviados: Aviso[], deNovo: Aviso[]): number[] {
+  const voltam = new Set(deNovo);
+  return enviados.filter((a) => !voltam.has(a)).flatMap((a) => a.distribuicaoAvisos ?? []);
 }
 
 /**
@@ -803,6 +902,15 @@ async function rodada(amb: Ambiente) {
   // Parcerias: o que nunca vai sair (parceiro de outro gerente, aviso velho) só é marcado.
   const descartar = parceirosParaDescartar(dados, agora);
   if (descartar.length) await rpc(amb, "parceiros_avisos_marcar", { p_ids: descartar });
+  // Distribuição automática: os pendentes vêm de uma função à parte (sem o
+  // distribuicao.sql ela não existe, e a rodada segue sem eles).
+  try {
+    dados.distribuicao = await rpc<DistribuicaoAviso[]>(amb, "distribuicao_avisos_pendentes");
+  } catch {
+    dados.distribuicao = [];
+  }
+  const descartarDist = distribuicaoParaDescartar(dados, agora);
+  if (descartarDist.length) await rpc(amb, "distribuicao_avisos_marcar", { p_ids: descartarDist });
   const candidatos = comDestino(montarAvisos(dados, agora), dados.assinaturas);
   if (!candidatos.length) return { avisos: 0, enviados: 0, falhas: 0, removidos: 0 };
 
@@ -829,6 +937,8 @@ async function rodada(amb: Ambiente) {
   // próxima rodada; quem impede mandar em dobro é o push_log (avisos_registrar).
   const marcar = parceirosParaMarcar(avisos, deNovo);
   if (marcar.length) await rpc(amb, "parceiros_avisos_marcar", { p_ids: marcar });
+  const marcarDist = distribuicaoParaMarcar(avisos, deNovo);
+  if (marcarDist.length) await rpc(amb, "distribuicao_avisos_marcar", { p_ids: marcarDist });
 
   return {
     avisos: avisos.length,

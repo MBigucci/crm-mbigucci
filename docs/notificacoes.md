@@ -61,6 +61,8 @@ Por que assim: o site é exportação estática no WordPress, sem servidor. Na B
 - **Validade no serviço de push:** 1 h (30 min para o prazo e 4 h para o resumo). Celular desligado por mais tempo não recebe aviso velho.
 - **A rodada é a cada 5 min:** o "faltam 5 min" pode chegar com 1 a 6 min, e o "hora do contato" até 5 min depois da hora. O lead atribuído não espera, por causa do gatilho.
 
+- **Distribuição automática (06/11/2026):** os avisos vêm de `distribuicao_avisos_pendentes()` (`crm/supabase/distribuicao.sql`), com os textos de `textoDaDistribuicao` na Edge Function. Usam os tipos que já existem: "Lead da empresa" (lead novo, de plantão, mensagem nova, recebimento desligado), "Prazo" (fim da fila, sem sinal, mensagem sem resposta) e "Equipe" (perda, fila da equipe, repasse atrasado, A distribuir). Os de plantão e de sinal saem a qualquer hora; os outros, no horário. Pendente com mais de 24 h só é marcado. Tabela completa em `docs/distribuicao-automatica.md`, seção 10.
+
 ## 4. Horário de São Paulo e horário de atendimento
 
 - **Fuso:** a função roda em UTC. Toda conta de dia e hora usa `America/Sao_Paulo` pelo `Intl`, sem depender do fuso do servidor. Os testes rodam no fuso local e em UTC.

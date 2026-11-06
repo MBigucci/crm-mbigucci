@@ -59,7 +59,7 @@ function Quadro() {
                         agora={agora}
                         horario={horario}
                         destaque={l.id === primeiroUrgente?.id}
-                        dono={f.veOutros ? f.nomeDono.get(l.dono_id) : undefined}
+                        dono={f.veOutros ? (l.dono_id ? f.nomeDono.get(l.dono_id) : "A distribuir") : undefined}
                       />
                     ))}
                     {!leads.length && (

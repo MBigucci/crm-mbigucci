@@ -180,7 +180,7 @@ function MenuConta({ conta }: { conta: Conta }) {
  * menu da conta. No celular: o logo e Menu / Fechar, que abre o painel escuro
  * logo abaixo com os destinos, os atalhos, a conta e, no fim, o logo MBigucci.
  */
-export function Cabecalho({ itens, conta }: { itens?: ItemMenu[]; conta?: Conta }) {
+export function Cabecalho({ itens, conta, extra }: { itens?: ItemMenu[]; conta?: Conta; extra?: React.ReactNode }) {
   const [aberto, setAberto] = useState(false);
   const botao = useRef<HTMLButtonElement>(null);
   const { atual, ativo } = useAtual();
@@ -213,6 +213,8 @@ export function Cabecalho({ itens, conta }: { itens?: ItemMenu[]; conta?: Conta 
               </nav>
             )}
           </div>
+          <div className="flex min-w-0 items-center gap-2 lg:gap-4">
+          {extra}
           {conta && <MenuConta conta={conta} />}
           {itens && (
             // O mesmo botão do site: três traços que viram ✕ ao abrir.
@@ -232,6 +234,7 @@ export function Cabecalho({ itens, conta }: { itens?: ItemMenu[]; conta?: Conta 
               </span>
             </button>
           )}
+          </div>
         </div>
         {itens && aberto && (
           <nav

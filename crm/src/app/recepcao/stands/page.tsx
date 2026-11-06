@@ -8,6 +8,7 @@ import { db } from "@/lib/supabase";
 import { mensagemErro } from "@/lib/erros";
 import type { Midia, Stand } from "@/lib/recepcao";
 import { useMidias, useStands } from "@/lib/recepcao-dados";
+import { LocalDosStands } from "@/components/distribuicao/local-stands";
 
 /**
  * Stands, especialistas e a lista "Como conheceu", para o gerente geral e quem
@@ -97,6 +98,8 @@ function Config() {
           </ul>
           <NovoNome rotulo="Novo especialista" onCriar={(nome) => criar("especialistas", { nome }, recEsp)} />
         </section>
+
+        <LocalDosStands />
 
         <section className="card lg:col-span-2" aria-labelledby="t-midias">
           <span className="eyebrow">Escolha múltipla na recepção</span>

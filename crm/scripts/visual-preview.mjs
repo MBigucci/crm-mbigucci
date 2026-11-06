@@ -33,9 +33,9 @@ import { profiles } from './visual-fixtures';
 const Context = createContext({estado: {fase:'carregando'} as any, pode: (_:string) => false, sair:async()=>{}, recarregar:async()=>{}});
 export function SessaoProvider({children}:{children:React.ReactNode}) {
  const [estado,setEstado]=useState<any>({fase:'carregando'});
- useEffect(()=>{const path=location.pathname; if(path==='/vendas/entrar/') {setEstado({fase:'deslogado'}); return;} const gerente=path==='/vendas/leads/' || path==='/vendas/painel/'; const geral=new URLSearchParams(location.search).get('qa')==='geral' || ['/vendas/configuracoes/','/vendas/equipes/','/vendas/usuarios/','/vendas/empreendimentos/editar/','/vendas/empreendimentos/importar/','/vendas/faixas/','/vendas/programa/','/vendas/programa/aprovacao/'].includes(path);
+ useEffect(()=>{const path=location.pathname; if(path==='/vendas/entrar/') {setEstado({fase:'deslogado'}); return;} const qa=new URLSearchParams(location.search).get('qa'); const gerente=path==='/vendas/leads/' || path==='/vendas/painel/' || qa==='gerente'; const geral=new URLSearchParams(location.search).get('qa')==='geral' || ['/vendas/configuracoes/','/vendas/equipes/','/vendas/usuarios/','/vendas/empreendimentos/editar/','/vendas/empreendimentos/importar/','/vendas/faixas/','/vendas/programa/','/vendas/programa/aprovacao/','/vendas/distribuicao/'].includes(path);
  const perfil=geral?{...profiles[0],perfil:'gerente_geral'}:gerente?{...profiles[0],id:'gerente',perfil:'gerente'}:profiles[0];
- const permissoes=gerente?['dados.ver_equipe','leads.atribuir']:['leads.cadastrar'];
+ const permissoes=gerente?['dados.ver_equipe','leads.atribuir','distribuicao.produtos']:['leads.cadastrar','distribuicao.receber'];
  setEstado({fase:'pronto',perfil,permissoes});},[]);
  return <Context.Provider value={{estado,pode:(p)=>estado.fase==='pronto' && (estado.perfil.perfil==='gerente_geral' || estado.permissoes.includes(p)),sair:async()=>{},recarregar:async()=>{}}}>{children}</Context.Provider>;
 }

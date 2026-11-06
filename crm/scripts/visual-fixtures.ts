@@ -32,7 +32,34 @@ const pessoas = [
   {id:'esp-1',papel:'especialista',nome:'Lia Exemplo',apelido:null,equipe:null},
 ];
 const parceiro = {id:'par-1',gerente_id:'gerente',nome:'Alice Exemplo',empresa:'Imobiliária Exemplo',ativo:true,regioes:['centro'],creci:'12345-F',whatsapp_norm:'5511999990002',atribuido_em:at(-88),ultima_interacao_em:at(-86),entrada:'manual'};
-const leituras: Record<string, Row[]> = {
+// Distribuição automática (só leitura): o corretor por padrão; ?qa= vê como gerente ou gerente geral.
+const comoGestor = () => typeof location !== "undefined" && /qa=(gerente|geral)/.test(location.search) || (typeof location !== "undefined" && location.pathname === "/vendas/distribuicao/");
+const distConfig = {id:true,ligada:true,modo:"equipe",pesos:true,exigir_checkin:true,sinal:true,plantao:true,represar:true,produtos:true,redistribuir:true,fim_da_fila:true,repetido_ao_dono:true,manual_conta:true,transparencia:true,periodos_checkin:false,aprova_gerente:false,minutos_sem_sinal:30,minutos_plantao:30,updated_at:at(0,9),updated_by:null};
+const filaBase = [
+ {posicao:1,corretor_id:"carla",apelido:"Carla",situacao:"apto",desde:null,faixa:"acima",creditos:5,recebidos_hoje:2,nao_atende:1},
+ {posicao:2,corretor_id:"diego",apelido:"Diego",situacao:"fora_do_stand",desde:at(0,10),faixa:"media",creditos:4,recebidos_hoje:1,nao_atende:0},
+ {posicao:3,corretor_id:"corretor-1",apelido:"Mari",situacao:"apto",desde:null,faixa:"media",creditos:2,recebidos_hoje:1,nao_atende:0},
+ {posicao:4,corretor_id:"edu",apelido:"Edu",situacao:"visita",desde:at(0,11),faixa:"abaixo",creditos:1,recebidos_hoje:0,nao_atende:0},
+ {posicao:5,corretor_id:"gil",apelido:"Gil",situacao:"sem_sinal",desde:null,faixa:"media",creditos:0,recebidos_hoje:0,nao_atende:0},
+ {posicao:null,corretor_id:"bruno",apelido:"Bruno",situacao:"pausa",desde:"2026-11-12T11:00:00Z",faixa:"media",creditos:3,recebidos_hoje:0,nao_atende:0},
+];
+const distribuicao = (name: string): unknown => {
+ const gestor = comoGestor();
+ switch (name) {
+  case "distribuicao_meu_estado": return gestor ? {recebe:false,ligada:true,modo:"equipe"} : {recebe:true,ligada:true,modo:"equipe",chaves:{exigir_checkin:true,sinal:true,plantao:true,pesos:true,transparencia:true},no_horario:true,participa:true,recebendo:true,pausado_ate:null,situacao:"apto",na_fila:true,desde:at(0,9),presenca:{origem:"checkin",estado:"presente",plantao:"Stand Exemplo",desde:new Date(now.getFullYear(),now.getMonth(),now.getDate(),9,4).toISOString(),checkin_aberto:true},perguntar_saida:false,posicao:3,total:5,escopo:"equipe",equipe_nome:"Equipe Exemplo",faixa:"media"};
+  case "distribuicao_fila": return {modo:"equipe",escopo:"equipe",equipe_nome:"Equipe Exemplo",ultima:{apelido:"Carla",quando:at(0,10)},itens:filaBase.map(i=>({...i,equipe_nome:"Equipe Exemplo",eu:!gestor && i.corretor_id==="corretor-1",da_minha_equipe:true,...(gestor?{}:{creditos:null,recebidos_hoje:null,nao_atende:null})}))};
+  case "distribuicao_minha_fila": return [{tipo:"pulado",quando:at(0,11),motivo:"fora_do_stand",mantem_posicao:true},{tipo:"recebeu",quando:at(0,10),lead_id:"lead-2",lead_nome:"Bruno Exemplo",manual:false}];
+  case "distribuicao_decisoes": return [{quando:at(0,11),lead_id:"lead-2",lead_nome:"Lucas Exemplo",empreendimento:"Residencial Exemplo",motivo_entrada:"nova",resultado:"recebeu",recebeu:"Mari",pulados:[{apelido:"Diego",motivo:"fora_do_stand"},{apelido:"Carla",motivo:"nao_atende"}]},{quando:at(0,10),lead_id:"lead-x",lead_nome:"Teresa Exemplo",empreendimento:null,motivo_entrada:"nova",resultado:"recebeu",recebeu:"Carla",pulados:[]}];
+  case "distribuicao_como_calculado": return {pesos:true,calculado:true,semana:day,respondidos:18,total:23,followup_pct:0.85,plantao_rel:1.12,crm_rel:1.04,total_rel:1.08,faixa:"media",novo:false};
+  case "distribuicao_a_distribuir": return [{lead_id:"ad-1",nome:"Paulo Exemplo",empreendimento:null,estado:"a_distribuir",chegada:at(0,8),fonte:"site",motivo:"ninguem_sobrando"},{lead_id:"ad-2",nome:"Teresa Exemplo",empreendimento:null,estado:"represado",chegada:at(0,7),fonte:"site",motivo:"ate_abertura"}];
+  case "distribuicao_config_historico": return [{quando:at(0,9),chave:"ligada",de:"false",para:"true",quem:"Gerente Geral Exemplo"},{quando:at(-1,17),chave:"modo",de:"direto",para:"equipe",quem:"Gerente Geral Exemplo"}];
+  case "distribuicao_equipes": return [{equipe_id:"equipe-2",nome:"Equipe Sul",ultimo:at(0,10),posicao:1},{equipe_id:"equipe-1",nome:"Equipe Exemplo",ultimo:at(0,11),posicao:2}];
+  case "distribuicao_produtos": return [{id:"empreendimento-1",nome:base.empreendimento,atende:true},{id:"e-2",nome:"Easy Exemplo",atende:false},{id:"e-3",nome:"Elleva Exemplo",atende:true}];
+  case "distribuicao_app_aberto": case "distribuicao_sinal": return null;
+ }
+ return undefined;
+};
+const leituras: Record<string, unknown> = {
  recepcao_clientes_hoje:[cliente],recepcao_pessoas:pessoas,
  recepcao_dia:pessoas.map(p=>({...p,presenca_id:p.id,pessoa_id:p.papel==='corretor'?p.id:null,especialista_id:p.papel==='especialista'?p.id:null,turno:'manha',entrada_em:at(0,9),rodadas:1,estado:'presente',da_vez:true,ordem:1})),
  parceiros_fila:[{posicao:1,gerente_id:'gerente',gerente_nome:'Gerente Exemplo'}],
@@ -42,6 +69,7 @@ const tables: Record<string, Row[]> = {
  plantoes:[stand],plantao_atendimentos:[cliente],especialistas:[{...pessoas[1],ativo:true}],plantao_midias:[{slug:'placa',nome:'Placa',ordem:1,ativo:true}],
  parceiros:[parceiro],parceiros_situacao:[{parceiro_id:parceiro.id,ativo:true,estagio:'contatado',dias_prazo:86,dias_restantes:4,faixa:'risco',proximo_contato:day}],
  parceiro_regioes:[{codigo:'centro',nome:'Centro',cidade:'São Bernardo do Campo',ordem:1,ativo:true}],
+ distribuicao_config:[distConfig],
  profiles, leads, visitas, vendas, empreendimentos:[empreendimento], tipologias:[],
  teams:[{id:'equipe-1',nome:'Equipe Exemplo',gerente_id:'gerente'}],
  lead_origens:['indicacao','anuncio_proprio','plantao','empresa'].map((slug,ordem)=>({slug,nome:['Indicação','Anúncio próprio','Plantão','Empresa'][ordem],ordem,ativo:true,pede_campanha:ordem===1,restrita:ordem===3})),
@@ -85,7 +113,7 @@ class Query implements PromiseLike<{data:any;error:any}> {
 }
 export const client = {
  from:(name:string)=>new Query(name),
- rpc:async(name:string)=> Object.hasOwn(leituras,name) ? {data:leituras[name],error:null} : name==='ranking_pontos'
+ rpc:async(name:string)=> distribuicao(name)!==undefined || name==="distribuicao_app_aberto" || name==="distribuicao_sinal" ? {data:distribuicao(name)??null,error:null} : Object.hasOwn(leituras,name) ? {data:leituras[name],error:null} : name==='ranking_pontos'
      ? {data:profiles.map((p,i)=>({corretor_id:p.id,nome:p.nome,pontos:150-i*70})),error:null}
      : name==='plantao_corretores'
        ? {data:profiles.map(p=>({id:p.id,nome:p.nome,equipe:'Equipe Exemplo'})),error:null}

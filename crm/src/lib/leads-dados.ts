@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { db, novoId } from "./supabase";
 import { mensagemErro, NAO_SALVOU } from "./erros";
-import { COLUNAS_LEAD, COLUNAS_TOQUE, type Etapa, type Origem } from "./leads";
+import { COLUNAS_DISTRIBUICAO_LEAD, COLUNAS_LEAD, COLUNAS_TOQUE, type Etapa, type Origem } from "./leads";
 import { TOQUE, type TipoToque } from "./followup";
 import { HORARIO_PADRAO, type HorarioAtendimento } from "./prazo";
 import { COLUNAS_MODELO, type ModeloMensagem } from "./mensagens";
@@ -91,9 +91,12 @@ export function registrarToque(leadId: string, tipo: TipoToque): Promise<void> {
 export async function lerComToque<R extends { error: { code?: string } | null }>(
   ler: (colunas: string) => PromiseLike<R>,
 ): Promise<R> {
-  const r = await ler(`${COLUNAS_LEAD}, ${COLUNAS_TOQUE}`);
-  if (r.error?.code === "42703") return ler(COLUNAS_LEAD);
-  return r;
+  // Com as colunas da distribuição; sem elas; sem as do toque.
+  const r = await ler(`${COLUNAS_LEAD}, ${COLUNAS_TOQUE}, ${COLUNAS_DISTRIBUICAO_LEAD}`);
+  if (r.error?.code !== "42703") return r;
+  const s = await ler(`${COLUNAS_LEAD}, ${COLUNAS_TOQUE}`);
+  if (s.error?.code === "42703") return ler(COLUNAS_LEAD);
+  return s;
 }
 
 /**

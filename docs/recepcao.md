@@ -73,6 +73,11 @@
 - **Apelido obrigatório** para corretor ativo, único entre os ativos. O banco cobra ao ativar, e `/usuarios` tem os campos Apelido e CRECI.
 - **Id gerado no aparelho:** repetir o mesmo envio devolve a mesma resposta, sem duplicar. Duas telas no mesmo stand esperam uma pela outra (trava por stand, dia, turno e papel).
 
+### Distribuição automática (06/11/2026)
+
+- **A vez conta como presença** para receber leads da empresa (Felipe, 16.8): o corretor posto na vez do turno atual, com estado "presente", está no stand. "Saiu" o deixa fora do stand (mantém a posição na fila de leads); "Não está mais" o tira. A recepção não aprova o check-in do corretor; `recepcao_checkins(stand)` mostra quem fez check-in. Regras em `docs/distribuicao-automatica.md`, seção 6.1.1.
+- **Para o treino:** marcar "Saiu" e "Não está mais" agora também tira o corretor dos leads da empresa.
+
 ## 5. Painel e relatórios
 
 - **Painel da equipe** (`/painel/`): a tabela "Clientes no stand, por corretor · pela recepção", com clientes, novos da vez, indicações, retornos e atendeu por colega. O cliente conta para o corretor do vínculo; o de parceiro fica com o gerente. Tem link para o relatório do stand.

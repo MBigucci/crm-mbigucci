@@ -61,7 +61,7 @@ const ev = (lead_id: string, quando: string, tipo: Evento["tipo"], x: Partial<Ev
   criado_em: new Date(`2026-10-${quando}-03:00`).toISOString(),
   ...x,
 });
-const lead = (id: string, dono_id: string, origem: string, etapa = "novo", status = "ativo"): LeadPainel => ({
+const lead = (id: string, dono_id: string | null, origem: string, etapa = "novo", status = "ativo"): LeadPainel => ({
   id,
   nome: id,
   dono_id,
@@ -149,6 +149,31 @@ test("painel: lead da empresa nunca conta como cadastrado pelo corretor", () => 
   const c = montarPainel(ev2, l2, [], periodo("dia", ref)).get(CARLA)!;
   assert.deepEqual(c.cadastrados, []);
   assert.deepEqual(c.recebidosEmpresa, ["emp3"]);
+});
+
+test("painel: lead da distribuição nasce sem dono e conta uma vez para quem recebeu", () => {
+  // A entrada grava o criado com para = null; o corretor aparece no evento dono (detalhe distribuicao).
+  const evs = [
+    ev("dist1", "29T09:00:00", "criado", { para: null, automatico: true }),
+    ev("dist1", "29T09:00:01", "dono", { de: null, para: CARLA, detalhe: "distribuicao", automatico: true }),
+    ev("dist1", "29T09:20:00", "dono", { de: CARLA, para: DIEGO, detalhe: "redistribuido", automatico: true }),
+    ev("dist2", "29T10:00:00", "criado", { para: null, automatico: true }),
+    ev("dist2", "29T10:00:01", "dono", { de: null, para: CARLA, detalhe: "represado_liberado", automatico: true }),
+    ev("dist2", "29T11:00:00", "dono", { de: CARLA, para: CARLA, detalhe: "repetido_reativado", automatico: true }),
+    // Ainda sem dono (A distribuir): não conta para ninguém.
+    ev("dist3", "29T12:00:00", "criado", { para: null, automatico: true }),
+  ];
+  const l = new Map([
+    ["dist1", lead("dist1", DIEGO, "empresa")],
+    ["dist2", lead("dist2", CARLA, "empresa")],
+    ["dist3", lead("dist3", null, "empresa")],
+  ]);
+  const r = montarPainel(evs, l, [], periodo("dia", ref));
+  assert.deepEqual(r.get(CARLA)!.recebidosEmpresa, ["dist1", "dist2"]);
+  assert.deepEqual(r.get(DIEGO)!.recebidosEmpresa, ["dist1"]);
+  assert.deepEqual(r.get(CARLA)!.cadastrados, []);
+  assert.equal(r.size, 2);
+  assert.deepEqual(somar([...r.values()]).recebidosEmpresa.sort(), ["dist1", "dist2"]);
 });
 
 test("painel: fora do período não conta, e a soma da equipe une os leads", () => {

@@ -220,7 +220,7 @@ function useNomes(dados: DadosPainel | null, corretores: Corretor[]) {
   const faltam = useMemo(() => {
     if (!dados) return [];
     const conhecidos = new Set(corretores.map((c) => c.id));
-    const ids = [...dados.numeros.keys(), ...dados.perdidos.map((p) => p.recebeu_id), ...[...dados.leads.values()].map((l) => l.dono_id)];
+    const ids = [...dados.numeros.keys(), ...dados.perdidos.map((p) => p.recebeu_id), ...[...dados.leads.values()].flatMap((l) => (l.dono_id ? [l.dono_id] : []))];
     return [...new Set(ids)].filter((id) => !conhecidos.has(id)).sort();
   }, [dados, corretores]);
   const chave = faltam.join(",");
@@ -1024,7 +1024,7 @@ function ListaLeads({
                   {[
                     l && nomeOrigem(l.origem),
                     l && l.status === "ativo" && `Hoje: ${nomeEtapa(l.etapa)}`,
-                    l && l.dono_id !== corretor && nomes.get(l.dono_id) && `Com ${nomes.get(l.dono_id)}`,
+                    l && (l.dono_id ? l.dono_id !== corretor && nomes.get(l.dono_id) && `Com ${nomes.get(l.dono_id)}` : "A distribuir"),
                   ]
                     .filter(Boolean)
                     .join(" · ")}

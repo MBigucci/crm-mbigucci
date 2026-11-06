@@ -22,6 +22,7 @@
 14. [Testes da Etapa 1.2](#14-testes-da-etapa-12)
 15. [Riscos](#15-riscos)
 16. [Perguntas ao Felipe](#16-perguntas-ao-felipe)
+17. [Como ficou (Etapa 1)](#17-como-ficou-etapa-1-implementado-em-06112026-ainda-não-instalado)
 
 ## 1. O que muda em uma página
 
@@ -731,3 +732,65 @@ Em `crm/supabase/testes/distribuicao.test.mjs`, no `npm run test:banco` (PGlite)
 Não há mais perguntas abertas. Falta o ok final do Felipe no desenho antes do código.
 
 A frequência do sinal (a cada 10 min com o Vendas aberto, seção 6.2) é proposta técnica e só volta como pergunta se o Felipe quiser outra.
+
+## 17. Como ficou (Etapa 1, implementado em 06/11/2026, ainda não instalado)
+
+**Arquivos:**
+- `crm/supabase/distribuicao.sql`: tabelas, funções, RLS e rotinas. Roda depois de `schema.sql`, `parcerias.sql` e `recepcao.sql`. É idempotente e nasce com a chave geral **desligada**.
+- `crm/supabase/agendar-distribuicao.sql`: os cinco agendamentos do `pg_cron` (seção 8).
+- `crm/supabase/schema.sql`, só no que a distribuição exige:
+  - `leads_guard` compara o dono com `is distinct from` (o lead sem dono não escapa da regra) e aceita `leads.distribuir` para atribuir um lead sem dono;
+  - `leads_guard` deixa a distribuição mexer no lead quando `crm.distribuicao = '1'`, mesmo chamada por um usuário ("Mandar todos à distribuição");
+  - a mensagem sem autor (a da entrada) não mexe no último contato;
+  - `leads_perdidos` conta também `redistribuido` (16.3).
+- `crm/supabase/functions/avisos/index.ts`: os avisos da distribuição (seção 10), lidos de `distribuicao_avisos_pendentes()`.
+- `crm/supabase/testes/distribuicao.test.mjs`: 29 testes (entra no `test:banco`), inclusive nove entradas ao mesmo tempo num Postgres de verdade (`embedded-postgres`) e a ordem de carga com o `direcionador.sql`.
+
+- **Telas (`crm/src`):**
+  - **Lib:** `lib/distribuicao.ts` (os textos, com testes) e `lib/distribuicao-dados.ts` (o estado, o sinal a cada 10 min só com a página visível, o check-in).
+  - **Componentes:** `components/distribuicao/` (o botão e a posição no cabeçalho, as folhas, a localização dos stands) e `components/folha.tsx`.
+  - **Páginas novas:** `/fila/` (Fila de leads), `/fila/como/`, `/distribuicao/` (só o gerente geral) e `/equipes/corretor/` (os produtos e "Na distribuição").
+  - **Telas de antes que mudaram:** os stands ganharam latitude, longitude e raio, com "Usar minha localização aqui".
+  - **Prazo e lead sem dono:** `lib/prazo.ts` conta de `atribuido_em` e respeita `prazo_imediato`. A Lista do dia e a ficha mostram "! Responder até 14h32 · mensagem nova". Leads, Quadro, Agenda, Painel e ficha aceitam o lead sem dono ("A distribuir").
+- **Capturas:** `docs/revisao-visual/distribuicao/{claro,escuro}/`, 12 telas em 375 e 1366 px, da prévia isolada com dados fictícios (fora do Git).
+
+**O que mudou em relação ao desenho, na construção:**
+- **Créditos:** em vez do "teto da soma", o rodízio por créditos roda entre os aptos (cada apto ganha o peso, quem recebe perde a soma dos pesos dos aptos). Quem foi pulado ganha o peso, mas fica no máximo no nível do primeiro apto. Depois de cada lead os créditos do grupo voltam a ter média zero. O efeito é o pedido: 3, 2 e 1 dão 6, 4 e 2 em 12 leads, e quem volta da ausência recebe **um** lead na frente, sem rajada (testes 6 e 7).
+- **A ordem de quem recebeu há mais tempo** usa a ordem das decisões no banco, não a hora (duas decisões no mesmo segundo não empatam).
+- **Os avisos usam os tipos que já existem** em Minha conta: os do corretor saem como "Lead da empresa" (`atribuido`) ou "Prazo" (`prazo`); os do gerente e do gerente geral, como "Equipe" (`equipe`). Não foi preciso um tipo novo nem mudar `push_assinaturas`.
+- **O "Lead novo" da distribuição** sai pelo pendente de `distribuicao_avisos` (o aviso `atribuido` de hoje exige `atribuido_por`, que a distribuição deixa vazio). O de plantão sai na hora; o do horário, no horário.
+- **O prazo de 15 min "na hora" do plantão** é calculado pela distribuição (`private.distribuicao_fim_prazo`). `fim_do_prazo`, `lead_perdido`, `avisos_dados` e o painel continuam contando só minutos de atendimento (ver pendências).
+- **Atribuição à mão conta como vez também no cadastro:** o gerente que cadastra o lead da empresa já para um corretor manda esse corretor ao fim da fila (decisão 10), como a troca de dono, o Lead perdido e o repasse da fila.
+- **Mensagem de quem ainda está sem dono** (fila da equipe, A distribuir, represado): só entra no lead, que fica onde está (`anexado`).
+- **"Recebendo leads desligado"** só avisa quem estava de plantão (usou o app fora do horário), não todo mundo que deixou o botão ligado no fim do dia.
+- **Lead repetido à noite:** a mensagem nova para um dono que está de plantão tem 15 min de relógio; para os outros, 15 min de atendimento.
+
+**Pendências da Etapa 1 (código):**
+- `lead_perdido` e o aviso "Prazo de 15 min estourado" ainda contam o prazo do lead de plantão pelo horário de atendimento. Na prática, o lead recebido à noite de plantão aparece "estourado" para a distribuição antes de aparecer para o painel e para o Lead perdido. A distribuição já passa o lead adiante sozinha; o desalinho é só de texto.
+- O lead de plantão recebe também o "Lead novo para você" de hoje na abertura, se ainda estiver em "novo" (aviso repetido, sem efeito na fila).
+- O plano B com selfie fica para depois do piloto (16.9).
+- **Texto de "fora do horário" no botão:** quem não está de plantão aparece como "– Fora do horário". A tabela 13.1 não tinha esse estado, e o texto precisa do ok do Felipe.
+- **"3º na fila" no celular estreito:** abaixo de 640 px o botão mostra só "3º".
+- **A pausa fica no cabeçalho:** está na folha do botão, e não em Minha conta.
+- **O repasse no modo só gerentes** lê os leads direto pela policy "ver leads da fila".
+
+**Decisão do Felipe antes de ligar (o que já está na base):** a regra 4 pula quem tem lead da empresa em "novo" com o prazo estourado, de qualquer época. Lead antigo esquecido em "novo" tira o corretor da vez desde o primeiro minuto, e a rotina não mexe nele (só trata estouros de até 30 min). Antes de ligar, rode a consulta abaixo e decida: (a) o gerente resolve esses leads antes (recomendado) ou (b) a regra passa a olhar só leads recebidos depois de ligar.
+```sql
+select p.nome, count(*) from public.leads l join public.profiles p on p.id = l.dono_id
+where l.origem = 'empresa' and l.status = 'ativo' and l.etapa = 'novo'
+  and private.fim_do_prazo(coalesce(l.atribuido_em, l.created_at)) < now()
+group by 1 order by 2 desc;
+```
+
+**Roteiro do Felipe (nesta ordem):**
+1. Conferir que nenhum gerente tem duas equipes (o SQL para e avisa se tiver): `select gerente_id, count(*) from public.teams group by 1 having count(*) > 1;`
+2. SQL Editor: rodar `schema.sql` (só as mudanças acima, é idempotente), depois `distribuicao.sql`.
+3. Rodar `agendar-distribuicao.sql` e conferir as cinco linhas `crm-distribuicao%` ativas.
+4. Publicar de novo a Edge Function `avisos` (`crm/README.md`, seção 9).
+5. **Stands:** em cada stand, abrir a configuração no próprio stand e tocar em "Usar minha localização aqui" (ou colar a latitude e a longitude do Google Maps). Raio padrão de 200 m. Sem coordenadas, o stand não aceita check-in (a vez da recepção continua valendo).
+6. **Permissões** (Configurações > Permissões): `distribuicao.receber` já vem no Corretor; `distribuicao.produtos` no Gerente e no Operacional; `leads.distribuir` em ninguém (o gerente geral tem sempre). Dar `leads.distribuir` a quem mais for cuidar de "A distribuir".
+7. **Configurações > Distribuição automática:** conferir o modo e as chaves, e ligar a chave geral no dia combinado.
+8. Junto com o Marketing: a Edge Function `entrada-leads` sai do modo de teste só depois dos passos 2 e 7.
+9. **Primeiro dia:** um lead fictício pela entrada (nome começando com "TESTE"), conferir no celular de um corretor o aviso, o prazo e a "Fila de leads", e depois descartar o lead de teste.
+
+**O que só o Felipe confere:** rodar o SQL e o cron no Supabase, as permissões, as coordenadas de cada stand, o check-in e o sinal num celular real dentro e fora do raio, o aviso no celular e o primeiro lead de verdade.

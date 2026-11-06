@@ -1,7 +1,7 @@
 // Tipos e regras puras do módulo de leads (sem acesso ao banco, para poder
 // ser testado com `node --test`). Regras de negócio em docs/leads.md.
 
-import { aguardaPrimeiroContato, fimDoPrazo, HORARIO_PADRAO, inicioDoPrazo, type HorarioAtendimento } from "./prazo.ts";
+import { aguardaPrimeiroContato, fimDoPrazoDoLead, HORARIO_PADRAO, type HorarioAtendimento } from "./prazo.ts";
 import { aDetalhar } from "./followup.ts";
 
 export type Temperatura = "quente" | "morno" | "frio";
@@ -16,7 +16,8 @@ export type MotivoDescarte =
 
 export type Lead = {
   id: string;
-  dono_id: string;
+  /** Nulo só no lead da empresa sem dono (A distribuir, represado, fila da equipe; distribuicao.sql). */
+  dono_id: string | null;
   nome: string;
   whatsapp: string | null;
   email: string | null;
@@ -42,6 +43,11 @@ export type Lead = {
   /** Último toque em WhatsApp ou Ligar (o gatilho grava). Ausente se o SQL de 04/11/2026 ainda não rodou. */
   ultimo_toque_em?: string | null;
   ultimo_toque_tipo?: string | null;
+  /** Distribuição automática (distribuicao.sql). Ausentes se o SQL ainda não rodou. */
+  /** Recebido de plantão fora do horário: o prazo é de 15 min de relógio. */
+  prazo_imediato?: boolean;
+  /** Mensagem nova num lead ativo: responder até esta hora. */
+  resposta_ate?: string | null;
 };
 export const COLUNAS_LEAD =
   "id, dono_id, nome, whatsapp, email, origem, campanha, empreendimento, temperatura, etapa, proximo_contato, " +
@@ -94,6 +100,8 @@ export type Interacao = {
 };
 /** Lidas à parte de COLUNAS_LEAD: a tela continua de pé se o SQL do toque ainda não rodou (leads-dados.ts). */
 export const COLUNAS_TOQUE = "ultimo_toque_em, ultimo_toque_tipo";
+/** Lidas à parte também: a tela continua de pé se o distribuicao.sql ainda não rodou. */
+export const COLUNAS_DISTRIBUICAO_LEAD = "prazo_imediato, resposta_ate";
 
 export const COLUNAS_INTERACAO = "id, lead_id, autor_id, criado_em, tipo, texto, proximo_contato";
 
@@ -167,7 +175,7 @@ export const TITULOS_GRUPO: Record<Grupo, string> = {
 };
 
 type LeadDoDia = Pick<Lead, "status" | "temperatura" | "proximo_contato" | "created_at"> &
-  Partial<Pick<Lead, "etapa" | "atribuido_em" | "origem" | "ultima_interacao_em" | "ultimo_toque_em" | "ultimo_toque_tipo">>;
+  Partial<Pick<Lead, "etapa" | "atribuido_em" | "origem" | "ultima_interacao_em" | "ultimo_toque_em" | "ultimo_toque_tipo" | "prazo_imediato">>;
 
 const pesoTemperatura = (t: Temperatura | null) => (t === "quente" ? 0 : t === "morno" ? 1 : t === "frio" ? 2 : 3);
 
@@ -231,7 +239,7 @@ export function montarListaDoDia<T extends LeadDoDia>(
   const porCadastro = (a: T, b: T) =>
     pesoTemperatura(a.temperatura) - pesoTemperatura(b.temperatura) ||
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  const fimDoPrazoDe = new Map(grupos.primeiro_contato.map((l) => [l, fimDoPrazo(inicioDoPrazo(l), horario).getTime()]));
+  const fimDoPrazoDe = new Map(grupos.primeiro_contato.map((l) => [l, fimDoPrazoDoLead(l, horario).getTime()]));
   grupos.primeiro_contato.sort((a, b) => fimDoPrazoDe.get(a)! - fimDoPrazoDe.get(b)!);
   // Detalhe o contato: quentes primeiro; empatando, o toque mais antigo antes.
   grupos.detalhar.sort(

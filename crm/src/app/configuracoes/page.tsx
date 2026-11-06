@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Casca } from "@/components/casca";
+import { useDistribuicaoStore } from "@/lib/distribuicao-dados";
 import { ConfigMensagens } from "@/components/config-mensagens";
 import { db } from "@/lib/supabase";
 import { mensagemErro } from "@/lib/erros";
@@ -13,11 +15,26 @@ export default function ConfiguracoesPage() {
   return (
     <Casca titulo="Configurações" soGerenteGeral>
       <div className="grid gap-8">
+        <AtalhoDistribuicao />
         <Horario />
         <ConfigMensagens />
         <Permissoes />
       </div>
     </Casca>
+  );
+}
+
+/** A distribuição automática tem página própria; aqui fica só o atalho. */
+function AtalhoDistribuicao() {
+  const { config } = useDistribuicaoStore();
+  if (!config) return null;
+  return (
+    <Link href="/distribuicao/" className="card focus-ring block max-w-[560px] transition-colors hover:border-ink">
+      <span className="eyebrow">Leads da empresa</span>
+      <span className="titulo-card mt-1 block">Distribuição automática</span>
+      <span className="mt-1 block text-ink-soft">{config.ligada ? "✓ Ligada" : "– Desligada"} · modo {config.modo === "equipe" ? "equipe e depois corretor" : config.modo === "direto" ? "direto ao corretor" : "só gerentes"}</span>
+      <span className="link-acao mt-2 inline-block text-[13px]">Abrir</span>
+    </Link>
   );
 }
 

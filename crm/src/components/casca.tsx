@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSessao } from "@/lib/sessao";
 import { BarraLateral, Cabecalho, type ItemMenu } from "./cabecalho";
+import { BotaoRecebimento, FolhasDistribuicao } from "./distribuicao/recebimento";
+import { useDistribuicao, useDistribuicaoStore } from "@/lib/distribuicao-dados";
 
 /** Página interna: exige login, monta o menu pelo perfil e checa a permissão da tela. */
 export function Casca({
@@ -19,6 +21,9 @@ export function Casca({
 }) {
   const { estado, pode, sair } = useSessao();
   const router = useRouter();
+  // A distribuição automática: um estado só para o app (lib/distribuicao-dados.ts).
+  useDistribuicao(estado.fase === "pronto" ? estado.perfil.id : null);
+  const dist = useDistribuicaoStore();
 
   useEffect(() => {
     if (estado.fase === "deslogado") router.replace("/entrar/");
@@ -80,6 +85,12 @@ export function Casca({
   itens.push({ href: "/ranking/", rotulo: "Ranking" });
   if (pode("usuarios.gerenciar")) itens.push({ href: "/usuarios/", rotulo: "Usuários" });
   if (pode("equipes.gerenciar")) itens.push({ href: "/equipes/", rotulo: "Equipes" });
+  // Distribuição automática: a Fila de leads para quem recebe (com a fila visível), para o gerente
+  // com equipe e para o gerente geral; a página das chaves só para o gerente geral.
+  const cfg = dist.config;
+  const recebeComFila = !!dist.estado?.recebe && !!cfg?.transparencia && cfg?.modo !== "gerentes";
+  if (cfg?.ligada && (recebeComFila || dist.temEquipe || ehGG)) itens.push({ href: "/fila/", rotulo: "Fila de leads" });
+  if (ehGG && cfg) itens.push({ href: "/distribuicao/", rotulo: "Distribuição" });
   if (ehGG) itens.push({ href: "/configuracoes/", rotulo: "Configurações" });
   // Minha conta e Sair ficam no menu da conta (cabeçalho no computador, fim do menu no celular).
   const conta = { nome: estado.perfil.nome, apelido: estado.perfil.apelido, onSair: sair };
@@ -88,7 +99,8 @@ export function Casca({
 
   return (
     <>
-      <Cabecalho itens={itens} conta={conta} />
+      <Cabecalho itens={itens} conta={conta} extra={<BotaoRecebimento />} />
+      <FolhasDistribuicao />
       <BarraLateral itens={itens} />
       <div className="area-principal">
         <main className="mx-auto max-w-content px-5 pb-16 pt-6">

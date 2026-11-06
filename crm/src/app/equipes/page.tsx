@@ -1,7 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Casca } from "@/components/casca";
+import { useSessao } from "@/lib/sessao";
+import { useDistribuicaoStore } from "@/lib/distribuicao-dados";
 import { db } from "@/lib/supabase";
 import { mensagemErro } from "@/lib/erros";
 import { COLUNAS_PROFILE, type Profile, type Team } from "@/lib/tipos";
@@ -35,6 +38,10 @@ function Equipes() {
     carregar();
   }, [carregar]);
 
+  // Produtos e participação na distribuição (Equipe › corretor), se a distribuição está instalada.
+  const { pode } = useSessao();
+  const { config: cfgDistribuicao } = useDistribuicaoStore();
+  const verDistribuicao = pode("distribuicao.produtos") && !!cfgDistribuicao;
   const gerentes = pessoas.filter((p) => p.perfil === "gerente");
   const nome = (id: string) => pessoas.find((p) => p.id === id)?.nome ?? "Gerente";
 
@@ -102,6 +109,11 @@ function Equipes() {
                         <li key={m.id} className={m.ativo ? "" : "text-concrete"}>
                           {m.nome}
                           {!m.ativo && " (desativado)"}
+                          {m.ativo && m.perfil === "corretor" && verDistribuicao && (
+                            <Link href={`/equipes/corretor/?id=${m.id}`} className="ml-2 text-[13px] font-semibold text-brand underline underline-offset-2">
+                              Distribuição
+                            </Link>
+                          )}
                         </li>
                       ))}
                     </ul>

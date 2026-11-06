@@ -581,3 +581,41 @@ test("VAPID: JWT ES256 com o serviço de push como público, assinado pela chave
   const ok = await subtle.verify({ name: "ECDSA", hash: "SHA-256" }, par.publicKey, deBase64Url(m[3]), utf8(`${m[1]}.${m[2]}`));
   assert.equal(ok, true);
 });
+
+// ---------------------------------------------------------------------
+// Distribuição automática (06/11/2026): os pendentes de distribuicao_avisos.
+// ---------------------------------------------------------------------
+import { textoDaDistribuicao, distribuicaoParaDescartar, distribuicaoParaMarcar } from "../../supabase/functions/avisos/index.ts";
+
+const distAviso = (tipo: string, extra: Record<string, unknown> = {}) => ({
+  id: 1, para_id: "u1", tipo, lead_id: "l1", criado_em: "2026-11-10T13:00:00Z", lead_nome: "Ana Souza", empreendimento: "Easy", dados: {}, ...extra,
+});
+const dadosDist = (avisos: ReturnType<typeof distAviso>[]) =>
+  ({ horario: { dias: [0, 1, 2, 3, 4, 5, 6], inicio: "09:00", fim: "19:00" }, assinaturas: [], leads: [], visitas: [], distribuicao: avisos });
+
+test("distribuição: textos sem pontos nem verba, e cada tipo no tipo de aviso certo", () => {
+  for (const tipo of ["lead_novo", "lead_plantao", "mensagem_nova", "mensagem_sem_resposta", "fim_da_fila", "sem_sinal", "plantao_fim",
+                      "perda", "mensagem_sem_resposta_equipe", "fila_equipe", "a_distribuir", "repasse_atrasado", "represado_parado"]) {
+    const t = textoDaDistribuicao(distAviso(tipo));
+    assert.ok(t, tipo);
+    assert.doesNotMatch(`${t.titulo} ${t.corpo}`, /ponto|verba/i, tipo);
+  }
+  assert.equal(textoDaDistribuicao(distAviso("lead_novo"))!.corpo, "Ana Souza · Easy. Responda em até 15 min.");
+  assert.equal(textoDaDistribuicao(distAviso("perda"))!.tipo, "equipe");
+  assert.equal(textoDaDistribuicao(distAviso("inventado")), null);
+});
+
+test("distribuição: o lead de plantão sai à noite; o lead novo espera o horário; o velho só é marcado", () => {
+  const noite = new Date("2026-11-11T01:00:00Z"); // 22h em São Paulo
+  const d = dadosDist([distAviso("lead_plantao", { id: 1, criado_em: "2026-11-11T00:59:00Z" }),
+                       distAviso("lead_novo", { id: 2, criado_em: "2026-11-11T00:59:00Z" }),
+                       distAviso("fim_da_fila", { id: 3, criado_em: "2026-11-09T00:00:00Z" })]);
+  const avisos = montarAvisos(d as never, noite);
+  assert.deepEqual(avisos.map((a) => a.chaves[0]), ["distribuicao:1"]);
+  assert.deepEqual(distribuicaoParaDescartar(d as never, noite), [3]);
+  const dia = montarAvisos(dadosDist([distAviso("lead_novo", { id: 2, criado_em: "2026-11-11T12:00:00Z" })]) as never,
+                           new Date("2026-11-11T12:30:00Z"));
+  assert.equal(dia.length, 1);
+  assert.deepEqual(distribuicaoParaMarcar(dia, []), [2]);
+  assert.deepEqual(distribuicaoParaMarcar(dia, dia), []);
+});

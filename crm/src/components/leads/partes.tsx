@@ -12,7 +12,7 @@ import {
   type Temperatura,
 } from "@/lib/leads";
 import { aDetalhar, seloSemContato, TOQUE } from "@/lib/followup";
-import { prazoDoLead, seloPrazo, type HorarioAtendimento } from "@/lib/prazo";
+import { prazoDoLead, seloPrazo, seloResposta, type HorarioAtendimento } from "@/lib/prazo";
 import { BotaoMensagem } from "./mensagem";
 
 /** Temperatura sempre com sinal + palavra + cor. */
@@ -116,12 +116,22 @@ export function PrazoPrimeiroContato({
 }) {
   const p = prazoDoLead(lead, agora, horario);
   if (!p) return null;
-  const s = seloPrazo(p, agora);
+  return <SeloDoPrazo s={seloPrazo(p, agora)} className={className} />;
+}
+
+/** "! Responder até 14h32 · mensagem nova": mensagem nova num lead ativo (lead repetido que foi ao dono). */
+export function RespostaMensagemNova({ lead, agora, className }: { lead: Lead; agora: Date; className?: string }) {
+  const s = seloResposta(lead, agora);
+  if (!s) return null;
+  return <SeloDoPrazo s={s} className={className} ambar />;
+}
+
+function SeloDoPrazo({ s, className, ambar }: { s: ReturnType<typeof seloPrazo>; className?: string; ambar?: boolean }) {
   return (
     <span
       className={clsx(
         "num font-semibold",
-        s.nivel === "estourado" ? "text-[15px] font-bold text-brand" : "text-ink",
+        s.nivel === "estourado" ? "text-[15px] font-bold text-brand" : ambar ? "text-wa" : "text-ink",
         className,
       )}
     >
@@ -179,6 +189,7 @@ export function CardLead({
       <div className="flex items-start justify-between gap-3">
         <Link href={`/leads/ficha/?id=${lead.id}`} className="focus-ring min-w-0 flex-1">
           <span className="titulo-card block truncate">{lead.nome}</span>
+          <RespostaMensagemNova lead={lead} agora={agora} className="mt-1 block text-[13px]" />
           {prazo ? (
             <>
               <PrazoPrimeiroContato lead={lead} agora={agora} horario={horario} className="mt-1 block text-[13px]" />

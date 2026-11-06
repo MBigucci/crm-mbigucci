@@ -33,6 +33,7 @@ Cada corretor pertence a **um único gerente** (equipe).
 
 - Os leads da empresa deixam de vir da roleta dos leads do **Meta** (o Google continua; correção do Felipe em 05/11/2026: as regras de outubro dizem "Google", mas a roleta que acabou foi a do Meta) e passam a ser **distribuídos pelo gerente**. A distribuição automática (`docs/estudo-roleta-leads.md`) muda isso: a roleta escolhe a equipe e o corretor sozinha, e o gerente acompanha.
 - O CRM precisa da ação "atribuir lead a um corretor da minha equipe".
+- **Distribuição automática (implementada em 06/11/2026, `docs/distribuicao-automatica.md`):** o gerente acompanha a "Fila de leads" da equipe, pausa e tira corretores da distribuição (pela mesma regra de `pode_atribuir_a`) e, no modo "só gerentes", repassa o lead da fila da equipe. Permissões novas no catálogo: `distribuicao.receber` (corretor), `distribuicao.produtos` (gerente e operacional) e `leads.distribuir` ("A distribuir"; no padrão, só o gerente geral). A configuração é só do gerente geral, por regra fixa (`is_gerente_geral()`). Cada gerente tem uma equipe só, e o banco recusa a segunda (índice `teams_gerente_unico`).
 - A origem do lead fica registrada como **Empresa (gerente)** ou **Próprio (campanha do corretor)**.
 - Todo lead das campanhas do corretor é cadastrado **à mão** no CRM. Não há integração nem webhook de leads externos.
 - No fim do mês, o número de leads das plataformas de anúncio precisa bater com o de leads próprios cadastrados no CRM: é a conciliação da verba. Os leads da empresa não entram nessa conta.

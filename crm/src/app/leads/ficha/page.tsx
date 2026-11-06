@@ -9,6 +9,7 @@ import {
   AvisoDesfazer,
   CampoProximoContato,
   PrazoPrimeiroContato,
+  RespostaMensagemNova,
   EscolhaTemperatura,
   quandoNaFrase,
   ProximoContato,
@@ -231,6 +232,14 @@ function Ficha({ id }: { id: string }) {
     );
 
   /** Lead perdido: o banco confere o prazo, reatribui e grava o motivo no histórico. Devolve o erro, se houver. */
+  /** Lead da empresa sem dono (A distribuir, represado, fila da equipe): atribuído pela função da distribuição. */
+  async function atribuirSemDono(dono: string): Promise<string | null> {
+    const { error } = await db().rpc("distribuicao_atribuir", { p_lead: id, p_corretor: dono });
+    if (error) return mensagemErro(error);
+    await carregar();
+    return null;
+  }
+
   async function marcarPerdido(dono: string): Promise<string | null> {
     const { error } = await db().rpc("lead_perdido", { p_lead: id, p_corretor: dono });
     if (error) return mensagemErro(error);
@@ -278,6 +287,11 @@ function Ficha({ id }: { id: string }) {
         </div>
         {!lead.whatsapp && <DigitarWhatsapp leadId={lead.id} podeDigitar={ehDono && lead.status === "ativo"} onSalvo={carregar} />}
         <dl className="mt-3 grid gap-1 text-[13px]">
+          {lead.resposta_ate && lead.status === "ativo" && (
+            <Linha rotulo="Mensagem nova">
+              <RespostaMensagemNova lead={lead} agora={agora} />
+            </Linha>
+          )}
           {aguardaPrimeiroContato(lead) && (
             <Linha rotulo="Primeiro contato">
               <PrazoPrimeiroContato lead={lead} agora={agora} horario={horario} />
@@ -327,7 +341,7 @@ function Ficha({ id }: { id: string }) {
               </a>
             </Linha>
           )}
-          {!ehDono && <Linha rotulo="Corretor">{nomes.get(lead.dono_id) ?? "–"}</Linha>}
+          {!ehDono && <Linha rotulo="Corretor">{lead.dono_id ? (nomes.get(lead.dono_id) ?? "–") : "A distribuir"}</Linha>}
           <Linha rotulo="Cadastrado">
             <span className="num">{formatarQuando(lead.created_at, agora)}</span>
           </Linha>
@@ -540,7 +554,7 @@ function Ficha({ id }: { id: string }) {
             horario={horario}
             agora={agora}
             nomeDe={(u) => nomes.get(u)}
-            onAtribuir={(dono) => alterar({ dono_id: dono })}
+            onAtribuir={(dono) => (lead.dono_id ? alterar({ dono_id: dono }) : atribuirSemDono(dono))}
             onPerdido={marcarPerdido}
           />
         </div>
@@ -840,11 +854,12 @@ function Atribuir({
   onPerdido: (dono: string) => Promise<string | null>;
 }) {
   const corretores = useCorretores(true);
-  const [dono, setDono] = useState(lead.dono_id);
+  const atual = lead.dono_id ?? "";
+  const [dono, setDono] = useState(atual);
   const [erro, setErro] = useState<string | null>(null);
   const [atribuido, setAtribuido] = useState<{ id: string; perdido: boolean } | null>(null);
   const estourado = prazoDoLead(lead, agora, horario)?.estado === "estourado";
-  const escolhido = dono !== lead.dono_id;
+  const escolhido = !!dono && dono !== atual;
   const atribuir = async () => {
     if (await onAtribuir(dono)) return;
     setAtribuido({ id: dono, perdido: false });
@@ -860,7 +875,7 @@ function Atribuir({
           </p>
           <p className="mt-1 text-ink-soft">
             Escolha outro corretor e toque em Lead perdido. O histórico registra que{" "}
-            {nomeDe(lead.dono_id) ?? "o corretor"} perdeu o lead, e o prazo recomeça para quem recebe.
+            {nomeDe(atual) ?? "o corretor"} perdeu o lead, e o prazo recomeça para quem recebe.
           </p>
         </div>
       )}
@@ -877,9 +892,9 @@ function Atribuir({
             setAtribuido(null);
           }}
         >
-          {estourado && <option value={lead.dono_id}>Escolha o corretor</option>}
+          {(estourado || !atual) && <option value={atual}>Escolha o corretor</option>}
           {corretores
-            .filter((c) => !estourado || c.id !== lead.dono_id)
+            .filter((c) => !estourado || c.id !== atual)
             .map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nome}
