@@ -4,6 +4,17 @@
 >
 > **Sigilo:** para onde parte dos leads vai nunca é nomeado. Esse destino se chama **"Distribuição manual"**, e o nome é um dado do banco, não um texto do código.
 
+## Quarta rodada: divisão por porcentagem e limite por dia (Felipe, 05/11/2026)
+
+**Para que serve:** quando o volume cresce e um destino não dá conta de atender, parte dos leads volta para os corretores do Base360.
+
+- **Divisão na regra:** em "Mandar para", a regra pode ter dois ou mais destinos, cada um com sua porcentagem (por exemplo 70% para um destino e 30% para o Base360 Vendas). A soma tem de dar 100%. Uma regra com um destino só é 100% para ele, como antes.
+- **Contador, divisão exata:** o próximo lead vai ao destino que está mais abaixo da sua parte (menor `enviados / porcentagem`; empate, a ordem da regra). O banco guarda só **números**: quantos leads cada regra mandou a cada destino, sem nenhum dado de cliente. Só o gerente geral lê (`is_gerente_geral()`). O Felipe liberou guardar esse número, inclusive o da Distribuição manual, porque só ele tem acesso; isso ajusta a decisão 10. O contador zera quando a regra é editada.
+- **Limite por dia no destino:** cada destino externo pode ter um teto opcional, como "até 20 leads por dia". Passou do teto, o resto do dia vai para o Base360 Vendas. O dia é o de São Paulo. Para saber se passou, o banco guarda o total do dia por destino (também só um número).
+- **Ordem das verificações:** a regra casa, o contador escolhe o destino, o limite do dia daquele destino é conferido (passou, vai para o Vendas), e a entrega é tentada uma vez (falhou, vai para o Vendas).
+- **Banco:** `direcionador_regras` troca `destino_id` por uma lista de partes (`destino_id`, `porcentagem`), por exemplo numa tabela `direcionador_regra_partes`. `direcionador_destinos` ganha `limite_dia` (nulo = sem limite). Nova tabela `direcionador_contadores` (regra, destino, enviados) e `direcionador_contagem_dia` (destino, dia, total), as duas só com números e só para o gerente geral. A escolha e o incremento ficam numa função do banco com trava, para dois leads ao mesmo tempo não lerem o mesmo contador.
+- **Simulador:** mostra a divisão da regra ("→ 70% Distribuição manual · 30% Base360 Vendas") e o limite do dia de cada destino.
+
 ## Terceira rodada: vários destinos, de volta ao Marketing (Felipe, 05/11/2026)
 
 **Vale sobre a segunda rodada e a decisão 7.**

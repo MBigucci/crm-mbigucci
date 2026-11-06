@@ -119,6 +119,8 @@ button,input,select{font:inherit;color:inherit}
 .destino.ext{color:var(--brand-dark)}
 .acoes{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
 .acoes .linha{display:flex;gap:6px}
+.radio .pct{justify-content:space-between;gap:12px}
+.radio .pct .in{width:84px;display:inline-block;text-align:right}
 .dests{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:10px}
 .dests li{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-top:1px solid var(--line);padding-top:10px}
 .dests li:first-child{border-top:0;padding-top:0}
@@ -330,7 +332,7 @@ legend{padding:0;margin-bottom:6px}
         </div>
         <p class="aviso" id="f-hora-aviso"></p>
       </fieldset>
-      <fieldset><legend class="lab">Mandar para</legend>
+      <fieldset><legend class="lab">Mandar para, em %</legend>
         <div class="radio" id="f-dest"></div>
       </fieldset>
       <label class="chip"><input type="checkbox" id="f-ativa"><span>Regra ligada</span></label>
@@ -354,14 +356,14 @@ legend{padding:0;margin-bottom:6px}
     geral:true,
     destinos:[
       {id:"vendas",nome:"Base360 Vendas"},
-      {id:"d1",nome:"Distribuição manual",entrega:"E-mail, sem cópia em Enviados",end:"e••••@example.com",registra:false},
-      {id:"d2",nome:"Imobiliária Parceira (exemplo)",entrega:"Porta de entrada",end:"https://crm.example.com/••••",registra:true}
+      {id:"d1",nome:"Distribuição manual",entrega:"E-mail, sem cópia em Enviados",end:"e••••@example.com",registra:false,limite:20},
+      {id:"d2",nome:"Imobiliária Parceira (exemplo)",entrega:"Porta de entrada",end:"https://crm.example.com/••••",registra:true,limite:null}
     ],
     regras:[
-      {id:1,nome:"Torre Horizonte, pelo site",ativa:true,produtos:["Torre Horizonte"],fontes:["Site MBigucci"],dias:[0,1,2,3,4,5,6],ini:"09:00",fim:"18:00",destino:"vendas"},
-      {id:2,nome:"Fim de semana, portais",ativa:true,produtos:[],fontes:["ZAP Imóveis","Viva Real","OLX"],dias:[0,6],ini:"00:00",fim:"00:00",destino:"d1"},
-      {id:3,nome:"Noite, Parque Ipê",ativa:true,produtos:["Parque Ipê"],fontes:[],dias:[1,2,3,4,5],ini:"19:00",fim:"09:00",destino:"d2"},
-      {id:4,nome:"Imovelweb, horário comercial",ativa:false,produtos:[],fontes:["Imovelweb"],dias:[1,2,3,4,5],ini:"09:00",fim:"18:00",destino:"d1"}
+      {id:1,nome:"Torre Horizonte, pelo site",ativa:true,produtos:["Torre Horizonte"],fontes:["Site MBigucci"],dias:[0,1,2,3,4,5,6],ini:"09:00",fim:"18:00",dist:{vendas:100}},
+      {id:2,nome:"Fim de semana, portais",ativa:true,produtos:[],fontes:["ZAP Imóveis","Viva Real","OLX"],dias:[0,6],ini:"00:00",fim:"00:00",dist:{d1:70,vendas:30}},
+      {id:3,nome:"Noite, Parque Ipê",ativa:true,produtos:["Parque Ipê"],fontes:[],dias:[1,2,3,4,5],ini:"19:00",fim:"09:00",dist:{d2:100}},
+      {id:4,nome:"Imovelweb, horário comercial",ativa:false,produtos:[],fontes:["Imovelweb"],dias:[1,2,3,4,5],ini:"09:00",fim:"18:00",dist:{d1:100}}
     ]
   };
   let proxId=5, editando=null;
@@ -380,7 +382,7 @@ legend{padding:0;margin-bottom:6px}
   }
   function decidir(lead){
     const passos=[];
-    if(!estado.geral) return {destino:"vendas",motivo:"geral",passos};
+    if(!estado.geral) return {dist:{vendas:100},motivo:"geral",passos};
     for(let k=0;k<estado.regras.length;k++){
       const r=estado.regras[k], n=k+1;
       if(!r.ativa){passos.push({s:"nao",t:`${n}. ${r.nome}: desligada.`});continue}
@@ -390,9 +392,9 @@ legend{padding:0;margin-bottom:6px}
       if(h!=="ok"){passos.push({s:"nao",t:`${n}. ${r.nome}: ${h==="dia"?"fora dos dias":"fora do horário"}.`});continue}
       passos.push({s:"ok",t:`${n}. ${r.nome}: casou e decidiu.`});
       for(let j=k+1;j<estado.regras.length;j++) passos.push({s:"nao",t:`${j+1}. ${estado.regras[j].nome}: não lida.`});
-      return {destino:r.destino,regra:r,passos};
+      return {dist:r.dist,regra:r,passos};
     }
-    return {destino:"vendas",motivo:"nenhuma",passos};
+    return {dist:{vendas:100},motivo:"nenhuma",passos};
   }
 
   /* ---------- textos ---------- */
@@ -409,13 +411,16 @@ legend{padding:0;margin-bottom:6px}
     if(r.ini===r.fim) return "Dia inteiro";
     return `${h(r.ini)} às ${h(r.fim)}${min(r.ini)>min(r.fim)?" do dia seguinte":""}`;
   }
-  const destTxt=d=>"→ "+((estado.destinos.find(x=>x.id===d)||{nome:"Base360 Vendas"}).nome);
+  const nomeDe=id=>(estado.destinos.find(x=>x.id===id)||{nome:"Base360 Vendas"}).nome;
+  const partes=dist=>Object.entries(dist).filter(([,p])=>p>0);
+  const distTxt=dist=>{const p=partes(dist);return "→ "+(p.length===1?nomeDe(p[0][0]):p.map(([id,pc])=>`${pc}% ${nomeDe(id)}`).join(" · "))};
+  const temExterno=dist=>partes(dist).some(([id])=>id!=="vendas");
   const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
   /* ---------- desenho ---------- */
   function chave(el,on,lig,desl){el.setAttribute("aria-checked",on);el.querySelector(".txt").textContent=on?`✓ ${lig}`:`– ${desl}`}
   function desenhar(){
-    $("#dests").innerHTML=estado.destinos.filter(d=>d.id!=="vendas").map(d=>`<li><div><b>${esc(d.nome)}</b><dl class="par"><dt>Entrega</dt><dd>${esc(d.entrega)}</dd><dt>Endereço</dt><dd class="num">${esc(d.end)}</dd><dt>Registro</dt><dd>${d.registra?"<span class=\"sinal-ok\">✓ Entra no Marketing, com o envio no histórico do lead</span>":"<span class=\"s nao\">– Não registra nada</span>"}</dd></dl></div><button class="btn mini" type="button">Editar</button></li>`).join("");
+    $("#dests").innerHTML=estado.destinos.filter(d=>d.id!=="vendas").map(d=>`<li><div><b>${esc(d.nome)}</b><dl class="par"><dt>Entrega</dt><dd>${esc(d.entrega)}</dd><dt>Endereço</dt><dd class="num">${esc(d.end)}</dd><dt>Limite</dt><dd>${d.limite?`Até <span class="num">${d.limite}</span> leads por dia; o resto vai para o Vendas`:"Sem limite por dia"}</dd><dt>Registro</dt><dd>${d.registra?"<span class=\"sinal-ok\">✓ Entra no Marketing, com o envio no histórico do lead</span>":"<span class=\"s nao\">– Não registra nada</span>"}</dd></dl></div><button class="btn mini" type="button">Editar</button></li>`).join("");
     chave($("#chave-geral"),estado.geral,"Ligado","Desligado");
     $("#geral").classList.toggle("desl",!estado.geral);
     $("#geral").classList.toggle("destaque",!estado.geral);
@@ -432,7 +437,7 @@ legend{padding:0;margin-bottom:6px}
             <div><dt>Fonte</dt><dd>${esc(listaTxt(r.fontes,"Qualquer"))}</dd></div>
             <div><dt>Quando</dt><dd>${diasTxt(r.dias)} · ${horaTxt(r)}</dd></div>
           </dl>
-          <div class="destino ${r.destino!=="vendas"?"ext":""}">${esc(destTxt(r.destino))}</div>
+          <div class="destino ${temExterno(r.dist)?"ext":""}">${esc(distTxt(r.dist))}</div>
         </div>
         <div class="acoes">
           <button class="chave" type="button" role="switch" data-liga="${r.id}" aria-label="Regra ${k+1}, ${esc(r.nome)}"><span class="trilho"></span><span class="txt"></span></button>
@@ -448,6 +453,12 @@ legend{padding:0;margin-bottom:6px}
     simular();
   }
 
+  function extra(dist){
+    const p=partes(dist);let s="";
+    if(p.length>1) s+=" O contador manda cada lead a quem está mais abaixo da sua parte.";
+    p.forEach(([id])=>{const d=estado.destinos.find(x=>x.id===id);if(d&&d.limite) s+=` Passou de ${d.limite} leads no dia em ${esc(d.nome)}, o resto do dia vai para o Vendas.`});
+    return s;
+  }
   function simular(){
     const lead={produto:$("#s-produto").value,fonte:$("#s-fonte").value,dia:+$("#s-dia").value,hora:$("#s-hora").value||"00:00"};
     const d=decidir(lead);
@@ -457,7 +468,7 @@ legend{padding:0;margin-bottom:6px}
     if(d.motivo==="geral") por="A chave geral está desligada.";
     else if(d.motivo==="nenhuma") por="Nenhuma regra ligada casou.";
     else por=`Pela regra ${estado.regras.indexOf(d.regra)+1}, ${esc(d.regra.nome)}.`;
-    $("#s-res").innerHTML=`<span class="eyebrow">${quem}</span><strong>${esc(destTxt(d.destino))}</strong><p>${por}</p>`;
+    $("#s-res").innerHTML=`<span class="eyebrow">${quem}</span><strong>${esc(distTxt(d.dist))}</strong><p>${por}${extra(d.dist)}</p>`;
     $("#s-passos").innerHTML=d.passos.map(p=>`<li><span class="s ${p.s}">${p.s==="ok"?"✓":"–"}</span><span>${esc(p.t)}</span></li>`).join("");
   }
 
@@ -517,7 +528,7 @@ legend{padding:0;margin-bottom:6px}
   function marcar(n,lista,todosSe){document.querySelectorAll(`[name="${n}"]`).forEach(c=>{c.checked=c.value==="*"?todosSe:lista.includes(+c.value)})}
   function abrir(r){
     editando=r||null;
-    const base=r||{nome:"",ativa:true,produtos:[],fontes:[],dias:[0,1,2,3,4,5,6],ini:"09:00",fim:"18:00",destino:"d1"};
+    const base=r||{nome:"",ativa:true,produtos:[],fontes:[],dias:[0,1,2,3,4,5,6],ini:"09:00",fim:"18:00",dist:{d1:100}};
     $("#ed-eyebrow").textContent=r?`Regra ${estado.regras.indexOf(r)+1}`:"Nova regra";
     $("#ed-titulo").textContent=r?"Editar regra":"Criar regra";
     $("#f-nome").value=base.nome;
@@ -526,7 +537,8 @@ legend{padding:0;margin-bottom:6px}
     marcar("fd",base.dias,false);
     const todo=base.ini===base.fim;
     $("#f-dia-todo").checked=todo;$("#f-ini").value=todo?"00:00":base.ini;$("#f-fim").value=todo?"00:00":base.fim;
-    $("#f-dest").innerHTML=estado.destinos.map(d=>`<label><input type="radio" name="f-dest" value="${d.id}" id="f-dest-${d.id}"${d.id===base.destino?" checked":""}> → ${esc(d.nome)}</label>`).join("");
+    $("#f-dest").innerHTML=estado.destinos.map(d=>`<label class="pct" for="f-pct-${d.id}"><span>→ ${esc(d.nome)}</span><span><input class="in" type="number" min="0" max="100" step="5" inputmode="numeric" id="f-pct-${d.id}" data-dest="${d.id}" value="${base.dist[d.id]||0}"> %</span></label>`).join("")+`<p class="aviso" id="f-pct-soma"></p>`;
+    somaPct();
     $("#f-ativa").checked=base.ativa;
     $("#f-excluir").hidden=!r;
     $("#f-erro").hidden=true;
@@ -538,6 +550,9 @@ legend{padding:0;margin-bottom:6px}
   $("#f-excluir").addEventListener("click",()=>{
     const k=estado.regras.indexOf(editando);estado.regras.splice(k,1);ed.close();desenhar();aviso(`✓ Regra excluída: ${editando.nome}`);
   });
+  function lerPct(){const o={};document.querySelectorAll("[data-dest]").forEach(i=>{const v=Math.max(0,Math.min(100,Math.round(+i.value||0)));if(v>0)o[i.dataset.dest]=v});return o}
+  function somaPct(){const s=Object.values(lerPct()).reduce((a,b)=>a+b,0);$("#f-pct-soma").textContent=s===100?"✓ Soma 100%.":`! Soma ${s}%. Ajuste para 100%.`}
+  $("#f-dest").addEventListener("input",somaPct);
   const pegar=n=>[...document.querySelectorAll(`[name="${n}"]:checked`)].map(c=>c.value).filter(v=>v!=="*").map(Number);
   $("#ed-form").addEventListener("submit",e=>{
     e.preventDefault();
@@ -548,8 +563,9 @@ legend{padding:0;margin-bottom:6px}
     else if(!dias.length) erro="✕ Marque pelo menos um dia.";
     else if(!todo&&(!ini||!fim)) erro="✕ Preencha as duas horas ou marque Dia inteiro.";
     else if(!todo&&ini===fim) erro="✕ Início e fim iguais. Para valer o dia todo, marque Dia inteiro.";
+    else if(Object.values(lerPct()).reduce((a,b)=>a+b,0)!==100) erro="✕ As partes de Mandar para precisam somar 100%.";
     if(erro){$("#f-erro").textContent=erro;$("#f-erro").hidden=false;return}
-    const dados={nome,ativa:$("#f-ativa").checked,produtos:pegar("fp").map(i=>PRODUTOS[i]),fontes:pegar("ff").map(i=>FONTES[i]),dias,ini,fim,destino:document.querySelector('[name="f-dest"]:checked').value};
+    const dados={nome,ativa:$("#f-ativa").checked,produtos:pegar("fp").map(i=>PRODUTOS[i]),fontes:pegar("ff").map(i=>FONTES[i]),dias,ini,fim,dist:lerPct()};
     if(editando){Object.assign(editando,dados);aviso("✓ Regra salva")}
     else{estado.regras.push({id:proxId++,...dados});aviso(`✓ Regra criada no fim da lista, na posição ${estado.regras.length}`)}
     ed.close();desenhar();
