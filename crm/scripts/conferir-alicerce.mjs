@@ -141,6 +141,17 @@ await comArmazenamento({}, "/conta/");
   confere("Aparência: Voltar ao padrão", c.escolha === "auto" && c.acao === "grafite" && c.menu === "claro" && !c.ls.mb_tema, c);
 }
 
+// 6b. A folha antiga vai para o <body> por portal: precisa levar a ponte .ds-antigo junto.
+await tela(375, 812);
+await comArmazenamento({ mb_tema: "papel" }, "/");
+{
+  await avaliar(`[...document.querySelectorAll('button')].find(b => /Recebendo/.test(b.textContent))?.click()`);
+  await espera(500);
+  const r = await avaliar(`(() => { const d = document.querySelector('[role=dialog]'); if (!d) return { aberta: false }; const links = [...d.querySelectorAll('a:not(.mb-link)')]; return { aberta: true, naPonte: !!d.closest('.ds-antigo'), linksAzuis: links.filter(a => getComputedStyle(a).color === getComputedStyle(document.documentElement).getPropertyValue('--link').trim()).length, links: links.length }; })()`);
+  await print("folha-375-papel");
+  confere("folha antiga (portal) dentro da ponte .ds-antigo", r.aberta && r.naPonte, r);
+}
+
 // 7. Telas em 375 e 1280, papel e grafite.
 // As telas ainda no DS antigo entram para ver se a ponte segura o visual delas (links, tema, fontes).
 const TELAS = [["lista-do-dia", "/"], ["minha-conta", "/conta/"], ["leads", "/leads/"], ["ficha", "/leads/ficha/?id=lead-1"], ["painel", "/painel/"]];

@@ -38,7 +38,9 @@ export function Folha({
   }, []);
 
   if (typeof document === "undefined") return null;
+  // .ds-antigo: o portal sai da Casca, então leva a ponte do item 48 junto (veja alicerce-local.css).
   return createPortal(
+    <div className="ds-antigo">
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-overlay/50 md:items-center md:p-6"
       onPointerDown={(e) => {
@@ -67,6 +69,7 @@ export function Folha({
         </div>
         {children}
       </div>
+    </div>
     </div>,
     document.body,
   );

@@ -42,7 +42,7 @@ Cada passo do item 48 acrescenta aqui uma linha: tela, passo, commit e o que fic
 
 | Tela | Passo | Commit | Ajuste local |
 | --- | --- | --- | --- |
-| Fundação (todas as telas) e a Aparência em Minha conta | a | o do passo a | 1. `svg.mb-icone` volta ao padrão do navegador; 2. a ponte `.ds-antigo` |
+| Fundação (todas as telas) e a Aparência em Minha conta | a | `2e14858` e o ajuste da folha | 1. `svg.mb-icone` volta ao padrão do navegador; 2. a ponte `.ds-antigo` |
 
 **Como a fundação ficou (passo a):**
 - **Arquivos do Alicerce:** em `crm/src/alicerce/` e `crm/public/alicerce/bundle.js`, sem edição, com a versão e os hashes no `LEIAME.md` dessa pasta. O `npm test` confere os hashes e o `tokens.css` gerado.
@@ -56,7 +56,7 @@ Cada passo do item 48 acrescenta aqui uma linha: tela, passo, commit e o que fic
   - chama `MB.preferencias.restaurar()`;
   - mantém a ponte: `data-tema` segue o `data-theme`, `data-barra` segue o `data-menu-recolhido` e a `theme-color` segue o `--fundo`.
 - **Ponte `.ds-antigo`:**
-  - o que ainda está no DS antigo fica dentro de um invólucro `.ds-antigo` (`display: contents`): a `Casca` inteira e Entrar;
+  - o que ainda está no DS antigo fica dentro de um invólucro `.ds-antigo` (`display: contents`): a `Casca` inteira, Entrar e a `Folha` antiga (que vai para o `body` por portal);
   - ali o `<a>` volta a herdar cor e sublinhado, porque o Alicerce pinta todo link de azul sublinhado;
   - **quando uma tela migra, o conteúdo dela sai do invólucro.** No passo b, a `Casca` nova deixa o `.ds-antigo` só em volta das telas que ainda não migraram.
 - **Fontes:** as três do Alicerce, pelo `@font-face` do `tokens.css`, com os mesmos nomes de família que o Tailwind usa. As woff2 antigas de `crm/src/app/fonts/` ficam só para os scripts de mockup.
