@@ -2,7 +2,7 @@
 
 > **Desde 06/11/2026 o padrão do `crm/` é o Alicerce MBigucci**, o design system dos sistemas da empresa:
 > - endereço: `https://claude.ai/artifact/52QJiDD4fLNu14iE3hce37`, lido pela ação `read` do Artifact;
-> - versão adotada: `1794027179-3a37` (desde o fim do passo b, 07/11/2026);
+> - versão adotada: `1794055565-ba7f` (07/11/2026; os arquivos usados são os mesmos da 1794027179-3a37);
 > - comece pelo `project/README.md` e, de cada peça, `project/components/<Peça>/README.md` e `preview.html`.
 >
 > As telas migram no item 48 (brief `docs/codex-alicerce-vendas.md`). Até a migração terminar, as telas que faltam seguem o DS antigo (seção 3). A pesquisa (`discovery/`) continua no DS antigo. O DS do CRM da Bruna (`ref/CRM Bruna/design/`) é de **outra marca** e não serve aqui.
@@ -43,8 +43,8 @@ Cada passo do item 48 acrescenta aqui uma linha: tela, passo, commit e o que fic
 | Tela | Passo | Commit | Ajuste local |
 | --- | --- | --- | --- |
 | Fundação (todas as telas) e a Aparência em Minha conta | a | `2e14858` e o ajuste da folha | 1. `svg.mb-icone` volta ao padrão do navegador; 2. a ponte `.ds-antigo` |
-| Moldura de todas as telas do `crm/` (menu lateral, topo, menu do celular, conta, Módulos) e o índice de Configurações | b | `6107d81` e o ajuste "passo b: Alicerce 1794027179-3a37" | 3. barras fixas das telas antigas começam depois do menu. A área de toque de 44px da faixa do celular e a camada do menu fixo foram ajustes locais e voltaram para o Alicerce na versão `1794027179-3a37` |
-| Lista do dia (a página `/` do corretor; `migrada`) | c | a definir pela master | 4. estrutura da tela (`.lista-do-dia*`, as medidas do preview ListaDoDia); 5. botão "Opções" da linha do stand com 44px no celular (sai no passo d) |
+| Moldura de todas as telas do `crm/` (menu lateral, topo, menu do celular, conta, Módulos) e o índice de Configurações | b | `6107d81` e `1269d1d` | 3. barras fixas das telas antigas começam depois do menu. A área de toque de 44px da faixa do celular e a camada do menu fixo foram ajustes locais e voltaram para o Alicerce na versão `1794027179-3a37` |
+| Lista do dia (a página `/` do corretor; `migrada`) | c | `8c5aeb4` | 4. estrutura da tela (`.lista-do-dia*`, as medidas do preview ListaDoDia); 5. botão "Opções" da linha do stand com 44px no celular (sai no passo d) |
 
 **Como a Lista do dia ficou (passo c, 07/11/2026):**
 - **Peças** em `components/alicerce/`: `CardDeItem`, `Compromisso` (e `EdicaoNoCard`), `Chip`, `Selo`, `Prazo`, `ResumoDePendencias`, `PainelLateral`, `Meta`, `EstadoVazio`, `Toast` (provider e `useToast`), `Seletor`, `Campo`, `DataHora`, `Aviso`, `CarregandoLeads`, `BotaoWhatsapp` e `mapas.ts` (do dado ao tom: temperatura, etapa, estado da visita, nível do prazo). Os passos d, e e f completam `Aviso` e `Carregando`.

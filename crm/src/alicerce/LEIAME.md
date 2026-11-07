@@ -4,7 +4,7 @@
 
 **Origem:**
 - artifact: `https://claude.ai/artifact/52QJiDD4fLNu14iE3hce37`;
-- versão: `1794027179-3a37`;
+- versão: `1794055565-ba7f` (os 8 arquivos abaixo são os mesmos da `1794027179-3a37`);
 - trazida em 06/11/2026 (item 48, passo a) e atualizada em 07/11/2026 (passo b: menu fixo, ícones novos e o logo MBigucci; depois, a camada do menu e o toque de 44px da faixa do celular, que eram ajustes locais).
 
 **O `tokens.css` é gerado.** Para refazer, rode em `crm/`:
