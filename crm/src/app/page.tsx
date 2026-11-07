@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Casca, ehListaDoDia } from "@/components/casca";
+import { nomeCurto } from "@/components/alicerce/menu.ts";
 import { ListaDoDia } from "@/components/leads/lista-do-dia";
 import { ContatosDoDiaParceirosNoInicio } from "@/components/parceiros/contatos-do-dia";
 import { db } from "@/lib/supabase";
@@ -25,7 +26,7 @@ function Inicio() {
     <div className="grid gap-4">
       <div>
         <span className="eyebrow">{nomePerfil(perfil.perfil)}</span>
-        <p className="mt-1 text-[16px]">Olá, {perfil.nome.split(" ")[0] || perfil.nome}.</p>
+        <p className="mt-1 text-[16px]">Olá, {nomeCurto(perfil)}.</p>
       </div>
 
       {pode("parceiros.cadastrar") && <ContatosDoDiaParceirosNoInicio />}

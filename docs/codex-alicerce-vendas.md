@@ -15,7 +15,7 @@
 ## Leia antes
 - `CLAUDE.md`, `docs/design-system.md`, o mapa aprovado (`docs/mapa-alicerce-vendas.md`) e a cobertura aprovada de todas as rotas (`docs/cobertura-alicerce.md`).
 - **O Alicerce:**
-  - endereço: `https://claude.ai/artifact/52QJiDD4fLNu14iE3hce37`, versão `1794023680-e181` (desde o passo b), lido pela ação `read` do Artifact;
+  - endereço: `https://claude.ai/artifact/52QJiDD4fLNu14iE3hce37`, versão `1794027179-3a37` (desde o fim do passo b), lido pela ação `read` do Artifact;
   - leia `project/README.md` inteiro;
   - de cada peça do seu passo, leia `project/components/<Peça>/README.md` e `preview.html`, começando pelas telas de referência `ListaDoDia`, `FichaDoLead` e `PainelCentral`;
   - se não conseguir abrir, pare e peça os arquivos ao Felipe.

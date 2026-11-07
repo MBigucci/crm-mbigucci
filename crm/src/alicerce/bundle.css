@@ -1982,6 +1982,9 @@ html[data-movimento="reduzido"] .mb-lead:hover, html[data-movimento="reduzido"] 
    O rodapé (Módulos, Recolher menu) fica sempre à vista, preso embaixo. */
 .mb-app .mb-menu { position: sticky; top: 0; align-self: start; min-height: 0; height: 100vh; height: 100dvh; overflow-y: auto; scrollbar-width: thin; }
 .mb-app .mb-menu > * { flex-shrink: 0; }
+/* O sticky cria uma camada própria: sem z-index, os cards do conteúdo pintariam por cima do popup de Módulos e das dicas
+   do recolhido. O menu fica na camada dos popups (abaixo do painel, do diálogo e dos avisos). */
+.mb-app .mb-menu { z-index: var(--camada-popup); }
 /* O sticky do rodapé mede pela caixa de conteúdo: sem padding embaixo no menu, para nada aparecer por baixo do rodapé */
 .mb-app .mb-menu { padding-bottom: 0; }
 .mb-app .mb-menu__mbigucci { padding-bottom: var(--esp-4); }
@@ -1993,7 +1996,8 @@ html[data-movimento="reduzido"] .mb-lead:hover, html[data-movimento="reduzido"] 
 /* Faixa de status do celular: 44px, e o status e o link ao lado ganham área de toque de 44px sem crescer */
 .mb-celular-status { min-height: var(--controle-toque); }
 .mb-celular-status .mb-status, .mb-celular-status > a, .mb-celular-status > button { position: relative; }
-.mb-celular-status .mb-status::before, .mb-celular-status > a::before, .mb-celular-status > button::before { content: ""; position: absolute; inset: -8px -4px; }
+/* A área de toque mede 44px seja qual for a altura da pílula; usa ::after para não brigar com o carregando do botão (::before) */
+.mb-celular-status .mb-status::after, .mb-celular-status > a::after, .mb-celular-status > button::after { content: ""; position: absolute; left: -4px; right: -4px; top: 50%; height: calc(100% + 16px); min-height: var(--controle-toque); transform: translateY(-50%); }
 /* Status como botão (ligar o recebimento, abrir a fila) */
 button.mb-status { appearance: none; }
 button.mb-status:focus-visible, a.mb-status:focus-visible { outline: var(--mb-foco-espessura) solid var(--foco); outline-offset: var(--mb-foco-afastamento); }

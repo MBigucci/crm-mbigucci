@@ -43,20 +43,6 @@ svg.mb-icone {
   }
 }
 
-/* 4. Área de toque do status na faixa do celular (passo b, 07/11/2026; sai quando o Alicerce corrigir).
-   O README do MenuCelular promete 44px de área de toque para o status. O ::before do Alicerce estende
-   8px para cada lado, mas a partir da caixa de dentro da borda de 1px (a pílula tem 28px, 26px por dentro),
-   e chega a 42px. Com a borda contada (9px para cada lado), chega aos 44px da faixa. */
-@media (max-width: 767px) {
-  .mb-celular-status .mb-status::before {
-    inset: calc((var(--esp-2) + var(--mb-borda)) * -1) calc(var(--esp-1) * -1);
-  }
-}
-
-/* 5. Camada do menu fixo (passo b, 07/11/2026; sai quando o Alicerce corrigir).
-   O menu agora é sticky, o que cria uma camada própria, e sem z-index ela fica por baixo dos elementos
-   posicionados do conteúdo (os cards, por exemplo). Tudo o que o menu solta para fora dele, o popup de
-   Módulos e as dicas do menu recolhido, aparecia coberto por eles. O menu sobe para a camada dos popups. */
-.mb-app > .mb-menu {
-  z-index: var(--camada-popup);
-}
+/* A camada do menu fixo e o toque de 44px da faixa do celular foram ajustes locais no passo b e voltaram
+   para o Alicerce na versão 1794027179-3a37 (07/11/2026). O ::after do .mb-status e dos links e botões da
+   faixa do celular é a área de toque do Alicerce: não use para outra coisa. */

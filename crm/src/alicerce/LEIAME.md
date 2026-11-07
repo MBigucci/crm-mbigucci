@@ -4,8 +4,8 @@
 
 **Origem:**
 - artifact: `https://claude.ai/artifact/52QJiDD4fLNu14iE3hce37`;
-- versão: `1794023680-e181`;
-- trazida em 06/11/2026 (item 48, passo a) e atualizada em 07/11/2026 (passo b: menu fixo, ícones novos e o logo MBigucci).
+- versão: `1794027179-3a37`;
+- trazida em 06/11/2026 (item 48, passo a) e atualizada em 07/11/2026 (passo b: menu fixo, ícones novos e o logo MBigucci; depois, a camada do menu e o toque de 44px da faixa do celular, que eram ajustes locais).
 
 **O `tokens.css` é gerado.** Para refazer, rode em `crm/`:
 
@@ -24,7 +24,7 @@ O `npm test` confere os hashes e o `tokens.css` (`scripts/alicerce.test.mjs`).
 | Arquivo (a partir de `crm/`) | Origem no artifact | sha256 |
 | --- | --- | --- |
 | `src/alicerce/tokens.json` | `project/tokens.json` | `061a7fd27b21294bd0180ee1ac02a129263fcecc90f1ee3fd0db65071dcf74d1` |
-| `src/alicerce/bundle.css` | `project/components/bundle.css` | `22a8e7362a51b35a1021db6e656744d9be524f92e3ef41741c77562944ad195a` |
+| `src/alicerce/bundle.css` | `project/components/bundle.css` | `f80bdf0dd1844aa56fbf298ca69476b7ef6cab93b203ef2058c84a5e19f91f32` |
 | `src/alicerce/ferramentas/tokens-css.mjs` | `project/ferramentas/tokens-css.mjs` | `ac4887432f8f9834fb3633749fb0f4361a26490ab8403d15adcbe64d3486ef04` |
 | `src/alicerce/fonts/BricolageGrotesque-Variable.woff2` | `project/fonts/BricolageGrotesque-Variable.woff2` | `94d70a9a9bcd7134d4a291486c60e66ddb302f1f2ddf5268277ba11663b6c1b9` |
 | `src/alicerce/fonts/GeistMono-Variable.woff2` | `project/fonts/GeistMono-Variable.woff2` | `684ad5b531f81d43c1e8c7038262d5db7cdc1f68006e04d6c7769efa8d33c8cc` |
