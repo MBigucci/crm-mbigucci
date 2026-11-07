@@ -18,7 +18,7 @@ export function Seletor<T extends string>({
   opcoes: { valor: T; rotulo: React.ReactNode }[];
   valor: T | null;
   onChange: (valor: T) => void;
-  grade?: 3 | 4 | "linha";
+  grade?: 3 | 4 | 6 | "linha";
   pequeno?: boolean;
 }) {
   return (

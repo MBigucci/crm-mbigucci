@@ -21,6 +21,7 @@ import { formatarReais } from "@/lib/vendas";
 import { NOTA_MINIMA, radar, temPerfil, type Motivo } from "@/lib/match";
 import type { Lead } from "@/lib/leads";
 import { BotaoMensagem, DialogoMensagem } from "@/components/leads/mensagem";
+import { RadarAlicerce } from "@/components/alicerce/radar";
 
 type LeadDaFicha = Pick<
   Lead,
@@ -199,13 +200,18 @@ const RADAR_INICIAL = 4;
  * Radar de Match na ficha: os empreendimentos que combinam com o perfil do
  * lead (nota de 50% ou mais), com o porquê e o "Mandar" com a apresentação.
  */
-export function RadarDoLead({ lead }: { lead: LeadDaFicha }) {
+export function RadarDoLead({ lead, alicerce = false, onMandar }: { lead: LeadDaFicha; alicerce?: boolean; onMandar?: (empreendimento: string) => void }) {
   const { catalogo } = useCatalogo();
   const [todos, setTodos] = useState(false);
   const agora = useMemo(() => new Date(), []);
   const lista = useMemo(() => (catalogo ? radar(lead, catalogo, agora) : null), [catalogo, lead, agora]);
   if (catalogo && !catalogo.length) return null;
   const visiveis = todos ? lista : lista?.slice(0, RADAR_INICIAL);
+  // O Radar no Alicerce (a ficha, passo f): as mesmas regras e textos; Cartao, Prazo e botões do Alicerce.
+  if (alicerce)
+    return (
+      <RadarAlicerce lead={lead} lista={lista} visiveis={visiveis ?? null} todos={todos} onAlternar={() => setTodos((t) => !t)} onMandar={onMandar} />
+    );
   return (
     <section className="card grid gap-3" aria-labelledby="radar-titulo">
       <h2 id="radar-titulo" className="eyebrow">

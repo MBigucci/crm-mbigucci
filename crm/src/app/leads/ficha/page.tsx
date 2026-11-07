@@ -3,19 +3,8 @@
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import clsx from "clsx";
 import { Casca } from "@/components/casca";
-import {
-  AvisoDesfazer,
-  PrazoPrimeiroContato,
-  RespostaMensagemNova,
-  EscolhaTemperatura,
-  quandoNaFrase,
-  ProximoContato,
-  SeloTemperatura,
-  SemContato,
-} from "@/components/leads/partes";
-import { BotaoLigar, BotaoMensagem } from "@/components/leads/mensagem";
+import { AvisoDesfazer } from "@/components/leads/partes";
 import { RegistrarInteracao } from "@/components/leads/registrar-interacao";
 import { AvisarCorretor } from "@/components/leads/repasse";
 import { db } from "@/lib/supabase";
@@ -28,6 +17,8 @@ import {
   formatarWhatsapp,
   MOTIVOS_DESCARTE,
   normalizarWhatsapp,
+  temperatura,
+  TEMPERATURAS,
   textoDuplicado,
   nomeTipoInteracao,
   type Evento,
@@ -42,7 +33,6 @@ import {
   podeSemResposta,
   seloSemContato,
   sugereDescarte,
-  TOQUE,
   type TipoToque,
 } from "@/lib/followup";
 import { descreverEvento, montarHistorico } from "@/lib/historico";
@@ -54,21 +44,38 @@ import {
   useCorretores,
   useHorarioAtendimento,
 } from "@/lib/leads-dados";
-import { aguardaPrimeiroContato, prazoDoLead, type HorarioAtendimento } from "@/lib/prazo";
+import { aguardaPrimeiroContato, prazoDoLead, seloPrazo, seloResposta, type HorarioAtendimento } from "@/lib/prazo";
 import { COLUNAS_VISITA, estaAberta, type Visita } from "@/lib/visitas";
 import { AgendarVisita, ListaVisitas } from "@/components/visitas/visitas";
 import { CardVenda, RegistrarVenda } from "@/components/vendas/vendas";
 import { COLUNAS_VENDA, type Venda } from "@/lib/vendas";
-import { NomeEmpreendimento, RadarDoLead } from "@/components/empreendimentos/partes";
+import { RadarDoLead } from "@/components/empreendimentos/partes";
+import { acharNoCatalogo } from "@/lib/catalogo";
+import { useCatalogo } from "@/lib/catalogo-dados";
+import { linkLigar } from "@/lib/mensagens";
 import { DadosDoCliente, DocumentosDoLead, PerfilCliente, ResumoDoPerfil } from "@/components/leads/perfil";
 import { usePerfilDoLead } from "@/lib/perfil-dados";
 import type { PerfilAmpliado } from "@/lib/perfil";
 import { chaveRascunhoVenda, lerRascunho } from "@/lib/rascunho";
+import { Abas, PainelDeAba } from "@/components/alicerce/abas";
+import { Aviso } from "@/components/alicerce/aviso";
+import { BotaoWhatsapp } from "@/components/alicerce/botao-whatsapp";
+import { Campo, CampoEmGrupo, CampoSelecao } from "@/components/alicerce/campo";
+import { CarregandoLeads } from "@/components/alicerce/carregando";
+import { Chip } from "@/components/alicerce/chip";
+import { CopiarDetalhes, EstadoDePagina, LinkDoEstado } from "@/components/alicerce/estado-de-pagina";
+import { Historico, type ItemDoHistorico } from "@/components/alicerce/historico";
+import { chipDaTemperatura, nivelDoPrazo, nivelDoSemContato, tomDaEtapa } from "@/components/alicerce/mapas";
+import { useMensagemPronta } from "@/components/alicerce/mensagem-do-lead";
+import { Pares } from "@/components/alicerce/pares";
+import { Prazo } from "@/components/alicerce/prazo";
+import { Selo } from "@/components/alicerce/selo";
+import { Seletor } from "@/components/alicerce/seletor";
 
 export default function FichaPage() {
   return (
-    <Casca titulo="Ficha do lead">
-      <Suspense fallback={<p className="text-concrete">Carregando…</p>}>
+    <Casca titulo="Ficha do lead" migrada>
+      <Suspense fallback={<CarregandoLeads quantidade={1} texto="Carregando o lead…" />}>
         <FichaPeloEndereco />
       </Suspense>
     </Casca>
@@ -77,8 +84,70 @@ export default function FichaPage() {
 
 function FichaPeloEndereco() {
   const id = useSearchParams().get("id");
-  if (!id) return <p className="text-ink-soft">! Lead não informado. Volte para a lista.</p>;
+  if (!id)
+    return (
+      <EstadoDePagina
+        tipo="nao-encontrado"
+        titulo="Lead não informado"
+        texto="Volte para a lista e escolha o lead."
+        acoes={<LinkDoEstado href="/leads/">Ver leads</LinkDoEstado>}
+      />
+    );
   return <Ficha id={id} />;
+}
+
+/** "desde ontem, 10:00" ou "desde 29/10/2026, 10:00": o atraso do contato, para o título do aviso. */
+function desdeQuando(iso: string, agora: Date) {
+  const q = formatarQuando(iso, agora);
+  return `desde ${/^\d/.test(q) ? q : q.charAt(0).toLowerCase() + q.slice(1)}`;
+}
+
+/** O prazo do primeiro contato e a mensagem nova, em `Prazo` (sinal + palavra + cor). */
+function PrazoDoSelo({ s }: { s: ReturnType<typeof seloPrazo> }) {
+  return (
+    <Prazo nivel={nivelDoPrazo(s.nivel)}>
+      {s.sinal} {s.texto}
+    </Prazo>
+  );
+}
+
+/** O nome do empreendimento do lead, com o link para o catálogo quando ele está lá. */
+function EmpreendimentoDoLead({ nome }: { nome: string }) {
+  const { catalogo } = useCatalogo();
+  const e = acharNoCatalogo(nome, catalogo ?? []);
+  if (!e) return <>{nome}</>;
+  return (
+    <Link href={`/empreendimentos/ver/?slug=${e.slug}`} className="mb-link">
+      {nome}
+    </Link>
+  );
+}
+
+/** O rótulo curto do tipo de evento, em negrito no histórico. */
+function tipoDoEvento(e: Evento): string {
+  switch (e.tipo) {
+    case "criado":
+      return "Cadastro";
+    case "etapa":
+      return "Etapa";
+    case "temperatura":
+      return "Temperatura";
+    case "status":
+      return "Situação";
+    case "dono":
+      return "Corretor";
+    case "visita":
+    case "visita_horario":
+    case "visita_comprovante":
+      return "Visita";
+    case "venda":
+    case "venda_pagamento":
+    case "venda_correcao":
+      return "Venda";
+    case "documento":
+    case "documento_removido":
+      return "Documento";
+  }
 }
 
 function Ficha({ id }: { id: string }) {
@@ -96,14 +165,19 @@ function Ficha({ id }: { id: string }) {
   const [registrando, setRegistrando] = useState(false);
   const refVenda = useRef<HTMLElement>(null);
   const [nomes, setNomes] = useState<Map<string, string>>(new Map());
+  // Falha ao carregar o lead (estado de página) e falha ao gravar (aviso no topo, sem apagar a tela).
+  const [erroCarga, setErroCarga] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   // O toque acabou de acontecer nesta tela: marca o tipo já, sem esperar a gravação.
   const [toqueLocal, setToqueLocal] = useState<{ tipo: TipoToque; em: string } | null>(null);
   const [agora, setAgora] = useState(() => new Date());
-  const [desfazer, setDesfazer] = useState<{ texto: string; anterior: Partial<Lead>; novo: Partial<Lead> } | null>(null);
+  // `chave` (o lead e a hora da mudança) faz a mesma mudança seguida virar um toast novo, com os 8 s de novo.
+  const [desfazer, setDesfazer] = useState<{ texto: string; anterior: Partial<Lead>; novo: Partial<Lead>; chave: string } | null>(null);
   const fecharDesfazer = useCallback(() => setDesfazer(null), []);
   const { perfil, erro: erroPerfil, recarregar: recarregarPerfil } = usePerfilDoLead(id);
   const [perfilAberto, setPerfilAberto] = useState(false);
+  const [aba, setAba] = useState("andamento");
+  const mensagem = useMensagemPronta();
 
   // Venda começada e não registrada (a aba recarregou, a sessão caiu): reabre o formulário com o rascunho.
   useEffect(() => {
@@ -118,7 +192,8 @@ function Ficha({ id }: { id: string }) {
       db().from("visitas").select(COLUNAS_VISITA).eq("lead_id", id).order("inicio", { ascending: false }),
       db().from("vendas").select(COLUNAS_VENDA).eq("lead_id", id).order("assinada_em", { ascending: false }),
     ]);
-    if (l.error || h.error || e.error) return setErro(mensagemErro(l.error ?? h.error ?? e.error));
+    if (l.error || h.error || e.error) return setErroCarga(mensagemErro(l.error ?? h.error ?? e.error));
+    setErroCarga(null);
     setLead((l.data as unknown as Lead) ?? null);
     setInteracoes((h.data ?? []) as Interacao[]);
     setEventos((e.data ?? []) as Evento[]);
@@ -161,19 +236,33 @@ function Ficha({ id }: { id: string }) {
       .then(({ data }) => setNomes(new Map((data ?? []).map((p) => [p.id as string, p.nome as string]))));
   }, [lead, interacoes, eventos]);
 
-  if (erro) return <p className="aviso-erro">! {erro}</p>;
-  if (lead === undefined) return <p className="text-concrete">Carregando…</p>;
+  if (erroCarga)
+    return (
+      <EstadoDePagina
+        tipo="erro-de-carga"
+        titulo="Não foi possível carregar este lead"
+        texto="Pode ser a internet ou o sistema. O que você já salvou continua salvo."
+        acoes={
+          <button type="button" className="mb-botao mb-botao--primario" onClick={() => carregar()}>
+            Tentar de novo
+          </button>
+        }
+        detalhe={<CopiarDetalhes codigo={erroCarga} />}
+      />
+    );
+  if (lead === undefined) return <CarregandoLeads quantidade={1} texto="Carregando o lead…" />;
   if (lead === null)
     return (
-      <div className="card max-w-[520px]">
-        <p>! Lead não encontrado, ou você não tem acesso a ele.</p>
-        <Link href="/leads/" className="link-acao mt-3 inline-block">
-          Ver leads
-        </Link>
-      </div>
+      <EstadoDePagina
+        tipo="nao-encontrado"
+        titulo="Lead não encontrado"
+        texto="Ele pode ter saído da sua carteira, ou você não tem acesso a ele."
+        acoes={<LinkDoEstado href="/leads/">Ver leads</LinkDoEstado>}
+      />
     );
 
   const ehDono = lead.dono_id === eu.id && pode("leads.cadastrar");
+  const ativo = lead.status === "ativo";
   // O lead com o perfil ampliado (item 16), quando o SQL já rodou.
   const leadCompleto: Lead & Partial<PerfilAmpliado> = { ...lead, ...(perfil ?? {}) };
   const origem = catalogos?.origens.find((o) => o.slug === lead.origem);
@@ -216,7 +305,7 @@ function Ficha({ id }: { id: string }) {
     const anterior = Object.fromEntries(Object.keys(campos).map((k) => [k, lead[k as keyof Lead]])) as Partial<Lead>;
     setDesfazer(null);
     if (await alterar(campos)) return;
-    setDesfazer({ texto, anterior, novo: campos });
+    setDesfazer({ texto, anterior, novo: campos, chave: `${id}-${Date.now()}` });
   }
 
   const descartar = (motivo: MotivoDescarte) =>
@@ -225,7 +314,6 @@ function Ficha({ id }: { id: string }) {
       `Descartado: ${MOTIVOS_DESCARTE.find((m) => m.slug === motivo)?.nome ?? motivo}`,
     );
 
-  /** Lead perdido: o banco confere o prazo, reatribui e grava o motivo no histórico. Devolve o erro, se houver. */
   /** Lead da empresa sem dono (A distribuir, represado, fila da equipe): atribuído pela função da distribuição. */
   async function atribuirSemDono(dono: string): Promise<string | null> {
     const { error } = await db().rpc("distribuicao_atribuir", { p_lead: id, p_corretor: dono });
@@ -234,6 +322,7 @@ function Ficha({ id }: { id: string }) {
     return null;
   }
 
+  /** Lead perdido: o banco confere o prazo, reatribui e grava o motivo no histórico. Devolve o erro, se houver. */
   async function marcarPerdido(dono: string): Promise<string | null> {
     const { error } = await db().rpc("lead_perdido", { p_lead: id, p_corretor: dono });
     if (error) return mensagemErro(error);
@@ -258,356 +347,396 @@ function Ficha({ id }: { id: string }) {
   }
   const temVendaAtiva = !!vendas?.some((x) => x.status === "ativa");
 
-  const historico = montarHistorico(interacoes, eventos);
   const nomeEtapa = (slug: string) => catalogos?.etapas.find((x) => x.slug === slug)?.nome ?? slug;
   // O toque que falta detalhar: o desta tela (antes de o banco responder) ou o gravado.
-  const podeTocar = ehDono && lead.status === "ativo";
+  const podeTocar = ehDono && ativo;
   const toque = podeTocar ? (toqueLocal ?? aDetalhar(lead)) : null;
+  const t = chipDaTemperatura(lead.temperatura);
+  const contato = lead.proximo_contato;
+  const atrasado = !!contato && new Date(contato).getTime() < agora.getTime();
+  const resposta = lead.resposta_ate && ativo ? seloResposta(lead, agora) : null;
+  const prazo = aguardaPrimeiroContato(lead) ? prazoDoLead(lead, agora, horario) : null;
+  const semContato = ativo ? seloSemContato(lead, agora) : null;
+  const motivoDescarte = MOTIVOS_DESCARTE.find((m) => m.slug === lead.motivo_descarte)?.nome;
 
-  // No celular, uma coluna na ordem de sempre (order-[n]). No computador (lg),
-  // duas colunas: à esquerda o que se faz; à direita andamento, Radar e histórico
-  // (ou Atribuir e histórico, para o gerente). Nada fica fixo ao rolar (04/11/2026).
-  return (
-    <div className="flex max-w-[760px] flex-col gap-4 pb-8 lg:grid lg:max-w-none lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:gap-5">
-      <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-4">
-      <section className="card bar-brand order-[1]">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <span className="eyebrow text-[12px] text-ink-soft">{etapa?.nome ?? lead.etapa}</span>
-            <h2 className="titulo-card mt-1 break-words text-[24px]">{lead.nome}</h2>
-            <p className="num mt-1 text-ink-soft">{lead.whatsapp ? formatarWhatsapp(lead.whatsapp) : "– Sem telefone"}</p>
-          </div>
-          <SeloTemperatura valor={lead.temperatura} />
-        </div>
-        {!lead.whatsapp && <DigitarWhatsapp leadId={lead.id} podeDigitar={ehDono && lead.status === "ativo"} onSalvo={carregar} />}
-        <dl className="mt-3 grid gap-1 text-[13px]">
-          {lead.resposta_ate && lead.status === "ativo" && (
-            <Linha rotulo="Mensagem nova">
-              <RespostaMensagemNova lead={lead} agora={agora} />
-            </Linha>
-          )}
-          {aguardaPrimeiroContato(lead) && (
-            <Linha rotulo="Primeiro contato">
-              <PrazoPrimeiroContato lead={lead} agora={agora} horario={horario} />
-            </Linha>
-          )}
-          <Linha rotulo="Próximo contato">
-            <ProximoContato iso={lead.proximo_contato} agora={agora} />
-          </Linha>
-          {lead.status === "ativo" && (
-            <Linha rotulo="Último contato">
-              {seloSemContato(lead, agora) ? (
-                <SemContato lead={lead} agora={agora} comTentativas={false} />
-              ) : lead.ultima_interacao_em ? (
-                <span className="num">{formatarQuando(lead.ultima_interacao_em, agora)}</span>
-              ) : (
-                <span className="text-ink-soft">Nenhum ainda</span>
-              )}
-              {lead.tentativas > 0 && (
-                <span className="num block text-ink-soft">
-                  Tentativa {lead.tentativas} de {LIMITE_TENTATIVAS} sem resposta
-                </span>
-              )}
-            </Linha>
-          )}
-          {toque && (
-            <Linha rotulo="A detalhar">
-              <span className="num font-semibold text-wa">
-                <span aria-hidden>! </span>
-                {TOQUE[toque.tipo].texto} {quandoNaFrase(toque.em, agora)}
-              </span>
-            </Linha>
-          )}
-          <Linha rotulo="Origem">
-            {origem?.nome ?? lead.origem}
-            {lead.campanha && ` · ${lead.campanha}`}
-          </Linha>
-          {lead.empreendimento && (
-            <Linha rotulo="Empreendimento">
-              <NomeEmpreendimento nome={lead.empreendimento} />
-            </Linha>
-          )}
-          {lead.email && <Linha rotulo="E-mail">{lead.email}</Linha>}
-          {perfil?.telefone2 && (
-            <Linha rotulo="Outro telefone">
-              <a className="num underline-offset-2 hover:underline" href={`tel:+${perfil.telefone2}`}>
+  const pares = [
+    ...(resposta ? [{ rotulo: "Mensagem nova", valor: <PrazoDoSelo s={resposta} /> }] : []),
+    ...(prazo ? [{ rotulo: "Primeiro contato", valor: <PrazoDoSelo s={seloPrazo(prazo, agora)} /> }] : []),
+    {
+      rotulo: "Próximo contato",
+      valor: !contato ? "Sem próximo contato" : atrasado ? <Prazo nivel="estourado">! Atrasado · {formatarQuando(contato, agora)}</Prazo> : formatarQuando(contato, agora),
+    },
+    ...(ativo
+      ? [
+          {
+            rotulo: "Último contato",
+            valor: (
+              <>
+                {semContato ? (
+                  <Prazo nivel={nivelDoSemContato(semContato.nivel)}>! {semContato.texto}</Prazo>
+                ) : lead.ultima_interacao_em ? (
+                  formatarQuando(lead.ultima_interacao_em, agora)
+                ) : (
+                  "Nenhum ainda"
+                )}
+                {lead.tentativas > 0 && (
+                  <span className="ficha__apoio">
+                    Tentativa {lead.tentativas} de {LIMITE_TENTATIVAS} sem resposta
+                  </span>
+                )}
+              </>
+            ),
+          },
+        ]
+      : []),
+    { rotulo: "Origem", valor: `${origem?.nome ?? lead.origem}${lead.campanha ? ` · ${lead.campanha}` : ""}` },
+    ...(lead.empreendimento ? [{ rotulo: "Empreendimento", valor: <EmpreendimentoDoLead nome={lead.empreendimento} /> }] : []),
+    ...(lead.email ? [{ rotulo: "E-mail", valor: lead.email }] : []),
+    ...(perfil?.telefone2
+      ? [
+          {
+            rotulo: "Outro telefone",
+            valor: (
+              <a className="mb-link" href={`tel:+${perfil.telefone2}`}>
                 {formatarWhatsapp(perfil.telefone2)}
               </a>
-            </Linha>
-          )}
-          {!ehDono && <Linha rotulo="Corretor">{lead.dono_id ? (nomes.get(lead.dono_id) ?? "–") : "A distribuir"}</Linha>}
-          <Linha rotulo="Cadastrado">
-            <span className="num">{formatarQuando(lead.created_at, agora)}</span>
-          </Linha>
-        </dl>
-        <ResumoDoPerfil lead={leadCompleto} agora={agora} podeEditar={ehDono && lead.status === "ativo"} onEditar={editarPerfil} />
-        {lead.status === "descartado" && (
-          <p className="mt-3 font-semibold text-ink-soft">
-            ✕ Descartado · {MOTIVOS_DESCARTE.find((m) => m.slug === lead.motivo_descarte)?.nome}
-          </p>
-        )}
-        {lead.whatsapp ? (
-          <div className="mt-4 flex flex-wrap gap-2">
-            <BotaoMensagem
-              lead={lead}
-              destaque
-              className="btn-lg flex-1 md:flex-none"
-              onAbrirWhatsapp={podeTocar ? () => tocar("toque_whatsapp") : undefined}
-            />
-            <BotaoLigar
-              numero={lead.whatsapp}
-              className="btn-lg flex-1 md:flex-none"
-              onLigar={podeTocar ? () => tocar("toque_ligacao") : undefined}
-            />
-          </div>
-        ) : null}
-      </section>
+            ),
+          },
+        ]
+      : []),
+    ...(!ehDono ? [{ rotulo: "Corretor", valor: lead.dono_id ? (nomes.get(lead.dono_id) ?? "–") : "A distribuir" }] : []),
+    { rotulo: "Cadastrado", valor: formatarQuando(lead.created_at, agora) },
+  ];
 
-      {ehDono && lead.status === "ativo" && (
-        <RegistrarInteracao
-          leadId={id}
-          toque={toque}
-          semResposta={{ pode: podeSemResposta(lead, agora), n: lead.tentativas + 1 }}
-          onSalvo={async () => {
-            setToqueLocal(null);
-            await carregar();
-          }}
+  const autor = (u: string | null) => (u && u !== eu.id ? (nomes.get(u) ?? undefined) : undefined);
+  const itensDoHistorico: ItemDoHistorico[] = montarHistorico(interacoes, eventos).map((item) => {
+    if (item.tipo === "evento") {
+      const e = item.evento;
+      const texto = descreverEvento(
+        e,
+        nomeEtapa,
+        (u) => nomes.get(u),
+        (vid) => visitas?.find((x) => x.id === vid),
+        (vid) => vendas?.find((x) => x.id === vid),
+      );
+      return {
+        chave: `e-${e.id}`,
+        tipo: tipoDoEvento(e),
+        quando: formatarQuando(e.criado_em, agora),
+        quem: e.automatico ? "automático" : autor(e.autor_id),
+        automatico: e.automatico,
+        // A etapa e a temperatura já estão no negrito: o texto fica só com o "antes → depois".
+        texto: e.tipo === "etapa" || e.tipo === "temperatura" ? texto.replace(/^[^:]+: /, "") : texto,
+      };
+    }
+    const h = item.interacao;
+    return {
+      chave: `i-${h.id}`,
+      tipo: nomeTipoInteracao(h.tipo),
+      quando: formatarQuando(h.criado_em, agora),
+      quem: ehToque(h.tipo) ? "automático" : autor(h.autor_id),
+      automatico: ehToque(h.tipo),
+      texto: ehToque(h.tipo) ? undefined : <span className="ficha__quebra">{h.texto}</span>,
+      depois: h.proximo_contato ? `→ Próximo contato: ${formatarQuando(h.proximo_contato, agora)}` : undefined,
+    };
+  });
+
+  const nomeTemp = temperatura(lead.temperatura);
+
+  return (
+    <div className="pagina-alicerce">
+      <div>
+        <Link className="mb-link" href="/leads/">
+          ← Voltar para a lista
+        </Link>
+        <h1 className="mb-visualmente-oculto">Ficha do lead</h1>
+      </div>
+
+      {erro && <Aviso tom="erro" titulo={erro} />}
+      {ativo && contato && atrasado && (
+        <Aviso
+          tom="alerta"
+          titulo={`Contato atrasado ${desdeQuando(contato, agora)}`}
+          texto={ehDono ? "Registre como foi a última conversa ou marque um novo contato." : undefined}
         />
       )}
 
-      {ehDono && sugereDescarte(lead) && (
-        <section className="card order-[3]" aria-labelledby="sugere-descarte">
-          <h2 id="sugere-descarte" className="titulo-card">
-            ! {lead.tentativas} tentativas sem resposta
-          </h2>
-          <p className="mt-2 text-ink-soft">
-            Descarte como Sem retorno ou continue tentando. O lead descartado fica guardado e pode ser reativado.
-          </p>
-          <button
-            type="button"
-            className="btn btn-ghost focus-ring mt-3"
-            onClick={() => descartar("sem_retorno")}
-          >
-            ✕ Descartar: sem retorno
-          </button>
-        </section>
-      )}
-
-      {(ehDono || !!visitas?.length || erroVisitas) && (
-        <section className="card order-[4] grid gap-3" aria-labelledby="visitas-titulo">
-          <h2 id="visitas-titulo" className="eyebrow">
-            Visitas
-          </h2>
-          {erroVisitas && <p className="aviso-erro">! {erroVisitas}</p>}
-          {visitas && visitas.length > 0 && (
-            <ListaVisitas
-              visitas={[
-                ...visitas.filter(estaAberta).sort((a, b) => a.inicio.localeCompare(b.inicio)),
-                ...visitas.filter((v) => !estaAberta(v)),
-              ]}
-              agora={agora}
-              lead={lead}
-              comDia
-              onMudou={carregar}
-            />
-          )}
-          {visitas && !visitas.length && !erroVisitas && <p className="text-ink-soft">Nenhuma visita ainda.</p>}
-          {ehDono && lead.status === "ativo" && !erroVisitas && <AgendarVisita lead={lead} onAgendada={carregar} />}
-        </section>
-      )}
-
-      {(ehDono || !!vendas?.length || erroVendas) && (
-        <section ref={refVenda} className="card order-[5] grid scroll-mt-[72px] gap-3" aria-labelledby="vendas-titulo">
-          <h2 id="vendas-titulo" className="eyebrow">
-            Venda
-          </h2>
-          {erroVendas && <p className="aviso-erro">! {erroVendas}</p>}
-          {vendas && vendas.length > 0 && (
-            <ul className="grid gap-3">
-              {vendas.map((x) => (
-                <CardVenda key={x.id} venda={x} onMudou={carregar} />
-              ))}
-            </ul>
-          )}
-          {vendas && !vendas.length && !erroVendas && !registrando && (
-            <p className="text-ink-soft">Nenhuma venda registrada. Quando o cliente assinar, registre aqui.</p>
-          )}
-          {ehDono && lead.status === "ativo" && !erroVendas && vendas && (
-            registrando ? (
-              <RegistrarVenda
-                lead={{ ...lead, nome: lead.nome }}
-                onCancelar={() => setRegistrando(false)}
-                onRegistrada={() => {
-                  setRegistrando(false);
-                  carregar();
-                }}
-              />
-            ) : (
-              <button type="button" className="btn btn-ghost btn-lg focus-ring justify-self-start" onClick={() => setRegistrando(true)}>
-                + Registrar venda
-              </button>
-            )
-          )}
-        </section>
-      )}
-
-      {ehDono && lead.status === "ativo" && (
-        <>
-          {(perfil || erroPerfil) && (
-            <div className="order-[7] min-w-0">
-              <PerfilCliente
-                key={perfil ? "ampliado" : "basico"}
-                lead={lead}
-                perfil={perfil}
-                erroPerfil={erroPerfil}
-                aberto={perfilAberto}
-                onAlternar={setPerfilAberto}
-                onSalvar={salvarPerfil}
-              />
-            </div>
-          )}
-          <div className="order-[9] min-w-0">
-            <DocumentosDoLead leadId={id} podeEnviar podeRemover onMudou={carregar} />
-          </div>
-          <div className="order-[10] min-w-0">
-            <Descartar key={lead.status} onDescartar={descartar} />
-          </div>
-        </>
-      )}
-
-      {!ehDono && (
-        <div className="order-[11] min-w-0">
-          <DadosDoCliente lead={leadCompleto} />
-        </div>
-      )}
-      {!(ehDono && lead.status === "ativo") && (
-        <div className="order-[12] min-w-0">
-          <DocumentosDoLead leadId={id} podeEnviar={false} podeRemover={ehDono} onMudou={carregar} />
-        </div>
-      )}
-
-      {ehDono && lead.status === "descartado" && (
-        <section className="card order-[13]">
-          <p className="text-ink-soft">O lead descartado continua guardado com o histórico.</p>
-          <button
-            type="button"
-            className="btn btn-ghost focus-ring mt-3"
-            onClick={() => alterar({ status: "ativo", motivo_descarte: null })}
-          >
-            Reativar lead
-          </button>
-        </section>
-      )}
-      </div>
-
-      <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-4">
-      {ehDono && lead.status === "ativo" && (
-        <>
-          <section className="card order-[6]">
-            <span className="eyebrow">Andamento</span>
-            <div className="mt-3 grid gap-4">
-              <div>
-                <span className="field-label">Temperatura</span>
-                <EscolhaTemperatura valor={lead.temperatura} onChange={(t) => alterar({ temperatura: t })} />
+      <div className="mb-painel__linha">
+        <div className="ficha__coluna" style={{ "--mb-colunas": 8 } as React.CSSProperties}>
+          <section className="mb-cartao" aria-label="Lead">
+            <div className="mb-cartao__corpo ficha__corpo">
+              <div className="mb-lead__cabeca">
+                <div>
+                  <h2 className="ficha__nome">{lead.nome}</h2>
+                  <p className="ficha__telefone">{lead.whatsapp ? formatarWhatsapp(lead.whatsapp) : "– Sem telefone"}</p>
+                </div>
+                <Chip nivel={t.nivel} sinal={t.sinal}>
+                  {t.texto}
+                </Chip>
               </div>
-              <div>
-                <label className="field-label" htmlFor="etapa">
-                  Etapa
-                </label>
-                <select
-                  id="etapa"
-                  className="input"
-                  value={lead.etapa}
-                  onChange={(e) =>
-                    e.target.value === "venda" && !temVendaAtiva
-                      ? abrirRegistroDeVenda()
-                      : alterarComDesfazer({ etapa: e.target.value }, `Etapa: ${nomeEtapa(e.target.value)}`)
-                  }
-                >
-                  {catalogos?.etapas
-                    .filter((x) => x.ativo || x.slug === lead.etapa)
-                    .map((x) => (
-                      <option key={x.slug} value={x.slug}>
-                        {x.nome}
-                      </option>
-                    ))}
-                </select>
-              </div>
+              {!lead.whatsapp && <DigitarWhatsapp leadId={lead.id} podeDigitar={ehDono && ativo} onSalvo={carregar} />}
+              <Pares itens={pares} />
+              {!ativo && (
+                <div>
+                  <Selo tom="etapa-descartado">✕ Descartado{motivoDescarte ? ` · ${motivoDescarte}` : ""}</Selo>
+                </div>
+              )}
+              <ResumoDoPerfil
+                lead={leadCompleto}
+                agora={agora}
+                podeEditar={ehDono && ativo}
+                onEditar={editarPerfil}
+                onParabens={() => mensagem.abrir(leadCompleto, undefined, { modelo: "parabens" })}
+              />
+              {lead.whatsapp && (
+                <div className="ficha__acoes">
+                  <BotaoWhatsapp
+                    rotuloAcessivel={`WhatsApp de ${lead.nome}, ${formatarWhatsapp(lead.whatsapp)}`}
+                    onClick={() => mensagem.abrir(lead, podeTocar ? () => tocar("toque_whatsapp") : undefined)}
+                  />
+                  <a
+                    className="mb-botao mb-botao--secundario"
+                    href={linkLigar(lead.whatsapp)}
+                    aria-label={`Ligar para ${formatarWhatsapp(lead.whatsapp)}`}
+                    onClick={podeTocar ? () => tocar("toque_ligacao") : undefined}
+                  >
+                    Ligar
+                  </a>
+                </div>
+              )}
             </div>
           </section>
-          <div className="order-[8] min-w-0">
-            <RadarDoLead lead={leadCompleto} />
-          </div>
-        </>
-      )}
 
-      {!ehDono && pode("leads.atribuir") && (
-        <div className="order-[14] min-w-0">
-          <Atribuir
-            lead={lead}
-            horario={horario}
-            agora={agora}
-            nomeDe={(u) => nomes.get(u)}
-            onAtribuir={(dono) => (lead.dono_id ? alterar({ dono_id: dono }) : atribuirSemDono(dono))}
-            onPerdido={marcarPerdido}
-          />
+          {ehDono && ativo && (
+            <RegistrarInteracao
+              leadId={id}
+              toque={toque}
+              semResposta={{ pode: podeSemResposta(lead, agora), n: lead.tentativas + 1 }}
+              onSalvo={async () => {
+                setToqueLocal(null);
+                await carregar();
+              }}
+            />
+          )}
+
+          {ehDono && sugereDescarte(lead) && (
+            <section className="mb-cartao" aria-label="Sugestão de descarte">
+              <div className="mb-cartao__corpo ficha__corpo">
+                <Aviso
+                  tom="alerta"
+                  titulo={`${lead.tentativas} tentativas sem resposta`}
+                  texto="Descarte como Sem retorno ou continue tentando. O lead descartado fica guardado e pode ser reativado."
+                />
+                <div className="mb-grupo-botoes">
+                  <button type="button" className="mb-botao mb-botao--secundario" onClick={() => descartar("sem_retorno")}>
+                    ✕ Descartar: sem retorno
+                  </button>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {(ehDono || !!visitas?.length || erroVisitas) && (
+            <section className="pagina-alicerce__grupo" aria-labelledby="visitas-titulo">
+              <h2 className="mb-sobrelinha" id="visitas-titulo">
+                Visitas{visitas && visitas.length > 0 && (
+                  <>
+                    {" "}
+                    · <span className="mb-num">{visitas.length}</span>
+                  </>
+                )}
+              </h2>
+              {erroVisitas && <Aviso tom="erro" titulo={erroVisitas} />}
+              {visitas && visitas.length > 0 && (
+                <ListaVisitas
+                  visitas={[
+                    ...visitas.filter(estaAberta).sort((a, b) => a.inicio.localeCompare(b.inicio)),
+                    ...visitas.filter((v) => !estaAberta(v)),
+                  ]}
+                  agora={agora}
+                  lead={lead}
+                  comDia
+                  onMudou={carregar}
+                  alicerce
+                  naFicha
+                />
+              )}
+              {visitas && !visitas.length && !erroVisitas && <p className="ficha__texto">Nenhuma visita ainda.</p>}
+              {ehDono && ativo && !erroVisitas && <AgendarVisita lead={lead} onAgendada={carregar} />}
+            </section>
+          )}
+
+          {((ehDono && ativo) || !!vendas?.length || erroVendas) && (
+            <section ref={refVenda} className="pagina-alicerce__grupo ficha__ancora" aria-labelledby="vendas-titulo">
+              <h2 className="mb-sobrelinha" id="vendas-titulo">
+                Venda
+              </h2>
+              {erroVendas && <Aviso tom="erro" titulo={erroVendas} />}
+              {vendas && vendas.length > 0 && (
+                <ul className="mb-itens">
+                  {vendas.map((x) => (
+                    <CardVenda key={x.id} venda={x} onMudou={carregar} alicerce />
+                  ))}
+                </ul>
+              )}
+              {vendas && !vendas.length && !erroVendas && !registrando && ativo && (
+                <p className="ficha__texto">Nenhuma venda registrada. Quando o cliente assinar, registre aqui.</p>
+              )}
+              {ehDono &&
+                ativo &&
+                !erroVendas &&
+                vendas &&
+                (registrando ? (
+                  <RegistrarVenda
+                    alicerce
+                    lead={{ ...lead, nome: lead.nome }}
+                    onCancelar={() => setRegistrando(false)}
+                    onRegistrada={() => {
+                      setRegistrando(false);
+                      carregar();
+                    }}
+                  />
+                ) : (
+                  <button type="button" className="mb-botao mb-botao--secundario ficha__agendar" onClick={() => setRegistrando(true)}>
+                    + Registrar venda
+                  </button>
+                ))}
+            </section>
+          )}
+
+          {ehDono && ativo && (perfil || erroPerfil) && (
+            <PerfilCliente
+              key={perfil ? "ampliado" : "basico"}
+              lead={lead}
+              perfil={perfil}
+              erroPerfil={erroPerfil}
+              aberto={perfilAberto}
+              onAlternar={setPerfilAberto}
+              onSalvar={salvarPerfil}
+            />
+          )}
+
+          {ehDono && ativo && <Descartar key={lead.status} onDescartar={descartar} />}
+
+          {!ehDono && <DadosDoCliente lead={leadCompleto} />}
+
+          {ehDono && !ativo && (
+            <section className="mb-cartao" aria-label="Reativar lead">
+              <div className="mb-cartao__corpo ficha__corpo">
+                <p className="ficha__texto">O lead descartado continua guardado com o histórico.</p>
+                <div className="mb-grupo-botoes">
+                  <button type="button" className="mb-botao mb-botao--secundario" onClick={() => alterar({ status: "ativo", motivo_descarte: null })}>
+                    Reativar lead
+                  </button>
+                </div>
+              </div>
+            </section>
+          )}
         </div>
-      )}
 
-      <section className="card order-[15]">
-        <span className="eyebrow">Histórico</span>
-        {historico.length ? (
-          <ol className="mt-3 grid gap-3">
-            {historico.map((item) => {
-              const autor = (u: string | null) => (u && u !== eu.id ? ` · ${nomes.get(u) ?? ""}` : "");
-              if (item.tipo === "evento") {
-                const e = item.evento;
-                return (
-                  <li key={`e-${e.id}`} className="border-t border-line pt-3 text-[13px] first:border-0 first:pt-0">
-                    <p className="num text-[12px] text-ink-soft">
-                      {formatarQuando(e.criado_em, agora)}
-                      {e.automatico ? " · automático" : autor(e.autor_id)}
-                    </p>
-                    <p className="mt-1 text-ink-soft">
-                      {descreverEvento(
-                        e,
-                        nomeEtapa,
-                        (u) => nomes.get(u),
-                        (vid) => visitas?.find((x) => x.id === vid),
-                        (vid) => vendas?.find((x) => x.id === vid),
-                      )}
-                    </p>
-                  </li>
-                );
-              }
-              const h = item.interacao;
-              return (
-                <li key={`i-${h.id}`} className="border-t border-line pt-3 first:border-0 first:pt-0">
-                  <p className="num text-[12px] text-ink-soft">
-                    <span className="font-semibold text-ink-soft">{nomeTipoInteracao(h.tipo)}</span> ·{" "}
-                    {formatarQuando(h.criado_em, agora)}
-                    {ehToque(h.tipo) ? " · automático" : ""}
-                    {autor(h.autor_id)}
-                  </p>
-                  {!ehToque(h.tipo) && <p className="mt-1 whitespace-pre-line break-words">{h.texto}</p>}
-                  {h.proximo_contato && (
-                    <p className="num mt-1 text-[12px] text-ink-soft">
-                      → Próximo contato: {formatarQuando(h.proximo_contato, agora)}
-                    </p>
-                  )}
-                </li>
-              );
-            })}
-          </ol>
-        ) : (
-          <p className="mt-2 text-ink-soft">Nenhuma interação ainda.</p>
-        )}
-      </section>
+        <div className="ficha__coluna" style={{ "--mb-colunas": 4 } as React.CSSProperties}>
+          <aside className="mb-cartao" aria-label="Detalhes do lead">
+            <Abas
+              base="ficha"
+              rotulo="Detalhes do lead"
+              abas={[
+                { id: "andamento", rotulo: "Andamento" },
+                { id: "documentos", rotulo: "Documentos" },
+                { id: "historico", rotulo: "Histórico" },
+              ]}
+              ativa={aba}
+              onChange={setAba}
+            />
+            <PainelDeAba base="ficha" id="andamento" ativa={aba} className="mb-cartao__corpo ficha__corpo">
+              {ehDono && ativo ? (
+                <>
+                  <CampoEmGrupo id="ficha-temperatura" rotulo="Temperatura">
+                    <Seletor
+                      idRotulo="ficha-temperatura"
+                      grade={3}
+                      opcoes={TEMPERATURAS.map((x) => ({
+                        valor: x.slug,
+                        rotulo: (
+                          <>
+                            <span aria-hidden="true">{x.sinal}</span> {x.nome}
+                          </>
+                        ),
+                      }))}
+                      valor={lead.temperatura}
+                      onChange={(v) => alterar({ temperatura: v })}
+                    />
+                  </CampoEmGrupo>
+                  <CampoSelecao rotulo="Etapa">
+                    <select
+                      id="etapa"
+                      className="mb-campo__entrada"
+                      value={lead.etapa}
+                      onChange={(e) =>
+                        e.target.value === "venda" && !temVendaAtiva
+                          ? abrirRegistroDeVenda()
+                          : alterarComDesfazer({ etapa: e.target.value }, `Etapa: ${nomeEtapa(e.target.value)}`)
+                      }
+                    >
+                      {catalogos?.etapas
+                        .filter((x) => x.ativo || x.slug === lead.etapa)
+                        .map((x) => (
+                          <option key={x.slug} value={x.slug}>
+                            {x.nome}
+                          </option>
+                        ))}
+                    </select>
+                  </CampoSelecao>
+                </>
+              ) : (
+                <Pares
+                  itens={[
+                    { rotulo: "Temperatura", valor: nomeTemp ? `${nomeTemp.sinal} ${nomeTemp.nome}` : "– Sem temperatura" },
+                    {
+                      rotulo: "Etapa",
+                      valor: ativo ? (
+                        <Selo tom={tomDaEtapa(lead.etapa)}>{etapa?.nome ?? lead.etapa}</Selo>
+                      ) : (
+                        <Selo tom="etapa-descartado">✕ Descartado{motivoDescarte ? ` · ${motivoDescarte}` : ""}</Selo>
+                      ),
+                    },
+                  ]}
+                />
+              )}
+            </PainelDeAba>
+            <PainelDeAba base="ficha" id="documentos" ativa={aba} className="mb-cartao__corpo ficha__corpo">
+              <DocumentosDoLead leadId={id} podeEnviar={ehDono && ativo} podeRemover={ehDono} onMudou={carregar} />
+            </PainelDeAba>
+            <PainelDeAba base="ficha" id="historico" ativa={aba} className="mb-cartao__corpo ficha__corpo">
+              {itensDoHistorico.length ? <Historico itens={itensDoHistorico} /> : <p className="ficha__texto">Nenhuma interação ainda.</p>}
+            </PainelDeAba>
+          </aside>
+
+          {ehDono && ativo && (
+            <RadarDoLead
+              alicerce
+              lead={leadCompleto}
+              onMandar={(empreendimento) => mensagem.abrir({ ...leadCompleto, empreendimento }, undefined, { modelo: "apresentar_empreendimento" })}
+            />
+          )}
+
+          {!ehDono && pode("leads.atribuir") && (
+            <Atribuir
+              lead={lead}
+              horario={horario}
+              agora={agora}
+              nomeDe={(u) => nomes.get(u)}
+              onAtribuir={(dono) => (lead.dono_id ? alterar({ dono_id: dono }) : atribuirSemDono(dono))}
+              onPerdido={marcarPerdido}
+            />
+          )}
+        </div>
       </div>
 
+      {mensagem.elemento}
       {desfazer && (
         <AvisoDesfazer
           texto={desfazer.texto}
+          chave={desfazer.chave}
           onFim={fecharDesfazer}
           onDesfazer={() => {
             const { anterior, novo } = desfazer;
@@ -620,48 +749,31 @@ function Ficha({ id }: { id: string }) {
   );
 }
 
-function Linha({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
-  return (
-    <div className="flex gap-2">
-      <dt className="w-[110px] shrink-0 text-ink-soft sm:w-[120px]">{rotulo}</dt>
-      <dd className="min-w-0 break-words">{children}</dd>
-    </div>
-  );
-}
-
-/** Descartar em 1 toque: o toque no motivo já descarta. */
+/** Descartar em 1 toque: o toque no motivo já descarta (e o Toast tem o Desfazer). */
 function Descartar({ onDescartar }: { onDescartar: (m: MotivoDescarte) => void }) {
   const [aberto, setAberto] = useState(false);
   return (
-    <section className="card">
-      {!aberto ? (
-        <button type="button" className="btn btn-ghost focus-ring" onClick={() => setAberto(true)}>
-          ✕ Descartar lead
-        </button>
-      ) : (
-        <>
-          <span className="eyebrow">Descartar: escolha o motivo</span>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            {MOTIVOS_DESCARTE.map((m) => (
-              <button
-                key={m.slug}
-                type="button"
-                className="btn btn-ghost focus-ring whitespace-normal py-3"
-                onClick={() => onDescartar(m.slug)}
-              >
-                {m.nome}
-              </button>
-            ))}
-            <button
-              type="button"
-              className={clsx("focus-ring py-3 text-[13px] font-semibold text-ink-soft")}
-              onClick={() => setAberto(false)}
-            >
-              Cancelar
+    <section className="mb-cartao" aria-label="Descartar lead">
+      <div className="mb-cartao__corpo ficha__corpo">
+        {!aberto ? (
+          <div className="mb-grupo-botoes">
+            <button type="button" className="mb-botao mb-botao--secundario" aria-expanded="false" onClick={() => setAberto(true)}>
+              ✕ Descartar lead
             </button>
           </div>
-        </>
-      )}
+        ) : (
+          <>
+            <CampoEmGrupo id="descartar-motivo" rotulo="Descartar: escolha o motivo">
+              <Seletor idRotulo="descartar-motivo" grade={3} opcoes={MOTIVOS_DESCARTE.map((m) => ({ valor: m.slug, rotulo: m.nome }))} valor={null} onChange={onDescartar} />
+            </CampoEmGrupo>
+            <div className="mb-grupo-botoes">
+              <button type="button" className="mb-botao mb-botao--discreto" onClick={() => setAberto(false)}>
+                Cancelar
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     </section>
   );
 }
@@ -690,7 +802,8 @@ function Atribuir({
   const [dono, setDono] = useState(atual);
   const [erro, setErro] = useState<string | null>(null);
   const [atribuido, setAtribuido] = useState<{ id: string; perdido: boolean } | null>(null);
-  const estourado = prazoDoLead(lead, agora, horario)?.estado === "estourado";
+  const p = prazoDoLead(lead, agora, horario);
+  const estourado = p?.estado === "estourado";
   const escolhido = !!dono && dono !== atual;
   const atribuir = async () => {
     if (await onAtribuir(dono)) return;
@@ -698,77 +811,81 @@ function Atribuir({
   };
 
   return (
-    <section className="card">
-      {estourado && (
-        <div className="mb-4">
-          <span className="eyebrow">Lead da empresa sem primeiro contato</span>
-          <p className="mt-1">
-            <PrazoPrimeiroContato lead={lead} agora={agora} horario={horario} />
-          </p>
-          <p className="mt-1 text-ink-soft">
-            Escolha outro corretor e toque em Lead perdido. O histórico registra que{" "}
-            {nomeDe(atual) ?? "o corretor"} perdeu o lead, e o prazo recomeça para quem recebe.
-          </p>
-        </div>
-      )}
-      <label className="field-label" htmlFor="atribuir">
-        {estourado ? "Passar para" : "Atribuir a"}
-      </label>
-      <div className="flex flex-wrap gap-2">
-        <select
-          id="atribuir"
-          className="input min-w-[200px] flex-1"
-          value={dono}
-          onChange={(e) => {
-            setDono(e.target.value);
-            setAtribuido(null);
-          }}
-        >
-          {(estourado || !atual) && <option value={atual}>Escolha o corretor</option>}
-          {corretores
-            .filter((c) => !estourado || c.id !== atual)
-            .map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nome}
-              </option>
-            ))}
-        </select>
-        {estourado ? (
-          <button
-            type="button"
-            className="btn btn-red btn-lg focus-ring w-full whitespace-normal md:w-auto"
-            disabled={!escolhido}
-            onClick={async () => {
-              const e = await onPerdido(dono);
-              setErro(e);
-              if (!e) setAtribuido({ id: dono, perdido: true });
+    <section className="mb-cartao" aria-label="Atribuir lead">
+      <div className="mb-cartao__corpo ficha__corpo">
+        {estourado && p && (
+          <>
+            <Aviso
+              tom="alerta"
+              titulo="Lead da empresa sem primeiro contato"
+              texto={`Escolha outro corretor e toque em Lead perdido. O histórico registra que ${nomeDe(atual) ?? "o corretor"} perdeu o lead, e o prazo recomeça para quem recebe.`}
+            />
+            <p className="ficha__texto">
+              <PrazoDoSelo s={seloPrazo(p, agora)} />
+            </p>
+          </>
+        )}
+        <CampoSelecao rotulo={estourado ? "Passar para" : "Atribuir a"}>
+          <select
+            id="atribuir"
+            className="mb-campo__entrada"
+            value={dono}
+            onChange={(e) => {
+              setDono(e.target.value);
+              setAtribuido(null);
             }}
           >
-            Lead perdido: passar para outro corretor
-          </button>
-        ) : (
-          <button type="button" className="btn btn-red focus-ring" disabled={!escolhido} onClick={atribuir}>
-            Atribuir
-          </button>
+            {(estourado || !atual) && <option value={atual}>Escolha o corretor</option>}
+            {corretores
+              .filter((c) => !estourado || c.id !== atual)
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nome}
+                </option>
+              ))}
+          </select>
+        </CampoSelecao>
+        <div className="mb-grupo-botoes mb-grupo-botoes--fim">
+          {estourado ? (
+            <button
+              type="button"
+              className="mb-botao mb-botao--primario mb-botao--bloco-celular"
+              disabled={!escolhido}
+              onClick={async () => {
+                const e = await onPerdido(dono);
+                setErro(e);
+                if (!e) setAtribuido({ id: dono, perdido: true });
+              }}
+            >
+              Lead perdido: passar para outro corretor
+            </button>
+          ) : (
+            <button type="button" className="mb-botao mb-botao--primario mb-botao--bloco-celular" disabled={!escolhido} onClick={atribuir}>
+              Atribuir lead
+            </button>
+          )}
+        </div>
+        {erro && <Aviso tom="erro" titulo={erro} />}
+        {estourado && escolhido && (
+          <div className="mb-grupo-botoes">
+            <button type="button" className="mb-botao mb-botao--discreto mb-botao--p" onClick={atribuir}>
+              Só atribuir, sem contar como perdido
+            </button>
+          </div>
+        )}
+        {atribuido && atribuido.id === lead.dono_id && (
+          <>
+            <Aviso tom="sucesso" titulo={atribuido.perdido ? "Lead perdido registrado e repassado" : "Lead atribuído"} />
+            <AvisarCorretor
+              corretorId={atribuido.id}
+              corretorNome={corretores.find((c) => c.id === atribuido.id)?.nome ?? nomeDe(atribuido.id) ?? "Corretor"}
+              lead={lead}
+              horario={horario}
+              alicerce
+            />
+          </>
         )}
       </div>
-      {erro && <p className="aviso-erro mt-3">! {erro}</p>}
-      {estourado && escolhido && (
-        <button type="button" className="link-acao focus-ring mt-3 text-[13px]" onClick={atribuir}>
-          Só atribuir, sem contar como perdido
-        </button>
-      )}
-      {atribuido && atribuido.id === lead.dono_id && (
-        <div className="mt-3 grid gap-2">
-          <p className="aviso-ok">{atribuido.perdido ? "✓ Lead perdido registrado e repassado" : "✓ Lead atribuído"}</p>
-          <AvisarCorretor
-            corretorId={atribuido.id}
-            corretorNome={corretores.find((c) => c.id === atribuido.id)?.nome ?? nomeDe(atribuido.id) ?? "Corretor"}
-            lead={lead}
-            horario={horario}
-          />
-        </div>
-      )}
     </section>
   );
 }
@@ -810,14 +927,11 @@ function DigitarWhatsapp({ leadId, podeDigitar, onSalvo }: { leadId: string; pod
   }
 
   return (
-    <form className="mt-3 grid gap-2" onSubmit={salvar} noValidate>
-      <label className="field-label" htmlFor="whatsapp-depois">
-        WhatsApp com DDD
-      </label>
-      <div className="flex flex-wrap gap-2">
+    <form className="ficha__corpo" onSubmit={salvar} noValidate>
+      <Campo rotulo="WhatsApp com DDD">
         <input
           id="whatsapp-depois"
-          className="input num min-w-[180px] flex-1"
+          className="mb-campo__entrada"
           type="tel"
           inputMode="tel"
           autoComplete="off"
@@ -829,15 +943,13 @@ function DigitarWhatsapp({ leadId, podeDigitar, onSalvo }: { leadId: string; pod
             setAviso(null);
           }}
         />
-        <button type="submit" className="btn btn-ghost focus-ring" disabled={salvando || !valor.trim()}>
-          {salvando ? "Salvando…" : "Salvar"}
+      </Campo>
+      {aviso && <Aviso tom={confirmado ? "alerta" : "erro"} titulo={aviso} />}
+      <div className="mb-grupo-botoes">
+        <button type="submit" className="mb-botao mb-botao--secundario" aria-busy={salvando || undefined} disabled={salvando || !valor.trim()}>
+          {salvando ? "Salvando…" : "Salvar WhatsApp"}
         </button>
       </div>
-      {aviso && (
-        <p role="alert" className="aviso-erro">
-          ! {aviso}
-        </p>
-      )}
     </form>
   );
 }

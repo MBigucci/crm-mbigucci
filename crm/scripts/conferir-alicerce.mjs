@@ -38,6 +38,7 @@ const soMoldura = argumentos.includes("--moldura");
 const soLista = argumentos.includes("--lista");
 const soMensagens = argumentos.includes("--mensagens");
 const soLeads = argumentos.includes("--leads");
+const soFicha = argumentos.includes("--ficha");
 
 const saida = argumentos.find((a) => !a.startsWith("--")) ?? "local/alicerce";
 const base = "http://127.0.0.1:4173/vendas";
@@ -86,7 +87,7 @@ async function print(nome) {
 const resultado = {};
 const confere = (nome, ok, detalhe) => { resultado[nome] = { ok: !!ok, detalhe }; console.log(`${ok ? "OK   " : "FALHA"} ${nome}${detalhe ? "  " + JSON.stringify(detalhe) : ""}`); };
 
-if (!soMoldura && !soLista && !soMensagens && !soLeads) {
+if (!soMoldura && !soLista && !soMensagens && !soLeads && !soFicha) {
 // 1. Migração da escolha antiga (três casos de tema e a barra).
 await tela(1280, 800);
 await esquemaAparelho("light");
@@ -355,7 +356,7 @@ async function printDe(nome, seletor) {
   return true;
 }
 
-if (!soMoldura && !soMensagens && !soLeads) {
+if (!soMoldura && !soMensagens && !soLeads && !soFicha) {
   for (const [w, h] of [[375, 812], [1280, 800]]) {
     for (const tema of ["papel", "grafite"]) {
       await abrirListaDoDia(w, h, tema);
@@ -746,6 +747,213 @@ if (soLeads) {
   await tela(1280, 800);
   ws.close();
   process.exit(falhasLeads ? 1 : 0);
+}
+
+// 9c. A Ficha do lead (passo f). Roda com --ficha, depois do visual-preview.mjs e do build da prévia:
+//   node scripts/conferir-alicerce.mjs local/alicerce/passo-f --ficha
+// Dados fictícios de scripts/visual-fixtures.ts: lead-1 (Ana, do corretor, com toque a detalhar, visitas e documento),
+// lead-4 (de outro corretor, visto pelo gerente com ?qa=gerente) e lead-10 (descartado).
+if (soFicha) {
+  const CASOS = [
+    ["corretor", "/leads/ficha/?id=lead-1"],
+    ["gerente", "/leads/ficha/?id=lead-4&qa=gerente"],
+    ["descartado", "/leads/ficha/?id=lead-10"],
+  ];
+  const abrirFicha = async (w, h, tema, caminho) => {
+    erros.length = 0;
+    await tela(w, h);
+    await comArmazenamento({ mb_tema: tema }, caminho);
+    await espera(900);
+  };
+  // A medição roda na página (vai por toString), nos dois tamanhos e nos dois temas, para cada caso.
+  function medirFichaNaPagina(largura) {
+    const vis = (e) => !!e && e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden";
+    const qs = (s) => [...document.querySelectorAll(s)];
+    const altura = (e) => { const r = e.getBoundingClientRect(); const ext = ["::before", "::after"].map((p) => { const a = getComputedStyle(e, p); return a.position === "absolute" && a.content !== "none" ? parseFloat(a.height) || 0 : 0; }); return Math.max(r.height, ...ext); };
+    const rotulo = (e) => (e.getAttribute("aria-label") || e.textContent || "").trim().replace(/\s+/g, " ").slice(0, 40);
+    const interativos = qs("main a[href], main button, main select, main input:not([type=hidden]), main textarea, main summary").filter(vis).filter((e) => !e.disabled);
+    return {
+      rolagemLateral: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      h1Visivel: qs("main h1").filter((e) => vis(e) && !e.classList.contains("mb-visualmente-oculto")).length,
+      antigoForaDaPonte: qs("main .card, main .bar-brand, main .btn, main .input, main .field-label, main .selo-antigo, main .aviso-erro, main .aviso-ok, main .titulo-card, main .eyebrow, main .link-acao, main .titulo-secao-antigo").filter((e) => !e.closest(".ds-antigo")).length,
+      ponteNaPagina: qs("main .ds-antigo").length,
+      pequenos: largura < 768 ? interativos.filter((e) => altura(e) < 43.5).map((e) => rotulo(e) + " " + Math.round(altura(e))) : [],
+      semBarraLateral: qs("main .mb-cartao, main .mb-item").every((e) => parseFloat(getComputedStyle(e).borderLeftWidth) <= 1.01),
+    };
+  }
+  const SELETORES_DA_FICHA = [
+    '.mb-painel__linha > .ficha__coluna',
+    '.ficha__coluna > .mb-cartao[aria-label="Lead"] > .mb-cartao__corpo > .mb-lead__cabeca > div > h2.ficha__nome',
+    '.mb-lead__cabeca > .mb-chip.mb-chip--alto > span[aria-hidden="true"]',
+    '.mb-cartao[aria-label="Lead"] dl.mb-pares > dt + dd',
+    '.ficha__acoes > .mb-botao.mb-botao--whatsapp',
+    '.ficha__acoes > a.mb-botao.mb-botao--secundario[href^="tel:"]',
+    '#registrar.mb-cartao > form.mb-cartao__corpo > h2.titulo-cartao',
+    '#registrar .mb-aviso[role="status"] > svg.mb-icone + .mb-aviso__conteudo > .mb-aviso__titulo',
+    '#registrar .mb-campo > .mb-campo__rotulo + .mb-opcoes.mb-opcoes--3[role="group"] > .mb-opcao[aria-pressed]',
+    '#registrar textarea.mb-campo__entrada',
+    '#registrar .mb-opcoes.mb-opcoes--4[role="group"] > .mb-opcao[aria-pressed]',
+    '#registrar .mb-campo__par > .mb-campo input[type="date"]',
+    '#registrar .mb-campo__par > .mb-campo input[type="time"]',
+    '#registrar .mb-grupo-botoes.mb-grupo-botoes--fim > button.mb-botao--primario.mb-botao--bloco-celular[type="submit"]',
+    'section > h2.mb-sobrelinha',
+    'ul.mb-itens > li.mb-item > .mb-item__rodape > .mb-selo',
+    'aside.mb-cartao > .mb-abas[role="tablist"] > button.mb-aba[role="tab"][aria-controls][aria-selected]',
+    'aside.mb-cartao > [role="tabpanel"][aria-labelledby].mb-cartao__corpo',
+    '.mb-campo > .mb-campo__selecao > select.mb-campo__entrada',
+    '.mb-historico > li.mb-historico__item > .mb-historico__cabeca > strong',
+    'ul.mb-itens > li.mb-cartao .mb-selo--sucesso',
+    '#radar-titulo',
+    '#perfil.mb-cartao > .mb-cartao__corpo > details.mb-recolhivel > summary',
+  ];
+  const cliqueNoTexto = (seletor, texto) => avaliar(`(() => { const b = [...document.querySelectorAll(${JSON.stringify(seletor)})].find((x) => x.textContent.trim().replace(/\\s+/g, ' ') === ${JSON.stringify(texto)}); if (!b) return false; b.click(); return true; })()`);
+  const escolherNoSelect = (seletor, valor) => avaliar(`(() => { const s = document.querySelector(${JSON.stringify(seletor)}); if (!s) return false; const set = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set; set.call(s, ${JSON.stringify(valor)}); s.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`);
+  const pagina = (expr) => avaliar(`(() => { const q = (s) => document.querySelector(s); const qs = (s) => [...document.querySelectorAll(s)]; const t = (e) => (e?.textContent ?? '').trim().replace(/\\s+/g, ' '); return (${expr}); })()`);
+
+  for (const [w, h] of [[375, 812], [1280, 800]]) {
+    for (const tema of ["papel", "grafite"]) {
+      for (const [nome, caminho] of CASOS) {
+        const rot = `ficha ${nome} ${w} ${tema}`;
+        await abrirFicha(w, h, tema, caminho);
+        const m = await avaliar(`(${medirFichaNaPagina.toString()})(${w})`);
+        confere(`${rot}: sem rolagem lateral`, !m.rolagemLateral);
+        confere(`${rot}: sem h1 visível (o topo já tem o título)`, m.h1Visivel === 0, m.h1Visivel);
+        confere(`${rot}: nada do DS antigo, nem a ponte`, m.antigoForaDaPonte === 0 && m.ponteNaPagina === 0, { antigo: m.antigoForaDaPonte, ponte: m.ponteNaPagina });
+        confere(`${rot}: cartões e cards sem barra lateral`, m.semBarraLateral);
+        if (w < 768) confere(`${rot}: alvos de 44px no celular`, m.pequenos.length === 0, m.pequenos);
+        const semAnel = await focoVisivel(w < 768 ? 8 : 14);
+        confere(`${rot}: foco visível ao navegar com Tab`, semAnel.length === 0, semAnel);
+        await printInteiro(`ficha-${nome}-${w}-${tema}`);
+        confere(`${rot}: sem erro no console`, erros.length === 0, erros.slice(0, 3));
+      }
+      // O Registrar e o Agendar visita abertos.
+      await abrirFicha(w, h, tema, "/leads/ficha/?id=lead-1");
+      await printDe(`ficha-registrar-${w}-${tema}`, "#registrar");
+      const grade = await pagina(`({ como: getComputedStyle(q('#registrar .mb-opcoes--3')).gridTemplateColumns.split(' ').length, proximo: getComputedStyle(q('#registrar .mb-opcoes--4')).gridTemplateColumns.split(' ').length, alturaProximo: Math.round(Math.min(...qs('#registrar .mb-opcoes--4 .mb-opcao').map((b) => b.getBoundingClientRect().height))), pequenas: qs('#registrar .mb-opcoes--4 .mb-opcao--p').length })`);
+      confere(`ficha ${w} ${tema}: Como foi em 3 colunas e Próximo contato em ${w < 768 ? "2 × 2" : "4 colunas"}, 44px, sem pílula pequena`, grade.como === 3 && grade.proximo === (w < 768 ? 2 : 4) && grade.pequenas === 0 && (w >= 768 || grade.alturaProximo >= 43.5), grade);
+      await cliqueNoTexto("main button", "+ Agendar visita");
+      await espera(500);
+      await print(`ficha-agendar-visita-${w}-${tema}`);
+    }
+  }
+
+  // O HTML bate com os previews FichaDoLead, Abas, Historico, Envio, ConfirmarNaLinha, Compromisso e Cartao (corretor, papel, 1280).
+  await abrirFicha(1280, 800, "papel", "/leads/ficha/?id=lead-1");
+  {
+    const faltam = await avaliar(`${JSON.stringify(SELETORES_DA_FICHA)}.filter((s) => !document.querySelector(s))`);
+    confere("ficha: o HTML bate com o FichaDoLead (classes e aria-*)", faltam.length === 0, faltam);
+    const r = await pagina(`({ pares: qs('.mb-cartao[aria-label="Lead"] dl.mb-pares > dt').map(t), aDetalhar: qs('dt').some((e) => t(e) === 'A detalhar'), registrarAviso: t(q('#registrar .mb-aviso__titulo')), tipos: qs('#registrar .mb-opcoes--3 .mb-opcao').map(t), atrasoNoTopo: t(q('.mb-aviso--alerta .mb-aviso__titulo')) })`);
+    confere("ficha: a linha A detalhar saiu dos pares e o aviso do Registrar a diz", !r.aDetalhar && /Você abriu o WhatsApp/.test(r.registrarAviso) && r.pares.includes("Próximo contato") && r.pares.includes("Cadastrado"), r);
+    confere("ficha: Como foi com os tipos de sempre", ["WhatsApp", "Ligação", "E-mail", "Visita", "Anotação"].every((x) => r.tipos.includes(x)), r.tipos);
+    confere("ficha: aviso de atraso no topo", /^Contato atrasado desde /.test(r.atrasoNoTopo), r.atrasoNoTopo);
+  }
+
+  // O que cada parte faz (papel, 1280, corretor). A prévia não grava: as gravações voltam o erro da prévia.
+  {
+    const aba = (id) => pagina(`({ selecionada: qs('.mb-aba[aria-selected="true"]').map(t), visivel: qs('[role=tabpanel]').filter((p) => !p.hidden).map((p) => p.id), foco: t(document.activeElement).slice(0, 30) })`);
+    await cliqueNoTexto(".mb-aba", "Documentos");
+    let a = await aba();
+    confere("abas: tocar em Documentos mostra só o painel dele", a.selecionada[0] === "Documentos" && a.visivel.length === 1 && /documentos/.test(a.visivel[0]), a);
+    await avaliar(`document.querySelector(".mb-aba[aria-selected=true]").focus(); true`);
+    await teclar("ArrowRight", "ArrowRight", 39);
+    await espera(120);
+    a = await aba();
+    confere("abas: a seta → vai para Histórico e leva o foco", a.selecionada[0] === "Histórico" && a.foco === "Histórico", a);
+    await teclar("Home", "Home", 36);
+    await espera(120);
+    a = await aba();
+    confere("abas: Home volta para Andamento", a.selecionada[0] === "Andamento", a);
+
+    await cliqueNoTexto(".mb-aba", "Documentos");
+    const d0 = await pagina(`({ desativado: q('.mb-envio input[type=file]')?.disabled, motivo: t(q('.ficha__envio .mb-campo__ajuda')), docs: qs('.mb-envio__item .mb-envio__nome > span:first-child').map(t) })`);
+    confere("documentos: sem o tipo, a área vem desativada e diz o motivo logo abaixo", d0.desativado === true && /Escolha o tipo do documento primeiro/.test(d0.motivo) && d0.docs.length === 1, d0);
+    await escolherNoSelect(".mb-cartao [role=tabpanel]:not([hidden]) select.mb-campo__entrada", "cpf");
+    await espera(150);
+    const d1 = await pagina(`({ desativado: q('.mb-envio input[type=file]')?.disabled, motivo: !!q('.ficha__envio .mb-campo__ajuda') })`);
+    confere("documentos: com o tipo escolhido a área liga e o motivo some", d1.desativado === false && d1.motivo === false, d1);
+    await cliqueNoTexto(".mb-envio__item button", "Remover");
+    await espera(150);
+    const c0 = await pagina(`({ confirmar: !!q('li.ficha__confirmar > .mb-confirmar'), foco: t(document.activeElement).slice(0, 30), texto: t(q('.mb-confirmar__texto')) })`);
+    confere("documentos: Remover confirma na própria linha, com o efeito, e o foco vai para Cancelar", c0.confirmar && c0.foco === "Cancelar" && /Remover este arquivo\?.*histórico registra a remoção/.test(c0.texto), c0);
+    await teclar("Escape", "Escape", 27);
+    await espera(150);
+    const c1 = await pagina(`({ confirmar: !!q('.mb-confirmar'), foco: t(document.activeElement).slice(0, 30) })`);
+    confere("documentos: Esc fecha a confirmação e devolve o foco a Remover", !c1.confirmar && c1.foco === "Remover", c1);
+
+    await cliqueNoTexto(".mb-aba", "Andamento");
+    const temp = await pagina(`({ marcado: qs('#ficha-temperatura ~ .mb-opcoes .mb-opcao[aria-pressed="true"], .mb-campo:has(#ficha-temperatura) .mb-opcao[aria-pressed="true"]').map(t), opcoes: qs('.mb-campo:has(#ficha-temperatura) .mb-opcao').length })`);
+    confere("andamento: temperatura em Seletor de 3, Quente marcado, sem desmarcar", temp.opcoes === 3 && temp.marcado.length === 1 && /Quente/.test(temp.marcado[0]), temp);
+
+    // Registrar: erro de validação, atalho do dia e o tipo Sem resposta.
+    await avaliar(`document.querySelector('#registrar button[type=submit]').click(); true`);
+    await espera(150);
+    const e0 = await pagina(`t(q('#registrar .mb-aviso--erro .mb-aviso__titulo'))`);
+    confere("registrar: sem texto, o erro de sempre num Aviso", e0 === "Escreva o que aconteceu.", e0);
+    await cliqueNoTexto("#registrar .mb-opcoes--4 .mb-opcao", "Amanhã");
+    const am = await pagina(`({ marcado: qs('#registrar .mb-opcoes--4 .mb-opcao[aria-pressed="true"]').map(t), dia: q('#registrar input[type=date]').value, hora: q('#registrar input[type=time]').value })`);
+    confere("registrar: o atalho Amanhã marca o dia e põe 09:00", am.marcado[0] === "Amanhã" && /^\d{4}-\d{2}-\d{2}$/.test(am.dia) && am.hora === "09:00", am);
+    await cliqueNoTexto("#registrar .mb-opcoes--3 .mb-opcao", "Ligação");
+    confere("registrar: tocar em Ligação marca Ligação", (await pagina(`t(q('#registrar .mb-opcoes--3 .mb-opcao[aria-pressed="true"]'))`)) === "Ligação");
+
+    // A visita aberta: Cliente confirmou e Cancelar visita (a visita agendada de hoje, 23:00; depois das 23h ela já está aguardando baixa).
+    const vis = await pagina(`qs('li.mb-item').map((c) => ({ titulo: t(c.querySelector('.mb-item__titulo')), botao: !!c.querySelector('button.mb-item__titulo'), selo: t(c.querySelector('.mb-selo')), faixa: qs('.mb-item__faixa > :is(a,button)').length }))`);
+    const agendada = await pagina(`(() => { const c = qs('li.mb-item').find((x) => t(x.querySelector('.mb-selo')) === 'AGENDADA' || /agendada/i.test(t(x.querySelector('.mb-selo')))); return c ? { botao: !!c.querySelector('button.mb-item__alvo[aria-expanded="false"]'), faixa: [...c.querySelectorAll('.mb-item__faixa > :is(a,button)')].map(t) } : null; })()`);
+    const realizadaSemBotao = await pagina(`(() => { const c = qs('li.mb-item').find((x) => /realizada/i.test(t(x.querySelector('.mb-selo')))); return !!c && !c.querySelector('button.mb-item__alvo'); })()`);
+    confere("visitas: só a visita aberta do corretor é um botão; a realizada não é", !!agendada?.botao && realizadaSemBotao, { agendada, realizadaSemBotao, vis });
+    await avaliar(`document.querySelector('li.mb-item button.mb-item__alvo')?.click(); true`);
+    await espera(200);
+    const aberta = await pagina(`(() => { const c = q('li.mb-item:has(button.mb-item__alvo[aria-expanded="true"])'); if (!c) return null; const bs = [...c.querySelectorAll('.mb-item__edicao > .mb-grupo-botoes > .mb-botao')].map(t); return { expandida: true, botoes: bs, ligaAoPainel: c.querySelector('button.mb-item__alvo').getAttribute('aria-controls') === c.querySelector('.mb-item__edicao').id }; })()`);
+    confere("visita aberta: Cliente confirmou e Cancelar visita, e o aria-controls bate", !!aberta && aberta.botoes.includes("✓ Cliente confirmou") && aberta.botoes.includes("Cancelar visita") && aberta.ligaAoPainel, aberta);
+    await cliqueNoTexto("li.mb-item .mb-item__edicao .mb-botao", "Cancelar visita");
+    await espera(700);
+    confere("visita aberta: Cancelar visita grava e, sem gravar, mostra o erro no card (a prévia não grava)", (await pagina(`!!q('li.mb-item .mb-aviso--erro')`)) === true);
+
+    // Agendar visita: painel, Empreendimento com o select do Alicerce, Esc fecha e devolve o foco.
+    await cliqueNoTexto("main button", "+ Agendar visita");
+    await espera(500);
+    const ag = await pagina(`(() => { const p = q('body > aside.mb-lateral'); if (!p) return null; return { titulo: t(p.querySelector('.mb-lateral__titulo, h2')), empreendimento: !!p.querySelector('.mb-campo:has(.mb-campo__rotulo) .mb-campo__selecao > select.mb-campo__entrada'), datalist: !!p.querySelector('datalist, input[list]'), atalhos: p.querySelectorAll('.mb-opcoes--linha .mb-opcao--p').length, rodape: [...p.querySelectorAll('.mb-lateral__rodape .mb-botao')].map(t) }; })()`);
+    confere("agendar visita: painel com Empreendimento no select do Alicerce (sem datalist) e Cancelar · Agendar visita", !!ag && ag.empreendimento && !ag.datalist && ag.atalhos === 4 && ag.rodape.join("|") === "Cancelar|Agendar visita", ag);
+    await teclar("Escape", "Escape", 27);
+    await espera(400);
+    confere("agendar visita: Esc fecha o painel e o foco volta ao botão", (await pagina(`!q('body > aside.mb-lateral[aria-hidden="false"], body > aside.mb-lateral.mb-lateral--aberto') && t(document.activeElement).slice(0, 30) === '+ Agendar visita'`)) === true);
+
+    // Perfil, Descartar, Venda.
+    await cliqueNoTexto("main button", "Editar perfil");
+    await espera(300);
+    confere("perfil: Editar perfil abre a seção recolhível", (await pagina(`q('#perfil details.mb-recolhivel')?.open === true`)) === true);
+    const emp = await pagina(`!!q('#perfil .mb-form-grade select.mb-campo__entrada') && !q('#perfil datalist')`);
+    confere("perfil: Empreendimento no select do Alicerce", emp === true);
+    await cliqueNoTexto("main button", "✕ Descartar lead");
+    await espera(150);
+    confere("descartar: o toque abre os motivos em Seletor de 3, com Cancelar", (await pagina(`qs('.mb-campo:has(#descartar-motivo) .mb-opcao').length >= 3 && qs('main button').some((b) => t(b) === 'Cancelar')`)) === true);
+    await cliqueNoTexto("main button", "+ Registrar venda");
+    await espera(300);
+    const venda = await pagina(`(() => { const c = q('.mb-cartao[aria-label="Registrar venda"]'); return c ? { select: !!c.querySelector('.mb-campo__selecao > select'), marcador: !!c.querySelector('label.mb-marcador > input[type=checkbox]'), botoes: [...c.querySelectorAll('.mb-grupo-botoes .mb-botao')].map(t) } : null; })()`);
+    confere("venda: Registrar venda no Cartao, com select, marcador e Cancelar · Registrar venda", !!venda && venda.select && venda.marcador && venda.botoes.join("|") === "Cancelar|Registrar venda", venda);
+    await avaliar(`(() => { const i = document.querySelector('.mb-cartao[aria-label="Registrar venda"] input[inputmode=decimal]'); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(i, ''); i.dispatchEvent(new Event('input', { bubbles: true })); document.querySelector('.mb-cartao[aria-label="Registrar venda"] button[type=submit]').click(); return true; })()`);
+    await espera(200);
+    confere("venda: sem VGV, o erro de sempre num Aviso", /Confira o VGV/.test(await pagina(`t(q('.mb-cartao[aria-label="Registrar venda"] .mb-aviso--erro'))`)));
+  }
+
+  // O gerente: Andamento só leitura, Atribuir, sem Registrar. O lead descartado: etapa "Descartado · motivo", Reativar e sem o convite de venda.
+  await abrirFicha(1280, 800, "papel", "/leads/ficha/?id=lead-4&qa=gerente");
+  {
+    const g = await pagina(`({ registrar: !!q('#registrar'), andamento: qs('[role=tabpanel]:not([hidden]) .mb-pares dt').map(t), etapa: t(q('[role=tabpanel]:not([hidden]) .mb-pares .mb-selo')), atribuir: t(q('.mb-cartao[aria-label="Atribuir lead"] .mb-campo__rotulo')), botao: t(q('.mb-cartao[aria-label="Atribuir lead"] .mb-botao--primario')), botaoDesativado: q('.mb-cartao[aria-label="Atribuir lead"] .mb-botao--primario')?.disabled, dados: !!q('#dados-cliente') || true, radar: !!q('#radar-titulo') })`);
+    confere("gerente: sem Registrar nem Radar; Andamento só leitura com a etapa; Atribuir lead desativado até escolher", !g.registrar && !g.radar && g.andamento.join() === "Temperatura,Etapa" && /PROPOSTA/i.test(g.etapa) && g.atribuir === "Atribuir a" && g.botao === "Atribuir lead" && g.botaoDesativado === true, g);
+  }
+  await abrirFicha(1280, 800, "papel", "/leads/ficha/?id=lead-10");
+  {
+    const x = await pagina(`({ etapa: t(q('[role=tabpanel]:not([hidden]) .mb-pares .mb-selo')), seloNoCartao: qs('.mb-cartao[aria-label="Lead"] .mb-selo--etapa-descartado').map(t), reativar: qs('main button').some((b) => t(b) === 'Reativar lead'), conviteDeVenda: /Quando o cliente assinar/.test(document.body.innerText), registrar: !!q('#registrar'), descartar: qs('main button').some((b) => /Descartar lead/.test(t(b))), atraso: !!q('.mb-aviso--alerta') })`);
+    confere("descartado: Etapa vira \"✕ Descartado · motivo\", igual ao selo do cartão, sem convite de venda, com Reativar e sem Registrar nem aviso de atraso", /^✕ DESCARTADO · /i.test(x.etapa) && x.etapa === x.seloNoCartao[0] && x.seloNoCartao.length === 1 && x.reativar && !x.conviteDeVenda && !x.registrar && !x.descartar && !x.atraso, x);
+  }
+  await tela(1280, 800);
+
+  writeFileSync(join(saida, "resultado.json"), JSON.stringify(resultado, null, 2));
+  const falhasFicha = Object.values(resultado).filter((r) => !r.ok).length;
+  console.log(`\n${Object.keys(resultado).length} conferências, ${falhasFicha} falhas. Prints em ${saida}`);
+  await tela(1280, 800);
+  ws.close();
+  process.exit(falhasFicha ? 1 : 0);
 }
 
 // 10. As mensagens do passo d. Roda com --mensagens, depois do visual-preview.mjs e do build da prévia.

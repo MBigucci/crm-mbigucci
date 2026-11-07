@@ -11,6 +11,8 @@ import clsx from "clsx";
  */
 export function CardDeItem({
   href,
+  alvo,
+  detalhe,
   titulo,
   linhas,
   direita,
@@ -22,8 +24,15 @@ export function CardDeItem({
   destaque = false,
   indice,
 }: {
-  /** O registro que o card inteiro abre. */
-  href: string;
+  /** O registro que o card inteiro abre. Sem ele (e sem `alvo`), o título não é um alvo. */
+  href?: string;
+  /**
+   * O card que abre no lugar, sem sair da página (a visita na ficha do lead): o título vira um botão
+   * `.mb-item__alvo` com `aria-expanded`, e `detalhe` aparece quando está aberto.
+   */
+  alvo?: { aberto: boolean; onAlternar: () => void; controla: string };
+  /** O que a visita aberta mostra (as ações que não cabem na faixa), no `.mb-item__edicao`. */
+  detalhe?: React.ReactNode;
   titulo: React.ReactNode;
   /** Linhas `.mb-item__linha`, já com o Prazo quando houver. */
   linhas?: React.ReactNode;
@@ -46,14 +55,22 @@ export function CardDeItem({
 }) {
   return (
     <li
-      className={clsx("mb-item", destaque && "mb-item--destaque", !faixa && !edicao && "mb-item--sem-faixa", indice !== undefined && "mb-entra")}
+      className={clsx("mb-item", destaque && "mb-item--destaque", !faixa && !edicao && !(detalhe && alvo?.aberto) && "mb-item--sem-faixa", indice !== undefined && "mb-entra")}
       style={indice === undefined ? undefined : ({ "--i": indice } as React.CSSProperties)}
     >
       <div className="mb-item__cabeca">
         <div className="mb-item__id">
-          <Link className="mb-item__titulo mb-item__alvo" href={href}>
-            {titulo}
-          </Link>
+          {alvo ? (
+            <button className="mb-item__titulo mb-item__alvo" type="button" aria-expanded={alvo.aberto} aria-controls={alvo.controla} onClick={alvo.onAlternar}>
+              {titulo}
+            </button>
+          ) : href ? (
+            <Link className="mb-item__titulo mb-item__alvo" href={href}>
+              {titulo}
+            </Link>
+          ) : (
+            <span className="mb-item__titulo">{titulo}</span>
+          )}
           {linhas}
         </div>
         {direita}
@@ -63,6 +80,11 @@ export function CardDeItem({
       {avisos}
       {faixa && !edicao && <div className="mb-item__faixa">{faixa}</div>}
       {edicao}
+      {detalhe && !edicao && alvo?.aberto && (
+        <div className="mb-item__edicao" id={alvo.controla}>
+          {detalhe}
+        </div>
+      )}
     </li>
   );
 }

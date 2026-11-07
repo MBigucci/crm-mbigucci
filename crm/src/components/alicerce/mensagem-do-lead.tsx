@@ -13,12 +13,13 @@ type LeadDaMensagem = Pick<Lead, "nome" | "whatsapp" | "empreendimento" | "etapa
  * .ds-antigo (a mesma que a Lista do dia usa). `aoAbrir` é o registro do toque, quando a tela o grava.
  */
 export function useMensagemPronta() {
-  const [aberta, setAberta] = useState<{ lead: LeadDaMensagem; aoAbrir?: () => void } | null>(null);
-  const abrir = (lead: LeadDaMensagem, aoAbrir?: () => void) => setAberta({ lead, aoAbrir });
+  const [aberta, setAberta] = useState<{ lead: LeadDaMensagem; aoAbrir?: () => void; modelo?: string; visita?: string } | null>(null);
+  /** `modelo` é o slug do modelo que já vem marcado (parabéns, confirmar visita) e `visita` o texto de {visita}. */
+  const abrir = (lead: LeadDaMensagem, aoAbrir?: () => void, opcoes?: { modelo?: string; visita?: string }) => setAberta({ lead, aoAbrir, ...opcoes });
   const elemento = aberta
     ? createPortal(
         <div className="ds-antigo">
-          <DialogoMensagem lead={aberta.lead} onFechar={() => setAberta(null)} onAbrirWhatsapp={aberta.aoAbrir} />
+          <DialogoMensagem lead={aberta.lead} modelo={aberta.modelo} visita={aberta.visita} onFechar={() => setAberta(null)} onAbrirWhatsapp={aberta.aoAbrir} />
         </div>,
         document.body,
       )

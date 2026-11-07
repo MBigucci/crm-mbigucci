@@ -19,6 +19,10 @@ import {
 } from "@/lib/vendas";
 import { corrigirVenda, marcarPaga, registrarVenda } from "@/lib/vendas-dados";
 import { RodapeAcao } from "@/components/leads/partes";
+import { Aviso } from "@/components/alicerce/aviso";
+import { Pares } from "@/components/alicerce/pares";
+import { useToast } from "@/components/alicerce/toast";
+import { CorrigirAlicerce, MotivoAlicerce, PagarAlicerce, RegistrarVendaAlicerce, SeloDaVenda } from "./venda-alicerce";
 
 /** Estado da venda sempre com sinal + palavra + cor. */
 export function SeloVenda({ venda }: { venda: Pick<Venda, "status" | "pagamento" | "pago_em"> }) {
@@ -60,10 +64,13 @@ export function RegistrarVenda({
   lead,
   onRegistrada,
   onCancelar,
+  alicerce = false,
 }: {
   lead: { id: string; nome?: string; empreendimento: string | null; valor: number | null };
   onRegistrada: () => void;
   onCancelar: () => void;
+  /** O formulário no Alicerce (a ficha, passo f). Sem ele, o DS antigo da tela Vendas. */
+  alicerce?: boolean;
 }) {
   const hoje = diaIso(new Date());
   const [f, setF] = useState({
@@ -129,6 +136,26 @@ export function RegistrarVenda({
     setEditado(false);
     onRegistrada();
   }
+
+  const cancelar = () => {
+    // Cancelar descarta o rascunho: senão a ficha reabriria o formulário na próxima visita.
+    limparRascunho(chaveRascunhoVenda(lead.id));
+    onCancelar();
+  };
+  if (alicerce)
+    return (
+      <RegistrarVendaAlicerce
+        nome={lead.nome}
+        f={f}
+        setF={setF}
+        setEditado={setEditado}
+        erro={erro}
+        salvando={salvando}
+        hoje={hoje}
+        onSubmit={salvar}
+        onCancelar={cancelar}
+      />
+    );
 
   return (
     <form onSubmit={salvar} className="grid gap-4 border-t border-line pt-4" noValidate>
@@ -232,15 +259,19 @@ export function CardVenda({
   lead,
   corretor,
   onMudou,
+  alicerce = false,
 }: {
   venda: Venda;
   /** Fora da ficha, o nome do cliente com o link. */
   lead?: { id: string; nome: string } | null;
   corretor?: string;
   onMudou: () => void;
+  /** O card no Alicerce (a ficha, passo f): Cartao, Pares e Selo. Sem ele, o DS antigo da tela Vendas. */
+  alicerce?: boolean;
 }) {
   const eu = usePerfil();
   const { pode } = useSessao();
+  const toast = useToast();
   const [painel, setPainel] = useState<Painel>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -254,10 +285,89 @@ export function CardVenda({
   async function depois(e: string | null, aviso: string) {
     setErro(e);
     if (e) return;
-    setOk(aviso);
+    // No Alicerce o que deu certo sai em Toast.
+    if (alicerce) toast.mostrar(aviso, { tipo: "sucesso" });
+    else setOk(aviso);
     setPainel(null);
     onMudou();
   }
+
+  if (alicerce)
+    return (
+      <li className="mb-cartao">
+        <div className="mb-cartao__corpo ficha__corpo">
+          <div className="mb-lead__cabeca">
+            <p className="ficha__valor mb-valor">{formatarReais(Number(v.vgv))}</p>
+            <SeloDaVenda venda={v} />
+          </div>
+          {lead && (
+            <Link href={`/leads/ficha/?id=${lead.id}`} className="mb-link">
+              {lead.nome}
+            </Link>
+          )}
+          <Pares
+            itens={[
+              { rotulo: "Imóvel", valor: imovelDaVenda(v) },
+              { rotulo: "Assinada em", valor: formatarDia(v.assinada_em) },
+              ...(corretor ? [{ rotulo: "Corretor", valor: corretor }] : []),
+              ...(v.status === "cancelada" && v.motivo_cancelamento ? [{ rotulo: "Cancelamento", valor: v.motivo_cancelamento }] : []),
+            ]}
+          />
+          {v.observacao && <p className="ficha__quebra">{v.observacao}</p>}
+          {erro && <Aviso tom="erro" titulo={erro} />}
+          {painel === "pagar" && (
+            <PagarAlicerce
+              onCancelar={() => setPainel(null)}
+              onSalvar={async (data) => depois(await marcarPaga(v.id, data), `Venda paga em ${formatarDia(data)}.`)}
+            />
+          )}
+          {painel === "corrigir" && (
+            <CorrigirAlicerce
+              venda={v}
+              onCancelar={() => setPainel(null)}
+              onSalvar={async (campos, motivo) => depois(await corrigirVenda(v.id, campos, motivo), "Venda corrigida.")}
+            />
+          )}
+          {painel === "cancelar" && (
+            <MotivoAlicerce
+              titulo={ativa ? "Cancelar a venda" : "Reativar a venda"}
+              texto={
+                ativa
+                  ? "A venda fica guardada como cancelada e sai das contas. Se for a única do lead, ele volta para Proposta."
+                  : "A venda volta a contar e o lead vai para Venda."
+              }
+              botao={ativa ? "✕ Cancelar venda" : "Reativar venda"}
+              onCancelar={() => setPainel(null)}
+              onSalvar={async (motivo) =>
+                depois(
+                  await corrigirVenda(v.id, { status: ativa ? "cancelada" : "ativa" }, motivo),
+                  ativa ? "Venda cancelada." : "Venda reativada.",
+                )
+              }
+            />
+          )}
+        </div>
+        {(corrige || (ativa && v.pagamento === "pendente" && paga)) && !painel && (
+          <footer className="mb-cartao__rodape">
+            {corrige && (
+              <button type="button" className="mb-botao mb-botao--discreto mb-botao--p" onClick={() => setPainel("cancelar")}>
+                {ativa ? "Cancelar venda" : "Reativar venda"}
+              </button>
+            )}
+            {corrige && ativa && (
+              <button type="button" className="mb-botao mb-botao--discreto mb-botao--p" onClick={() => setPainel("corrigir")}>
+                Corrigir
+              </button>
+            )}
+            {ativa && v.pagamento === "pendente" && paga && (
+              <button type="button" className="mb-botao mb-botao--secundario mb-botao--p" aria-label={`Marcar como paga: ${quem}`} onClick={() => setPainel("pagar")}>
+                ✓ Marcar como paga
+              </button>
+            )}
+          </footer>
+        )}
+      </li>
+    );
 
   return (
     <li className="card">

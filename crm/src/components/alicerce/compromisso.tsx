@@ -11,6 +11,8 @@ import { CardDeItem } from "./card-de-item";
  */
 export function Compromisso({
   href,
+  alvo,
+  detalhe,
   quando,
   quemEOnde,
   maisLinhas,
@@ -22,7 +24,10 @@ export function Compromisso({
   destaque,
   indice,
 }: {
-  href: string;
+  href?: string;
+  /** A visita aberta na própria página (a ficha do lead): o título é um botão e `detalhe` traz as ações que não cabem na faixa. */
+  alvo?: { aberto: boolean; onAlternar: () => void; controla: string };
+  detalhe?: React.ReactNode;
   quando: string;
   quemEOnde: React.ReactNode;
   /** Outras linhas (`.mb-item__linha`): o corretor, quem deu a baixa, o comprovante. */
@@ -40,6 +45,8 @@ export function Compromisso({
   return (
     <CardDeItem
       href={href}
+      alvo={alvo}
+      detalhe={detalhe}
       titulo={quando}
       linhas={
         <>

@@ -3,13 +3,22 @@
  * `Campo` é o <label class="mb-campo"> de uma entrada só (input ou textarea `.mb-campo__entrada`);
  * `CampoEmGrupo` é o mesmo bloco para um grupo de botões (Seletor), nomeado pelo rótulo (`id`).
  */
-export function Campo({ rotulo, ajuda, children }: { rotulo: string; ajuda?: React.ReactNode; children: React.ReactNode }) {
+export function Campo({ rotulo, ajuda, colunas, children }: { rotulo: string; ajuda?: React.ReactNode; colunas?: number; children: React.ReactNode }) {
   return (
-    <label className="mb-campo">
+    <label className="mb-campo" style={colunas ? ({ "--mb-colunas": colunas } as React.CSSProperties) : undefined}>
       <span className="mb-campo__rotulo">{rotulo}</span>
       {children}
       {ajuda && <span className="mb-campo__ajuda">{ajuda}</span>}
     </label>
+  );
+}
+
+/** O `select` do Alicerce: o mesmo Campo com a seta (`.mb-campo__selecao`). `children` é o `<select className="mb-campo__entrada">`. */
+export function CampoSelecao({ rotulo, ajuda, colunas, children }: { rotulo: string; ajuda?: React.ReactNode; colunas?: number; children: React.ReactNode }) {
+  return (
+    <Campo rotulo={rotulo} ajuda={ajuda} colunas={colunas}>
+      <span className="mb-campo__selecao">{children}</span>
+    </Campo>
   );
 }
 

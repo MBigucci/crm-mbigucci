@@ -199,3 +199,126 @@ svg.mb-icone {
     width: 100%;
   }
 }
+
+/* 8. A estrutura da Ficha do lead (passo f, 07/11/2026).
+   O preview FichaDoLead do Alicerce monta a tela com um <style> próprio (a coluna em grade com --esp-4, o
+   corpo do cartão com --esp-3, o nome em 24px, o telefone e o par de ações) e o bundle.css não tem classe para
+   isso. Os mesmos tokens e medidas do preview. As duas colunas usam o .mb-painel__linha do Alicerce (8 + 4). */
+.ficha__coluna {
+  display: grid;
+  gap: var(--esp-4);
+  align-content: start;
+  min-width: 0;
+}
+.ficha__corpo {
+  display: grid;
+  gap: var(--esp-3);
+}
+.ficha__nome {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 28px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+.ficha__telefone {
+  margin: 2px 0 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+.ficha__acoes {
+  display: flex;
+  gap: var(--esp-2);
+}
+.ficha__acoes > * {
+  flex: 1;
+  min-width: 0;
+}
+/* Texto de apoio da ficha (vazio de uma seção, linha do perfil): 13px em texto suave, como o rodapé da Lista do dia. */
+.ficha__texto {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--texto-suave);
+}
+.ficha__apoio {
+  display: block;
+  color: var(--texto-suave);
+}
+.ficha__linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-2) var(--esp-3);
+}
+/* O resumo do perfil e o aviso de aniversário, no fim do cartão do lead, separados por um fio. */
+.ficha__resumo {
+  display: grid;
+  gap: var(--esp-3);
+  padding-top: var(--esp-3);
+  border-top: var(--mb-borda) solid var(--linha);
+}
+/* Âncoras da ficha (#registrar, #perfil, Venda): o topo é fixo, então o título não pode ficar escondido atrás dele. */
+.ficha__ancora {
+  scroll-margin-top: calc(var(--topo-altura) + var(--esp-4));
+}
+/* A lista de documentos e a área de envio ficam dentro do corpo em grade, que já dá o espaço entre os blocos. */
+.ficha__lista {
+  margin: 0;
+}
+.ficha__envio {
+  display: grid;
+  gap: var(--esp-2);
+}
+.ficha__confirmar {
+  list-style: none;
+}
+/* Botão avulso numa seção em grade (+ Agendar visita, + Registrar venda): do tamanho do texto, à esquerda. */
+.ficha__agendar {
+  justify-self: start;
+}
+/* O texto digitado numa interação guarda as quebras de linha e não estoura a coluna. */
+.ficha__quebra {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+/* Agendar visita em linha, dentro do card da Agenda (que ainda é do DS antigo): a mesma pilha de campos do painel. */
+.agendar-em-linha {
+  display: grid;
+  gap: var(--esp-4);
+}
+/* O valor em destaque dos cartões da ficha (VGV da venda, nota do Radar): a fonte de títulos em 20px, como o
+   nome do lead no preview FichaDoLead mas menor, porque é um dado do cartão e não o título dele. */
+.ficha__valor {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  line-height: 24px;
+  font-weight: 700;
+}
+/* Os motivos do Radar (✓ ! ✕) em linha, quebrando quando faltar espaço. */
+.ficha__motivos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-1) var(--esp-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--texto-suave);
+}
+/* Na coluna estreita da ficha (4 de 12), o Selo da etapa do lead descartado ("Descartado · Sem interesse") tem o
+   texto mais largo que o espaço do .mb-pares e empurrava o cartão para fora da tela. O selo passa a quebrar a
+   linha e o valor pode encolher. */
+.ficha__coluna .mb-pares dd {
+  min-width: 0;
+}
+.ficha__coluna .mb-pares .mb-selo {
+  white-space: normal;
+}

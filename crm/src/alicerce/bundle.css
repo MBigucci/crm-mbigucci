@@ -2035,3 +2035,14 @@ button.mb-folha__item { width: 100%; border: 0; background: none; font-family: v
 .mb-lista__item[aria-current="true"] .mb-lista__titulo { font-weight: 700; }
 /* Filtros: a largura acompanha o texto escolhido (até 260px), para “Todos os empreendimentos” não cortar */
 .mb-filtros > .mb-campo:not(.mb-filtros__busca) { flex: 0 1 auto; min-width: 150px; max-width: 260px; }
+
+/* Passo f do Vendas (07/11/2026) */
+/* O alvo do card pode ser um botão (a visita abre no próprio card) */
+:where(button.mb-item__alvo) { appearance: none; margin: 0; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+/* Envio desativado (sem permissão, sem conexão): mesmo tratamento dos campos */
+.mb-envio:has(input:disabled), .mb-envio[aria-disabled="true"] { opacity: var(--mb-opacidade-desativado); cursor: not-allowed; }
+.mb-envio:has(input:disabled):hover { background: transparent; border-color: var(--linha-forte); }
+/* No celular, rótulo longo na faixa do card quebra em duas linhas em vez de estourar */
+@media (max-width: 767px) {
+  .mb-item__faixa > .mb-botao { height: auto; min-height: var(--controle-toque); white-space: normal; text-align: center; line-height: 18px; padding-block: var(--esp-1); }
+}

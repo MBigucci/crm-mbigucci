@@ -9,7 +9,7 @@ export const profiles = [
 const base = {dono_id:'corretor-1',whatsapp:'5511999990010',email:null,origem:'indicacao',campanha:null,empreendimento:'Residencial Exemplo',temperatura:'quente',etapa:'em_contato',proximo_contato:at(-1),status:'ativo',motivo_descarte:null,valor:600000,dormitorios:2,regiao:'Centro',finalidade:'morar',ultima_interacao_em:at(-3),ultima_interacao_texto:'Quer conhecer a planta de dois dormitórios. Retornar para combinar a visita.',tentativas:2,atribuido_por:null,atribuido_em:null,created_at:at(-7),nascimento:null,telefone2:null,estado_civil:null,profissao:null,renda:null,entrada:null,fgts:null,composicao_renda:null,possui_imovel:null};
 const leads = [
   // Tocou em Abrir no WhatsApp hoje e ainda não detalhou (ajustes da ficha, 04/11/2026).
-  {...base,id:'lead-1',nome:'Ana Exemplo',ultimo_toque_em:at(0,9),ultimo_toque_tipo:'toque_whatsapp'},
+  {...base,id:'lead-1',nome:'Ana Exemplo',ultimo_toque_em:at(0,9),ultimo_toque_tipo:'toque_whatsapp',email:'ana@example.invalid',profissao:'Engenheira',estado_civil:'casado',telefone2:'5511999990099'},
   {...base,id:'lead-2',nome:'Bruno Exemplo',origem:'empresa',etapa:'novo',ultima_interacao_em:null,ultima_interacao_texto:null,proximo_contato:null,atribuido_em:at(-1),atribuido_por:'gerente'},
   {...base,id:'lead-3',nome:'Clara Exemplo',temperatura:'morno',proximo_contato:at(0,23),nascimento:'1990-'+day.slice(5)},
   {...base,id:'lead-4',nome:'Daniel Exemplo',dono_id:'corretor-2',temperatura:'frio',etapa:'proposta',proximo_contato:null},
@@ -23,10 +23,15 @@ const leads = [
   {...base,id:'lead-9',nome:'Vera Exemplo',dono_id:null,origem:'empresa',etapa:'novo',ultima_interacao_em:null,ultima_interacao_texto:null,proximo_contato:null,tentativas:0},
   {...base,id:'lead-10',nome:'Otávio Exemplo',status:'descartado',motivo_descarte:'sem_interesse',temperatura:'frio',proximo_contato:null,ultima_interacao_texto:'Disse que não tem mais interesse.'},
 ];
-const visitas = [
+const visitas: Record<string, any>[] = [
   {id:'visita-1',lead_id:'lead-1',corretor_id:'corretor-1',empreendimento:base.empreendimento,inicio:at(0,23),local:'Plantão do residencial',status:'agendada',observacao:null,baixa_por:null,baixa_em:null,comprovante:null,created_at:at(-3),lead:leads[0]},
   {id:'visita-2',lead_id:'lead-3',corretor_id:'corretor-1',empreendimento:base.empreendimento,inicio:at(-1,15),local:'Plantão do residencial',status:'confirmada',observacao:null,baixa_por:null,baixa_em:null,comprovante:null,created_at:at(-3),lead:leads[2]},
 ];
+// Passo f (ficha): uma visita já realizada e uma cancelada no lead-1, para o card em cada estado.
+visitas.push(
+  {id:'visita-3',lead_id:'lead-1',corretor_id:'corretor-1',empreendimento:base.empreendimento,inicio:at(-5,10),local:'Decorado',status:'realizada',observacao:'Gostou da planta de dois dormitórios.',baixa_por:'corretor-1',baixa_em:at(-5,12),comprovante:null,created_at:at(-8),lead:leads[0]},
+  {id:'visita-4',lead_id:'lead-1',corretor_id:'corretor-1',empreendimento:base.empreendimento,inicio:at(-9,15),local:null,status:'cancelada',observacao:null,baixa_por:null,baixa_em:null,comprovante:null,created_at:at(-12),lead:leads[0]},
+);
 const vendas = [
  {id:'venda-1',lead_id:'lead-1',corretor_id:'corretor-1',empreendimento:base.empreendimento,unidade:'101',vgv:3450000,assinada_em:day,pagamento:'pago',pago_em:day,status:'ativa',comprovante:null,observacao:null,created_at:at(0),lead:leads[0]},
  {id:'venda-2',lead_id:'lead-3',corretor_id:'corretor-1',empreendimento:base.empreendimento,unidade:'202',vgv:650000,assinada_em:day,pagamento:'pendente',pago_em:null,status:'ativa',comprovante:null,observacao:null,created_at:at(0),lead:leads[2]},
@@ -82,14 +87,19 @@ const tables: Record<string, Row[]> = {
  teams:[{id:'equipe-1',nome:'Equipe Exemplo',gerente_id:'gerente'}],
  lead_origens:['indicacao','anuncio_proprio','plantao','empresa'].map((slug,ordem)=>({slug,nome:['Indicação','Anúncio próprio','Plantão','Empresa'][ordem],ordem,ativo:true,pede_campanha:ordem===1,restrita:ordem===3})),
  lead_etapas:['novo','em_contato','visita_agendada','visita_realizada','proposta','venda'].map((slug,ordem)=>({slug,nome:['Novo','Em contato','Visita agendada','Visita realizada','Proposta','Venda'][ordem],ordem,ativo:true})),
- lead_interacoes:[{id:'toque-1',lead_id:'lead-1',autor_id:'corretor-1',criado_em:at(0,9),tipo:'toque_whatsapp',texto:'Abriu o WhatsApp',proximo_contato:null},{id:'interacao-1',lead_id:'lead-1',autor_id:'corretor-1',criado_em:at(-3),tipo:'whatsapp',texto:base.ultima_interacao_texto,proximo_contato:at(-1)}],
- lead_eventos:leads.map((l,i)=>({id:'evento-'+i,lead_id:l.id,tipo:'criado',de:null,para:l.dono_id,detalhe:null,automatico:true,autor_id:l.dono_id,criado_em:at(0,9)})),
+ lead_interacoes:[{id:'interacao-2',lead_id:'lead-1',autor_id:'corretor-1',criado_em:at(-6),tipo:'ligacao',texto:'Atendeu e pediu a tabela de preços do dois dormitórios. Combinamos de visitar o decorado.',proximo_contato:at(-3)},{id:'interacao-4',lead_id:'lead-4',autor_id:'corretor-2',criado_em:at(-2),tipo:'whatsapp',texto:'Enviou os documentos para a análise.',proximo_contato:at(1)},{id:'toque-1',lead_id:'lead-1',autor_id:'corretor-1',criado_em:at(0,9),tipo:'toque_whatsapp',texto:'Abriu o WhatsApp',proximo_contato:null},{id:'interacao-1',lead_id:'lead-1',autor_id:'corretor-1',criado_em:at(-3),tipo:'whatsapp',texto:base.ultima_interacao_texto,proximo_contato:at(-1)}],
+ lead_eventos:[...leads.map((l,i)=>({id:'evento-'+i,lead_id:l.id,tipo:'criado',de:null,para:l.dono_id,detalhe:null,automatico:true,autor_id:l.dono_id,criado_em:at(0,9)})),
+  {id:'evento-e1',lead_id:'lead-1',tipo:'etapa',de:'novo',para:'em_contato',detalhe:null,automatico:false,autor_id:'corretor-1',criado_em:at(-6,11)},
+  {id:'evento-e2',lead_id:'lead-1',tipo:'temperatura',de:null,para:'quente',detalhe:null,automatico:false,autor_id:'corretor-1',criado_em:at(-6,11)},
+  {id:'evento-e3',lead_id:'lead-1',tipo:'documento',de:null,para:'identidade',detalhe:null,automatico:false,autor_id:'corretor-1',criado_em:at(-4,16)},
+  {id:'evento-e4',lead_id:'lead-1',tipo:'dono',de:'corretor-2',para:'corretor-1',detalhe:null,automatico:false,autor_id:'gerente',criado_em:at(-7,9)},
+  {id:'evento-e5',lead_id:'lead-10',tipo:'status',de:'ativo',para:'descartado',detalhe:'sem_interesse',automatico:false,autor_id:'corretor-1',criado_em:at(-1,10)}],
  metas_vgv:[{id:'meta-vgv',ano:now.getFullYear(),corretor_id:null,valor:10000000,updated_at:at(0)}],
  metas:[], horario_atendimento:[{dias:[0,1,2,3,4,5,6],inicio:'08:00',fim:'20:00',updated_at:at(-1)}],
  app_settings:[{chave:'exemplo_visual',valor:false,rotulo:'Chave de exemplo',descricao:'Dado fictício para conferir a leitura do estado.',updated_at:at(-1)}],
  permissions:[{slug:'leads.cadastrar',nome:'Cadastrar leads',descricao:'Cadastrar e trabalhar os próprios leads',grupo:'Leads'}],
  role_permissions:[{perfil:'corretor',permissao:'leads.cadastrar'}],
- mensagens_modelo:[],lead_documentos:[],
+ mensagens_modelo:[],lead_documentos:[{id:'doc-1',lead_id:'lead-1',categoria:'identidade',nome:'RG e CPF - Ana Exemplo.pdf',caminho:'lead-1/doc-1.pdf',tipo:'application/pdf',tamanho:253952,enviado_por:'corretor-1',enviado_em:at(-4,16)}],
 };
 // Adaptador só de leitura. Escritas falham de forma explícita.
 class Query implements PromiseLike<{data:any;error:any}> {

@@ -29,6 +29,7 @@ export function DataHora({
   hora,
   onChange,
   rotulosVisiveis = false,
+  atalhosEmGrade = false,
 }: {
   idRotulo: string;
   data: string;
@@ -36,13 +37,15 @@ export function DataHora({
   onChange: (v: { data: string; hora: string }) => void;
   /** “Dia” e “Hora” escritos em cima de cada campo (a edição no card). No painel, só o aria-label, como no preview. */
   rotulosVisiveis?: boolean;
+  /** Os atalhos em `mb-opcoes--4` com o tamanho padrão (44px; 2 × 2 no celular), como no cartão da ficha. Sem isso, pílulas pequenas em linha. */
+  atalhosEmGrade?: boolean;
 }) {
   const dias = ATALHOS.map((a) => ({ valor: diaDoAtalho(a.dias), rotulo: a.rotulo }));
   const dia = <input className="mb-campo__entrada" type="date" aria-label={rotulosVisiveis ? undefined : "Dia"} value={data} onChange={(e) => onChange({ data: e.target.value, hora: hora || "09:00" })} />;
   const horaDoDia = <input className="mb-campo__entrada" type="time" aria-label={rotulosVisiveis ? undefined : "Hora"} value={hora} onChange={(e) => onChange({ data, hora: e.target.value })} />;
   return (
     <>
-      <Seletor idRotulo={idRotulo} grade="linha" pequeno opcoes={dias} valor={dias.some((d) => d.valor === data) ? data : null} onChange={(v) => onChange({ data: v, hora: hora || "09:00" })} />
+      <Seletor idRotulo={idRotulo} grade={atalhosEmGrade ? 4 : "linha"} pequeno={!atalhosEmGrade} opcoes={dias} valor={dias.some((d) => d.valor === data) ? data : null} onChange={(v) => onChange({ data: v, hora: hora || "09:00" })} />
       <div className="mb-campo__par">
         {rotulosVisiveis ? (
           <>

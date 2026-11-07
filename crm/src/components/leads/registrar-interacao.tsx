@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import clsx from "clsx";
 import { db, novoId } from "@/lib/supabase";
 import { erroAoSalvar, jaEstavaSalvo } from "@/lib/erros";
 import { deCampos, paraCampos, TIPOS_INTERACAO, type TipoInteracao } from "@/lib/leads";
@@ -12,7 +11,8 @@ import { Campo, CampoEmGrupo } from "@/components/alicerce/campo";
 import { DataHora } from "@/components/alicerce/data-hora";
 import { PainelLateral } from "@/components/alicerce/painel-lateral";
 import { Seletor } from "@/components/alicerce/seletor";
-import { CampoProximoContato, quandoNaFrase } from "./partes";
+import { useToast } from "@/components/alicerce/toast";
+import { quandoNaFrase } from "./partes";
 
 export type PropsRegistrarInteracao = {
   leadId: string;
@@ -136,62 +136,49 @@ const frase = (toque: { tipo: TipoToque; em: string }) =>
   `→ Você ${toque.tipo === "toque_whatsapp" ? "abriu o WhatsApp" : "ligou"} ${quandoNaFrase(toque.em, new Date())}. Conte como foi.`;
 
 /**
- * Registrar interação na ficha do lead: o cartão com o formulário, como sempre foi (DS antigo; o passo f
- * migra a ficha). A Lista do dia usa `RegistrarInteracaoNoPainel`, com a mesma gravação.
+ * Registrar interação na ficha do lead (Alicerce, passo f): o cartão do FichaDoLead, com o `Aviso` do toque a
+ * detalhar, Como foi, O que aconteceu e Próximo contato (`DataHora`), e o único primário da tela. A gravação, o
+ * rascunho e os erros são os do hook; o que deu certo sai em `Toast`. A Lista do dia usa `RegistrarNoPainel`.
+ * O `id="registrar"` continua: o "Detalhar" da Lista do dia abre a ficha em `#registrar`.
  */
 export function RegistrarInteracao(props: PropsRegistrarInteracao) {
   const { toque } = props;
   const r = useRegistrarInteracao(props);
+  const toast = useToast();
+  useEffect(() => {
+    if (r.registrado) toast.mostrar("Interação registrada.", { tipo: "sucesso" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [r.registrado]);
+  const id = `reg-${props.leadId}`;
   return (
-    <form id="registrar" onSubmit={r.salvar} className="card order-[2] grid scroll-mt-[72px] gap-3" noValidate>
-      <h2 className="titulo-secao-antigo">Registrar interação</h2>
-      {toque && <p className="text-[13px] text-ink-soft">{frase(toque)}</p>}
-      <fieldset>
-        <legend className="field-label">Como foi</legend>
-        <div className={clsx("grid grid-cols-3 gap-2", r.tipos.length > 5 ? "md:grid-cols-6" : "md:grid-cols-5")}>
-          {r.tipos.map((t) => {
-            const marcado = r.tipo === t.slug;
-            return (
-              <button
-                key={t.slug}
-                type="button"
-                aria-pressed={marcado}
-                onClick={() => r.escolher(t.slug)}
-                className={clsx(
-                  "opcao focus-ring rounded-sm border px-1 py-2 text-[13px] font-semibold transition-colors",
-                  marcado ? "border-ink bg-ink text-surface" : "border-line bg-surface text-ink hover:border-ink",
-                )}
-              >
-                {t.nome}
-              </button>
-            );
-          })}
+    <section id="registrar" className="mb-cartao ficha__ancora" aria-labelledby={`${id}-titulo`}>
+      <form className="mb-cartao__corpo ficha__corpo" onSubmit={r.salvar} noValidate>
+        <h2 className="titulo-cartao" id={`${id}-titulo`}>
+          Registrar interação
+        </h2>
+        {toque && (
+          <Aviso
+            titulo={`Você ${toque.tipo === "toque_whatsapp" ? "abriu o WhatsApp" : "ligou"} ${quandoNaFrase(toque.em, new Date())}`}
+            texto="Conte como foi a conversa para o histórico ficar completo."
+          />
+        )}
+        <CampoEmGrupo id={`${id}-como`} rotulo="Como foi">
+          <Seletor idRotulo={`${id}-como`} grade={3} opcoes={r.tipos.map((t) => ({ valor: t.slug, rotulo: t.nome }))} valor={r.tipo} onChange={r.escolher} />
+        </CampoEmGrupo>
+        <Campo rotulo="O que aconteceu">
+          <textarea className="mb-campo__entrada" placeholder="Ex.: Falou que quer visitar no sábado" value={r.texto} onChange={(e) => r.setTexto(e.target.value)} />
+        </Campo>
+        <CampoEmGrupo id={`${id}-proximo`} rotulo="Próximo contato">
+          <DataHora idRotulo={`${id}-proximo`} {...r.contato} onChange={r.setContato} rotulosVisiveis atalhosEmGrade />
+        </CampoEmGrupo>
+        {r.erro && <Aviso tom="erro" titulo={r.erro} />}
+        <div className="mb-grupo-botoes mb-grupo-botoes--fim">
+          <button className="mb-botao mb-botao--primario mb-botao--bloco-celular" type="submit" aria-busy={r.salvando || undefined} disabled={r.salvando}>
+            {r.rotuloDoBotao === "Registrar" ? "Registrar interação" : r.rotuloDoBotao}
+          </button>
         </div>
-      </fieldset>
-      <div>
-        <label className="field-label" htmlFor="texto">
-          O que aconteceu
-        </label>
-        <textarea
-          id="texto"
-          className="input min-h-[88px]"
-          placeholder="Ex.: Falou que quer visitar no sábado"
-          value={r.texto}
-          onChange={(e) => r.setTexto(e.target.value)}
-        />
-      </div>
-      <div>
-        <span className="field-label">Próximo contato</span>
-        <CampoProximoContato idBase="interacao-contato" {...r.contato} onChange={r.setContato} />
-      </div>
-      {r.erro && <p className="aviso-erro">! {r.erro}</p>}
-      <p role="status" className={r.registrado ? "aviso-ok" : "sr-only"}>
-        {r.registrado ? "✓ Interação registrada" : ""}
-      </p>
-      <button type="submit" className="btn btn-red btn-lg focus-ring" disabled={r.salvando}>
-        {r.rotuloDoBotao}
-      </button>
-    </form>
+      </form>
+    </section>
   );
 }
 

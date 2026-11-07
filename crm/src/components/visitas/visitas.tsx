@@ -8,7 +8,6 @@ import { db, novoId } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
 import { mensagemErro } from "@/lib/erros";
 import { deCampos, formatarQuando, paraCampos } from "@/lib/leads";
-import { ConferirNoCatalogo, ListaEmpreendimentos } from "@/components/empreendimentos/partes";
 import {
   COLUNAS_VISITA,
   comprovanteValido,
@@ -31,6 +30,8 @@ import { BotaoMensagem, DialogoMensagem } from "@/components/leads/mensagem";
 import { Aviso } from "@/components/alicerce/aviso";
 import { BotaoWhatsapp } from "@/components/alicerce/botao-whatsapp";
 import { Campo, CampoEmGrupo } from "@/components/alicerce/campo";
+import { CampoEmpreendimento } from "@/components/alicerce/campo-empreendimento";
+import { PainelLateral } from "@/components/alicerce/painel-lateral";
 import { Compromisso, EdicaoNoCard } from "@/components/alicerce/compromisso";
 import { DataHora } from "@/components/alicerce/data-hora";
 import { tomDaVisita } from "@/components/alicerce/mapas";
@@ -62,6 +63,7 @@ export function ListaVisitas({
   alicerce = false,
   destaquePrimeiro = false,
   indiceInicial,
+  naFicha = false,
 }: {
   visitas: VisitaComLead[] | Visita[];
   agora: Date;
@@ -78,9 +80,11 @@ export function ListaVisitas({
   destaquePrimeiro?: boolean;
   /** Posição do primeiro card na cascata de entrada; sem ela, os cards não animam. */
   indiceInicial?: number;
+  /** Na ficha do lead (passo f): uma coluna de cards e o card abre no lugar, com Cliente confirmou e Cancelar visita. */
+  naFicha?: boolean;
 }) {
   return (
-    <ul className={alicerce ? "mb-itens mb-itens--duas" : "grid gap-3 md:grid-cols-2"}>
+    <ul className={alicerce ? (naFicha ? "mb-itens" : "mb-itens mb-itens--duas") : "grid gap-3 md:grid-cols-2"}>
       {visitas.map((v, i) => (
         <CardVisita
           key={v.id}
@@ -94,6 +98,7 @@ export function ListaVisitas({
           alicerce={alicerce}
           destaque={destaquePrimeiro && i === 0}
           indice={indiceInicial === undefined ? undefined : indiceInicial + i}
+          naFicha={naFicha}
         />
       ))}
     </ul>
@@ -125,6 +130,7 @@ function CardVisita({
   alicerce = false,
   destaque = false,
   indice,
+  naFicha = false,
 }: {
   visita: Visita;
   lead: LeadDaVisita | null;
@@ -136,6 +142,7 @@ function CardVisita({
   alicerce?: boolean;
   destaque?: boolean;
   indice?: number;
+  naFicha?: boolean;
 }) {
   const eu = usePerfil();
   const { pode } = useSessao();
@@ -146,6 +153,8 @@ function CardVisita({
   const [v, setV] = useState<Visita>(visita);
   useEffect(() => setV(visita), [visita]);
   const [painel, setPainel] = useState<Painel>(null);
+  // A visita aberta na ficha (decisão do Felipe, 07/11/2026): Cliente confirmou e Cancelar visita ficam nela.
+  const [detalhe, setDetalhe] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [desfazer, setDesfazer] = useState<{ texto: string; status: StatusVisita; quando: number } | null>(null);
@@ -256,10 +265,34 @@ function CardVisita({
         />
       ) : null;
 
+    // Cliente confirmou só com a visita agendada e antes do horário; Cancelar visita enquanto ela está aberta. As
+    // mesmas condições do card antigo, e o Cancelar mantém o Desfazer.
+    const clienteConfirma = souCorretor && v.status === "agendada" && estado !== "aguardando_baixa";
+    const podeAbrir = naFicha && souCorretor && aberta;
+    const acoesDaVisitaAberta = podeAbrir ? (
+      <div className="mb-grupo-botoes mb-grupo-botoes--fim">
+        {clienteConfirma && (
+          <button
+            className="mb-botao mb-botao--secundario"
+            type="button"
+            aria-label={`Cliente confirmou: ${quem}`}
+            onClick={async () => depois(await alterarVisita(v.id, { status: "confirmada" }), "Visita confirmada.")}
+          >
+            ✓ Cliente confirmou
+          </button>
+        )}
+        <button className="mb-botao mb-botao--secundario" type="button" aria-label={`Cancelar visita: ${quem}`} onClick={cancelar}>
+          Cancelar visita
+        </button>
+      </div>
+    ) : null;
+
     return (
       <>
         <Compromisso
-          href={lead ? `/leads/ficha/?id=${lead.id}` : "/agenda/"}
+          href={naFicha ? undefined : lead ? `/leads/ficha/?id=${lead.id}` : "/agenda/"}
+          alvo={podeAbrir ? { aberto: detalhe, onAlternar: () => setDetalhe((x) => !x), controla: idDe("aberta") } : undefined}
+          detalhe={acoesDaVisitaAberta}
           quando={quandoDoCompromisso(v.inicio, agora)}
           quemEOnde={
             <>
@@ -289,6 +322,18 @@ function CardVisita({
           destaque={destaque}
           indice={indice}
         />
+        {desfazer && (
+          <AvisoDesfazer
+            texto={desfazer.texto}
+            chave={`${v.id}-${desfazer.quando}`}
+            onFim={fecharDesfazer}
+            onDesfazer={async () => {
+              const { status } = desfazer;
+              setDesfazer(null);
+              await depois(await corrigirVisita(v.id, status, "Cancelamento desfeito"), "Cancelamento desfeito.");
+            }}
+          />
+        )}
         {mensagem &&
           lead &&
           // O diálogo da mensagem pronta ainda é do DS antigo: a ponte .ds-antigo segura os links dele. Vai para o
@@ -799,13 +844,71 @@ function CorrigirNoCard({
 }
 
 /**
- * Agendar a visita a partir da ficha: dia e hora (padrão amanhã, 10h),
- * empreendimento (vem o do lead), local e observação opcionais. A visita
- * agendada aparece logo acima, com a confirmação pelo WhatsApp.
+ * Agendar a visita (Alicerce, passo f). O estado e a gravação (`useAgendarVisita`) são os de sempre: dia e hora
+ * (padrão amanhã, 10h), empreendimento (vem o do lead), local e observação opcionais, o mesmo id até agendar
+ * (o reenvio com a resposta perdida não cria outra visita), e as mesmas mensagens de erro.
  *
- * Na Agenda (item 29), o formulário já abre aberto depois de escolher o
- * cliente, e "Voltar" volta para a escolha (onVoltar).
+ * Na ficha são mais de dois campos: o botão "+ Agendar visita" abre o `PainelLateral`, e o que deu certo sai em
+ * `Toast`. Na Agenda (item 29) o formulário já abre aberto depois de escolher o cliente (`abertoDeInicio`), em
+ * linha dentro do card dela, e "Cancelar" volta para a escolha (`onVoltar`); quem avisa o que deu certo é a Agenda.
  */
+function useAgendarVisita(lead: LeadDaVisita, onAgendada: (v: Pick<Visita, "inicio" | "empreendimento">) => void) {
+  const [campos, setCampos] = useState(() => paraCampos(sugerirHorarioVisita(new Date())));
+  const [empreendimento, setEmpreendimento] = useState(lead.empreendimento ?? "");
+  const [local, setLocal] = useState("");
+  const [observacao, setObservacao] = useState("");
+  const [erro, setErro] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
+  // Mesmo id até agendar: o reenvio (resposta perdida) não cria outra visita.
+  const idEnvio = useRef<string | null>(null);
+
+  /** Devolve a visita agendada, ou null (o erro fica em `erro`). */
+  async function salvar(): Promise<Pick<Visita, "inicio" | "empreendimento"> | null> {
+    const inicio = deCampos(campos.data, campos.hora);
+    const problema = erroAgendamento({ inicio, empreendimento }, new Date());
+    if (problema) {
+      setErro(problema);
+      return null;
+    }
+    setErro(null);
+    setSalvando(true);
+    const d = { lead_id: lead.id, empreendimento: empreendimento.trim(), inicio: inicio!, local: local.trim() || null, observacao: observacao.trim() || null };
+    idEnvio.current ??= novoId();
+    const r = await agendarVisita(idEnvio.current, d);
+    setSalvando(false);
+    if (r) {
+      setErro(r);
+      return null;
+    }
+    idEnvio.current = null;
+    setLocal("");
+    setObservacao("");
+    setCampos(paraCampos(sugerirHorarioVisita(new Date())));
+    onAgendada(d);
+    return d;
+  }
+  return { campos, setCampos, empreendimento, setEmpreendimento, local, setLocal, observacao, setObservacao, erro, salvando, salvar };
+}
+
+/** Os campos do Agendar visita, os mesmos no painel da ficha e em linha na Agenda. */
+function CamposDaVisita({ f, idBase }: { f: ReturnType<typeof useAgendarVisita>; idBase: string }) {
+  return (
+    <>
+      <CampoEmGrupo id={`${idBase}-quando`} rotulo="Dia e hora">
+        <DataHora idRotulo={`${idBase}-quando`} {...f.campos} onChange={f.setCampos} />
+      </CampoEmGrupo>
+      <CampoEmpreendimento valor={f.empreendimento} onChange={f.setEmpreendimento} />
+      <Campo rotulo="Local (opcional)">
+        <input className="mb-campo__entrada" placeholder="Ex.: Stand de vendas, decorado" value={f.local} onChange={(e) => f.setLocal(e.target.value)} />
+      </Campo>
+      <Campo rotulo="Observação (opcional)">
+        <textarea className="mb-campo__entrada" value={f.observacao} onChange={(e) => f.setObservacao(e.target.value)} />
+      </Campo>
+      {f.erro && <Aviso tom="erro" titulo={f.erro} />}
+    </>
+  );
+}
+
 export function AgendarVisita({
   lead,
   onAgendada,
@@ -817,106 +920,70 @@ export function AgendarVisita({
   abertoDeInicio?: boolean;
   onVoltar?: () => void;
 }) {
-  const [aberto, setAberto] = useState(abertoDeInicio);
-  const [campos, setCampos] = useState(() => paraCampos(sugerirHorarioVisita(new Date())));
-  const [empreendimento, setEmpreendimento] = useState(lead.empreendimento ?? "");
-  const [local, setLocal] = useState("");
-  const [observacao, setObservacao] = useState("");
-  const [erro, setErro] = useState<string | null>(null);
-  const [salvando, setSalvando] = useState(false);
-  const [agendada, setAgendada] = useState<Pick<Visita, "inicio" | "empreendimento"> | null>(null);
-  // Mesmo id até agendar: o reenvio (resposta perdida) não cria outra visita.
-  const idEnvio = useRef<string | null>(null);
+  const toast = useToast();
+  const [aberto, setAberto] = useState(false);
+  const botao = useRef<HTMLButtonElement>(null);
+  const f = useAgendarVisita(lead, onAgendada);
 
-  async function salvar(e: React.FormEvent) {
-    e.preventDefault();
-    const inicio = deCampos(campos.data, campos.hora);
-    const problema = erroAgendamento({ inicio, empreendimento }, new Date());
-    if (problema) return setErro(problema);
-    setErro(null);
-    setSalvando(true);
-    const d = { lead_id: lead.id, empreendimento: empreendimento.trim(), inicio: inicio!, local: local.trim() || null, observacao: observacao.trim() || null };
-    idEnvio.current ??= novoId();
-    const r = await agendarVisita(idEnvio.current, d);
-    setSalvando(false);
-    if (r) return setErro(r);
-    idEnvio.current = null;
-    setAgendada(d);
-    setAberto(false);
-    setLocal("");
-    setObservacao("");
-    setCampos(paraCampos(sugerirHorarioVisita(new Date())));
-    onAgendada(d);
-  }
-
-  if (!aberto)
+  // Na Agenda: o formulário em linha, já aberto, com Cancelar (volta à escolha) e Agendar visita.
+  if (abertoDeInicio)
     return (
-      <div className="grid gap-2">
-        {agendada && (
-          <p className="aviso-ok" role="status">
-            ✓ Visita agendada para {quandoVisita(agendada.inicio, new Date())}, em {agendada.empreendimento}. Confirme com o
-            cliente pelo WhatsApp no card da visita.
-          </p>
-        )}
-        <button type="button" className="btn btn-ghost btn-lg focus-ring justify-self-start" onClick={() => setAberto(true)}>
-          + Agendar visita
-        </button>
-      </div>
+      <form
+        className="agendar-em-linha"
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault();
+          f.salvar();
+        }}
+      >
+        <CamposDaVisita f={f} idBase="visita" />
+        <div className="mb-grupo-botoes mb-grupo-botoes--fim">
+          {onVoltar && (
+            <button className="mb-botao mb-botao--discreto" type="button" onClick={onVoltar}>
+              Cancelar
+            </button>
+          )}
+          <button className="mb-botao mb-botao--primario mb-botao--bloco-celular" type="submit" aria-busy={f.salvando || undefined} disabled={f.salvando}>
+            {f.salvando ? "Agendando…" : "Agendar visita"}
+          </button>
+        </div>
+      </form>
     );
 
+  async function agendar() {
+    const d = await f.salvar();
+    if (!d) return;
+    setAberto(false);
+    toast.mostrar(`Visita agendada para ${quandoVisita(d.inicio, new Date())}, em ${d.empreendimento}. Confirme com o cliente pelo WhatsApp no card da visita.`, { tipo: "sucesso" });
+  }
+
   return (
-    <form onSubmit={salvar} className="grid gap-3" noValidate>
-      <div>
-        <span className="field-label">Dia e hora</span>
-        <CampoProximoContato idBase="visita" {...campos} onChange={setCampos} />
-      </div>
-      <div>
-        <label className="field-label" htmlFor="visita-emp">
-          Empreendimento
-        </label>
-        <input
-          id="visita-emp"
-          className="input"
-          list="visita-emps"
-          autoComplete="off"
-          value={empreendimento}
-          onChange={(e) => setEmpreendimento(e.target.value)}
-        />
-        <ListaEmpreendimentos id="visita-emps" />
-        <ConferirNoCatalogo nome={empreendimento} />
-      </div>
-      <div>
-        <label className="field-label" htmlFor="visita-local">
-          Local (opcional)
-        </label>
-        <input
-          id="visita-local"
-          className="input"
-          placeholder="Ex.: Stand de vendas, decorado"
-          value={local}
-          onChange={(e) => setLocal(e.target.value)}
-        />
-      </div>
-      <div>
-        <label className="field-label" htmlFor="visita-obs">
-          Observação (opcional)
-        </label>
-        <textarea id="visita-obs" className="input min-h-[64px]" value={observacao} onChange={(e) => setObservacao(e.target.value)} />
-      </div>
-      {erro && <p className="aviso-erro">! {erro}</p>}
-      <div className="flex gap-2">
-        <button type="submit" className="btn btn-red btn-lg focus-ring flex-1 md:flex-none" disabled={salvando}>
-          {salvando ? "Agendando…" : "Agendar visita"}
-        </button>
-        <button
-          type="button"
-          className="focus-ring px-3 text-[13px] font-semibold text-ink-soft"
-          onClick={() => (onVoltar ? onVoltar() : setAberto(false))}
-        >
-          Voltar
-        </button>
-      </div>
-    </form>
+    <>
+      <button ref={botao} className="mb-botao mb-botao--secundario ficha__agendar" type="button" aria-haspopup="dialog" onClick={() => setAberto(true)}>
+        + Agendar visita
+      </button>
+      <PainelLateral
+        aberto={aberto}
+        onFechar={() => setAberto(false)}
+        titulo="Agendar visita"
+        descricao={lead.nome}
+        foco={() => botao.current}
+        rodape={
+          <div className="mb-lateral__rodape">
+            <button className="mb-botao mb-botao--discreto" type="button" data-mb-fechar onClick={() => setAberto(false)}>
+              Cancelar
+            </button>
+            <button className="mb-botao mb-botao--primario" type="button" aria-busy={f.salvando || undefined} disabled={f.salvando} onClick={agendar}>
+              {f.salvando ? "Agendando…" : "Agendar visita"}
+            </button>
+          </div>
+        }
+      >
+        <div className="mb-lateral__corpo">
+          <CamposDaVisita f={f} idBase="visita" />
+        </div>
+      </PainelLateral>
+    </>
   );
 }
 
