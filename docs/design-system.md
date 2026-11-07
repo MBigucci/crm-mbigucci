@@ -1,16 +1,54 @@
-# MBigucci Design System, aplicado aqui
+# Design system do Base360 Vendas
 
-> A fonte da verdade é o artifact https://claude.ai/artifact/QesJh8EPBkLqV5jjbpNFEi. Leia `project/README.md` e `project/tokens.json` pela ação `read` do Artifact. O DS do CRM da Bruna (`ref/CRM Bruna/design/`) é de **outra marca** e não serve aqui.
+> **Desde 06/11/2026 o padrão do `crm/` é o Alicerce MBigucci**, o design system dos sistemas da empresa:
+> - endereço: `https://claude.ai/artifact/52QJiDD4fLNu14iE3hce37`, lido pela ação `read` do Artifact;
+> - versão adotada: `1794017321-4b94`;
+> - comece pelo `project/README.md` e, de cada peça, `project/components/<Peça>/README.md` e `preview.html`.
+>
+> As telas migram no item 48 (brief `docs/codex-alicerce-vendas.md`). Até a migração terminar, as telas que faltam seguem o DS antigo (seção 3). A pesquisa (`discovery/`) continua no DS antigo. O DS do CRM da Bruna (`ref/CRM Bruna/design/`) é de **outra marca** e não serve aqui.
 
 ## Sumário
 
-1. [Onde os tokens já estão em código](#onde-os-tokens-já-estão-em-código)
-2. [Regras que mais aparecem](#regras-que-mais-aparecem)
-3. [Temas do CRM — item 18](#temas-do-crm--item-18)
-4. [Tema e navegação do CRM — 05/11/26](#tema-e-navegação-do-crm--051126)
-5. [Conforto de uso — 06/11/26](#conforto-de-uso--061126)
+1. [O Alicerce no Vendas](#1-o-alicerce-no-vendas)
+2. [Telas migradas](#2-telas-migradas)
+3. [DS antigo (telas ainda não migradas e discovery/)](#3-ds-antigo-telas-ainda-não-migradas-e-discovery)
+   - [Onde os tokens já estão em código](#onde-os-tokens-já-estão-em-código)
+   - [Regras que mais aparecem](#regras-que-mais-aparecem)
+   - [Temas do CRM — item 18](#temas-do-crm--item-18)
+   - [Tema e navegação do CRM — 05/11/26](#tema-e-navegação-do-crm--051126)
+   - [Conforto de uso — 06/11/26](#conforto-de-uso--061126)
 
-## Onde os tokens já estão em código
+## 1. O Alicerce no Vendas
+
+O guia do Alicerce vale inteiro. Aqui ficam só as escolhas do Vendas e o que muda em relação ao DS antigo. Todas são decisões do Felipe de 06/11/2026.
+
+| Assunto | No Vendas |
+| --- | --- |
+| Padrão no `<html>` | `data-theme="auto"`, `data-menu="claro"`, `data-acao="grafite"`. A pessoa escolhe por cima em Minha conta → Aparência; a escolha fica no aparelho |
+| Temas | Automático · Papel · Grafite. A escolha antiga migra: automático continua, escuro vira Grafite, claro vira Papel |
+| Vermelho | Sem o modificador, só no logo, no quadradinho do item ativo do menu e no ponto de notificação. A ação principal é grafite; quem escolhe "Vermelho" em Aparência tem o botão principal vermelho |
+| Cards | Sem barra lateral; borda fina e sombra leve; o primeiro card da tela se destaca só pela `sombra-elegante`. O card inteiro abre o registro, com no máximo duas ações e sem ⋯ |
+| Temperatura | `Chip`: "! Quente" laranja, "○ Morno" amarelo, "– Frio" ardósia, "– Sem temperatura". Substitui o "Quente neutro" da revisão de conforto |
+| Etapa e status | `Selo` (etapa do lead na família ameixa); prazo é `Prazo`, texto colorido com sinal |
+| WhatsApp | Verde, só no `BotaoExterno`, sempre com a palavra "WhatsApp" |
+| Ícones | Da biblioteca `Icones` do Alicerce, sempre com texto (sozinhos só em botão com `aria-label`). Substitui a regra "sem ícones" e os ícones Lucide de `icones-menu.tsx` |
+| Menu | 248px aberto e 64px recolhido (substitui os 180px). Grupos Rotina, Gestão e Programa; o gerente geral tem um item só, Configurações; Atalhos por último. A conta fica só no topo à direita (no celular, no fim da folha) |
+| Movimento | Entrada leve ao abrir a tela, card sobe no hover, menus em fade. Tudo some com o movimento reduzido |
+| Fora por enquanto | Sino, busca do topo, aparência salva na conta, filtros no endereço da página |
+
+## 2. Telas migradas
+
+Cada passo do item 48 acrescenta aqui uma linha: tela, passo, commit e o que ficou de ajuste local (`crm/src/app/alicerce-local.css`).
+
+| Tela | Passo | Commit | Ajuste local |
+| --- | --- | --- | --- |
+| (nenhuma ainda) | | | |
+
+## 3. DS antigo (telas ainda não migradas e discovery/)
+
+> A fonte era o artifact do MBigucci DS, `https://claude.ai/artifact/QesJh8EPBkLqV5jjbpNFEi`. No `crm/`, esta seção vale só para as telas que ainda não migraram e sai no fim da fase 2. Onde ela contradiz a seção 1, vale a seção 1.
+
+### Onde os tokens já estão em código
 
 - `crm/src/app/globals.css` e `crm/tailwind.config.ts`: paletas clara/escura, tokens semânticos e componentes compartilhados, conforme a tabela abaixo.
 - `marca/tokens/`: o pacote compartilhado com o Base360 (`tokens.json`, o mesmo do artifact desde a versão 16, de 05/11/2026, com os temas Claro e Escuro, a casca dos sistemas e a seção Base360). `node marca/tokens/conferir.mjs` compara o pacote com o `globals.css`, e `gerar.mjs` gera o CSS do CRM e o do shadcn. Veja `marca/tokens/README.md`.
@@ -20,7 +58,7 @@
 - As fontes ficam em `discovery/src/app/fonts/` (Bricolage Grotesque e Inter, woff2 variáveis).
 - O logo é `mbigucci-logo.png`, servido na pasta publicada. Se ele não carregar, aparece o texto "MBigucci" em `brand`, Bricolage 800.
 
-## Regras que mais aparecem
+### Regras que mais aparecem
 
 - **Fontes:** Bricolage Grotesque nos títulos e nos números de síntese; Inter no corpo e nos números de leitura. Todo número usa `.num` (algarismos tabulares). No CRM, desde 06/11/2026, `.num` é Inter e só vira Bricolage em título, na faixa, com 17px ou mais ou em extrabold (veja [Conforto de uso](#conforto-de-uso--061126)).
 - **Fundo e cards:** fundo `paper`. Cards em `surface` (brancos no claro) com borda decorativa `line` e **barra de 4px à esquerda**, em `ink` por padrão ou `brand` no destaque. Uma barra vermelha por área de tela. Campos e botões usam `control`.
@@ -33,11 +71,11 @@
 - **Movimento:** o DS só tem o + do acordeão. As transições curtas entre etapas da pesquisa são um acréscimo e respeitam `prefers-reduced-motion`.
 - **Celular:** campos com 16px, para o iOS não dar zoom, e ações fixas no rodapé, ao alcance do polegar. Todo botão e todo controle de escolha (`.opcao`) têm 44px de alvo.
 
-## Temas do CRM — item 18
+### Temas do CRM — item 18
 
 Paleta definida em 30/10/2026 a partir dos tokens claros versionados. O artifact externo continuou inacessível nesta revisão. Esta extensão vale para `crm/`; o DS de `discovery/` permanece com sua paleta original.
 
-### Tokens claro/escuro
+#### Tokens claro/escuro
 
 | Token | Claro | Escuro | Uso |
 | --- | --- | --- | --- |
@@ -66,7 +104,7 @@ O cabeçalho usa `paper` a 85% com desfoque de 12px e borda `line` (`.cabecalho-
 
 No claro, `concrete` passa de `#8b877f` para `#6f6b63`, e `wa` de `#b26a00` para `#925600`, para também suportarem texto pequeno. `line` permanece uma borda decorativa, sem função de identificar controles. O novo `control` cumpre essa função. Não escurecer todas as divisórias para resolver os campos.
 
-### Contrastes verificados
+#### Contrastes verificados
 
 Cálculo WCAG por luminância relativa sRGB: `(LmaisClara + 0,05) / (LmaisEscura + 0,05)`. Os números abaixo são arredondados só para apresentação. Comparação feita com a razão completa: **texto ≥ 4,5:1; texto grande (24px, ou 18,66px com peso ≥ 700), bordas de controle e foco ≥ 3:1**. Os textos grandes também passam nos pares de 4,5:1.
 
@@ -118,7 +156,7 @@ Contraste decorativo de `line`: claro sobre paper **1,19:1**, sobre surface **1,
 
 Reproduzir os **106 pares** (incluindo foco nos três fundos): `node scripts/contraste-temas.mjs`, em `crm/`. A auditoria renderizada complementar e suas capturas estão em [Revisão visual — temas](revisao-visual.md#modo-escuro-item-18).
 
-### Aplicação e preferência
+#### Aplicação e preferência
 
 - `crm/src/app/globals.css` contém as paletas em canais RGB. O Tailwind lê `rgb(var(--token) / <alpha-value>)`, inclusive transparências; não há classes de tema duplicadas em cada tela.
 - `data-tema="claro|escuro"` resolve o tema. Sem JavaScript, a media query mantém o automático. `color-scheme` acompanha os campos nativos.
@@ -128,7 +166,7 @@ Reproduzir os **106 pares** (incluindo foco nos três fundos): `node scripts/con
 - A meta `theme-color` acompanha o tema resolvido. O PNG nunca é recolorido. A faixa usa `band`, não `ink`, pois `ink` se torna claro no tema escuro.
 - `@media print` força a paleta clara e `color-scheme: light`; o relatório do gerente continua com fundo branco e texto/bordas pretos, sem menu e ações, independentemente da preferência.
 
-## Tema e navegação do CRM — 05/11/26
+### Tema e navegação do CRM — 05/11/26
 
 Aprovado pelo Felipe em 05/11/2026 ([brief](codex-tema-crm-aprovado.md), [mockup](mockups/tema-crm-aprovado.html)), para o CRM e o Base360 ficarem reconhecíveis um no outro. O Base360 entra em outra etapa.
 
@@ -157,7 +195,7 @@ Raio de 2px, sem sombra, 36px de altura no computador. Abaixo de 768px, todo `.b
 - `.area-principal` recua o conteúdo pela largura da lateral e leva junto os rodapés `fixed inset-x-0` das telas. Na impressão, a lateral some e o recuo zera.
 - Em 1366px a área principal mede 1186px com a lateral aberta e 1302px recolhida. A Lista do dia fica com 1140px úteis nos dois casos. Com a barra de rolagem clássica do Windows (15px), a lateral aberta deixa 1131px úteis.
 
-## Conforto de uso — 06/11/26
+### Conforto de uso — 06/11/26
 
 Aprovado pelo Felipe em 06/11/2026, a partir do [estudo](estudo-conforto-uso.md) com medidas e do [mockup](mockups/conforto-uso.html). A marca não mudou: logo, vermelho, fundos quentes e faixas escuras continuam. Mudou a distribuição deles.
 

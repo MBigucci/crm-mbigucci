@@ -1,34 +1,49 @@
 ---
 name: tela-ds-mbigucci
-description: Checklist para criar ou alterar qualquer tela de discovery/ ou crm/ no MBigucci Design System, mobile-first. Use antes de escrever um componente ou página nova, e para revisar uma tela pronta.
+description: Checklist para criar, migrar ou revisar qualquer tela do crm/ no Alicerce MBigucci (e de discovery/ no DS antigo), mobile-first. Use antes de escrever um componente ou página nova, ao migrar uma tela para o Alicerce e para revisar uma tela pronta.
 ---
 
-# Tela no MBigucci Design System
+# Tela no Alicerce MBigucci
 
-Leia `docs/design-system.md` primeiro. A fonte da verdade é o artifact citado lá. Reaproveite as classes de `globals.css` e os tokens do `tailwind.config.ts`. Não invente cores, raios nem sombras.
+Leia `docs/design-system.md` (seção 1) e o brief `docs/codex-alicerce-vendas.md`. A fonte da verdade é o artifact do Alicerce citado lá.
+
+- Tela de `discovery/` ou do `crm/` ainda não migrada: siga a seção 3 do `design-system.md` (DS antigo).
+- O que faltar no Alicerce vai para a lista "Falta no Alicerce". Não invente peça, cor ou medida.
 
 ## Antes de escrever
-- [ ] Já existe um componente parecido no app? Reaproveite: `Cabecalho`, `OpcaoCard`, `.card`, `.btn`, `.input`, `.field-label`.
-- [ ] Qual é a **única** ação principal da tela? Só ela é `btn-red`. As demais são `btn-ghost`.
-- [ ] A tela vai ser usada no celular? Então as ações ficam no rodapé fixo, os campos têm 16px e todo botão ou controle de escolha tem 44px de alvo (`.btn` ou `.opcao`).
+- [ ] Leia o `README.md` e o `preview.html` de cada peça que a tela usa e a tela de referência mais parecida (`ListaDoDia`, `FichaDoLead`, `PainelCentral`).
+- [ ] Já existe o componente fino em `crm/src/components/alicerce/`? Reaproveite. Se não existir, crie um que gere o mesmo HTML, as mesmas classes `.mb-*` e os mesmos `aria-*` do preview.
+- [ ] Qual é a **única** ação `--primario` da tela? A segunda é `--secundario`. O "+ Novo lead" do topo é do módulo e não conta.
+- [ ] Onde abre cada tarefa:
+  - até dois campos: dentro do card;
+  - mais de dois: `PainelLateral`;
+  - `Dialogo` só para o irreversível;
+  - o que volta atrás mostra Desfazer (`Toast`, 8 s).
 
-## Estrutura
-- [ ] O fundo é `paper` e os blocos são `.card`, com a barra à esquerda em `ink`. Use `.bar-brand` só no destaque, e uma vez por área de tela.
-- [ ] Cada título tem um eyebrow acima (`.eyebrow`) e o título vem em `.titulo-pagina` ou `.titulo-card`.
-- [ ] Use bordas finas `line` e nenhum `shadow-*`. Os raios são `rounded-sm`, `rounded-md` ou `rounded-lg` (2, 3 ou 4px).
+## Estrutura e estilo
+- [ ] Use cor, raio, sombra, espaço e movimento das classes do Alicerce ou de `var(--…)`. Tailwind só para layout (grid, flex, larguras, quebras). Nada de `#hex`, `rounded-*`, `shadow-*` ou `duration-*` escrito à mão.
+- [ ] Ajuste local só em `crm/src/app/alicerce-local.css`, com o porquê. Os arquivos de `crm/src/alicerce/` não se editam.
+- [ ] Card sem barra lateral. Card de item usa `CardDeItem` ou `CardLead`: o card inteiro abre o registro, com no máximo duas ações e sem ⋯.
+- [ ] Classe nova do app nunca começa com `mb-`.
+- [ ] `MB.*` só onde não há estado React equivalente (`preferencias`, `formatar`). Nunca `MB.*.ligar` em DOM do React.
 
 ## Texto e números
-- [ ] Português do Brasil, frases curtas, imperativo, caixa de frase em títulos e botões, sem exclamação. O eyebrow fica em caixa alta pelo CSS.
-- [ ] Todo número vem com `.num` (tabular) e no formato `R$ 1.300`, `60,60%` ou `dd/mm/aaaa`. No CRM, `.num` é Inter na leitura (cards, tabelas, campos) e Bricolage só em título, na faixa ou com 17px ou mais.
-- [ ] Vermelho só na ação principal e na urgência real. Temperatura não é urgência. Na lista, uma barra vermelha por tela.
-- [ ] No card, negrito só no nome e na linha mais urgente; linhas de trabalho em 14px, apoio em 13px.
-- [ ] O erro diz o que houve e o que fazer, começa com ✕ e tem a barra `brand`. O estado vazio diz o próximo passo.
+- [ ] Botão com verbo + objeto. "Todos" e "Todas" sempre com o substantivo. Erros com as palavras do `Vocabulario`, nada técnico na tela.
+- [ ] Sinais com sentido fixo: ! pede ação, ✕ terminou mal, ✓ deu certo, → leva adiante ou para fora, ○ médio, – baixo ou vazio, ↗ abre em outra aba. A cor nunca carrega o sentido sozinha.
+- [ ] Temperatura é `Chip`, etapa e status são `Selo`, prazo é `Prazo`.
+- [ ] Números que se comparam em Inter tabular, alinhados à direita. Formatos `R$ 1.348.700,00`, `06/11/2026`, `15:08`.
 
 ## Estado e acessibilidade
-- [ ] Sem ícones nem emoji: use os sinais ✓ ! ✕ – → +. O estado é sempre **sinal + palavra + cor**. Única exceção no CRM: os ícones da navegação (lateral e menu do celular), em `crm/src/components/icones-menu.tsx`.
-- [ ] `concrete` só em texto auxiliar. O que o usuário precisa ler para decidir vai em `ink` ou `ink-soft`.
-- [ ] O foco usa `.focus-ring` (2px `brand`). Todo campo tem um `label for`.
-- [ ] A transição respeita `prefers-reduced-motion`.
+- [ ] Carregando é o esqueleto parado de `Carregando`. Vazio é `EstadoVazio`. Erro de carga é `EstadosDePagina`, com "Tentar de novo", nunca uma lista vazia.
+- [ ] Foco visível em tudo. Todo campo tem rótulo visível.
+- [ ] Ícone sempre com texto; sozinho, só em botão com `aria-label`.
+- [ ] Movimento reduzido desliga animação, transição e elevação.
 
 ## Conferir
-Abra a tela no navegador em 375px (preset mobile) e tire um screenshot. Volte o viewport ao normal no fim do teste.
+Em 375px e 1280px, nos temas papel e grafite:
+- [ ] sem rolagem lateral (`scrollWidth <= clientWidth`);
+- [ ] alvos de pelo menos 44px no celular;
+- [ ] foco visível ao navegar com Tab;
+- [ ] nenhum erro no console.
+
+Use navegador headless com dados fictícios, e guarde os prints em `crm/local/` (fora do Git). Volte o viewport ao normal no fim.

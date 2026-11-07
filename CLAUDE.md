@@ -18,7 +18,10 @@ O CRM de corretores da MBigucci (construtora em São Bernardo do Campo). O usuá
 - `marketing/` (Base360 Marketing) vai em `base360.mbigucci.com.br/marketing`, com `BASE_PATH=/marketing npm run build`. A Edge Function `entrada-leads` é um arquivo gerado: depois de mexer em `entrada.ts` ou em `marketing/src/lib`, rode `node supabase/functions/entrada-leads/gerar.mjs` em `crm/` (o `npm test` acusa o `index.ts` desatualizado).
 
 ## Convenções
-- Use o visual do **MBigucci Design System**: card com barra de 4px à esquerda, uma ação vermelha por grupo, sem sombra, sem ícones nem emoji, sinais em glifos ✓ ! ✕. Detalhes em `docs/design-system.md`.
+- **Visual do `crm/`:** desde 06/11/2026 é o **Alicerce MBigucci** (item 48).
+  - Peças em classes `.mb-*` e tokens `var(--…)`. O card não tem barra lateral; a sombra é leve; os ícones vêm da biblioteca `Icones`; os sinais são ✓ ! ✕ → ○ – ↗.
+  - As telas ainda não migradas seguem o DS antigo até o fim da fase 2, e a pesquisa (`discovery/`) continua nele.
+  - Detalhes em `docs/design-system.md`.
 - Textos de interface em pt-BR: frases curtas, imperativo, caixa de frase, sem exclamação.
 - Perfis de acesso são **permissões configuráveis** em tabela, nunca `if (role === ...)` espalhado.
 - Abra uma **sessão separada para cada etapa** com entregável próprio, com um brief completo apontando para `docs/`.
@@ -32,6 +35,7 @@ O CRM de corretores da MBigucci (construtora em São Bernardo do Campo). O usuá
 - O `onError` de `<img>` pode disparar antes da hidratação. Confira `img.complete && naturalWidth === 0` num efeito.
 - Não rode `npm run build` com o `npm run dev` ligado no mesmo app, porque o `.next` corrompe ("Cannot find module './611.js'"). Para consertar, pare o servidor, apague o `.next` e suba de novo.
 - Alternar seleção múltipla usa `setState` funcional. A versão com closure perde cliques rápidos.
+- O prefixo `mb-` é das classes do Alicerce e também das margens do Tailwind (`mb-4`). Classe nova do app nunca começa com `mb-` (06/11/2026).
 
 ## Restrições fixas
 - **Faixas de VGV** são só do gerente geral, por regra fixa no banco (`is_gerente_geral()`), nunca por permissão do catálogo.
@@ -44,8 +48,9 @@ O CRM de corretores da MBigucci (construtora em São Bernardo do Campo). O usuá
 - `docs/pesquisa-discovery.md`: abra ao mexer em `discovery/`, ao analisar as respostas da pesquisa ou ao escrever qualquer texto para corretores.
 - `docs/pesquisa-resultados.md`: abra ao desenhar leads, cadastro, lista do dia, painel ou qualquer tela do corretor. São as 34 respostas consolidadas e as decisões que saem delas.
 - `docs/gerentes-necessidades.md`: abra ao desenhar o painel ou o relatório do gerente, ou o cadastro de parceiros. São os pedidos dos gerentes de equipe e onde cada um entra.
-- `docs/design-system.md`: abra antes de criar ou alterar qualquer tela.
-- `marca/tokens/README.md`: abra ao mudar uma cor ou token. O pacote compartilhado com o Base360 tem de bater com `crm/src/app/globals.css` (`node marca/tokens/conferir.mjs`), e o mesmo `tokens.json` está publicado no artifact do MBigucci DS.
+- `docs/design-system.md`: abra antes de criar ou alterar qualquer tela. Tem como o Alicerce entra no Vendas, as telas já migradas e, na seção 3, o DS antigo das telas que faltam.
+- `docs/codex-alicerce-vendas.md`: abra ao migrar uma tela para o Alicerce (item 48). Tem as decisões do Felipe, as etapas, os arquivos de cada passo e o "pronto quando".
+- `marca/tokens/README.md`: o pacote de tokens do DS antigo, legado desde o Alicerce (06/11/2026). Abra só ao mexer numa tela ainda não migrada.
 - `docs/revisao-visual.md`: revisão em 375px e desktop, prioridades por tela e capturas antes/depois dos ajustes de hierarquia.
 - `docs/crm-arquitetura.md`: abra ao mexer na estrutura do `crm/` (schema, RLS, deploy).
 - `docs/leads.md`: abra ao mexer em leads, lista do dia, cadastro (e Cadastro Mágico), ficha, quadro, interações, follow-up e tentativas, histórico (`lead_eventos`), descarte, atribuição de lead, perfil ampliado, dados pessoais, aniversário ou documentos do lead.
