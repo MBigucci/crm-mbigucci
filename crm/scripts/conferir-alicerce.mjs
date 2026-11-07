@@ -26,8 +26,7 @@
 //   o HTML bate com os previews Toast, AvisoConexao e EstadosDePagina, o Desfazer chama a mesma função uma vez
 //   (e o fim do aviso só limpa quando acaba o tempo ou toca no X), um toast por vez, nada técnico na tela,
 //   sem rolagem lateral, alvos de 44px e foco visível.
-// Com --preparar (antes do next build da prévia, depois de visual-preview.mjs) a prévia ganha, só na cópia local,
-// as páginas /qa-desfazer/ e /qa-quebrar/ (o ?qa=desativado e o ?qa=erro já vêm do visual-preview.mjs).
+// As páginas /qa-desfazer/ e /qa-quebrar/ e o ?qa=desativado e o ?qa=erro vêm do visual-preview.mjs (só na cópia local).
 // Com --mensagens roda só as mensagens: node scripts/conferir-alicerce.mjs local/alicerce/passo-d --mensagens
 // Os prints vão para crm/local/ (fora do Git).
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -38,53 +37,6 @@ const soMoldura = argumentos.includes("--moldura");
 const soLista = argumentos.includes("--lista");
 const soMensagens = argumentos.includes("--mensagens");
 
-if (argumentos.includes("--preparar")) {
-  const previa = join(process.cwd(), ".visual-preview", "src");
-  mkdirSync(join(previa, "app", "qa-desfazer"), { recursive: true });
-  mkdirSync(join(previa, "app", "qa-quebrar"), { recursive: true });
-  writeFileSync(join(previa, "app", "qa-desfazer", "page.tsx"), `"use client";
-import { useState } from "react";
-import { Casca } from "@/components/casca";
-import { AvisoDesfazer } from "@/components/leads/partes";
-import { useToast } from "@/components/alicerce/toast";
-declare global { interface Window { __log: string[] } }
-const log = (x: string) => { (window.__log ||= []).push(x); };
-function Corpo() {
-  const toast = useToast();
-  const [aviso, setAviso] = useState<{ texto: string; n: number } | null>(null);
-  return (
-    <>
-      <div style={{ padding: 16, display: "flex", gap: 8 }}>
-        <button id="mostrar" onClick={() => setAviso({ texto: "Etapa: Proposta", n: 1 })}>Mostrar</button>
-        <button id="outro" onClick={() => setAviso({ texto: "Descartado: Sem interesse", n: 1 })}>Outro</button>
-        <button id="mesmo" onClick={() => setAviso((a) => a && { texto: a.texto, n: a.n + 1 })}>Mesmo</button>
-        <button id="info" onClick={() => toast.mostrar("Interação registrada.", { tipo: "sucesso" })}>Info</button>
-      </div>
-      {aviso && <AvisoDesfazer texto={aviso.texto} chave={aviso.n} onDesfazer={() => { log("desfazer"); setAviso(null); }} onFim={() => { log("fim"); setAviso(null); }} />}
-    </>
-  );
-}
-export default function Qa() {
-  return (
-    <Casca titulo="QA do Desfazer" migrada>
-      <Corpo />
-    </Casca>
-  );
-}
-`);
-  writeFileSync(join(previa, "app", "qa-quebrar", "page.tsx"), `"use client";
-import { useEffect, useState } from "react";
-// Só quebra no navegador (a exportação estática renderiza a página no build).
-export default function Qa() {
-  const [quebrar, setQuebrar] = useState(false);
-  useEffect(() => setQuebrar(true), []);
-  if (quebrar) throw new Error("Falha fictícia de carga");
-  return null;
-}
-`);
-  console.log("Prévia preparada para as mensagens (rode o next build em .visual-preview).");
-  process.exit(0);
-}
 const saida = argumentos.find((a) => !a.startsWith("--")) ?? "local/alicerce";
 const base = "http://127.0.0.1:4173/vendas";
 mkdirSync(saida, { recursive: true });
@@ -507,7 +459,7 @@ if (soLista) {
   process.exit(falhasLista ? 1 : 0);
 }
 
-// 10. As mensagens do passo d. Roda com --mensagens, depois de --preparar e do build da prévia.
+// 10. As mensagens do passo d. Roda com --mensagens, depois do visual-preview.mjs e do build da prévia.
 if (soMensagens) {
   const medirMensagens = () => avaliar(`(() => { const doc = document.documentElement;
     const pequenos = window.innerWidth < 768 ? [...document.querySelectorAll('main button, main a, body > .mb-toast button, .mb-conexao button')].filter((e) => e.getClientRects().length && !e.id).filter((e) => e.getBoundingClientRect().height < 43.5).map((e) => (e.getAttribute('aria-label') || e.textContent || '').trim().slice(0, 28) + ' ' + Math.round(e.getBoundingClientRect().height)) : [];
@@ -518,7 +470,7 @@ if (soMensagens) {
   const fotoDoToast = `(() => { const t = document.querySelector('body > .mb-toast'); if (!t) return null; return { classes: t.className, role: t.getAttribute('role'), live: t.getAttribute('aria-live'), filhos: [...t.children].map((c) => c.tagName.toLowerCase() + '.' + (c.getAttribute('class') || '').split(' ').filter((x) => x !== 'mb-icone').join('.')).join(), texto: t.querySelector('.mb-toast__texto').textContent, acao: (t.querySelector('.mb-toast__acao') || {}).textContent, fechar: (t.querySelector('.mb-toast__fechar') || {}).getAttribute('aria-label') }; })()`;
   const fotoDaConexao = `(() => { const c = document.querySelector('.mb-conexao'); const r = c.getBoundingClientRect(); return { oculto: c.hidden, classes: c.className, role: c.getAttribute('role'), filhos: [...c.children].map((x) => x.tagName.toLowerCase() + '.' + (x.getAttribute('class') || '').split(' ').filter((y) => y !== 'mb-icone').join('.')).join(), texto: c.textContent.trim(), noTopo: Math.round(r.top) <= 24, centro: Math.abs(r.left + r.width / 2 - document.documentElement.clientWidth / 2) < 2, cabe: r.left >= 0 && r.right <= document.documentElement.clientWidth }; })()`;
   const ESTADOS = [
-    ["desativado", "/?qa=desativado", { classes: "mb-estado", sobrelinha: "Acesso desativado", titulo: "Seu acesso ao Base360 foi desativado", texto: "Se acha que é um engano, fale com o seu gerente.", acoes: "mb-botao--discreto:Sair", detalhe: "" }],
+    ["desativado", "/?qa=desativado", { classes: "mb-estado", sobrelinha: "Acesso desativado", titulo: "Seu acesso ao Base360 foi desativado", texto: "Se acha que é um engano, fale com o gerente geral.", acoes: "mb-botao--discreto:Sair", detalhe: "" }],
     ["erro-da-conta", "/?qa=erro", { classes: "mb-estado mb-estado--erro", sobrelinha: "Erro de carga", titulo: "Não foi possível carregar a sua conta", acoes: "mb-botao--primario:Tentar de novo", detalhe: "mb-botao--discreto mb-botao--p:Copiar detalhes para o suporte" }],
     ["sem-permissao", "/recepcao/", { classes: "mb-estado", sobrelinha: "Sem permissão", titulo: "Esta página não está liberada para o seu perfil", texto: "Peça o acesso ao gerente geral.", acoes: "mb-botao--secundario:Voltar para o início@/vendas/", detalhe: "" }],
     ["404", "/404.html", { classes: "mb-estado", sobrelinha: "Não encontrado", titulo: "Esta página não existe ou mudou de endereço", acoes: "mb-botao--secundario:Ir para o início@/vendas/", detalhe: "" }],

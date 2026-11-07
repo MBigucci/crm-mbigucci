@@ -61,7 +61,7 @@ export function Casca({
           <EstadoDePagina
             tipo="desativado"
             titulo="Seu acesso ao Base360 foi desativado"
-            texto="Se acha que é um engano, fale com o seu gerente."
+            texto="Se acha que é um engano, fale com o gerente geral."
             acoes={
               <button type="button" className="mb-botao mb-botao--discreto" onClick={sair}>
                 Sair

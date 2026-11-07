@@ -148,7 +148,7 @@ function CardVisita({
   const [painel, setPainel] = useState<Painel>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
-  const [desfazer, setDesfazer] = useState<{ texto: string; status: StatusVisita } | null>(null);
+  const [desfazer, setDesfazer] = useState<{ texto: string; status: StatusVisita; quando: number } | null>(null);
   const fecharDesfazer = useCallback(() => setDesfazer(null), []);
 
   const souCorretor = v.corretor_id === eu.id && pode("leads.cadastrar");
@@ -182,7 +182,7 @@ function CardVisita({
   async function cancelar() {
     const anterior = v.status;
     if (await depois(await alterarVisita(v.id, { status: "cancelada" })))
-      setDesfazer({ texto: `Visita cancelada: ${nome}`, status: anterior });
+      setDesfazer({ texto: `Visita cancelada: ${nome}`, status: anterior, quando: Date.now() });
   }
 
   // A visita como Compromisso do Alicerce (Lista do dia). As ações são as da receita: Remarcar · WhatsApp →
@@ -456,6 +456,7 @@ function CardVisita({
       {desfazer && (
         <AvisoDesfazer
           texto={desfazer.texto}
+          chave={`${v.id}-${desfazer.quando}`}
           onFim={fecharDesfazer}
           onDesfazer={async () => {
             const { status } = desfazer;

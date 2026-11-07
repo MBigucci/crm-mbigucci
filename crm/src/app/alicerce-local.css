@@ -88,13 +88,3 @@ svg.mb-icone {
     min-height: var(--controle-toque);
   }
 }
-
-
-/* 6. AvisoConexao no celular (passo d, 07/11/2026).
-   O .mb-conexao do Alicerce é fixo em left: 50% com translateX(-50%): a largura "ajustada ao conteúdo" só
-   conta a metade da tela que sobra à direita de left: 50%, e o texto quebrava em quatro linhas dentro da
-   pílula em 375px (a posição vertical agora é do Alicerce 1794059951-84ba). width: max-content devolve a
-   largura do texto; o max-width do Alicerce continua limitando. */
-.mb-conexao {
-  width: max-content;
-}

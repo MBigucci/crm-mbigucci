@@ -2018,7 +2018,8 @@ button.mb-folha__item { width: 100%; border: 0; background: none; font-family: v
 
 /* Passo d do Vendas (07/11/2026): o aviso de conexão fica logo abaixo do topo (e da faixa de status no celular),
    para não cobrir o +, o status nem a conta. Sem topo na tela (conta desativada, Entrar), volta para o alto. */
-.mb-conexao { top: calc(var(--topo-altura) + var(--esp-2)); }
+.mb-conexao { top: calc(var(--topo-altura) + var(--esp-2)); width: max-content; }
+.mb-conexao--estatico { width: auto; }
 @media (max-width: 767px) {
   .mb-conexao { top: calc(var(--controle-toque) + var(--esp-4) + var(--esp-2)); }
   :root:has(.mb-celular-status) .mb-conexao { top: calc(var(--controle-toque) * 2 + var(--esp-4) + var(--esp-2)); }

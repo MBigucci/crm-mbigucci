@@ -42,6 +42,52 @@ export function SessaoProvider({children}:{children:React.ReactNode}) {
 export const useSessao=()=>useContext(Context);
 export const usePerfil=()=>useSessao().estado.perfil as Profile;
 `);
+  // As páginas de QA das mensagens (passo d): o Desfazer e o erro de carga, só na cópia local.
+  {
+  const previa = join(dest, "src");
+  mkdirSync(join(previa, "app", "qa-desfazer"), { recursive: true });
+  mkdirSync(join(previa, "app", "qa-quebrar"), { recursive: true });
+  writeFileSync(join(previa, "app", "qa-desfazer", "page.tsx"), `"use client";
+import { useState } from "react";
+import { Casca } from "@/components/casca";
+import { AvisoDesfazer } from "@/components/leads/partes";
+import { useToast } from "@/components/alicerce/toast";
+declare global { interface Window { __log: string[] } }
+const log = (x: string) => { (window.__log ||= []).push(x); };
+function Corpo() {
+  const toast = useToast();
+  const [aviso, setAviso] = useState<{ texto: string; n: number } | null>(null);
+  return (
+    <>
+      <div style={{ padding: 16, display: "flex", gap: 8 }}>
+        <button id="mostrar" onClick={() => setAviso({ texto: "Etapa: Proposta", n: 1 })}>Mostrar</button>
+        <button id="outro" onClick={() => setAviso({ texto: "Descartado: Sem interesse", n: 1 })}>Outro</button>
+        <button id="mesmo" onClick={() => setAviso((a) => a && { texto: a.texto, n: a.n + 1 })}>Mesmo</button>
+        <button id="info" onClick={() => toast.mostrar("Interação registrada.", { tipo: "sucesso" })}>Info</button>
+      </div>
+      {aviso && <AvisoDesfazer texto={aviso.texto} chave={aviso.n} onDesfazer={() => { log("desfazer"); setAviso(null); }} onFim={() => { log("fim"); setAviso(null); }} />}
+    </>
+  );
+}
+export default function Qa() {
+  return (
+    <Casca titulo="QA do Desfazer" migrada>
+      <Corpo />
+    </Casca>
+  );
+}
+`);
+  writeFileSync(join(previa, "app", "qa-quebrar", "page.tsx"), `"use client";
+import { useEffect, useState } from "react";
+// Só quebra no navegador (a exportação estática renderiza a página no build).
+export default function Qa() {
+  const [quebrar, setQuebrar] = useState(false);
+  useEffect(() => setQuebrar(true), []);
+  if (quebrar) throw new Error("Falha fictícia de carga");
+  return null;
+}
+`);
+  }
   // Só a cópia de QA carrega dados fictícios. Não há modo de bypass no app.
   console.log(dest);
 }
