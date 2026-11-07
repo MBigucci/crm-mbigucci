@@ -49,7 +49,7 @@ O CRM de corretores da MBigucci (construtora em São Bernardo do Campo). O usuá
 - `docs/pesquisa-resultados.md`: abra ao desenhar leads, cadastro, lista do dia, painel ou qualquer tela do corretor. São as 34 respostas consolidadas e as decisões que saem delas.
 - `docs/gerentes-necessidades.md`: abra ao desenhar o painel ou o relatório do gerente, ou o cadastro de parceiros. São os pedidos dos gerentes de equipe e onde cada um entra.
 - `docs/design-system.md`: abra antes de criar ou alterar qualquer tela. Tem como o Alicerce entra no Vendas, as telas já migradas e, na seção 3, o DS antigo das telas que faltam.
-- `docs/codex-alicerce-vendas.md`: abra ao migrar uma tela para o Alicerce (item 48). Tem as decisões do Felipe, as etapas, os arquivos de cada passo e o "pronto quando".
+- `docs/codex-alicerce-vendas.md`: abra ao migrar uma tela para o Alicerce (item 48). Tem as decisões do Felipe, as etapas, os arquivos de cada passo e o "pronto quando". A peça de cada rota, inclusive Marketing e Parcerias, e a ordem da fase 2 estão em `docs/cobertura-alicerce.md`.
 - `marca/tokens/README.md`: o pacote de tokens do DS antigo, legado desde o Alicerce (06/11/2026). Abra só ao mexer numa tela ainda não migrada.
 - `docs/revisao-visual.md`: revisão em 375px e desktop, prioridades por tela e capturas antes/depois dos ajustes de hierarquia.
 - `docs/crm-arquitetura.md`: abra ao mexer na estrutura do `crm/` (schema, RLS, deploy).

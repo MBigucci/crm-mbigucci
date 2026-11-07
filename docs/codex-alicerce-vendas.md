@@ -13,9 +13,9 @@
 - [Limites](#limites)
 
 ## Leia antes
-- `CLAUDE.md`, `docs/design-system.md` e o mapa aprovado, `docs/mapa-alicerce-vendas.md`.
+- `CLAUDE.md`, `docs/design-system.md`, o mapa aprovado (`docs/mapa-alicerce-vendas.md`) e a cobertura aprovada de todas as rotas (`docs/cobertura-alicerce.md`).
 - **O Alicerce:**
-  - endereço: `https://claude.ai/artifact/52QJiDD4fLNu14iE3hce37`, versão `1794017321-4b94`, lido pela ação `read` do Artifact;
+  - endereço: `https://claude.ai/artifact/52QJiDD4fLNu14iE3hce37`, versão `1794018834-0e30`, lido pela ação `read` do Artifact;
   - leia `project/README.md` inteiro;
   - de cada peça do seu passo, leia `project/components/<Peça>/README.md` e `preview.html`, começando pelas telas de referência `ListaDoDia`, `FichaDoLead` e `PainelCentral`;
   - se não conseguir abrir, pare e peça os arquivos ao Felipe.
@@ -56,6 +56,18 @@
     - textos: verbo + objeto nos botões, "Todos/Todas" sempre com o substantivo, erros com as palavras do Vocabulário e nada técnico na tela;
     - nada de dados reais de cliente em prints, testes ou commits;
     - não altere nem publique o design system. Erro nele vai para o Felipe.
+14. **Segunda rodada (06/11/2026, cobertura aprovada, Alicerce `1794018834-0e30`):**
+    - **Trocar de módulo:**
+      - no computador, o item **Módulos** no rodapé do `MenuLateral`, acima de "Recolher menu";
+      - o popup abre ao lado, com só os módulos que a pessoa pode abrir e o atual marcado com ✓. Todos abrem na mesma aba, inclusive o Repasse;
+      - no celular, o grupo **Módulos** na folha;
+      - quem só tem um módulo não vê;
+      - entra no passo b, com Vendas e, para quem tiver acesso, Marketing e Repasse. Parcerias aparece quando for separado (fase 2).
+    - **404 em português** no passo d, com `EstadosDePagina`. Junto, um `error.tsx` nos dois apps com o estado "Erro de carga" e "Tentar de novo". O código técnico vai só em "Copiar detalhes para o suporte".
+    - **Fila de leads** (`/fila/` e `/fila/como/`) passa para a fase 1, no passo e, porque o status do módulo no topo leva para ela.
+    - **Marketing e Parcerias** ficam na fase 2, como em `docs/cobertura-alicerce.md`:
+      - o Marketing é conduzido pela sessão master dele, com os componentes copiados por gerador e conferidos no `npm test`;
+      - Parcerias se separa pela `Casca`, sem mudar rotas.
 
 ## Decisões técnicas
 1. **Arquivos do Alicerce, sem edição:**
@@ -110,7 +122,11 @@
      - links para Usuários, Equipes, Faixas de VGV e Distribuição;
    - quem não é gerente geral e tem `usuarios.gerenciar` ou `equipes.gerenciar` continua vendo esses itens, no grupo Gestão. O acesso das páginas não muda;
    - **Atalhos**, por último: Simulador, Site MBigucci e Linktree;
-   - grupo sem item não aparece. As condições de cada item continuam as de hoje (`casca.tsx`).
+   - grupo sem item não aparece. As condições de cada item continuam as de hoje (`casca.tsx`);
+   - **Módulos** (rodapé do menu e grupo na folha do celular):
+     - Vendas: todo usuário ativo;
+     - Marketing: o gerente geral, a mesma regra que o app do Marketing usa hoje (`ehGerenteGeral`);
+     - Repasse: **pendente**. O Vendas não tem nenhum dado de quem acessa o Repasse; a regra precisa vir do Felipe antes do passo b.
 10. **Status do módulo:** o botão de recebimento de leads (`distribuicao/recebimento.tsx`) vira o `.mb-status`, no topo e na faixa do celular, com as mesmas folhas que ele abre hoje.
 11. **Pacote antigo:** `marca/tokens/` e o artifact antigo do MBigucci DS (`QesJh8EPBkLqV5jjbpNFEi`) viram legado do Vendas.
     - O `conferir.mjs` compara o pacote com o `globals.css` antigo. Ele deixa de ser rodado a partir do passo a, e o pacote não é apagado.
@@ -129,10 +145,10 @@ A master revisa o diff, roda a suíte e faz um commit por passo. O passo seguint
 | --- | --- | --- |
 | 0 | master | Este brief, o item 48 do roadmap, `CLAUDE.md`, `docs/design-system.md` e a skill `tela-ds-mbigucci` |
 | a | master | **Fundação:** arquivos do Alicerce, ordem de carga, atributos no `<html>`, migração da escolha, ponte, classes renomeadas e a Aparência em Minha conta (peça `Aparencia`). Conferir as fontes no build exportado e o `.mb-icone` com a base do Tailwind |
-| b | frente | **Moldura:** `MenuLateral` (grupos, recolher, Atalhos, logo MBigucci), `BarraSuperior` (título, status, "+ Novo lead" para quem cadastra, conta na ponta direita, sem sino e sem busca), `MenuCelular` (lockup; o + e o ícone de menu à direita; faixa de status; folha com a conta), `MenuDaConta`, `MarcaBase360` e o índice de Configurações. **Para no primeiro print** (375 e 1280) para o Felipe ver antes de terminar |
+| b | frente | **Moldura:** `MenuLateral` (grupos, recolher, Atalhos, logo MBigucci), `BarraSuperior` (título, status, "+ Novo lead" para quem cadastra, conta na ponta direita, sem sino e sem busca), `MenuCelular` (lockup; o + e o ícone de menu à direita; faixa de status; folha com a conta), `MenuDaConta`, `MarcaBase360`, o item Módulos (rodapé do menu e grupo na folha) e o índice de Configurações. **Para no primeiro print** (375 e 1280) para o Felipe ver antes de terminar |
 | c | frente | **Lista do dia:** veja o detalhe abaixo da tabela |
-| d | frente | **Mensagens:** `Aviso`, `Toast` (com Desfazer em 8 s, no lugar do `AvisoDesfazer`), `AvisoConexao` (no lugar do `aviso-offline`), `Carregando`, `EstadoVazio` e `EstadosDePagina`, inclusive os estados da `Casca` (conta desativada, erro ao carregar, sem permissão), com os textos do Vocabulário |
-| e | frente | **Leads e Agenda:** `BarraDeFiltros` com os filtros de hoje e `CardLead` em `.mb-itens`; Agenda com `Compromisso` e `NavegadorDePeriodo` |
+| d | frente | **Mensagens:** `Aviso`, `Toast` (com Desfazer em 8 s, no lugar do `AvisoDesfazer`), `AvisoConexao` (no lugar do `aviso-offline`), `Carregando`, `EstadoVazio` e `EstadosDePagina`, inclusive os estados da `Casca` (conta desativada, erro ao carregar, sem permissão), com os textos do Vocabulário. Também o `not-found.tsx` (404 em português) e o `error.tsx` ("Erro de carga") nos dois apps. No Marketing, que ainda não carrega o Alicerce, os dois arquivos entram com os textos e a estrutura de `EstadosDePagina` sobre o visual atual dele; o visual do Alicerce chega com a fase 2 do Marketing |
+| e | frente | **Leads, Agenda e Fila de leads:** `BarraDeFiltros` com os filtros de hoje e `CardLead` em `.mb-itens`, e a tabela "Por corretor" do gerente em `Tabela` e `TabelaNoCelular`; Agenda com `Compromisso` e `NavegadorDePeriodo`; Fila de leads com `Lista`, `Prazo` e `Aviso`, e "Como é calculado" em `Cartao` com texto em `leitura` |
 | f | frente | **Ficha do lead:** a tela de referência `FichaDoLead` |
 | g | frente | **Novo lead:** `FormularioDenso`, `Campo`, `Seletor`, `BuscaComSugestoes` para o empreendimento, `Duplicado` com as regras de duplicado de hoje e `BarraDeAcoes --unica` no celular |
 | h | frente | **Entrar e Minha conta:** a tela de referência `Entrar` (o que ela tem hoje: e-mail, senha e a frase de quem procurar) e a página `MinhaConta` com `.mb-ajustes`, só com as seções que já existem (Seu WhatsApp, Aparência, Avisos neste aparelho, Trocar senha e Instalar no celular) |
@@ -162,14 +178,15 @@ Em todos os passos:
 | a | `crm/src/alicerce/**`, `crm/public/alicerce/**`, `crm/src/app/layout.tsx`, `crm/src/app/globals.css`, `crm/src/lib/aparencia.ts`, `crm/src/lib/barra.ts`, `crm/src/components/aparencia.tsx`, `crm/src/app/conta/page.tsx`, `crm/tailwind.config.ts`, `crm/package.json` (só o script de teste), o gerador e as conferências em `crm/scripts/`, e a troca mecânica das classes renomeadas em `crm/src/**` |
 | b | `casca.tsx`, `cabecalho.tsx`, `folha.tsx`, `icones-menu.tsx`, `marca-base360.tsx`, `distribuicao/recebimento.tsx` (só o botão de status) e `app/configuracoes/page.tsx` (só o índice e o invólucro) |
 | c | `components/leads/lista-do-dia.tsx`, `components/leads/partes.tsx`, `components/leads/registrar-interacao.tsx` (novo), `app/leads/ficha/page.tsx` (só a extração do `RegistrarInteracao`), `components/visitas/visitas.tsx` (só as peças da lista) e `components/metas/metas.tsx` (só `MetasNoInicio`) |
-| d | `components/aviso-offline.tsx`, o `AvisoDesfazer` em `components/leads/partes.tsx` e `casca.tsx` (estados) |
-| e | `app/leads/page.tsx`, `components/leads/filtros.tsx`, `app/agenda/page.tsx` e `components/visitas/visitas.tsx` |
+| d | `components/aviso-offline.tsx`, o `AvisoDesfazer` em `components/leads/partes.tsx`, `casca.tsx` (estados), `crm/src/app/not-found.tsx`, `crm/src/app/error.tsx`, `marketing/src/app/not-found.tsx` e `marketing/src/app/error.tsx` |
+| e | `app/leads/page.tsx`, `components/leads/filtros.tsx`, `app/agenda/page.tsx`, `components/visitas/visitas.tsx`, `app/fila/page.tsx` e `app/fila/como/page.tsx` |
 | f | `app/leads/ficha/page.tsx` e `components/leads/{perfil,mensagem,repasse,partes}.tsx` |
 | g | `app/leads/novo/page.tsx` e as partes dele |
 | h | `app/entrar/page.tsx`, `app/conta/page.tsx`, `components/avisos-aparelho.tsx` e `components/aparencia.tsx` |
 
 **Nunca:**
-- `crm/src/lib/*-dados.ts`, `crm/supabase/**`, `ref/`, `marketing/` ou `discovery/`;
+- `crm/src/lib/*-dados.ts`, `crm/supabase/**`, `ref/` ou `discovery/`;
+- `marketing/`, fora os dois arquivos do passo d;
 - os arquivos do Alicerce (só o passo a gera o `tokens.css`);
 - as telas de gestão e administração, fora o índice de Configurações.
 
@@ -193,7 +210,7 @@ Em todos os passos:
 - O menu recolhido já nasce recolhido, sem piscar.
 - O `.mb-icone` fica alinhado em botão e em link.
 
-**Fase 1 pronta:** a moldura, as cinco telas do corretor, Entrar e Minha conta conferidas pelo Felipe na tela real.
+**Fase 1 pronta:** a moldura, as cinco telas do corretor, a Fila de leads, Entrar e Minha conta conferidas pelo Felipe na tela real.
 
 ## Fora da fase 1
 Viram lista no relatório e, quando for o caso, pedido ao Alicerce:
@@ -203,6 +220,7 @@ Viram lista no relatório e, quando for o caso, pedido ao Alicerce:
 - filtros e busca no endereço da página;
 - atalhos de teclado e `VersaoNova`;
 - seções de `MinhaConta` que o app não tem hoje (nome editável, atalhos, sair dos outros aparelhos, versão);
+- o "resultado antes de salvar" do `ConstrutorDeCondicoes` no Direcionador, que é consulta nova (item 49 do roadmap);
 - as telas de gestão e administração (fase 2).
 
 ## Limites
