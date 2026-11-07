@@ -2,11 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import clsx from "clsx";
 import { Casca } from "@/components/casca";
-import { Folha } from "@/components/folha";
-import { corDoTom } from "@/components/distribuicao/recebimento";
-import { EscolherCorretor, Escopo, chamar } from "@/components/distribuicao/partes";
+import { EscolherCorretor, chamar } from "@/components/distribuicao/partes";
 import { db } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
 import { useDistribuicaoStore, carregarEstado } from "@/lib/distribuicao-dados";
@@ -30,11 +27,24 @@ import {
   type VezEquipe,
   type VezMinha,
 } from "@/lib/distribuicao";
+import { Aviso } from "@/components/alicerce/aviso";
+import { Cartao } from "@/components/alicerce/cartao";
+import { CarregandoTabela } from "@/components/alicerce/carregando";
+import { EstadoVazio } from "@/components/alicerce/estado-vazio";
+import { GrupoDaLista, ItemDaLista, Lista } from "@/components/alicerce/lista";
+import { nivelDoTom } from "@/components/alicerce/mapas";
+import { PainelLateral } from "@/components/alicerce/painel-lateral";
+import { Prazo } from "@/components/alicerce/prazo";
+import { Selo } from "@/components/alicerce/selo";
+import { Tabela } from "@/components/alicerce/tabela";
 
 export default function FilaPage() {
   return (
-    <Casca titulo="Fila de leads">
-      <Fila_ />
+    <Casca titulo="Fila de leads" migrada>
+      <div className="pagina-alicerce">
+        <h1 className="mb-visualmente-oculto">Fila de leads</h1>
+        <Fila_ />
+      </div>
     </Casca>
   );
 }
@@ -45,7 +55,7 @@ function Fila_() {
   const { estado, lido } = useDistribuicaoStore();
   const ehGG = perfil.perfil === "gerente_geral";
   if (ehGG) return <FilaGerente geral />;
-  if (!lido) return <p className="text-concrete">Carregando…</p>;
+  if (!lido) return <CarregandoTabela texto="Carregando a fila…" />;
   if (estado?.recebe) return <FilaCorretor />;
   return <FilaGerente />;
 }
@@ -59,12 +69,16 @@ const hojeAgora = () => {
 // Corretor
 // ---------------------------------------------------------------------------
 
+/**
+ * A Fila de leads no Alicerce (item 48, passo e): a fila em Lista (a vez, o nome e a situação em Prazo), "Hoje"
+ * em Cartao com uma seção recolhível por vez (toque para ver o motivo), e a visão do gerente com Tabela, Cartao
+ * e o PainelLateral das ações de cada corretor. As mesmas leituras e as mesmas chamadas ao banco de antes.
+ */
 function FilaCorretor() {
   const { estado } = useDistribuicaoStore();
   const [fila, setFila] = useState<Fila | null>(null);
   const [vezes, setVezes] = useState<VezMinha[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
-  const [aberta, setAberta] = useState<number | null>(null);
 
   const carregar = useCallback(async () => {
     const [f, v] = await Promise.all([chamar<Fila>("distribuicao_fila"), chamar<VezMinha[]>("distribuicao_minha_fila", hojeAgora())]);
@@ -80,9 +94,9 @@ function FilaCorretor() {
   }, [carregar]);
 
   if (estado?.modo === "gerentes")
-    return <p className="card max-w-[560px] text-ink-soft">No modo só gerentes, o gerente da equipe repassa os leads. Não há fila de corretores.</p>;
-  if (erro) return <p className="aviso-erro">✕ {erro}</p>;
-  if (!fila || !estado) return <p className="text-concrete">Carregando…</p>;
+    return <Aviso titulo="Não há fila de corretores" texto="No modo só gerentes, o gerente da equipe repassa os leads." />;
+  if (erro) return <Aviso tom="erro" titulo="Não foi possível carregar a fila" texto={erro} />;
+  if (!fila || !estado) return <CarregandoTabela texto="Carregando a fila…" />;
 
   const pesos = !!estado.chaves?.pesos;
   const naFila = fila.itens.filter((i) => i.posicao != null);
@@ -90,89 +104,78 @@ function FilaCorretor() {
   const linhas = fila.escopo === "empresa" ? recortarFila(naFila) : naFila;
 
   return (
-    <div className="grid max-w-[640px] gap-4">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <Escopo texto={textoEscopo(fila.escopo, fila.equipe_nome)} />
-        <span className="text-[13px] text-ink-soft">
+    <>
+      <div className="pagina-alicerce__barra">
+        <span className="mb-escopo">{textoEscopo(fila.escopo, fila.equipe_nome)}</span>
+        <span className="mb-item__linha">
           {linhaVoce(estado, pesos)} ·{" "}
-          <Link href="/fila/como/" className="focus-ring font-semibold text-brand underline underline-offset-2">
+          <Link href="/fila/como/" className="mb-link">
             Como é calculado
           </Link>
         </span>
       </div>
 
-      <section className="card" aria-label="A fila agora">
-        <ul className="grid">
-          {linhas.map((x, n) =>
-            "pulo" in x ? (
-              <li key={`pulo-${n}`} className="border-t border-line py-[7px] text-[13px] text-concrete">
-                … {x.pulo} {x.pulo === 1 ? "corretor" : "corretores"}
-              </li>
-            ) : (
-              <LinhaFila key={x.corretor_id} item={x} comEquipe={fila.escopo === "empresa"} />
-            ),
-          )}
-          {foraDaFila.map((i) => (
-            <LinhaFila key={i.corretor_id} item={i} comEquipe={fila.escopo === "empresa"} />
-          ))}
-          {!fila.itens.length && <li className="text-ink-soft">Ninguém na fila agora.</li>}
-        </ul>
+      <section aria-labelledby="t-fila" className="pagina-alicerce__grupo pagina-alicerce--estreita">
+        <h2 id="t-fila" className="titulo-secao">
+          A fila agora
+        </h2>
+        {fila.itens.length > 0 ? (
+          <Lista cartao rotulo="A fila agora">
+            {linhas.map((x, n) =>
+              "pulo" in x ? (
+                <GrupoDaLista key={`pulo-${n}`}>
+                  … {x.pulo} {x.pulo === 1 ? "corretor" : "corretores"}
+                </GrupoDaLista>
+              ) : (
+                <LinhaFila key={x.corretor_id} item={x} comEquipe={fila.escopo === "empresa"} />
+              ),
+            )}
+            {foraDaFila.map((i) => (
+              <LinhaFila key={i.corretor_id} item={i} comEquipe={fila.escopo === "empresa"} />
+            ))}
+          </Lista>
+        ) : (
+          <EstadoVazio titulo="Ninguém na fila agora" texto="Quem estiver recebendo leads aparece aqui." />
+        )}
         {fila.ultima && (
-          <p className="mt-2 text-[13px] text-ink-soft">
-            Última: {fila.ultima.apelido}, {hora(fila.ultima.quando)}
+          <p className="pagina-alicerce__rodape">
+            Última: {fila.ultima.apelido}, <span className="mb-num">{hora(fila.ultima.quando)}</span>
           </p>
         )}
       </section>
 
-      <section className="card" aria-labelledby="t-hoje">
-        <h2 id="t-hoje" className="titulo-card">
-          Hoje
-        </h2>
-        {vezes && !vezes.length && <p className="mt-2 text-ink-soft">Nenhuma vez hoje ainda.</p>}
-        {vezes && vezes.length > 0 && (
-          <ul className="mt-2 grid">
-            {vezes.map((v, i) => {
-              const l = linhaVez(v);
-              return (
-                <li key={i} className="border-t border-line first:border-t-0">
-                  <button
-                    type="button"
-                    aria-expanded={aberta === i}
-                    className="focus-ring flex min-h-[40px] w-full items-center justify-between gap-3 text-left text-[14px]"
-                    onClick={() => setAberta(aberta === i ? null : i)}
-                  >
-                    <span className={clsx("font-semibold", corDoTom[l.tom])}>{l.texto}</span>
-                    <span className="num shrink-0 text-ink-soft">{hora(v.quando)}</span>
-                  </button>
-                  {aberta === i && <p className="pb-2 text-[13px] text-ink-soft">{l.detalhe}</p>}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        {vezes && vezes.length > 0 && <p className="mt-2 text-[12px] text-concrete">Toque numa linha para ver o motivo.</p>}
-      </section>
-    </div>
+      <div className="pagina-alicerce--estreita">
+        <Cartao id="t-hoje" titulo="Hoje" descricao={vezes && vezes.length > 0 ? "Toque numa linha para ver o motivo." : undefined}>
+          {vezes && !vezes.length && <p className="mb-item__linha">Nenhuma vez hoje ainda.</p>}
+          {vezes?.map((v, i) => {
+            const l = linhaVez(v);
+            return (
+              <details key={i} className="mb-recolhivel">
+                <summary>
+                  <Situacao tom={l.tom} texto={l.texto} /> <span className="mb-recolhivel__contagem">· {hora(v.quando)}</span>
+                </summary>
+                <div className="mb-recolhivel__corpo">
+                  <p className="mb-item__linha">{l.detalhe}</p>
+                </div>
+              </details>
+            );
+          })}
+        </Cartao>
+      </div>
+    </>
   );
 }
 
 function LinhaFila({ item, comEquipe }: { item: ItemFila; comEquipe: boolean }) {
   const s = sinalCurto(item.situacao);
   return (
-    <li
-      className={clsx(
-        "flex items-center gap-2 border-t border-line py-[7px] text-[14px] first:border-t-0",
-        item.eu && "border-l-[3px] border-l-ink bg-paper pl-2",
-        item.posicao == null && "text-concrete",
-      )}
-    >
-      <span className="num w-8 shrink-0 font-bold text-ink-soft">{item.posicao != null ? ordinal(item.posicao) : "–"}</span>
-      <span className="min-w-0 flex-1 font-semibold">
-        {item.eu ? "Você" : item.apelido}
-        {comEquipe && item.equipe_nome && <span className="font-normal text-ink-soft"> · {item.equipe_nome}</span>}
-      </span>
-      <span className={clsx("text-[13px] font-semibold", corDoTom[s.tom])}>{s.texto}</span>
-    </li>
+    <ItemDaLista
+      atual={item.eu}
+      ancora={<span className="mb-lista__hora">{item.posicao != null ? ordinal(item.posicao) : "–"}</span>}
+      titulo={item.eu ? "Você" : item.apelido}
+      meta={comEquipe && item.equipe_nome ? item.equipe_nome : undefined}
+      lateral={<Situacao tom={s.tom} texto={s.texto} />}
+    />
   );
 }
 
@@ -192,7 +195,9 @@ function FilaGerente({ geral }: { geral?: boolean }) {
   const [vezEquipes, setVezEquipes] = useState<VezEquipe[] | null>(null);
   const [esperando, setEsperando] = useState<Esperando[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
-  const [menu, setMenu] = useState<ItemFila | null>(null);
+  // As ações do corretor abrem no PainelLateral; o item fica montado depois de fechar, para o foco voltar à linha.
+  const [menu, setMenu] = useState<{ item: ItemFila; origem: HTMLElement } | null>(null);
+  const [menuAberto, setMenuAberto] = useState(false);
   const [repasse, setRepasse] = useState<Esperando | null>(null);
   const [todas, setTodas] = useState(false);
   const [agora, setAgora] = useState(() => Date.now());
@@ -243,116 +248,151 @@ function FilaGerente({ geral }: { geral?: boolean }) {
 
   const decisoesDaEquipe = useMemo(() => decisoes ?? [], [decisoes]);
 
-  if (erro) return <p className="aviso-erro">✕ {erro}</p>;
-  if (!fila) return <p className="text-concrete">Carregando…</p>;
+  if (erro) return <Aviso tom="erro" titulo="Não foi possível carregar a fila" texto={erro} />;
+  if (!fila) return <CarregandoTabela texto="Carregando a fila…" />;
 
-  const minha = fila.itens.filter((i) => i.creditos != null);
   const equipeNome = equipes.find((e) => e.id === equipe)?.nome ?? fila.equipe_nome;
   const escopo = textoEscopo(fila.escopo, equipeNome, !geral);
 
   return (
-    <div className="grid gap-4">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <Escopo texto={escopo} extra={`Modo: ${ROTULO_MODO[fila.modo].toLowerCase()}`} />
+    <>
+      <div className="pagina-alicerce__barra">
+        <span className="mb-escopo">
+          {escopo} · Modo: {ROTULO_MODO[fila.modo].toLowerCase()}
+        </span>
         {geral && fila.escopo === "equipe" && equipes.length > 1 && (
-          <label className="flex items-center gap-2 text-[13px] text-ink-soft">
-            <span>Equipe</span>
-            <select className="input w-auto py-[7px] md:text-[14px]" value={equipe ?? ""} onChange={(e) => setEquipe(e.target.value)}>
-              {equipes.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.nome}
-                </option>
-              ))}
-            </select>
+          <label className="mb-campo pagina-alicerce__filtro">
+            <span className="mb-campo__rotulo">Equipe</span>
+            <span className="mb-campo__selecao">
+              <select className="mb-campo__entrada" value={equipe ?? ""} onChange={(e) => setEquipe(e.target.value)}>
+                {equipes.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.nome}
+                  </option>
+                ))}
+              </select>
+            </span>
           </label>
         )}
       </div>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <div className="grid gap-4">
+      <div className="pagina-alicerce__colunas">
+        <div className="pagina-alicerce">
           {fila.modo === "gerentes" ? (
-            <section className="grid gap-3" aria-label="Leads esperando repasse">
-              {esperando && !esperando.length && <p className="card text-ink-soft">Nenhum lead esperando repasse.</p>}
-              {esperando?.map((l) => {
-                const min = l.distribuicao_chegada ? Math.max(0, Math.floor((agora - new Date(l.distribuicao_chegada).getTime()) / 60_000)) : null;
-                return (
-                  <div key={l.id} className="card flex flex-wrap items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-semibold">
-                        {l.nome}
-                        {min != null && <span className={clsx("ml-2", min >= 15 ? "text-brand" : "text-wa")}>! {min} min</span>}
-                      </p>
-                      {l.empreendimento && <p className="text-[13px] text-ink-soft">{l.empreendimento}</p>}
-                    </div>
-                    <button type="button" className="btn btn-red focus-ring" onClick={() => setRepasse(l)}>
-                      Repassar
-                    </button>
-                  </div>
-                );
-              })}
+            <section className="pagina-alicerce__grupo" aria-labelledby="t-esperando">
+              <h2 id="t-esperando" className="titulo-secao">
+                Leads esperando repasse{esperando ? ` · ${esperando.length}` : ""}
+              </h2>
+              {esperando && !esperando.length && <EstadoVazio titulo="Nenhum lead esperando repasse" texto="Os leads que chegarem para a equipe aparecem aqui." />}
+              {esperando && esperando.length > 0 && (
+                <Tabela tipo="registros" rotulo="Leads esperando repasse">
+                  <thead>
+                    <tr>
+                      <th scope="col">Lead</th>
+                      <th scope="col">Empreendimento</th>
+                      <th scope="col">Espera</th>
+                      <th scope="col">
+                        <span className="mb-visualmente-oculto">Ação</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {esperando.map((l) => {
+                      const min = l.distribuicao_chegada ? Math.max(0, Math.floor((agora - new Date(l.distribuicao_chegada).getTime()) / 60_000)) : null;
+                      return (
+                        <tr key={l.id}>
+                          <td>
+                            <span className="mb-tabela__principal">{l.nome}</span>
+                          </td>
+                          <td data-rotulo="Empreendimento">{l.empreendimento ?? "–"}</td>
+                          <td data-rotulo="Espera">{min != null ? <Prazo nivel={min >= 15 ? "estourado" : "atencao"}>! {min} min</Prazo> : "–"}</td>
+                          <td className="mb-tabela__acoes">
+                            <button type="button" className="mb-botao mb-botao--secundario" onClick={() => setRepasse(l)}>
+                              Repassar
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </Tabela>
+              )}
             </section>
           ) : (
-            <section className="card" aria-label="A fila agora">
-              <p className="text-[13px] font-semibold text-ink-soft">{resumoFila(fila.itens)}</p>
-              {fila.escopo === "empresa" && !geral && <p className="mt-1 text-[12px] text-concrete">Créditos e motivos só da sua equipe.</p>}
-              <TabelaFila itens={fila.itens} comEquipe={fila.escopo === "empresa"} onMenu={setMenu} />
-              <ListaFilaCelular itens={fila.itens} comEquipe={fila.escopo === "empresa"} onMenu={setMenu} />
+            <section className="pagina-alicerce__grupo" aria-labelledby="t-fila">
+              <h2 id="t-fila" className="titulo-secao">
+                A fila agora
+              </h2>
+              <p className="mb-item__linha">{resumoFila(fila.itens)}</p>
+              {fila.escopo === "empresa" && !geral && <p className="mb-item__linha">Créditos e motivos só da sua equipe.</p>}
+              <TabelaFila
+                itens={fila.itens}
+                comEquipe={fila.escopo === "empresa"}
+                onMenu={(item, origem) => {
+                  setMenu({ item, origem });
+                  setMenuAberto(true);
+                }}
+              />
             </section>
           )}
         </div>
 
-        <div className="grid gap-4">
-          <section className="card" aria-labelledby="t-decisao">
-            <div className="flex items-center justify-between gap-3">
-              <h2 id="t-decisao" className="titulo-card">
-                Última decisão{decisoesDaEquipe[0] ? ` · ${hora(decisoesDaEquipe[0].quando)}` : ""}
-              </h2>
-              {decisoesDaEquipe.length > 1 && (
-                <button type="button" className="focus-ring text-[13px] font-semibold text-brand underline underline-offset-2" onClick={() => setTodas(!todas)}>
-                  {todas ? "Só a última" : "Todas"}
+        <div className="pagina-alicerce">
+          <Cartao
+            id="t-decisao"
+            titulo={`Última decisão${decisoesDaEquipe[0] ? ` · ${hora(decisoesDaEquipe[0].quando)}` : ""}`}
+            acao={
+              decisoesDaEquipe.length > 1 ? (
+                <button type="button" className="mb-botao mb-botao--discreto mb-botao--p" aria-expanded={todas} onClick={() => setTodas(!todas)}>
+                  {todas ? "Só a última" : "Todas as decisões"}
                 </button>
-              )}
-            </div>
-            {!decisoesDaEquipe.length && <p className="mt-2 text-ink-soft">Nenhuma decisão hoje.</p>}
-            <ul className="mt-2 grid">
+              ) : undefined
+            }
+          >
+            {!decisoesDaEquipe.length && <p className="mb-item__linha">Nenhuma decisão hoje.</p>}
+            <div className="mb-subsecoes">
               {(todas ? decisoesDaEquipe : decisoesDaEquipe.slice(0, 1)).map((d, i) => {
                 const l = linhaDecisao(d);
                 return (
-                  <li key={i} className="border-t border-line py-[6px] text-[14px] first:border-t-0">
-                    <p className="font-semibold">
-                      {todas && <span className="num mr-2 font-normal text-ink-soft">{hora(d.quando)}</span>}
+                  <div key={i} className="mb-subsecao">
+                    <span className="mb-item__linha mb-item__linha--forte">
+                      {todas && <span className="mb-num">{hora(d.quando)} · </span>}
                       {l.titulo}
-                    </p>
-                    {l.pulados && <p className="text-[13px] text-ink-soft">{l.pulados}</p>}
-                  </li>
+                    </span>
+                    {l.pulados && <span className="mb-item__linha">{l.pulados}</span>}
+                  </div>
                 );
               })}
-            </ul>
-          </section>
+            </div>
+          </Cartao>
 
           {geral && vezEquipes && (
-            <section className="card" aria-labelledby="t-equipes">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 id="t-equipes" className="titulo-card">
-                  Equipes
-                </h2>
-                <Escopo texto="Empresa toda" />
-              </div>
-              <ul className="mt-2 grid">
+            <Cartao id="t-equipes" titulo="Equipes" acao={<span className="mb-escopo">Empresa toda</span>}>
+              <Lista rotulo="Equipes">
                 {vezEquipes.map((e) => (
-                  <li key={e.equipe_id} className="flex items-center gap-2 border-t border-line py-[6px] text-[14px] first:border-t-0">
-                    <span className="num w-8 font-bold text-ink-soft">{ordinal(e.posicao)}</span>
-                    <span className="flex-1 font-semibold">{e.nome}</span>
-                    <span className="num text-[13px] text-ink-soft">{e.ultimo ? `último ${hora(e.ultimo)}` : "–"}</span>
-                  </li>
+                  <ItemDaLista
+                    key={e.equipe_id}
+                    ancora={<span className="mb-lista__hora">{ordinal(e.posicao)}</span>}
+                    titulo={e.nome}
+                    lateral={e.ultimo ? `último ${hora(e.ultimo)}` : "–"}
+                  />
                 ))}
-              </ul>
-            </section>
+              </Lista>
+            </Cartao>
           )}
         </div>
       </div>
 
-      {menu && <MenuCorretor item={menu} podeProdutos={pode("distribuicao.produtos")} onFechar={() => setMenu(null)} onMudou={carregar} />}
+      {menu && (
+        <MenuCorretor
+          item={menu.item}
+          aberto={menuAberto}
+          origem={menu.origem}
+          podeProdutos={pode("distribuicao.produtos")}
+          onFechar={() => setMenuAberto(false)}
+          onMudou={carregar}
+        />
+      )}
       {repasse && (
         <EscolherCorretor
           titulo={`Repassar ${repasse.nome}`}
@@ -367,95 +407,91 @@ function FilaGerente({ geral }: { geral?: boolean }) {
           }}
         />
       )}
-    </div>
+    </>
   );
 }
 
-function TabelaFila({ itens, comEquipe, onMenu }: { itens: ItemFila[]; comEquipe: boolean; onMenu: (i: ItemFila) => void }) {
+/**
+ * A fila do gerente numa Tabela de registros: no computador, as colunas; no celular, cada corretor vira um card
+ * (o `data-rotulo` de cada célula). Quem tem detalhe (a própria equipe) abre as ações no PainelLateral pela linha
+ * inteira; sem "⋯" em cada linha.
+ */
+function TabelaFila({ itens, comEquipe, onMenu }: { itens: ItemFila[]; comEquipe: boolean; onMenu: (i: ItemFila, origem: HTMLElement) => void }) {
   return (
-    <div className="mt-2 hidden overflow-x-auto md:block">
-      <table className="w-full min-w-[620px] border-collapse text-[13px]">
-        <thead>
-          <tr className="text-left text-[11px] font-semibold uppercase tracking-cabecalho text-concrete">
-            <th className="border-b border-line px-2 py-[6px]">Pos.</th>
-            <th className="border-b border-line px-2 py-[6px]">Corretor</th>
-            <th className="border-b border-line px-2 py-[6px]">Situação</th>
-            <th className="border-b border-line px-2 py-[6px]">Desempenho</th>
-            <th className="border-b border-line px-2 py-[6px] text-right">Créditos</th>
-            <th className="border-b border-line px-2 py-[6px] text-right">Hoje</th>
-            <th className="border-b border-line px-2 py-[6px]">
-              <span className="sr-only">Opções</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {itens.map((i) => {
-            const s = situacaoLonga(i.situacao, i.desde);
-            const detalhe = i.creditos != null;
-            return (
-              <tr key={i.corretor_id} className={clsx((i.posicao == null || !detalhe) && "text-concrete")}>
-                <td className="num w-10 border-b border-line px-2 py-[6px] font-bold text-ink-soft">{i.posicao != null ? ordinal(i.posicao) : "–"}</td>
-                <td className="border-b border-line px-2 py-[6px] font-semibold">
-                  {i.apelido}
-                  {comEquipe && i.equipe_nome && <span className="font-normal text-ink-soft"> · {i.equipe_nome}</span>}
-                  {!!i.nao_atende && <span className="ml-2 rounded-sm border border-line px-[6px] py-[1px] text-[11px] font-semibold text-ink-soft">não atende {i.nao_atende}</span>}
-                </td>
-                <td className={clsx("border-b border-line px-2 py-[6px] font-semibold", corDoTom[s.tom])}>{s.texto}</td>
-                <td className="border-b border-line px-2 py-[6px]">{i.faixa ? ROTULO_FAIXA[i.faixa] : "–"}</td>
-                <td className="num border-b border-line px-2 py-[6px] text-right">{detalhe ? Math.round(Number(i.creditos) * 10) / 10 : "–"}</td>
-                <td className="num border-b border-line px-2 py-[6px] text-right">{i.recebidos_hoje ?? "–"}</td>
-                <td className="w-10 border-b border-line px-1 py-[2px] text-right">
-                  {detalhe && (
-                    <button type="button" aria-label={`Opções de ${i.apelido}`} className="btn btn-ghost focus-ring px-2 py-[3px] text-[12px]" onClick={() => onMenu(i)}>
-                      …
-                    </button>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <Tabela tipo="registros" rotulo="A fila agora">
+      <thead>
+        <tr>
+          <th scope="col">Corretor</th>
+          <th scope="col">Situação</th>
+          <th scope="col">Desempenho</th>
+          <th scope="col" className="mb-tabela__num">
+            Créditos
+          </th>
+          <th scope="col" className="mb-tabela__num">
+            Hoje
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {itens.map((i) => {
+          const s = situacaoLonga(i.situacao, i.desde);
+          const detalhe = i.creditos != null;
+          const nome = (
+            <>
+              <span className="mb-num">{i.posicao != null ? ordinal(i.posicao) : "–"}</span> {i.apelido}
+            </>
+          );
+          return (
+            <tr key={i.corretor_id}>
+              <td>
+                {detalhe ? (
+                  <button type="button" className="mb-tabela__principal mb-tabela__alvo" aria-haspopup="dialog" aria-label={`Ações de ${i.apelido}`} onClick={(e) => onMenu(i, e.currentTarget)}>
+                    {nome}
+                  </button>
+                ) : (
+                  <span className="mb-tabela__principal">{nome}</span>
+                )}
+                {comEquipe && i.equipe_nome && <span className="mb-tabela__secundario">{i.equipe_nome}</span>}
+                {!!i.nao_atende && (
+                  <span className="mb-tabela__selos">
+                    <Selo>Não atende {i.nao_atende} {i.nao_atende === 1 ? "produto" : "produtos"}</Selo>
+                  </span>
+                )}
+              </td>
+              <td data-rotulo="Situação">
+                <Situacao tom={s.tom} texto={s.texto} />
+              </td>
+              <td data-rotulo="Desempenho">{i.faixa ? ROTULO_FAIXA[i.faixa] : "–"}</td>
+              <td className="mb-tabela__num" data-rotulo="Créditos">
+                {detalhe ? Math.round(Number(i.creditos) * 10) / 10 : "–"}
+              </td>
+              <td className="mb-tabela__num" data-rotulo="Hoje">
+                {i.recebidos_hoje ?? "–"}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </Tabela>
   );
 }
 
-function ListaFilaCelular({ itens, comEquipe, onMenu }: { itens: ItemFila[]; comEquipe: boolean; onMenu: (i: ItemFila) => void }) {
-  return (
-    <ul className="mt-2 grid md:hidden">
-      {itens.map((i) => {
-        const s = situacaoLonga(i.situacao, i.desde);
-        const detalhe = i.creditos != null;
-        return (
-          <li key={i.corretor_id} className="flex items-center gap-2 border-t border-line py-[6px] text-[14px] first:border-t-0">
-            <span className="num w-8 shrink-0 font-bold text-ink-soft">{i.posicao != null ? ordinal(i.posicao) : "–"}</span>
-            <span className={clsx("min-w-0 flex-1", !detalhe && "text-concrete")}>
-              <span className="font-semibold">{i.apelido}</span>
-              {comEquipe && i.equipe_nome && <span className="text-ink-soft"> · {i.equipe_nome}</span>}
-              {!!i.nao_atende && <span className="ml-2 text-[11px] font-semibold text-ink-soft">não atende {i.nao_atende}</span>}
-              {detalhe && (
-                <span className="block text-[12px] text-ink-soft">
-                  {i.faixa ? ROTULO_FAIXA[i.faixa] : ""}
-                  {i.faixa ? " · " : ""}
-                  {Math.round(Number(i.creditos) * 10) / 10} créditos · {i.recebidos_hoje ?? 0} hoje
-                </span>
-              )}
-            </span>
-            <span className={clsx("text-[13px] font-semibold", corDoTom[s.tom])}>{s.texto}</span>
-            {detalhe && (
-              <button type="button" aria-label={`Opções de ${i.apelido}`} className="btn btn-ghost focus-ring px-3 text-[13px]" onClick={() => onMenu(i)}>
-                …
-              </button>
-            )}
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-/** "…" do gerente: pausar, tirar da distribuição, como é calculado e produtos. */
-function MenuCorretor({ item, podeProdutos, onFechar, onMudou }: { item: ItemFila; podeProdutos: boolean; onFechar: () => void; onMudou: () => Promise<void> }) {
+/** As ações do gerente sobre um corretor: pausar, tirar da distribuição, como é calculado e produtos. */
+function MenuCorretor({
+  item,
+  aberto,
+  origem,
+  podeProdutos,
+  onFechar,
+  onMudou,
+}: {
+  item: ItemFila;
+  aberto: boolean;
+  origem: HTMLElement;
+  podeProdutos: boolean;
+  onFechar: () => void;
+  onMudou: () => Promise<void>;
+}) {
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
   async function fazer(nome: string, args: Record<string, unknown>) {
@@ -472,37 +508,45 @@ function MenuCorretor({ item, podeProdutos, onFechar, onMudou }: { item: ItemFil
   const fora = item.situacao === "fora_gerente";
   const q = `?c=${encodeURIComponent(item.corretor_id)}&n=${encodeURIComponent(item.apelido)}`;
   return (
-    <Folha titulo={item.apelido} eyebrow={<span className="eyebrow">{situacaoLonga(item.situacao, item.desde).texto}</span>} onFechar={onFechar}>
-      {erro && <p className="aviso-erro">✕ {erro}</p>}
-      <div className="grid gap-2">
+    <PainelLateral
+      aberto={aberto}
+      onFechar={onFechar}
+      titulo={item.apelido}
+      descricao={situacaoLonga(item.situacao, item.desde).texto}
+      foco={() => (origem.isConnected ? origem : null)}
+    >
+      <div className="mb-lateral__corpo">
+        {erro && <Aviso tom="erro" titulo={erro} />}
         {!fora && (
           <button
             type="button"
             disabled={ocupado}
-            className="btn btn-ghost focus-ring"
+            className="mb-botao mb-botao--secundario"
             onClick={() => fazer(pausado ? "distribuicao_voltar" : "distribuicao_pausar", pausado ? { p_corretor: item.corretor_id } : { p_corretor: item.corretor_id, p_ate: null })}
           >
             {pausado ? "Voltar a receber" : "Pausar"}
           </button>
         )}
-        <button
-          type="button"
-          disabled={ocupado}
-          className="btn btn-ghost focus-ring"
-          onClick={() => fazer("distribuicao_participa", { p_corretor: item.corretor_id, p_sim: fora })}
-        >
+        <button type="button" disabled={ocupado} className="mb-botao mb-botao--secundario" onClick={() => fazer("distribuicao_participa", { p_corretor: item.corretor_id, p_sim: fora })}>
           {fora ? "Pôr na distribuição" : "Tirar da distribuição"}
         </button>
-        <Link href={`/fila/como/${q}`} className="btn btn-ghost focus-ring">
+        <Link href={`/fila/como/${q}`} className="mb-botao mb-botao--secundario">
           Como é calculado
         </Link>
         {podeProdutos && (
-          <Link href={`/equipes/corretor/?id=${encodeURIComponent(item.corretor_id)}`} className="btn btn-ghost focus-ring">
+          <Link href={`/equipes/corretor/?id=${encodeURIComponent(item.corretor_id)}`} className="mb-botao mb-botao--secundario">
             Produtos e participação
           </Link>
         )}
       </div>
-    </Folha>
+    </PainelLateral>
   );
 }
 
+/**
+ * A situação na fila (sinal + palavra). O que pede ação é Prazo (! em âmbar, vermelho); o que está em dia
+ * ("✓ Apto", "✓ Recebendo") é texto normal com o sinal, sem cor: estado em dia não é prazo (Alicerce 1794069383-61bf).
+ */
+function Situacao({ tom, texto }: { tom: "red" | "ok" | "wa" | "neutro"; texto: string }) {
+  return tom === "ok" ? <span>{texto}</span> : <Prazo nivel={nivelDoTom(tom)}>{texto}</Prazo>;
+}

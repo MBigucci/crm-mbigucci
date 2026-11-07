@@ -6,18 +6,24 @@ import { useSearchParams } from "next/navigation";
 import { Casca } from "@/components/casca";
 import { chamar } from "@/components/distribuicao/partes";
 import { COMO_FUNCIONA_FILA, ROTULO_FAIXA, textoComoCalculado, type ComoCalculado } from "@/lib/distribuicao";
+import { Aviso } from "@/components/alicerce/aviso";
+import { Cartao } from "@/components/alicerce/cartao";
+import { CarregandoLeads } from "@/components/alicerce/carregando";
 
 export default function ComoPage() {
   return (
-    <Casca titulo="Como é calculado">
-      <Suspense fallback={<p className="text-concrete">Carregando…</p>}>
+    <Casca titulo="Como é calculado" migrada>
+      <Suspense fallback={<CarregandoLeads quantidade={1} texto="Carregando…" />}>
         <Como />
       </Suspense>
     </Casca>
   );
 }
 
-/** O texto da R4-12 com os números do corretor (o próprio, ou ?c= para o gerente). */
+/**
+ * O texto da R4-12 com os números do corretor (o próprio, ou ?c= para o gerente), no Alicerce (item 48, passo e):
+ * dois Cartao com o texto em `leitura` (16/26, até `leitura-max` de largura). Nada do texto mudou.
+ */
 function Como() {
   const sp = useSearchParams();
   const corretor = sp.get("c");
@@ -30,34 +36,35 @@ function Como() {
     );
   }, [corretor]);
 
+  const paragrafos = dados ? textoComoCalculado(dados, corretor ? nome : null) : [];
   return (
-    <div className="grid max-w-[640px] gap-4">
-      <Link href="/fila/" className="link-acao text-[13px]">
-        Fila de leads
+    <div className="pagina-alicerce pagina-alicerce--leitura">
+      <h1 className="mb-visualmente-oculto">Como é calculado</h1>
+      <Link href="/fila/" className="mb-link pagina-alicerce__voltar">
+        ← Fila de leads
       </Link>
-      {erro && <p className="aviso-erro">✕ {erro}</p>}
-      {!dados && !erro && <p className="text-concrete">Carregando…</p>}
+      {erro && <Aviso tom="erro" titulo="Não foi possível carregar o cálculo" texto={erro} />}
+      {!dados && !erro && <CarregandoLeads quantidade={1} texto="Carregando…" />}
       {dados && (
-        <section className="card grid gap-3">
-          {corretor && nome && <span className="eyebrow">{nome}</span>}
-          {dados.pesos && <p className="titulo-card">{ROTULO_FAIXA[dados.faixa]}</p>}
-          {textoComoCalculado(dados, corretor ? nome : null).map((p, i, xs) => (
-            <p key={i} className={i === xs.length - 1 ? "font-semibold" : "text-[15px]"}>
+        <Cartao id="t-calculo" titulo={dados.pesos ? ROTULO_FAIXA[dados.faixa] : "Como é calculado"} descricao={corretor && nome ? nome : undefined}>
+          <div className="pagina-alicerce__texto">
+            {paragrafos.map((p, i, xs) => (
+              <p key={i} className="leitura">
+                {i === xs.length - 1 ? <strong>{p}</strong> : p}
+              </p>
+            ))}
+          </div>
+        </Cartao>
+      )}
+      <Cartao id="t-ordem" titulo="Como a fila anda">
+        <div className="pagina-alicerce__texto">
+          {COMO_FUNCIONA_FILA.map((p) => (
+            <p key={p} className="leitura">
               {p}
             </p>
           ))}
-        </section>
-      )}
-      <section className="card grid gap-2" aria-labelledby="t-ordem">
-        <h2 id="t-ordem" className="titulo-card">
-          Como a fila anda
-        </h2>
-        {COMO_FUNCIONA_FILA.map((p) => (
-          <p key={p} className="text-ink-soft">
-            {p}
-          </p>
-        ))}
-      </section>
+        </div>
+      </Cartao>
     </div>
   );
 }

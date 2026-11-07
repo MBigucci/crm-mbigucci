@@ -51,6 +51,11 @@ export function nivelDoPrazo(nivel: "estourado" | "correndo" | "aguardando"): Ni
   return nivel === "estourado" ? "estourado" : nivel === "correndo" ? "atencao" : "normal";
 }
 
+/** O tom da Fila de leads (lib/distribuicao.ts) no nível do Prazo: vermelho pede ação, âmbar atenção; o resto é texto suave. */
+export function nivelDoTom(tom: "red" | "ok" | "wa" | "neutro"): NivelDoPrazo {
+  return tom === "red" ? "estourado" : tom === "wa" ? "atencao" : "normal";
+}
+
 /** Dias sem contato (seloSemContato): 2 dias em âmbar, 3 ou mais em vermelho. */
 export function nivelDoSemContato(nivel: "atencao" | "alerta"): NivelDoPrazo {
   return nivel === "alerta" ? "estourado" : "atencao";

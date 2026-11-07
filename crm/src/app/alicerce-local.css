@@ -88,3 +88,114 @@ svg.mb-icone {
     min-height: var(--controle-toque);
   }
 }
+
+/* 6. A estrutura das telas de lista (passo e: Leads, Agenda e Fila de leads; 07/11/2026).
+   Mesma ideia da regra 4: o preview do Alicerce monta a tela com um <style> próprio (a pilha de blocos com
+   --esp-5 e o grupo com --esp-3) e o bundle.css não tem classe para isso.
+   Os mesmos tokens do preview. (O "Ordenar por" tem a sua regra mais abaixo.) */
+.pagina-alicerce {
+  display: grid;
+  gap: var(--esp-5);
+  padding-top: var(--esp-4);
+}
+.pagina-alicerce > * {
+  min-width: 0;
+}
+.pagina-alicerce__grupo {
+  display: grid;
+  gap: var(--esp-3);
+}
+.pagina-alicerce__grupo > h2 {
+  margin: 0;
+}
+/* Barra de ações da tela (Agenda: Corretor e + Agendar visita; Fila: escopo e Equipe), colunas da Fila do gerente
+   e texto de leitura: os mesmos tokens e a mesma largura de leitura (--leitura-max) do Alicerce. */
+.pagina-alicerce__barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--esp-3);
+}
+.pagina-alicerce__filtro {
+  flex: 0 1 190px;
+  min-width: 150px;
+}
+.pagina-alicerce__acao {
+  margin: 0;
+}
+@media (min-width: 768px) {
+  .pagina-alicerce__acao {
+    margin-left: auto;
+  }
+}
+@media (max-width: 767px) {
+  .pagina-alicerce__acao {
+    width: 100%;
+  }
+}
+.pagina-alicerce__colunas {
+  display: grid;
+  gap: var(--esp-5);
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .pagina-alicerce__colunas {
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  }
+}
+.pagina-alicerce--estreita,
+.pagina-alicerce--leitura {
+  max-width: var(--leitura-max);
+}
+.pagina-alicerce__rodape {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--texto-suave);
+}
+.pagina-alicerce__texto {
+  display: grid;
+  gap: var(--esp-3);
+}
+.pagina-alicerce__texto > p {
+  margin: 0;
+}
+.pagina-alicerce__voltar {
+  justify-self: start;
+}
+
+/* 7. "Ordenar por" na linha da contagem (passo e, 07/11/2026; decisão do Felipe, texto do README da BarraDeFiltros
+   na versão 1794069383-61bf): a contagem à esquerda e o Ordenar à direita, com o rótulo ao lado do campo. O
+   Alicerce descreve a linha, mas o bundle.css ainda não tem classe para o Ordenar; é um Campo (rótulo e select
+   do Alicerce) numa linha só, com a largura do texto como os filtros (150 a 260px). */
+.pagina-alicerce__ordem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  margin-left: auto;
+}
+.pagina-alicerce__ordem .mb-campo__selecao {
+  flex: 0 1 170px;
+  min-width: 150px;
+  max-width: 260px;
+}
+@media (min-width: 768px) {
+  .pagina-alicerce__ordem .mb-campo__selecao {
+    flex-basis: auto;
+  }
+}
+
+/* Navegador de período com "+ Agendar visita" à direita, na mesma linha (Agenda). No celular o botão vai para a
+   linha de baixo, na largura toda. */
+.pagina-alicerce__periodo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+}
+@media (max-width: 767px) {
+  .pagina-alicerce__periodo > .pagina-alicerce__acao {
+    width: 100%;
+  }
+}

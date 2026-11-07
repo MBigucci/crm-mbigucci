@@ -307,7 +307,11 @@ export function CardLead({
  *   Registrar · WhatsApp →. Com um toque a detalhar, a faixa é WhatsApp → · Detalhar.
  * - Registrar e Detalhar abrem o painel (`onRegistrar`, que recebe o botão para devolver o foco);
  *   o WhatsApp abre a mensagem pronta (`onWhatsapp`), e o toque grava como sempre.
- * - Sem telefone, sem WhatsApp. Ainda não mostra o dono nem o ✕ Descartado (as listas do passo e).
+ * - Sem telefone, sem WhatsApp.
+ * - Passo e (Leads e Agenda), só acréscimos opcionais: `dono` (a linha do corretor, para quem vê a equipe) e o
+ *   ✕ Descartado em Selo. Sem `onRegistrar` (lead de outro corretor) não há Registrar, nem a linha do toque a
+ *   detalhar, nem Detalhar (o card antigo só os tinha com `onToque`); sem `onWhatsapp`, não há WhatsApp. Sem
+ *   nenhuma ação, o card fica sem faixa.
  */
 export function CardLeadAlicerce({
   lead,
@@ -316,6 +320,7 @@ export function CardLeadAlicerce({
   etapa,
   destaque = false,
   indice,
+  dono,
   onRegistrar,
   onWhatsapp,
 }: {
@@ -325,11 +330,13 @@ export function CardLeadAlicerce({
   etapa: string;
   destaque?: boolean;
   indice?: number;
-  onRegistrar: (botao: HTMLElement) => void;
-  onWhatsapp: () => void;
+  /** O corretor dono, para quem vê a equipe (“A distribuir” quando não há). */
+  dono?: string;
+  onRegistrar?: (botao: HTMLElement) => void;
+  onWhatsapp?: () => void;
 }) {
   const prazo = prazoDoLead(lead, agora, horario);
-  const toque = aDetalhar(lead);
+  const toque = onRegistrar ? aDetalhar(lead) : null;
   const resposta = seloResposta(lead, agora);
   const semContato = seloSemContato(lead, agora, true);
   const contato = lead.proximo_contato;
@@ -381,18 +388,22 @@ export function CardLeadAlicerce({
           )}
         </>
       )}
+      {dono && <span className="mb-item__linha">{dono}</span>}
     </>
   );
 
   const t = chipDaTemperatura(lead.temperatura);
-  const botao = (rotulo: string, rotuloAcessivel: string) => (
-    <button className="mb-botao mb-botao--secundario" type="button" aria-haspopup="dialog" aria-label={rotuloAcessivel} onClick={(e) => onRegistrar(e.currentTarget)}>
-      {rotulo}
-    </button>
-  );
-  const whatsapp = lead.whatsapp ? (
-    <BotaoWhatsapp onClick={onWhatsapp} rotuloAcessivel={`WhatsApp de ${lead.nome}, ${formatarWhatsapp(lead.whatsapp)}`} />
-  ) : null;
+  const botao = (rotulo: string, rotuloAcessivel: string) =>
+    onRegistrar ? (
+      <button className="mb-botao mb-botao--secundario" type="button" aria-haspopup="dialog" aria-label={rotuloAcessivel} onClick={(e) => onRegistrar(e.currentTarget)}>
+        {rotulo}
+      </button>
+    ) : null;
+  const whatsapp =
+    lead.whatsapp && onWhatsapp ? (
+      <BotaoWhatsapp onClick={onWhatsapp} rotuloAcessivel={`WhatsApp de ${lead.nome}, ${formatarWhatsapp(lead.whatsapp)}`} />
+    ) : null;
+  const comAcao = !!onRegistrar || !!whatsapp;
 
   return (
     <CardDeItem
@@ -409,9 +420,14 @@ export function CardLeadAlicerce({
           ? `${formatarQuando(lead.ultima_interacao_em, agora)} · ${lead.ultima_interacao_texto}`
           : "Nenhuma interação registrada."
       }
-      rodape={<Selo tom={tomDaEtapa(lead.etapa)}>{etapa}</Selo>}
+      rodape={
+        <>
+          <Selo tom={tomDaEtapa(lead.etapa)}>{etapa}</Selo>
+          {lead.status === "descartado" && <Selo tom="etapa-descartado">✕ Descartado</Selo>}
+        </>
+      }
       faixa={
-        toque ? (
+        !comAcao ? undefined : toque ? (
           <>
             {whatsapp}
             {botao("Detalhar", `Detalhar contato: ${lead.nome}`)}

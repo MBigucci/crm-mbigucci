@@ -28,6 +28,7 @@
 //   sem rolagem lateral, alvos de 44px e foco visível.
 // As páginas /qa-desfazer/ e /qa-quebrar/ e o ?qa=desativado e o ?qa=erro vêm do visual-preview.mjs (só na cópia local).
 // Com --mensagens roda só as mensagens: node scripts/conferir-alicerce.mjs local/alicerce/passo-d --mensagens
+// - Leads, Agenda e Fila de leads do passo e: veja o bloco "9b" (--leads): node scripts/conferir-alicerce.mjs local/alicerce/passo-e --leads
 // Os prints vão para crm/local/ (fora do Git).
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -36,6 +37,7 @@ const argumentos = process.argv.slice(2);
 const soMoldura = argumentos.includes("--moldura");
 const soLista = argumentos.includes("--lista");
 const soMensagens = argumentos.includes("--mensagens");
+const soLeads = argumentos.includes("--leads");
 
 const saida = argumentos.find((a) => !a.startsWith("--")) ?? "local/alicerce";
 const base = "http://127.0.0.1:4173/vendas";
@@ -84,7 +86,7 @@ async function print(nome) {
 const resultado = {};
 const confere = (nome, ok, detalhe) => { resultado[nome] = { ok: !!ok, detalhe }; console.log(`${ok ? "OK   " : "FALHA"} ${nome}${detalhe ? "  " + JSON.stringify(detalhe) : ""}`); };
 
-if (!soMoldura && !soLista && !soMensagens) {
+if (!soMoldura && !soLista && !soMensagens && !soLeads) {
 // 1. Migração da escolha antiga (três casos de tema e a barra).
 await tela(1280, 800);
 await esquemaAparelho("light");
@@ -282,7 +284,7 @@ function seletoresDeModulos() {
   return { posicaoFixa, porCima, faltam, ariaControlsBate: !!botao && !!caixa && botao.getAttribute("aria-controls") === caixa.id, aberto: !!caixa && !caixa.hidden && caixa.getClientRects().length > 0, itens: [...document.querySelectorAll(".mb-popup--lado .mb-popup__item")].map((e) => e.textContent.trim() + (e.getAttribute("aria-current") === "true" ? " (atual)" : "")), focoNoPrimeiro: document.activeElement === q(".mb-popup--lado .mb-popup__item") };
 }
 
-const anelDeFoco = () => avaliar(`(() => { const e = document.activeElement; if (!e || e === document.body) return null; const c = getComputedStyle(e); const anel = (c.outlineStyle !== 'none' && parseFloat(c.outlineWidth) >= 2) || (c.boxShadow && c.boxShadow !== 'none'); return { ok: !!anel, quem: (e.getAttribute('aria-label') || e.textContent || e.className).trim().replace(/\\s+/g, ' ').slice(0, 30) }; })()`);
+const anelDeFoco = () => avaliar(`(() => { const e = document.activeElement; if (!e || e === document.body) return null; const comAnel = (x) => { const c = getComputedStyle(x); return (c.outlineStyle !== 'none' && parseFloat(c.outlineWidth) >= 2) || (c.boxShadow && c.boxShadow !== 'none'); }; const pai = e.closest('.mb-item, .mb-lista__item, tr'); const anel = comAnel(e) || (!!pai && comAnel(pai)); return { ok: !!anel, quem: (e.getAttribute('aria-label') || e.textContent || e.className).trim().replace(/\\s+/g, ' ').slice(0, 30) }; })()`);
 async function focoVisivel(passos) {
   await avaliar("document.activeElement && document.activeElement.blur && document.activeElement.blur(); window.scrollTo(0, 0); true");
   const sem = [];
@@ -353,7 +355,7 @@ async function printDe(nome, seletor) {
   return true;
 }
 
-if (!soMoldura && !soMensagens) {
+if (!soMoldura && !soMensagens && !soLeads) {
   for (const [w, h] of [[375, 812], [1280, 800]]) {
     for (const tema of ["papel", "grafite"]) {
       await abrirListaDoDia(w, h, tema);
@@ -457,6 +459,293 @@ if (soLista) {
   console.log(`\n${Object.keys(resultado).length} conferências, ${falhasLista} falhas. Prints em ${saida}`);
   ws.close();
   process.exit(falhasLista ? 1 : 0);
+}
+
+// 9b. Leads, Agenda e Fila de leads (passo e). Roda com --leads, depois do visual-preview.mjs e do build da prévia:
+//   node scripts/conferir-alicerce.mjs local/alicerce/passo-e --leads
+// Dados fictícios de scripts/visual-fixtures.ts. O visual-preview.mjs põe na cópia local o ?qa=corretor em /leads/
+// (a sessão da prévia trata /leads/ como gerente) e os ?qa=gerente e ?qa=geral da Agenda e da Fila.
+// Confere, nos dois tamanhos e nos dois temas: sem rolagem lateral, sem erro no console, alvos de 44px no celular,
+// foco visível ao navegar com Tab, nada do DS antigo fora da ponte e o HTML das peças (BarraDeFiltros, CardLead,
+// Tabela, Compromisso, NavegadorDePeriodo e a semana, Lista, Cartao, Recolhivel e `leitura`). E, em papel, o que
+// cada tela faz: filtros, busca, Limpar filtros, a tabela Por corretor, o painel dos filtros no celular, Registrar,
+// o WhatsApp, a troca de semana e o PainelLateral das ações do corretor na Fila.
+if (soLeads) {
+  const PAGINAS = [
+    ["leads-corretor", "/leads/?qa=corretor"],
+    ["leads-gerente", "/leads/"],
+    ["agenda-corretor", "/agenda/"],
+    ["agenda-gerente", "/agenda/?qa=gerente"],
+    ["fila-corretor", "/fila/"],
+    ["fila-gerente", "/fila/?qa=gerente"],
+    ["fila-geral", "/fila/?qa=geral"],
+    ["fila-como", "/fila/como/"],
+  ];
+  function medirTelaNaPagina(largura, nome) {
+    const vis = (e) => !!e && e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden";
+    const qs = (s) => [...document.querySelectorAll(s)];
+    const q = (s) => document.querySelector(s);
+    const altura = (e) => { const r = e.getBoundingClientRect(); const ext = ["::before", "::after"].map((p) => { const a = getComputedStyle(e, p); return a.position === "absolute" && a.content !== "none" ? parseFloat(a.height) || 0 : 0; }); return Math.max(r.height, ...ext); };
+    const rotulo = (e) => (e.getAttribute("aria-label") || e.textContent || "").trim().replace(/\s+/g, " ").slice(0, 40);
+    const interativos = qs("main a[href], main button, main select, main input, main summary").filter(vis);
+    const texto = (e) => (e?.textContent ?? "").trim().replace(/\s+/g, " ");
+    const cards = qs("main .mb-item");
+    const faixa = (c) => [...c.querySelectorAll(".mb-item__faixa > :is(a, button)")].map((b) => b.textContent.trim());
+    const m = {
+      rolagemLateral: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      h1: qs("main h1").map((e) => e.textContent.trim()),
+      antigoForaDaPonte: qs("main .card, main .bar-brand, main .veredito, main .selo-antigo, main .btn, main .aviso-erro, main .aviso-ok, main .input, main .field-label, main .titulo-card, main .titulo-secao-antigo").filter((e) => !e.closest(".ds-antigo")).length,
+      pequenos: largura < 768 ? interativos.filter((e) => altura(e) < 43.5).map((e) => rotulo(e) + " " + Math.round(altura(e))) : [],
+      cards: cards.length,
+      cardsEstrutura: {
+        destaques: qs("main .mb-item--destaque").length,
+        primeiroEhDestaque: cards.length > 0 && cards[0].classList.contains("mb-item--destaque"),
+        semAlvo: cards.filter((c) => !c.querySelector(".mb-item__cabeca .mb-item__titulo.mb-item__alvo[href]")).length,
+        abrirOuMais: cards.filter((c) => [...c.querySelectorAll("button, a")].some((b) => /^(abrir|mais|⋯|…)$/i.test(b.textContent.trim()) || b.getAttribute("aria-haspopup") === "menu")).length,
+        maisDeDuasAcoes: cards.filter((c) => faixa(c).length > 2).length,
+        semCabecaOuId: cards.filter((c) => !c.querySelector(".mb-item__cabeca .mb-item__id")).length,
+      },
+    };
+    if (nome.startsWith("leads-")) {
+      const form = q("form.mb-filtros[role=search]");
+      const campos = qs("form.mb-filtros > label.mb-campo:not(.mb-filtros__busca)");
+      const ativos = q(".mb-filtros__ativos");
+      const ordem = q(".pagina-alicerce__ordem");
+      const contagem = ativos?.querySelector("span");
+      const rc = contagem?.getBoundingClientRect();
+      const ro = ordem?.getBoundingClientRect();
+      m.leads = {
+        escopo: texto(q(".mb-escopo")),
+        formOk: !!form && !!form.querySelector(":scope > label.mb-campo.mb-filtros__busca input.mb-campo__entrada[type=search]"),
+        filtros: campos.map((c) => texto(c.querySelector(".mb-campo__rotulo")) + ":" + texto(c.querySelector("select option:checked"))),
+        selectsNoPadrao: campos.every((c) => !!c.querySelector(".mb-campo__selecao > select.mb-campo__entrada")),
+        botaoCelular: texto(q(".mb-filtros__celular")),
+        contagem: texto(contagem),
+        ordemNaLinhaDaContagem: !!rc && !!ro && Math.abs(rc.top + rc.height / 2 - (ro.top + ro.height / 2)) < 20 && (largura < 768 || ro.left > rc.right),
+        ordemRotulo: texto(ordem?.querySelector(".mb-campo__rotulo")),
+        tabela: !!q("main .mb-tabela-envoltorio > table.mb-tabela--numeros.mb-tabela--primeira-fixa"),
+        tabelaColunas: qs("main .mb-tabela thead th").map((e) => e.textContent.trim()),
+        tabelaAlvosCom44: largura < 768 ? qs("main .mb-tabela tbody .mb-link").every((e) => altura(e) >= 43.5) : true,
+        novoLeadNaPagina: qs("main a[href$='/leads/novo/']").length,
+        rodapeFixo: qs("main .fixed, .mb-app__conteudo .fixed").filter(vis).length,
+        cardsComRegistrar: cards.filter((c) => faixa(c).includes("Registrar") || faixa(c).includes("Detalhar")).length,
+        ritaSemWhatsapp: (() => { const c = cards.find((x) => x.querySelector(".mb-item__titulo")?.textContent.trim() === "Rita Exemplo"); return c ? !faixa(c).some((b) => /WhatsApp/.test(b)) : null; })(),
+        donos: cards.filter((c) => [...c.querySelectorAll(".mb-item__linha")].some((l) => /^(Marina|Paulo|A distribuir)/.test(l.textContent.trim()))).length,
+      };
+    }
+    if (nome.startsWith("agenda-")) {
+      const nav = q("nav.mb-periodo");
+      const botoes = [...(nav?.querySelectorAll("button") ?? [])].map((b) => b.textContent.trim());
+      const agendar = [...document.querySelectorAll("main button")].find((b) => b.textContent.trim() === "+ Agendar visita");
+      const rn = nav?.getBoundingClientRect();
+      const ra = agendar?.getBoundingClientRect();
+      const dias = qs(".mb-semana > button.mb-semana__dia");
+      m.agenda = {
+        periodo: botoes,
+        rotulo: texto(q(".mb-periodo__rotulo")),
+        rotuloAoVivo: q(".mb-periodo__rotulo")?.getAttribute("aria-live"),
+        dias: dias.length,
+        pressionados: dias.filter((d) => d.getAttribute("aria-pressed") === "true").length,
+        hoje: qs(".mb-semana__dia--hoje").length,
+        diasComEstrutura: dias.every((d) => d.querySelector(".mb-semana__nome") && d.querySelector(".mb-semana__numero") && d.querySelector(".mb-semana__contagem") && d.getAttribute("aria-label")),
+        agendarNaLinhaDoNavegador: agendar ? !!rn && !!ra && (largura < 768 ? ra.top >= rn.bottom - 1 : Math.abs(rn.top + rn.height / 2 - (ra.top + ra.height / 2)) < 30 && ra.left > rn.right) : null,
+        compromissos: qs("main .mb-item").filter((c) => c.querySelector(".mb-item__rodape .mb-selo") && !c.querySelector(".mb-chip")).length,
+        compromissoSemClienteConfirmouNemCancelar: !qs("main .mb-item__faixa button, main .mb-item__faixa a").some((b) => /Cliente confirmou|Cancelar/.test(b.textContent)),
+      };
+    }
+    if (nome.startsWith("fila-") && nome !== "fila-como") {
+      const itens = qs("main .mb-lista__item");
+      const eu = itens.find((i) => i.getAttribute("aria-current") === "true");
+      m.fila = {
+        escopo: texto(q(".mb-escopo")),
+        listaItens: itens.length,
+        listaComCartao: !!q("main ul.mb-lista.mb-lista--cartao"),
+        voce: eu ? texto(eu.querySelector(".mb-lista__titulo")) : null,
+        aptoSemCor: qs("main .mb-prazo").every((e) => !/✓/.test(e.textContent)),
+        comoCalculado: !!q("a.mb-link[href$='/fila/como/']"),
+        hojeRecolhiveis: qs("main .mb-cartao .mb-recolhivel").length,
+        tabelaRegistros: !!q("main .mb-tabela-envoltorio > table.mb-tabela--registros"),
+        reticencias: qs("main button").filter((b) => /^(⋯|…)$/.test(b.textContent.trim())).length,
+        naoAtende: qs("main .mb-selo").map((e) => e.textContent.trim()).filter((t) => /atende/i.test(t)),
+        celulasComRotulo: qs("main table.mb-tabela--registros tbody tr").every((tr) => [...tr.querySelectorAll("td")].slice(1).every((td) => td.hasAttribute("data-rotulo") || td.classList.contains("mb-tabela__acoes"))),
+        alvosDeLinha: qs("main button.mb-tabela__alvo").length,
+      };
+    }
+    if (nome === "fila-como") {
+      m.como = { leitura: qs("main p.leitura").length, cartoes: qs("main section.mb-cartao").length, voltar: !!q("main a.mb-link[href$='/fila/']"), negrito: !!q("main p.leitura strong") };
+    }
+    return m;
+  }
+  const escolher = (rotuloDoCampo, valor) => avaliar(`(() => { const lab = [...document.querySelectorAll('label.mb-campo')].filter((l) => l.getClientRects().length).find((l) => l.querySelector('.mb-campo__rotulo')?.textContent.trim() === ${JSON.stringify(rotuloDoCampo)}); const el = lab.querySelector('select, input'); const proto = el.tagName === 'SELECT' ? HTMLSelectElement.prototype : HTMLInputElement.prototype; Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, ${JSON.stringify(valor)}); el.dispatchEvent(new Event(el.tagName === 'SELECT' ? 'change' : 'input', { bubbles: true })); return true; })()`);
+  const contagemDeLeads = () => avaliar(`document.querySelector('.mb-filtros__ativos span')?.textContent.trim()`);
+  const clicarTexto = (seletor, textoDoBotao) => avaliar(`(() => { const b = [...document.querySelectorAll(${JSON.stringify(seletor)})].filter((e) => e.getClientRects().length).find((e) => e.textContent.trim() === ${JSON.stringify(textoDoBotao)}); if (!b) return false; b.focus(); b.click(); return true; })()`);
+  const painel = () => avaliar(`(() => { const todos = [...document.querySelectorAll('body > aside.mb-lateral')]; const p = todos.find((x) => x.classList.contains('mb-lateral--aberto')) ?? todos[0]; return p ? { aberto: p.getAttribute('aria-hidden') === 'false' && p.classList.contains('mb-lateral--aberto'), titulo: p.querySelector('.mb-lateral__titulo')?.textContent.trim(), acoes: [...p.querySelectorAll('.mb-lateral__corpo .mb-botao')].map((b) => b.textContent.trim()), noBody: p.parentElement === document.body } : null; })()`);
+
+  for (const [w, h] of [[375, 812], [1280, 800]]) {
+    for (const tema of ["papel", "grafite"]) {
+      for (const [nome, caminho] of PAGINAS) {
+        erros.length = 0;
+        await tela(w, h);
+        await comArmazenamento({ mb_tema: tema }, caminho);
+        await espera(900);
+        const m = await avaliar(`(${medirTelaNaPagina.toString()})(${w}, ${JSON.stringify(nome)})`);
+        await printInteiro(`${nome}-${w}-${tema}`);
+        const semAnel = await focoVisivel(14);
+        const comum = !m.rolagemLateral && m.h1.length === 1 && m.antigoForaDaPonte === 0 && m.pequenos.length === 0 && semAnel.length === 0 && erros.length === 0;
+        confere(`${nome} ${w} ${tema}: sem rolagem lateral, sem DS antigo fora da ponte, alvos de 44px, foco visível e sem erro no console`, comum, { rolagemLateral: m.rolagemLateral, h1: m.h1, antigo: m.antigoForaDaPonte, pequenos: m.pequenos, semAnel, erros: [...erros] });
+        const ce = m.cardsEstrutura;
+        if (m.cards > 0)
+          confere(`${nome} ${w} ${tema}: cards como o preview (um destaque, o primeiro; título abre; sem Abrir nem ⋯; no máximo duas ações)`, ce.destaques === 1 && ce.primeiroEhDestaque && ce.semAlvo === 0 && ce.abrirOuMais === 0 && ce.maisDeDuasAcoes === 0 && ce.semCabecaOuId === 0, ce);
+        if (m.leads) {
+          const L = m.leads;
+          const esperados = nome === "leads-gerente" ? ["Corretor:Todos os corretores", "Origem:Todas as origens", "Empreendimento:Todos os empreendimentos", "Situação:Ativos"] : ["Origem:Todas as origens", "Empreendimento:Todos os empreendimentos", "Situação:Ativos"];
+          confere(`${nome} ${w} ${tema}: BarraDeFiltros como o preview, com os rótulos com substantivo, a contagem e o Ordenar na mesma linha`, L.formOk && L.selectsNoPadrao && JSON.stringify(L.filtros) === JSON.stringify(esperados) && /^Filtros/.test(L.botaoCelular) && /^\d+ leads?$/.test(L.contagem) && L.ordemNaLinhaDaContagem && L.ordemRotulo === "Ordenar por" && L.escopo === (nome === "leads-gerente" ? "Sua equipe" : "Só os seus"), L);
+          confere(`${nome} ${w} ${tema}: sem + Novo lead na página nem rodapé fixo; Registrar só no lead do próprio corretor; Rita sem telefone fica sem WhatsApp`, L.novoLeadNaPagina === 0 && L.rodapeFixo === 0 && (nome === "leads-gerente" ? L.cardsComRegistrar === 0 : L.cardsComRegistrar > 0) && L.ritaSemWhatsapp === true, L);
+          if (nome === "leads-gerente") confere(`leads-gerente ${w} ${tema}: Por corretor é Tabela de números (primeira coluna fixa), com o dono em cada card`, L.tabela && JSON.stringify(L.tabelaColunas) === JSON.stringify(["Corretor", "Ativos", "Prazo estourado", "Atrasados", "Sem contato"]) && L.tabelaAlvosCom44 && L.donos === m.cards, L);
+          else confere(`leads-corretor ${w} ${tema}: sem a tabela Por corretor`, !L.tabela, L);
+        }
+        if (m.agenda) {
+          const A = m.agenda;
+          confere(`${nome} ${w} ${tema}: NavegadorDePeriodo e a semana de 7 dias como o preview`, JSON.stringify(A.periodo) === JSON.stringify(["← Anterior", "Seguinte →"]) && /^\d\d\/\d\d a \d\d\/\d\d\/\d{4}$/.test(A.rotulo) && A.rotuloAoVivo === "polite" && A.dias === 7 && A.pressionados === 1 && A.hoje === 1 && A.diasComEstrutura, A);
+          confere(`${nome} ${w} ${tema}: visitas como Compromisso (Selo no rodapé, sem Chip), sem Cliente confirmou nem Cancelar no card${nome === "agenda-corretor" ? " e + Agendar visita na linha do navegador" : ""}`, A.compromissos > 0 && A.compromissoSemClienteConfirmouNemCancelar && (nome !== "agenda-corretor" || A.agendarNaLinhaDoNavegador === true), A);
+        }
+        if (m.fila) {
+          const F = m.fila;
+          if (nome === "fila-corretor") confere(`fila-corretor ${w} ${tema}: fila em Lista de cartão, "Você" marcado, ✓ sem cor, Hoje em Recolhivel dentro de Cartao`, F.listaComCartao && F.listaItens >= 5 && F.voce === "Você" && F.aptoSemCor && F.comoCalculado && F.hojeRecolhiveis >= 1 && !F.tabelaRegistros, F);
+          else confere(`${nome} ${w} ${tema}: fila do gerente em Tabela de registros, linha que abre o painel (sem ⋯), "Não atende N produto" e ✓ sem cor`, F.tabelaRegistros && F.celulasComRotulo && F.reticencias === 0 && F.alvosDeLinha >= 5 && F.naoAtende.includes("Não atende 1 produto") && F.aptoSemCor, F);
+        }
+        if (m.como) confere(`fila-como ${w} ${tema}: dois Cartao com o texto em leitura, o último parágrafo em negrito e o link de volta`, m.como.cartoes === 2 && m.como.leitura >= 5 && m.como.negrito && m.como.voltar, m.como);
+      }
+    }
+  }
+
+  // O que cada tela faz (em papel, nos dois tamanhos).
+  for (const [w, h] of [[375, 812], [1280, 800]]) {
+    await tela(w, h);
+    const celular = w < 768;
+    // Leads como gerente: filtros, busca, Limpar filtros, a tabela Por corretor e Descartados.
+    erros.length = 0;
+    await comArmazenamento({ mb_tema: "papel" }, "/leads/");
+    await espera(900);
+    const todos = await contagemDeLeads();
+    if (celular) { await clicarTexto("button", "Filtros"); await espera(500); }
+    await escolher("Origem", "empresa");
+    await espera(300);
+    if (celular) { await avaliar("document.querySelector('.mb-lateral [data-mb-fechar]').click(); true"); await espera(400); }
+    const porOrigem = await contagemDeLeads();
+    const chip = await avaliar(`[...document.querySelectorAll('.mb-filtros__ativos .mb-opcao')].map((b) => b.textContent.trim() + '|' + b.getAttribute('aria-label'))`);
+    const tabelaSumiu = await avaliar(`!document.querySelector('main .mb-tabela')`);
+    await clicarTexto(".mb-filtros__ativos button", "Limpar filtros");
+    await espera(300);
+    const depoisDeLimpar = await contagemDeLeads();
+    await escolher("Buscar", "ana");
+    await espera(300);
+    const porBusca = await contagemDeLeads();
+    await escolher("Buscar", "");
+    confere(`Leads ${w}: filtrar por origem muda a contagem e a tabela Por corretor some, o chip tira o filtro, Limpar filtros volta tudo e a busca filtra`, todos === "10 leads" && porOrigem !== todos && /^\d+ leads?$/.test(porOrigem) && chip.length === 1 && chip[0] === "Origem: Empresa|Tirar o filtro Origem: Empresa" && tabelaSumiu && depoisDeLimpar === todos && porBusca === "1 lead", { todos, porOrigem, chip, tabelaSumiu, depoisDeLimpar, porBusca, erros: [...erros] });
+    if (celular) {
+      await comArmazenamento({ mb_tema: "papel" }, "/leads/");
+      await espera(700);
+      await clicarTexto("button", "Filtros");
+      await espera(500);
+      const p = await painel();
+      const rotulosNoPainel = await avaliar(`[...document.querySelectorAll('body > aside.mb-lateral .mb-campo__rotulo')].map((e) => e.textContent.trim())`);
+      await teclar("Escape", "Escape", 27);
+      await espera(400);
+      const fechou = await painel();
+      const focoNoBotao = await avaliar("document.activeElement?.classList.contains('mb-filtros__celular')");
+      confere("Leads 375: o botão Filtros abre os filtros no PainelLateral (no body), com Corretor, Origem, Empreendimento e Situação; Esc fecha e devolve o foco ao botão", !!p && p.aberto && p.noBody && JSON.stringify(rotulosNoPainel) === JSON.stringify(["Corretor", "Origem", "Empreendimento", "Situação"]) && !fechou?.aberto && focoNoBotao === true, { p, rotulosNoPainel, fechou, focoNoBotao });
+    }
+    // Clicar no nome na tabela Por corretor filtra por ele; Descartados mostra o selo.
+    await comArmazenamento({ mb_tema: "papel" }, "/leads/");
+    await espera(900);
+    await clicarTexto("main .mb-tabela .mb-link", "Marina Exemplo");
+    await espera(400);
+    const filtrouPorCorretor = await avaliar(`(() => { const lab = [...document.querySelectorAll('form.mb-filtros label.mb-campo')].find((l) => l.querySelector('.mb-campo__rotulo')?.textContent.trim() === 'Corretor'); return { corretor: lab.querySelector('select option:checked').textContent.trim(), tabela: !!document.querySelector('main .mb-tabela'), chip: [...document.querySelectorAll('.mb-filtros__ativos .mb-opcao')].map((b) => b.textContent.trim()) }; })()`);
+    if (celular) { await clicarTexto("button", "Filtros"); await espera(500); }
+    await escolher("Situação", "descartado");
+    await espera(400);
+    if (celular) { await avaliar("document.querySelector('.mb-lateral [data-mb-fechar]').click(); true"); await espera(400); }
+    const descartados = await avaliar(`({ conta: document.querySelector('.mb-filtros__ativos span')?.textContent.trim(), selos: [...document.querySelectorAll('main .mb-selo--etapa-descartado')].map((e) => e.textContent.trim()) })`);
+    confere(`Leads ${w}: clicar no corretor da tabela filtra por ele; Descartados mostra ✕ Descartado`, filtrouPorCorretor.corretor === "Marina Exemplo" && !filtrouPorCorretor.tabela && filtrouPorCorretor.chip.includes("Corretor: Marina Exemplo") && descartados.selos.includes("✕ Descartado"), { filtrouPorCorretor, descartados });
+
+    // Leads como corretor: Registrar abre o painel, Esc devolve o foco; WhatsApp abre a mensagem pronta.
+    await comArmazenamento({ mb_tema: "papel" }, "/leads/?qa=corretor");
+    await espera(900);
+    await clicarTexto("main .mb-item__faixa button", "Registrar");
+    await espera(700);
+    const pr = await painel();
+    await teclar("Escape", "Escape", 27);
+    await espera(500);
+    const focoVoltou = await avaliar("document.activeElement?.textContent.trim() === 'Registrar' && !!document.activeElement.closest('.mb-item')");
+    await avaliar("document.querySelector('main .mb-item__faixa .mb-botao--whatsapp').click(); true");
+    await espera(600);
+    const dialogo = await avaliar("!!document.querySelector('body > .ds-antigo dialog')");
+    confere(`Leads ${w} corretor: Registrar abre o PainelLateral, Esc fecha e devolve o foco ao botão; WhatsApp abre a mensagem pronta`, !!pr && pr.aberto && pr.noBody && focoVoltou === true && dialogo === true, { pr, focoVoltou, dialogo });
+
+    // Agenda: trocar de semana, Voltar para hoje, escolher o dia.
+    await comArmazenamento({ mb_tema: "papel" }, "/agenda/");
+    await espera(900);
+    const semana0 = await avaliar("document.querySelector('.mb-periodo__rotulo').textContent");
+    await clicarTexto("nav.mb-periodo button", "Seguinte →");
+    await espera(900);
+    const semana1 = await avaliar("({ rotulo: document.querySelector('.mb-periodo__rotulo').textContent, botoes: [...document.querySelectorAll('nav.mb-periodo button')].map((b) => b.textContent.trim()) })");
+    await clicarTexto("nav.mb-periodo button", "Voltar para hoje");
+    await espera(900);
+    const semana2 = await avaliar("({ rotulo: document.querySelector('.mb-periodo__rotulo').textContent, botoes: [...document.querySelectorAll('nav.mb-periodo button')].map((b) => b.textContent.trim()) })");
+    const antes = await avaliar("document.querySelector('.mb-semana__dia[aria-pressed=true] .mb-semana__numero').textContent");
+    await avaliar("[...document.querySelectorAll('.mb-semana__dia')].find((d) => d.getAttribute('aria-pressed') === 'false').click(); true");
+    await espera(700);
+    const depois = await avaliar("({ n: document.querySelector('.mb-semana__dia[aria-pressed=true] .mb-semana__numero').textContent, um: document.querySelectorAll('.mb-semana__dia[aria-pressed=true]').length })");
+    confere(`Agenda ${w}: Seguinte → troca a semana e mostra Voltar para hoje, que volta; escolher um dia marca só ele`, semana1.rotulo !== semana0 && semana1.botoes.includes("Voltar para hoje") && semana2.rotulo === semana0 && !semana2.botoes.includes("Voltar para hoje") && depois.n !== antes && depois.um === 1, { semana0, semana1, semana2, antes, depois });
+    // Agenda: + Agendar visita abre a escolha do cliente (DS antigo, dentro da ponte).
+    await clicarTexto("main button", "+ Agendar visita");
+    await espera(600);
+    const agendar = await avaliar("({ ponte: !!document.querySelector('main .ds-antigo #busca-cliente'), botaoSumiu: ![...document.querySelectorAll('main button')].some((b) => b.textContent.trim() === '+ Agendar visita') })");
+    confere(`Agenda ${w}: + Agendar visita abre a escolha do cliente dentro da ponte .ds-antigo`, agendar.ponte && agendar.botaoSumiu, agendar);
+
+    // Fila do gerente: a linha abre o PainelLateral com as ações; Esc fecha e devolve o foco.
+    await comArmazenamento({ mb_tema: "papel" }, "/fila/?qa=gerente");
+    await espera(900);
+    await avaliar("document.querySelector('main button.mb-tabela__alvo').focus(); document.querySelector('main button.mb-tabela__alvo').click(); true");
+    await espera(700);
+    const pf = await painel();
+    const nomeDoAlvo = await avaliar("document.querySelector('main button.mb-tabela__alvo').getAttribute('aria-label')");
+    await teclar("Escape", "Escape", 27);
+    await espera(500);
+    const foco = await avaliar("document.activeElement?.classList.contains('mb-tabela__alvo')");
+    // No computador, clicar fora do nome (na célula de Situação) também abre pela linha inteira.
+    let linhaInteira = null;
+    if (!celular) {
+      const alvo = await avaliar(`(() => { const td = document.querySelector('main table.mb-tabela--registros tbody tr td:nth-child(2)'); const r = td.getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }; })()`);
+      await cdp("Input.dispatchMouseEvent", { type: "mousePressed", x: alvo.x, y: alvo.y, button: "left", clickCount: 1 });
+      await cdp("Input.dispatchMouseEvent", { type: "mouseReleased", x: alvo.x, y: alvo.y, button: "left", clickCount: 1 });
+      await espera(600);
+      linhaInteira = await painel();
+      await teclar("Escape", "Escape", 27);
+      await espera(400);
+    }
+    confere(`Fila ${w}: a linha do corretor abre o PainelLateral com as ações (Pausar, Tirar da distribuição, Como é calculado, Produtos e participação); Esc fecha e devolve o foco${celular ? "" : "; clicar na célula da linha também abre"}`, !!pf && pf.aberto && pf.noBody && /^Ações de Carla/.test(nomeDoAlvo) && pf.titulo === "Carla" && JSON.stringify(pf.acoes) === JSON.stringify(["Pausar", "Tirar da distribuição", "Como é calculado", "Produtos e participação"]) && foco === true && (celular || (!!linhaInteira && linhaInteira.aberto)), { pf, nomeDoAlvo, foco, linhaInteira });
+    confere(`Leads, Agenda e Fila ${w}: nenhum erro no console durante as ações`, erros.length === 0, [...erros]);
+  }
+
+  // Os prints dos filtros abertos no celular, nos dois temas.
+  for (const tema of ["papel", "grafite"]) {
+    for (const nome of ["leads-corretor", "leads-gerente"]) {
+      await tela(375, 812);
+      await comArmazenamento({ mb_tema: tema }, nome === "leads-gerente" ? "/leads/" : "/leads/?qa=corretor");
+      await espera(800);
+      await avaliar("document.querySelector('.mb-filtros__celular').click(); true");
+      await espera(600);
+      await print(`${nome}-375-${tema}-filtros-abertos`);
+    }
+  }
+  writeFileSync(join(saida, "resultado.json"), JSON.stringify(resultado, null, 2));
+  const falhasLeads = Object.values(resultado).filter((r) => !r.ok).length;
+  console.log(`\n${Object.keys(resultado).length} conferências, ${falhasLeads} falhas. Prints em ${saida}`);
+  await tela(1280, 800);
+  ws.close();
+  process.exit(falhasLeads ? 1 : 0);
 }
 
 // 10. As mensagens do passo d. Roda com --mensagens, depois do visual-preview.mjs e do build da prévia.

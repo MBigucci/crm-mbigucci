@@ -19,6 +19,9 @@ const leads = [
   {...base,id:'lead-6',nome:'Lucas Exemplo',temperatura:'frio',proximo_contato:at(0,8),ultima_interacao_em:at(-1),ultima_interacao_texto:'Vai conversar com a esposa e retorna.',tentativas:0},
   {...base,id:'lead-7',nome:'Sofia Exemplo',origem:'empresa',etapa:'novo',ultima_interacao_em:null,ultima_interacao_texto:null,proximo_contato:null,created_at:new Date(now.getTime()-6*60000).toISOString(),atribuido_em:new Date(now.getTime()-6*60000).toISOString(),atribuido_por:'gerente'},
   {...base,id:'lead-8',nome:'Tiago Exemplo',temperatura:'morno',proximo_contato:at(0,23),ultima_interacao_em:at(-1),ultima_interacao_texto:'Visitou o decorado. Ligar para falar da proposta.',etapa:'visita_realizada',tentativas:0},
+  // Passo e (Leads): um lead sem dono (A distribuir) e um descartado, para o gerente e a lista Descartados.
+  {...base,id:'lead-9',nome:'Vera Exemplo',dono_id:null,origem:'empresa',etapa:'novo',ultima_interacao_em:null,ultima_interacao_texto:null,proximo_contato:null,tentativas:0},
+  {...base,id:'lead-10',nome:'Otávio Exemplo',status:'descartado',motivo_descarte:'sem_interesse',temperatura:'frio',proximo_contato:null,ultima_interacao_texto:'Disse que não tem mais interesse.'},
 ];
 const visitas = [
   {id:'visita-1',lead_id:'lead-1',corretor_id:'corretor-1',empreendimento:base.empreendimento,inicio:at(0,23),local:'Plantão do residencial',status:'agendada',observacao:null,baixa_por:null,baixa_em:null,comprovante:null,created_at:at(-3),lead:leads[0]},

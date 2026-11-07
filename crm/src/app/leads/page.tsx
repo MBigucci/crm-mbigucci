@@ -1,21 +1,28 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Casca } from "@/components/casca";
-import { CardLead, RodapeAcao } from "@/components/leads/partes";
-import { Filtros, useLeadsVisiveis } from "@/components/leads/filtros";
-import { useSessao } from "@/lib/sessao";
-import { grupoDoLead, type Lead } from "@/lib/leads";
-import { criarBusca, ORDENS, ordenarLeads, type Ordem } from "@/lib/busca";
+import { CardLeadAlicerce } from "@/components/leads/partes";
+import { useLeadsVisiveis } from "@/components/leads/filtros";
+import { usePerfil, useSessao } from "@/lib/sessao";
+import { grupoDoLead, type Lead, type StatusLead } from "@/lib/leads";
+import { criarBusca, ORDENS, ordenarLeads, SEM_EMPREENDIMENTO, type Ordem } from "@/lib/busca";
 import { useCatalogos, useHorarioAtendimento } from "@/lib/leads-dados";
 import { prazoDoLead, type HorarioAtendimento } from "@/lib/prazo";
+import { Aviso } from "@/components/alicerce/aviso";
+import { BarraDeFiltros } from "@/components/alicerce/barra-de-filtros";
+import { CarregandoLeads } from "@/components/alicerce/carregando";
+import { EstadoVazio } from "@/components/alicerce/estado-vazio";
+import { useMensagemPronta } from "@/components/alicerce/mensagem-do-lead";
+import { Prazo } from "@/components/alicerce/prazo";
+import { useRegistrarDoLead } from "@/components/alicerce/registrar-do-lead";
+import { Tabela } from "@/components/alicerce/tabela";
 
 export default function LeadsPage() {
   const { pode } = useSessao();
   const daEquipe = pode("dados.ver_equipe") && !pode("dados.ver_todos");
   return (
-    <Casca titulo={daEquipe ? "Leads da equipe" : "Leads"}>
+    <Casca titulo={daEquipe ? "Leads da equipe" : "Leads"} migrada>
       <Leads />
     </Casca>
   );
@@ -32,15 +39,25 @@ function lerOrdem(): Ordem {
   }
 }
 
+/**
+ * Leads no Alicerce (item 48, passo e): a BarraDeFiltros com os filtros de sempre (os mesmos valores), a tabela
+ * "Por corretor" do gerente em Tabela (no celular rola dentro do quadro) e os leads em CardLead, como na Lista
+ * do dia. Nada do que a tela faz mudou: as mesmas leituras, a mesma busca, a mesma ordem e o mesmo filtro.
+ * Registrar só no lead do próprio corretor (o mesmo painel da Lista do dia); o WhatsApp abre a mensagem pronta e,
+ * aqui, não grava toque (como antes).
+ */
 function Leads() {
+  const eu = usePerfil();
   const { pode } = useSessao();
-  const atribui = pode("leads.atribuir");
   const { catalogos } = useCatalogos();
   const horario = useHorarioAtendimento();
   const f = useLeadsVisiveis();
   const [busca, setBusca] = useState("");
   const [ordem, setOrdem] = useState<Ordem>("proximo_contato");
   const [agora] = useState(() => new Date());
+  const titulo = useRef<HTMLHeadingElement>(null);
+  // A entrada acontece só ao abrir a tela: depois dela, os cards que chegam não animam de novo.
+  const [entrando, setEntrando] = useState(true);
 
   useEffect(() => setOrdem(lerOrdem()), []);
   function mudarOrdem(o: Ordem) {
@@ -52,127 +69,161 @@ function Leads() {
 
   const visiveis = useMemo(() => ordenarLeads((f.leads ?? []).filter(criarBusca(busca)), ordem), [f.leads, busca, ordem]);
   const filtrando = !!(busca.trim() || f.origem || f.empreendimento);
+  const carregou = !!f.leads;
+  useEffect(() => {
+    if (!carregou) return;
+    const t = setTimeout(() => setEntrando(false), 1200);
+    return () => clearTimeout(t);
+  }, [carregou]);
 
   const resumo = useMemo(() => resumoPorCorretor(f.leads ?? [], agora, horario), [f.leads, agora, horario]);
   const nomeEtapa = (slug: string) => catalogos?.etapas.find((e) => e.slug === slug)?.nome ?? slug;
+  const mensagem = useMensagemPronta();
+  const registrar = useRegistrarDoLead({ leads: f.leads ?? [], agora, nomeEtapa, recarregar: f.recarregar, titulo });
+
+  const escopo = pode("dados.ver_todos") ? "Empresa toda" : pode("dados.ver_equipe") ? "Sua equipe" : "Só os seus";
+  const limpar = () => {
+    setBusca("");
+    f.setCorretor("");
+    f.setOrigem("");
+    f.setEmpreendimento("");
+    f.setStatus("ativo");
+  };
 
   return (
-    <div className="grid gap-5 pb-20 md:pb-0">
-      <Filtros {...f} origens={catalogos?.origens ?? []}>
-        <div className="w-full md:w-auto md:min-w-[240px] md:flex-[2]">
-          <label className="field-label" htmlFor="busca">
-            Buscar
-          </label>
-          <input
-            id="busca"
-            className="input"
-            type="search"
-            placeholder="Nome, telefone ou empreendimento"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-          />
-        </div>
-      </Filtros>
+    <div className="pagina-alicerce">
+      <h1 ref={titulo} className="mb-visualmente-oculto" tabIndex={-1}>
+        {pode("dados.ver_equipe") && !pode("dados.ver_todos") ? "Leads da equipe" : "Leads"}
+      </h1>
+      <BarraDeFiltros
+        escopo={escopo}
+        tituloDoPainel="Filtrar leads"
+        busca={{ valor: busca, onChange: setBusca, placeholder: "Nome, telefone ou empreendimento" }}
+        contagem={f.leads ? `${visiveis.length} ${visiveis.length === 1 ? "lead" : "leads"}` : undefined}
+        ordenar={visiveis.length > 0 ? { valor: ordem, onChange: (v) => mudarOrdem(v as Ordem), opcoes: ORDENS.map((o) => ({ valor: o.slug, rotulo: o.nome })) } : undefined}
+        filtros={[
+          ...(f.veOutros
+            ? [
+                {
+                  rotulo: "Corretor",
+                  valor: f.corretor,
+                  onChange: f.setCorretor,
+                  opcoes: [{ valor: "", rotulo: "Todos os corretores" }, ...f.corretores.map((c) => ({ valor: c.id, rotulo: c.nome }))],
+                },
+              ]
+            : []),
+          {
+            rotulo: "Origem",
+            valor: f.origem,
+            onChange: f.setOrigem,
+            opcoes: [{ valor: "", rotulo: "Todas as origens" }, ...(catalogos?.origens ?? []).map((o) => ({ valor: o.slug, rotulo: o.nome }))],
+          },
+          {
+            rotulo: "Empreendimento",
+            valor: f.empreendimento,
+            onChange: f.setEmpreendimento,
+            opcoes: [
+              { valor: "", rotulo: "Todos os empreendimentos" },
+              ...f.empreendimentos.map((e) => ({ valor: e.chave, rotulo: `${e.nome} (${e.total})` })),
+              { valor: SEM_EMPREENDIMENTO, rotulo: "Sem empreendimento" },
+            ],
+          },
+          {
+            rotulo: "Situação",
+            valor: f.status,
+            padrao: "ativo",
+            onChange: (v) => f.setStatus(v as StatusLead),
+            opcoes: [
+              { valor: "ativo", rotulo: "Ativos" },
+              { valor: "descartado", rotulo: "Descartados" },
+            ],
+          },
+        ]}
+      />
 
       {f.veOutros && f.status === "ativo" && !f.corretor && !f.origem && !f.empreendimento && resumo.length > 0 && (
-        <section aria-labelledby="resumo" className="min-w-0">
-          <h2 id="resumo" className="titulo-secao-antigo mb-3">
+        <section aria-labelledby="resumo" className="pagina-alicerce__grupo">
+          <h2 id="resumo" className="titulo-secao">
             Por corretor
           </h2>
-          <div className="card bar-brand overflow-x-auto p-0">
-            <table className="w-full text-left text-[13px]">
-              <thead>
-                <tr className="border-b border-line text-ink-soft">
-                  <th className="px-4 py-2 font-semibold">Corretor</th>
-                  <th className="px-2 py-2 text-right font-semibold">Ativos</th>
-                  <th className="px-2 py-2 text-right font-semibold">Prazo estourado</th>
-                  <th className="px-2 py-2 text-right font-semibold">Atrasados</th>
-                  <th className="px-4 py-2 text-right font-semibold">Sem contato</th>
+          <Tabela tipo="numeros" rotulo="Leads por corretor">
+            <thead>
+              <tr>
+                <th scope="col">Corretor</th>
+                <th scope="col" className="mb-tabela__num">
+                  Ativos
+                </th>
+                <th scope="col" className="mb-tabela__num">
+                  Prazo estourado
+                </th>
+                <th scope="col" className="mb-tabela__num">
+                  Atrasados
+                </th>
+                <th scope="col" className="mb-tabela__num">
+                  Sem contato
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {resumo.map((r) => (
+                <tr key={r.id}>
+                  <td>
+                    <button type="button" className="mb-link" aria-label={`Ver só os leads de ${f.nomeDono.get(r.id) ?? "Corretor"}`} onClick={() => f.setCorretor(r.id)}>
+                      {f.nomeDono.get(r.id) ?? "Corretor"}
+                    </button>
+                  </td>
+                  <td className="mb-tabela__num">{r.ativos}</td>
+                  <td className="mb-tabela__num">{r.estourados ? <Prazo nivel="estourado">! {r.estourados}</Prazo> : "0"}</td>
+                  <td className="mb-tabela__num">{r.atrasados ? <Prazo nivel="estourado">! {r.atrasados}</Prazo> : "0"}</td>
+                  <td className="mb-tabela__num">{r.semData}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {resumo.map((r) => (
-                  <tr key={r.id} className={`border-b border-line last:border-0 ${r.estourados ? "bg-tint-brand" : ""}`}>
-                    <td className="px-4 py-2">
-                      <button
-                        type="button"
-                        className="focus-ring text-left font-semibold"
-                        onClick={() => f.setCorretor(r.id)}
-                      >
-                        {f.nomeDono.get(r.id) ?? "Corretor"}
-                      </button>
-                    </td>
-                    <td className="num px-2 py-2 text-right">{r.ativos}</td>
-                    <td className={`num whitespace-nowrap px-2 py-2 text-right ${r.estourados ? "text-[18px] font-bold text-brand" : ""}`}>
-                      {r.estourados ? `! ${r.estourados}` : "0"}
-                    </td>
-                    <td className={`num whitespace-nowrap px-2 py-2 text-right ${r.atrasados ? "text-[18px] font-bold text-brand" : ""}`}>
-                      {r.atrasados ? `! ${r.atrasados}` : "0"}
-                    </td>
-                    <td className="num px-4 py-2 text-right">{r.semData}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </Tabela>
         </section>
       )}
 
-      {f.erro && <p className="aviso-erro">! {f.erro}</p>}
-      {!f.leads && !f.erro && <p className="text-concrete">Carregando…</p>}
+      {f.erro && <Aviso tom="erro" titulo="Não foi possível carregar os leads" texto={f.erro} />}
+      {!f.leads && !f.erro && <CarregandoLeads />}
       {f.leads && !visiveis.length && (
-        <p className="text-ink-soft">
-          {filtrando
-            ? "Nenhum lead com essa busca ou filtro."
-            : f.status === "ativo"
-              ? "Nenhum lead ativo."
-              : "Nenhum lead descartado."}
-        </p>
+        <EstadoVazio
+          titulo={filtrando ? "Nenhum lead com essa busca ou filtro" : f.status === "ativo" ? "Nenhum lead ativo" : "Nenhum lead descartado"}
+          texto={filtrando ? "Tire um filtro ou mude a busca para ver mais leads." : "Os leads aparecem aqui quando houver."}
+          acao={
+            filtrando ? (
+              <button className="mb-botao mb-botao--secundario mb-botao--p" type="button" onClick={limpar}>
+                Limpar filtros
+              </button>
+            ) : undefined
+          }
+        />
       )}
 
       {visiveis.length > 0 && (
-        <section aria-labelledby="lista">
-          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-            <h2 id="lista" className="eyebrow">
-              {f.status === "ativo" ? "Leads ativos" : "Descartados"} · <span className="num">{visiveis.length}</span>
-            </h2>
-            <label className="flex items-center gap-2 text-[13px] text-ink-soft">
-              Ordenar por
-              <select
-                className="focus-ring rounded-sm border border-line bg-surface px-2 py-1 text-[16px] text-ink md:text-[13px]"
-                value={ordem}
-                onChange={(e) => mudarOrdem(e.target.value as Ordem)}
-              >
-                {ORDENS.map((o) => (
-                  <option key={o.slug} value={o.slug}>
-                    {o.nome}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <ul className="grid gap-3 md:grid-cols-2">
-            {visiveis.map((l) => (
-              <CardLead
+        <section aria-labelledby="lista" className="pagina-alicerce__grupo">
+          <h2 id="lista" className="mb-visualmente-oculto">
+            {f.status === "ativo" ? "Leads ativos" : "Leads descartados"}
+          </h2>
+          <ul className="mb-itens mb-itens--duas">
+            {visiveis.map((l, n) => (
+              <CardLeadAlicerce
                 key={l.id}
                 lead={l}
                 agora={agora}
                 horario={horario}
                 etapa={nomeEtapa(l.etapa)}
                 dono={f.veOutros ? (l.dono_id ? f.nomeDono.get(l.dono_id) : "A distribuir") : undefined}
+                destaque={n === 0}
+                indice={entrando ? Math.min(n, 10) : undefined}
+                onRegistrar={l.dono_id === eu.id ? registrar.abrir(l) : undefined}
+                onWhatsapp={() => mensagem.abrir(l)}
               />
             ))}
           </ul>
         </section>
       )}
-
-      {(atribui || pode("leads.cadastrar")) && (
-        <RodapeAcao>
-          <Link href="/leads/novo/" className="btn btn-red btn-lg focus-ring">
-            {atribui ? "+ Lead da empresa" : "+ Novo lead"}
-          </Link>
-        </RodapeAcao>
-      )}
+      {registrar.elemento}
+      {mensagem.elemento}
     </div>
   );
 }

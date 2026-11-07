@@ -1,11 +1,10 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import clsx from "clsx";
 import { Casca } from "@/components/casca";
 import { AgendarVisita, ListaVisitas } from "@/components/visitas/visitas";
-import { CardLead } from "@/components/leads/partes";
+import { CardLeadAlicerce } from "@/components/leads/partes";
 import { db } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
 import { mensagemErro } from "@/lib/erros";
@@ -23,11 +22,19 @@ import {
   type Visita,
 } from "@/lib/visitas";
 import { COLUNAS_VISITA_COM_LEAD, type LeadDaVisita, type VisitaComLead } from "@/lib/visitas-dados";
+import { Aviso } from "@/components/alicerce/aviso";
+import { CarregandoLeads } from "@/components/alicerce/carregando";
+import { EstadoDePagina, LinkDoEstado } from "@/components/alicerce/estado-de-pagina";
+import { EstadoVazio } from "@/components/alicerce/estado-vazio";
+import { useMensagemPronta } from "@/components/alicerce/mensagem-do-lead";
+import { NavegadorDePeriodo, SemanaDeDias } from "@/components/alicerce/navegador-de-periodo";
+import { useRegistrarDoLead } from "@/components/alicerce/registrar-do-lead";
+import { useToast } from "@/components/alicerce/toast";
 
 export default function AgendaPage() {
   return (
-    <Casca titulo="Agenda">
-      <Suspense fallback={<p className="text-concrete">Carregando…</p>}>
+    <Casca titulo="Agenda" migrada>
+      <Suspense fallback={<CarregandoLeads texto="Carregando a agenda…" />}>
         <Agenda />
       </Suspense>
     </Casca>
@@ -46,10 +53,15 @@ const maiuscula = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
  * cliente; o gerente vê os da equipe, com filtro por corretor. No topo, as
  * visitas que passaram sem baixa, de qualquer semana. A semana, o dia e o
  * corretor ficam no endereço.
+ *
+ * No Alicerce (item 48, passo e): a troca de semana é o NavegadorDePeriodo com a semana de 7 dias, as visitas são
+ * Compromisso e os retornos, CardLead. Nada do que a tela faz mudou, fora o que o card de visita do Alicerce
+ * leva para a ficha (Cliente confirmou e Cancelar visita, decisão de 07/11/2026 da Lista do dia).
  */
 function Agenda() {
   const eu = usePerfil();
   const { pode } = useSessao();
+  const toast = useToast();
   const veOutros = pode("dados.ver_equipe") || pode("dados.ver_todos");
   const permitido = veOutros || pode("leads.cadastrar");
   // Só o dono do lead agenda (docs/visitas.md): quem vê a equipe não agenda pela Agenda.
@@ -58,6 +70,7 @@ function Agenda() {
   const router = useRouter();
   const { catalogos } = useCatalogos();
   const horario = useHorarioAtendimento();
+  const titulo = useRef<HTMLHeadingElement>(null);
 
   const [hoje, setHoje] = useState(() => new Date());
   const dia = deDataIso(sp.get("d")) ?? hoje;
@@ -80,7 +93,6 @@ function Agenda() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [agendando, setAgendando] = useState(false);
-  const [agendada, setAgendada] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
     const agora = new Date();
@@ -131,7 +143,19 @@ function Agenda() {
     return () => clearInterval(t);
   }, []);
 
-  if (!permitido) return <div className="card max-w-[520px]">! Seu perfil não tem acesso a esta página.</div>;
+  const nomeEtapa = (slug: string) => catalogos?.etapas.find((e) => e.slug === slug)?.nome ?? slug;
+  const mensagem = useMensagemPronta();
+  const registrar = useRegistrarDoLead({ leads, agora: hoje, nomeEtapa, recarregar: carregar, titulo });
+
+  if (!permitido)
+    return (
+      <EstadoDePagina
+        tipo="sem-permissao"
+        titulo="Esta página não está liberada para o seu perfil"
+        texto="Peça o acesso ao gerente geral."
+        acoes={<LinkDoEstado href="/">Voltar para o início</LinkDoEstado>}
+      />
+    );
 
   const dias = agendaDaSemana(semana ?? [], segunda);
   const retornos = retornosDaSemana(leads, segunda);
@@ -143,7 +167,6 @@ function Agenda() {
   const totalRetornos = retornos.reduce((s, r) => s + r.length, 0);
   const ehSemanaAtual = mesmoDia(segunda, inicioDaSemana(hoje));
   const nomeDe = veOutros && !corretor ? (id: string) => nomes.get(id) : undefined;
-  const nomeEtapa = (slug: string) => catalogos?.etapas.find((e) => e.slug === slug)?.nome ?? slug;
   const irSemana = (passos: number) =>
     ir({ d: dataIso(new Date(segunda.getFullYear(), segunda.getMonth(), segunda.getDate() + 7 * passos)) });
   const tocar = (l: Lead) => () => {
@@ -151,161 +174,141 @@ function Agenda() {
   };
   const aoAgendar = (nome: string, v: Pick<Visita, "inicio" | "empreendimento">) => {
     setAgendando(false);
-    setAgendada(`✓ Visita com ${nome} agendada para ${quandoVisita(v.inicio, new Date())}, em ${v.empreendimento}. Confirme com o cliente pelo WhatsApp no card da visita.`);
+    toast.mostrar(`Visita com ${nome} agendada para ${quandoVisita(v.inicio, new Date())}, em ${v.empreendimento}. Confirme com o cliente pelo WhatsApp no card da visita.`, {
+      tipo: "sucesso",
+    });
     ir({ d: dataIso(new Date(v.inicio)) });
     carregar();
   };
 
+  // Só o primeiro card da tela leva o destaque: as visitas aguardando baixa, as do dia ou o primeiro retorno.
+  const destaque = semBaixa.length > 0 ? "baixa" : escolhido.visitas.length > 0 ? "dia" : retornosDoDia.length > 0 ? "retornos" : null;
+
   return (
-    <div className="grid gap-5">
-      <section className="grid gap-3" aria-label="Semana">
-        <div className="flex flex-wrap items-end gap-3">
-          {veOutros && (
-            <div className="min-w-[200px] flex-1 md:flex-none">
-              <label className="field-label" htmlFor="corretor">
-                Corretor
-              </label>
-              <select id="corretor" className="input" value={corretor} onChange={(e) => ir({ c: e.target.value || null })}>
-                <option value="">Todos</option>
-                {corretores.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nome}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+    <div className="pagina-alicerce">
+      <h1 ref={titulo} className="mb-visualmente-oculto" tabIndex={-1}>
+        Agenda
+      </h1>
+      <section className="pagina-alicerce__grupo" aria-label="Semana">
+        {veOutros && (
+          <div className="pagina-alicerce__barra">
+            <label className="mb-campo pagina-alicerce__filtro">
+              <span className="mb-campo__rotulo">Corretor</span>
+              <span className="mb-campo__selecao">
+                <select className="mb-campo__entrada" value={corretor} onChange={(e) => ir({ c: e.target.value || null })}>
+                  <option value="">Todos os corretores</option>
+                  {corretores.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nome}
+                    </option>
+                  ))}
+                </select>
+              </span>
+            </label>
+          </div>
+        )}
+        <div className="pagina-alicerce__periodo">
+          <NavegadorDePeriodo
+            nome="Semana"
+            rotulo={`${diaMes(segunda)} a ${diaMes(domingo)}/${domingo.getFullYear()}`}
+            aoAnterior={() => irSemana(-1)}
+            aoSeguinte={() => irSemana(1)}
+            aoVoltar={ehSemanaAtual ? undefined : () => ir({ d: null })}
+          />
           {agenda ? (
             !agendando && (
-              <button
-                type="button"
-                className="btn btn-ghost btn-lg focus-ring w-full md:ml-auto md:w-auto"
-                onClick={() => {
-                  setAgendada(null);
-                  setAgendando(true);
-                }}
-              >
+              <button className="mb-botao mb-botao--secundario pagina-alicerce__acao" type="button" onClick={() => setAgendando(true)}>
                 + Agendar visita
               </button>
             )
           ) : (
-            <p className="text-[13px] text-ink-soft md:ml-auto">
+            <p className="mb-item__linha pagina-alicerce__acao">
               {veOutros ? "Para agendar, o corretor abre a ficha do lead." : "Para agendar, abra a ficha do lead."}
             </p>
           )}
         </div>
-        {agendando && <EscolherCliente donoId={eu.id} nomeEtapa={nomeEtapa} onFechar={() => setAgendando(false)} onAgendada={aoAgendar} />}
-        {agendada && (
-          <p className="aviso-ok" role="status">
-            {agendada}
-          </p>
-        )}
-        <div className="flex items-center gap-2">
-          <button type="button" className="btn btn-ghost focus-ring px-3 text-[15px]" aria-label="Semana anterior" onClick={() => irSemana(-1)}>
-            ← Anterior
-          </button>
-          <p className="num min-w-0 flex-1 text-center font-display text-[17px] font-bold md:flex-none md:px-3">
-            {diaMes(segunda)} a {diaMes(domingo)}/{domingo.getFullYear()}
-          </p>
-          <button type="button" className="btn btn-ghost focus-ring px-3 text-[15px]" aria-label="Semana seguinte" onClick={() => irSemana(1)}>
-            Seguinte →
-          </button>
-          {!ehSemanaAtual && (
-            <button type="button" className="link-acao focus-ring ml-2 hidden text-[13px] md:inline" onClick={() => ir({ d: null })}>
-              Voltar para hoje
-            </button>
-          )}
-        </div>
-        {!ehSemanaAtual && (
-          <button type="button" className="link-acao focus-ring justify-self-center text-[13px] md:hidden" onClick={() => ir({ d: null })}>
-            Voltar para hoje
-          </button>
+        {agendando && (
+          // Agendar visita ainda é do DS antigo (visitas.tsx, que a ficha também usa): a ponte .ds-antigo segura os links.
+          <div className="ds-antigo">
+            <EscolherCliente donoId={eu.id} nomeEtapa={nomeEtapa} onFechar={() => setAgendando(false)} onAgendada={aoAgendar} />
+          </div>
         )}
       </section>
 
-      {erro && <p className="aviso-erro">! {erro}</p>}
+      {erro && <Aviso tom="erro" titulo="Não foi possível carregar a agenda" texto={erro} />}
+      {!semana && !erro && <CarregandoLeads texto="Carregando a agenda…" />}
 
       {semBaixa.length > 0 && (
-        <section aria-labelledby="sem-baixa">
-          <h2 id="sem-baixa" className="titulo-secao-antigo mb-3">
-            Aguardando baixa · <span className="num">{semBaixa.length}</span>
+        <section aria-labelledby="sem-baixa" className="pagina-alicerce__grupo">
+          <h2 id="sem-baixa" className="titulo-secao">
+            Aguardando baixa · <span className="mb-num">{semBaixa.length}</span>
           </h2>
-          <ListaVisitas visitas={semBaixa} agora={hoje} nomeDe={nomeDe} comDia onMudou={carregar} />
+          <ListaVisitas visitas={semBaixa} agora={hoje} nomeDe={nomeDe} comDia onMudou={carregar} alicerce destaquePrimeiro={destaque === "baixa"} />
         </section>
       )}
 
-      <section aria-labelledby="dias" className="grid gap-3">
-        <h2 id="dias" className="titulo-secao-antigo">
+      <section aria-labelledby="dias" className="pagina-alicerce__grupo">
+        <h2 id="dias" className="titulo-secao">
           {semana ? (total || totalRetornos ? `${maiuscula(textoDoDia(total, totalRetornos))} na semana` : "Nada marcado na semana") : "Carregando…"}
         </h2>
-        <div role="group" aria-label="Dias da semana" className="grid grid-cols-7 gap-1">
-          {dias.map((d, i) => {
-            const ativo = d === escolhido;
-            const ehHoje = mesmoDia(d.dia, hoje);
-            const n = d.total + retornos[i].length;
-            return (
-              <button
-                key={dataIso(d.dia)}
-                type="button"
-                aria-pressed={ativo}
-                aria-label={`${ehHoje ? "Hoje, " : ""}${DIAS_LONGOS[d.dia.getDay()]}, ${diaMes(d.dia)}: ${textoDoDia(d.total, retornos[i].length)}`}
-                onClick={() => ir({ d: dataIso(d.dia) })}
-                className={clsx(
-                  "focus-ring flex min-h-[68px] min-w-0 flex-col items-center justify-center gap-1 rounded-sm border px-0.5 py-2",
-                  ativo ? "border-ink bg-ink text-surface" : "border-line bg-surface text-ink hover:border-ink",
-                )}
-              >
-                <span
-                  className={clsx(
-                    "text-[12px] font-semibold uppercase leading-none",
-                    ehHoje ? (ativo ? "text-surface" : "text-brand") : ativo ? "text-surface" : "text-ink-soft",
-                  )}
-                >
-                  {DIAS_CURTOS[d.dia.getDay()]}
-                </span>
-                <span className="num font-display text-[20px] font-bold leading-none">{d.dia.getDate()}</span>
-                <span className="num h-3 text-[12px] font-semibold leading-none">{n > 0 ? n : ""}</span>
-              </button>
-            );
-          })}
-        </div>
+        <SemanaDeDias
+          dias={dias.map((d, i) => ({
+            chave: dataIso(d.dia),
+            nome: DIAS_CURTOS[d.dia.getDay()],
+            numero: dd(d.dia.getDate()),
+            contagem: d.total + retornos[i].length,
+            rotuloAcessivel: `${mesmoDia(d.dia, hoje) ? "Hoje, " : ""}${DIAS_LONGOS[d.dia.getDay()]}, ${diaMes(d.dia)}: ${textoDoDia(d.total, retornos[i].length)}`,
+            hoje: mesmoDia(d.dia, hoje),
+            escolhido: d === escolhido,
+            aoEscolher: () => ir({ d: dataIso(d.dia) }),
+          }))}
+        />
       </section>
 
-      <section aria-labelledby="dia-escolhido" className="grid gap-3">
-        <h2 id="dia-escolhido" className="titulo-card">
+      <section aria-labelledby="dia-escolhido" className="pagina-alicerce__grupo">
+        <h2 id="dia-escolhido" className="titulo-secao">
           {mesmoDia(escolhido.dia, hoje) ? "Hoje · " : ""}
-          {DIAS_LONGOS[escolhido.dia.getDay()]}, <span className="num">{diaMes(escolhido.dia)}</span>
+          {DIAS_LONGOS[escolhido.dia.getDay()]}, <span className="mb-num">{diaMes(escolhido.dia)}</span>
         </h2>
-        {semana && !escolhido.visitas.length && !retornosDoDia.length && <p className="text-ink-soft">Nada marcado neste dia.</p>}
+        {semana && !escolhido.visitas.length && !retornosDoDia.length && (
+          <EstadoVazio titulo="Nada marcado neste dia" texto="Escolha outro dia da semana para ver as visitas e os retornos." />
+        )}
         {escolhido.visitas.length > 0 && (
-          <div className="grid gap-3">
-            <h3 className="titulo-secao-antigo">
-              Visitas · <span className="num">{escolhido.visitas.length}</span>
+          <div className="pagina-alicerce__grupo">
+            <h3 className="mb-sobrelinha">
+              Visitas · <span className="mb-num">{escolhido.visitas.length}</span>
             </h3>
-            <ListaVisitas visitas={escolhido.visitas} agora={hoje} nomeDe={nomeDe} onMudou={carregar} />
+            <ListaVisitas visitas={escolhido.visitas} agora={hoje} nomeDe={nomeDe} onMudou={carregar} alicerce destaquePrimeiro={destaque === "dia"} />
           </div>
         )}
         {retornosDoDia.length > 0 && (
-          <div className="grid gap-3">
-            <h3 className="titulo-secao-antigo">
-              Retornos · <span className="num">{retornosDoDia.length}</span>
+          <div className="pagina-alicerce__grupo">
+            <h3 className="mb-sobrelinha">
+              Retornos · <span className="mb-num">{retornosDoDia.length}</span>
             </h3>
-            <ul className="grid gap-3 md:grid-cols-2">
-              {retornosDoDia.map((l) => (
-                <CardLead
-                  key={l.id}
-                  lead={l}
-                  agora={hoje}
-                  horario={horario}
-                  etapa={nomeEtapa(l.etapa)}
-                  dono={veOutros ? (l.dono_id ? nomes.get(l.dono_id) : "A distribuir") : undefined}
-                  onToque={l.dono_id === eu.id ? tocar(l) : undefined}
-                />
-              ))}
+            <ul className="mb-itens mb-itens--duas">
+              {retornosDoDia.map((l, n) => {
+                const meu = l.dono_id === eu.id;
+                return (
+                  <CardLeadAlicerce
+                    key={l.id}
+                    lead={l}
+                    agora={hoje}
+                    horario={horario}
+                    etapa={nomeEtapa(l.etapa)}
+                    dono={veOutros ? (l.dono_id ? nomes.get(l.dono_id) : "A distribuir") : undefined}
+                    destaque={n === 0 && destaque === "retornos"}
+                    onRegistrar={meu ? registrar.abrir(l) : undefined}
+                    onWhatsapp={() => mensagem.abrir(l, meu ? tocar(l) : undefined)}
+                  />
+                );
+              })}
             </ul>
           </div>
         )}
       </section>
+      {registrar.elemento}
+      {mensagem.elemento}
     </div>
   );
 }

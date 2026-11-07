@@ -2025,3 +2025,13 @@ button.mb-folha__item { width: 100%; border: 0; background: none; font-family: v
   :root:has(.mb-celular-status) .mb-conexao { top: calc(var(--controle-toque) * 2 + var(--esp-4) + var(--esp-2)); }
 }
 :root:not(:has(.mb-topo, .mb-celular-topo)) .mb-conexao { top: var(--esp-3); }
+
+/* Passo e do Vendas (07/11/2026) */
+/* A linha inteira pode ser um <button> (abre o painel da linha): o alvo esticado não pode ficar preso no próprio botão */
+.mb-tabela--linhas tbody button.mb-tabela__alvo { position: static; z-index: auto; }
+/* A linha da própria pessoa (“Você” na fila, no ranking da equipe): aria-current="true" na linha */
+.mb-tabela tbody tr[aria-current="true"] > :is(td, th) { background: var(--areia); color: var(--texto); font-weight: 600; }
+.mb-lista__item[aria-current="true"] { background: var(--areia); }
+.mb-lista__item[aria-current="true"] .mb-lista__titulo { font-weight: 700; }
+/* Filtros: a largura acompanha o texto escolhido (até 260px), para “Todos os empreendimentos” não cortar */
+.mb-filtros > .mb-campo:not(.mb-filtros__busca) { flex: 0 1 auto; min-width: 150px; max-width: 260px; }
