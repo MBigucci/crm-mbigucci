@@ -2,13 +2,23 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import clsx from "clsx";
 import { Casca } from "@/components/casca";
-import { CampoProximoContato, EscolhaTemperatura, RodapeAcao, SeloCampo } from "@/components/leads/partes";
+import { Aviso } from "@/components/alicerce/aviso";
+import { BarraDeAcoes } from "@/components/alicerce/barra-de-acoes";
+import { BuscaComSugestoes } from "@/components/alicerce/busca-com-sugestoes";
+import { Campo, CampoEmGrupo, CampoSelecao } from "@/components/alicerce/campo";
+import { Cartao } from "@/components/alicerce/cartao";
+import { DataHora } from "@/components/alicerce/data-hora";
+import { Duplicado, type DadosDoDuplicado } from "@/components/alicerce/duplicado";
+import { precisaChecarDuplicado } from "@/lib/duplicado";
+import { Pares } from "@/components/alicerce/pares";
+import { Recolhivel } from "@/components/alicerce/recolhivel";
+import { Selo } from "@/components/alicerce/selo";
+import { Seletor } from "@/components/alicerce/seletor";
 import { db, novoId } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
 import { erroAoSalvar, jaEstavaSalvo, mensagemErro } from "@/lib/erros";
-import { COLUNAS_LEAD, deCampos, formatarWhatsapp, normalizarWhatsapp, textoDuplicado, type Lead, type Temperatura } from "@/lib/leads";
+import { COLUNAS_LEAD, TEMPERATURAS, deCampos, formatarWhatsapp, normalizarWhatsapp, type Lead, type Temperatura } from "@/lib/leads";
 import { camposEncontrados, lerMensagem, type LeadLido } from "@/lib/cadastro-magico";
 import {
   gravarUltimaOrigem,
@@ -18,8 +28,7 @@ import {
   useHorarioAtendimento,
 } from "@/lib/leads-dados";
 import { AvisarCorretor } from "@/components/leads/repasse";
-import { ConferirNoCatalogo, ListaEmpreendimentos } from "@/components/empreendimentos/partes";
-import { bairrosDoCatalogo, listaDoMagico } from "@/lib/catalogo";
+import { acharNoCatalogo, bairrosDoCatalogo, listaDoMagico, nomeStatus, nomesDoCatalogo } from "@/lib/catalogo";
 import { useCatalogo } from "@/lib/catalogo-dados";
 import { chaveRascunhoNovoLead, lerRascunho, limparRascunho, salvarRascunho } from "@/lib/rascunho";
 import Link from "next/link";
@@ -30,6 +39,7 @@ export default function NovoLeadPage() {
     <Casca
       titulo={pode("leads.atribuir") ? "Lead da empresa" : "Novo lead"}
       exige={pode("leads.atribuir") ? "leads.atribuir" : "leads.cadastrar"}
+      migrada
     >
       <NovoLead />
     </Casca>
@@ -38,6 +48,17 @@ export default function NovoLeadPage() {
 
 /** Perfil que veio da mensagem colada e que o corretor tocou para usar. */
 type PerfilColado = { valor: number | null; dormitorios: number | null; regiao: string | null };
+
+/** Os campos que mostram erro de validação, e onde o foco vai (o primeiro campo errado). */
+type CampoComErro = "nome" | "whatsapp" | "origem" | "dono" | "email" | "contato";
+const ONDE_FOCAR: Record<CampoComErro, string> = {
+  nome: "#novo-nome",
+  whatsapp: "#novo-whatsapp",
+  origem: '.mb-opcoes[aria-labelledby="novo-origem"] button',
+  dono: "#novo-dono",
+  email: "#novo-email",
+  contato: "form .mb-campo__par input",
+};
 
 type RascunhoNovoLead = {
   nome?: string;
@@ -85,12 +106,39 @@ function NovoLead() {
   const [detalhes, setDetalhes] = useState(false);
   const [dono, setDono] = useState("");
   const [erro, setErro] = useState<string | null>(null);
-  const [duplicado, setDuplicado] = useState<string | null>(null);
+  // O aviso de duplicado e o número a que ele se refere: mudar o WhatsApp apaga os dois, como antes.
+  const [avisoDup, setAvisoDup] = useState<{ numero: string; dados: DadosDoDuplicado } | null>(null);
+  // Erro de validação no campo (FormularioDenso): um por vez, na mesma ordem de antes; `foco` leva o cursor até ele.
+  const [erroCampo, setErroCampo] = useState<{ campo: CampoComErro; texto: string } | null>(null);
+  const [foco, setFoco] = useState(0);
+  const avisoRef = useRef<HTMLDivElement>(null);
   const [salvando, setSalvando] = useState(false);
   const [repasse, setRepasse] = useState<Lead | null>(null);
   const ids = useRef<{ lead: string; mensagem: string } | null>(null);
   const horario = useHorarioAtendimento();
   const restauradoRef = useRef(false);
+  const { catalogo } = useCatalogo();
+
+  // O empreendimento digitado vale mesmo fora do catálogo; a lista só sugere. O detalhe separa homônimos.
+  const opcoesDeEmpreendimento = useMemo(
+    () =>
+      nomesDoCatalogo(catalogo).map((nomeDoEmpreendimento) => {
+        const e = catalogo?.find((x) => x.nome === nomeDoEmpreendimento);
+        return { valor: nomeDoEmpreendimento, detalhe: e ? [nomeStatus(e.status), e.bairro].filter(Boolean).join(" · ") : undefined };
+      }),
+    [catalogo],
+  );
+  const foraDoCatalogo = !!empreendimento.trim() && !!catalogo?.length && !acharNoCatalogo(empreendimento, catalogo);
+
+  // Ao enviar com erro, o foco vai ao campo errado (FormularioDenso); o aviso de duplicado entra na vista.
+  useEffect(() => {
+    if (!erroCampo) return;
+    document.querySelector<HTMLElement>(ONDE_FOCAR[erroCampo.campo])?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [foco]);
+  useEffect(() => {
+    if (avisoDup) avisoRef.current?.scrollIntoView({ block: "center" });
+  }, [avisoDup]);
 
   useEffect(() => {
     if (!eu.id || restauradoRef.current) return;
@@ -132,21 +180,22 @@ function NovoLead() {
     setOrigem((origens.find((o) => o.slug === ultima) ?? padrao)?.slug ?? null);
   }, [origens, origem, eu.id, atribui]);
 
+  const temAlgo = !!(
+    nome.trim() ||
+    whatsapp.trim() ||
+    email.trim() ||
+    campanha.trim() ||
+    empreendimento.trim() ||
+    temperatura ||
+    contato.data ||
+    contato.hora ||
+    mensagem ||
+    perfil ||
+    (atribui && dono)
+  );
+
   useEffect(() => {
     if (!restauradoRef.current || !eu.id) return;
-    const temAlgo = !!(
-      nome.trim() ||
-      whatsapp.trim() ||
-      email.trim() ||
-      campanha.trim() ||
-      empreendimento.trim() ||
-      temperatura ||
-      contato.data ||
-      contato.hora ||
-      mensagem ||
-      perfil ||
-      (atribui && dono)
-    );
     if (temAlgo) {
       salvarRascunho(chaveRascunhoNovoLead(eu.id), {
         nome,
@@ -168,6 +217,7 @@ function NovoLead() {
   }, [
     eu.id,
     atribui,
+    temAlgo,
     nome,
     whatsapp,
     email,
@@ -190,35 +240,44 @@ function NovoLead() {
     if (lido.email.valor || lido.empreendimento.valor) setDetalhes(true);
     setPerfil(escolhido.valor || escolhido.dormitorios || escolhido.regiao ? escolhido : null);
     setMensagem(texto.trim());
-    setDuplicado(null);
+    setAvisoDup(null);
     setErro(null);
+    setErroCampo(null);
     setColando(false);
   }
 
-  async function salvar(e: React.FormEvent) {
-    e.preventDefault();
+  function invalido(campo: CampoComErro, texto: string) {
+    if (campo === "contato" || campo === "email") setDetalhes(true);
+    setErroCampo({ campo, texto });
+    setFoco((n) => n + 1);
+  }
+
+  async function salvar(e?: React.FormEvent, assimMesmo = false) {
+    e?.preventDefault();
     setErro(null);
+    setErroCampo(null);
     // Sem telefone pode (04/11/2026); digitado, precisa estar certo.
     const numero = whatsapp.trim() ? normalizarWhatsapp(whatsapp) : null;
-    if (!nome.trim()) return setErro("Preencha o nome.");
-    if (whatsapp.trim() && !numero) return setErro("Confira o WhatsApp: DDD e número, como (11) 98765-4321.");
-    if (!origemAtual) return setErro("Escolha a origem.");
-    if (atribui && !dono) return setErro("Escolha o corretor que vai receber o lead.");
-    if (email.trim() && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) return setErro("Confira o e-mail.");
+    if (!nome.trim()) return invalido("nome", "Preencha o nome.");
+    if (whatsapp.trim() && !numero) return invalido("whatsapp", "Confira o WhatsApp: DDD e número, como (11) 98765-4321.");
+    if (!origemAtual) return invalido("origem", "Escolha a origem.");
+    if (atribui && !dono) return invalido("dono", "Escolha o corretor que vai receber o lead.");
+    if (email.trim() && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) return invalido("email", "Confira o e-mail.");
     const proximo = contato.data ? deCampos(contato.data, contato.hora || "09:00") : null;
-    if (contato.data && !proximo) return setErro("Confira o dia e a hora do próximo contato.");
+    if (contato.data && !proximo) return invalido("contato", "Confira o dia e a hora do próximo contato.");
 
     setSalvando(true);
-    // Num novo toque depois de uma tentativa enviada, o lead "duplicado" pode ser o próprio.
-    if (numero && duplicado !== numero && !ids.current) {
-      // Aviso de duplicado; não impede o cadastro. Entre os leads que a pessoa
-      // enxerga, mostra o nome (e o corretor, para o gerente). Nos outros, a
-      // função do banco só diz que o número está em outra carteira.
+    // Num novo toque depois de uma tentativa enviada, o lead "duplicado" pode ser o próprio. Com o aviso na tela, só
+    // "Cadastrar assim mesmo" (aviso visível) grava; o Cadastrar principal confere de novo (lib/duplicado.ts).
+    if (numero && precisaChecarDuplicado({ numero, jaTemId: !!ids.current, assimMesmo, avisoAtual: avisoDup && { numero: avisoDup.numero, forma: avisoDup.dados.forma } })) {
+      // Aviso de duplicado. Entre os leads que a pessoa enxerga, mostra o nome (e o corretor, para o gerente) e deixa
+      // abrir o existente ou cadastrar assim mesmo. Nos outros, a função do banco só diz que o número está em outra
+      // carteira, e o cadastro não segue.
       const aviso = await avisoDeDuplicado(numero);
       if (aviso) {
-        setDuplicado(numero);
+        setAvisoDup({ numero, dados: aviso });
         setSalvando(false);
-        return setErro(`${aviso} Toque em Cadastrar de novo para seguir assim mesmo.`);
+        return;
       }
     }
 
@@ -268,20 +327,20 @@ function NovoLead() {
     else router.push(`/leads/ficha/?id=${data.id}`);
   }
 
-  async function avisoDeDuplicado(numero: string): Promise<string | null> {
+  async function avisoDeDuplicado(numero: string): Promise<DadosDoDuplicado | null> {
     const { data } = await db()
       .from("leads")
-      .select("nome, dono_id")
+      .select("id, nome, dono_id")
       .eq("whatsapp", numero)
       .eq("status", "ativo")
       .limit(1);
-    const visivel = data?.[0] as { nome: string; dono_id: string } | undefined;
+    const visivel = data?.[0] as { id: string; nome: string; dono_id: string } | undefined;
     if (visivel) {
       const deOutro = visivel.dono_id !== eu.id ? corretores.find((c) => c.id === visivel.dono_id)?.nome : undefined;
-      return textoDuplicado({ visivel: { nome: visivel.nome, deOutro } });
+      return { forma: "visivel", id: visivel.id, nome: visivel.nome, deOutro };
     }
     const { data: emOutra } = await db().rpc("whatsapp_em_outra_carteira", { p_whatsapp: numero });
-    return textoDuplicado({ emOutraCarteira: emOutra === true, atribui });
+    return emOutra === true ? { forma: "outra-carteira", atribui } : null;
   }
 
   function novoCadastro() {
@@ -297,32 +356,40 @@ function NovoLead() {
     setDetalhes(false);
     setMensagem(null);
     setPerfil(null);
-    setDuplicado(null);
+    setAvisoDup(null);
     setErro(null);
+    setErroCampo(null);
   }
+
+  const nomeDoCorretor = (id: string | null) => corretores.find((c) => c.id === id)?.nome;
+  const titulo = atribui ? "Lead da empresa" : "Novo lead";
+  const rotuloDoPerfil = perfil
+    ? [perfil.valor && `Até ${reais(perfil.valor)}`, perfil.dormitorios && `${perfil.dormitorios} dorm.`, perfil.regiao].filter(Boolean).join(" · ")
+    : "";
 
   if (repasse)
     return (
-      <div className="grid max-w-[640px] gap-4">
-        <section className="card bar-brand grid gap-3" role="status">
-          <h2 className="titulo-card">✓ Lead cadastrado</h2>
-          <p className="text-ink-soft">
-            {repasse.nome} foi para {corretores.find((c) => c.id === repasse.dono_id)?.nome ?? "o corretor"}. Avise
-            no WhatsApp com a mensagem pronta.
-          </p>
+      <div className="pagina-alicerce pagina-alicerce--estreita">
+        <h1 className="mb-visualmente-oculto">{titulo}</h1>
+        <Cartao
+          id="lead-cadastrado"
+          titulo="✓ Lead cadastrado"
+          descricao={`${repasse.nome} foi para ${nomeDoCorretor(repasse.dono_id) ?? "o corretor"}. Avise no WhatsApp com a mensagem pronta.`}
+        >
           <AvisarCorretor
             corretorId={repasse.dono_id ?? ""}
-            corretorNome={corretores.find((c) => c.id === repasse.dono_id)?.nome ?? "Corretor"}
+            corretorNome={nomeDoCorretor(repasse.dono_id) ?? "Corretor"}
             lead={repasse}
             horario={horario}
             destaque
+            alicerce
           />
-        </section>
-        <div className="flex flex-wrap gap-2">
-          <button type="button" className="btn btn-ghost btn-lg focus-ring flex-1 md:flex-none" onClick={novoCadastro}>
+        </Cartao>
+        <div className="mb-grupo-botoes">
+          <button type="button" className="mb-botao mb-botao--secundario" onClick={novoCadastro}>
             + Outro lead
           </button>
-          <Link href="/leads/" className="btn btn-ghost btn-lg focus-ring flex-1 md:flex-none">
+          <Link href="/leads/" className="mb-botao mb-botao--discreto">
             Ver leads
           </Link>
         </div>
@@ -338,188 +405,178 @@ function NovoLead() {
       />
     );
 
+  // O erro de um campo: o texto embaixo dele, o aria-invalid e o aria-describedby (FormularioDenso).
+  const doCampo = (campo: CampoComErro) => (erroCampo?.campo === campo ? { erro: erroCampo.texto, idErro: `novo-erro-${campo}` } : {});
+  const ligado = (campo: CampoComErro) =>
+    erroCampo?.campo === campo ? { "aria-invalid": true as const, "aria-describedby": `novo-erro-${campo}` } : {};
+
+  const acaoFinal = (
+    <button type="submit" className="mb-botao mb-botao--primario" disabled={salvando}>
+      {salvando ? "Salvando…" : "Cadastrar"}
+    </button>
+  );
+
   return (
-    <form onSubmit={salvar} className="grid max-w-[640px] gap-5 pb-24 md:pb-0" noValidate>
-      {erroCatalogo && <p className="aviso-erro">! {erroCatalogo}</p>}
+    <form onSubmit={salvar} className="pagina-alicerce pagina-alicerce--estreita" noValidate>
+      <h1 className="mb-visualmente-oculto">{titulo}</h1>
+      {erroCatalogo && <Aviso tom="erro" titulo={erroCatalogo} />}
 
       {mensagem ? (
-        <p className="aviso-ok">
-          ✓ Dados da mensagem preenchidos. Confira, escolha a origem e cadastre. A mensagem fica no histórico.{" "}
-          <button type="button" className="link-acao" onClick={() => setColando(true)}>
-            Colar outra
-          </button>
-        </p>
+        <Aviso
+          tom="sucesso"
+          titulo="Dados da mensagem preenchidos"
+          texto="Confira, escolha a origem e cadastre. A mensagem fica no histórico."
+          acoes={
+            <button type="button" className="mb-botao mb-botao--secundario mb-botao--p" onClick={() => setColando(true)}>
+              Colar outra
+            </button>
+          }
+        />
       ) : (
-        <button type="button" className="card focus-ring text-left" onClick={() => setColando(true)}>
-          <span className="titulo-card block">+ Colar mensagem</span>
-          <span className="mt-1 block text-[13px] text-ink-soft">
-            Cole a conversa do WhatsApp ou o e-mail do lead, e o Base360 Vendas preenche os campos.
-          </span>
-        </button>
-      )}
-
-      {atribui && (
-        <div>
-          <label className="field-label" htmlFor="dono">
-            Corretor que vai receber
-          </label>
-          <select id="dono" className="input" value={dono} onChange={(e) => setDono(e.target.value)}>
-            <option value="">Escolha</option>
-            {corretores.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nome}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      <div>
-        <label className="field-label" htmlFor="nome">
-          Nome
-        </label>
-        <input
-          id="nome"
-          className="input"
-          autoComplete="off"
-          autoCapitalize="words"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-        />
-      </div>
-
-      <div>
-        <label className="field-label" htmlFor="whatsapp">
-          WhatsApp · se o cliente der
-        </label>
-        <input
-          id="whatsapp"
-          className="input num"
-          type="tel"
-          inputMode="tel"
-          autoComplete="off"
-          placeholder="(11) 98765-4321"
-          value={whatsapp}
-          onChange={(e) => {
-            setWhatsapp(e.target.value);
-            setDuplicado(null);
-          }}
-          onBlur={() => {
-            const n = normalizarWhatsapp(whatsapp);
-            if (n) setWhatsapp(formatarWhatsapp(n));
-          }}
-        />
-      </div>
-
-      <fieldset>
-        <legend className="field-label">Origem</legend>
-        <div className="grid grid-cols-2 gap-2">
-          {origens.map((o) => {
-            const marcada = origem === o.slug;
-            return (
-              <button
-                key={o.slug}
-                type="button"
-                aria-pressed={marcada}
-                onClick={() => setOrigem(o.slug)}
-                className={clsx(
-                  "opcao focus-ring rounded-sm border px-3 py-3 text-left text-[14px] font-semibold transition-colors",
-                  marcada ? "border-ink bg-ink text-surface" : "border-line bg-surface text-ink hover:border-ink",
-                )}
-              >
-                {marcada && <span aria-hidden>✓ </span>}
-                {o.nome}
-              </button>
-            );
-          })}
-        </div>
-      </fieldset>
-
-      {origemAtual?.pede_campanha && (
-        <div>
-          <label className="field-label" htmlFor="campanha">
-            Campanha
-          </label>
-          <input
-            id="campanha"
-            className="input"
-            placeholder="Ex.: Instagram, anúncio do Rudge Ramos"
-            value={campanha}
-            onChange={(e) => setCampanha(e.target.value)}
-          />
-        </div>
-      )}
-
-      {perfil && (
-        <div className="card">
-          <span className="field-label">Perfil da mensagem</span>
-          <p className="num mt-1">
-            {[
-              perfil.valor && `Até ${reais(perfil.valor)}`,
-              perfil.dormitorios && `${perfil.dormitorios} dorm.`,
-              perfil.regiao,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
-          <button type="button" className="link-acao mt-2" onClick={() => setPerfil(null)}>
-            Não usar
-          </button>
-        </div>
-      )}
-
-      <details className="card" open={detalhes} onToggle={(e) => setDetalhes(e.currentTarget.open)}>
-        <summary className="focus-ring cursor-pointer list-none font-semibold">
-          <span aria-hidden>+ </span>Mais detalhes (opcional)
-        </summary>
-        <div className="mt-4 grid gap-4">
-          <div>
-            <span className="field-label">Temperatura</span>
-            <EscolhaTemperatura valor={temperatura} onChange={setTemperatura} podeLimpar />
+        <Cartao id="colar-mensagem" titulo="Colar mensagem" descricao="Cole a conversa do WhatsApp ou o e-mail do lead, e o Base360 Vendas preenche os campos.">
+          <div className="mb-grupo-botoes">
+            <button type="button" className="mb-botao mb-botao--secundario" onClick={() => setColando(true)}>
+              + Colar mensagem
+            </button>
           </div>
-          <div>
-            <label className="field-label" htmlFor="empreendimento">
-              Empreendimento
-            </label>
-            <input
-              id="empreendimento"
-              className="input"
-              list="empreendimentos-lista"
-              autoComplete="off"
-              value={empreendimento}
-              onChange={(e) => setEmpreendimento(e.target.value)}
+        </Cartao>
+      )}
+
+      <Cartao
+        id="dados-do-lead"
+        titulo="Dados do lead"
+        acao={temAlgo ? <span className="mb-salvo mb-salvo--ok">✓ Rascunho guardado</span> : undefined}
+        rodape={acaoFinal}
+        rodapeClasse="mb-so-computador"
+      >
+        <div className="mb-form-secao">
+          <div className="mb-form-grade">
+            {atribui && (
+              <CampoSelecao rotulo="Corretor que vai receber" obrigatorio {...doCampo("dono")}>
+                <select id="novo-dono" className="mb-campo__entrada" value={dono} onChange={(e) => setDono(e.target.value)} {...ligado("dono")}>
+                  <option value="">Escolha</option>
+                  {corretores.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nome}
+                    </option>
+                  ))}
+                </select>
+              </CampoSelecao>
+            )}
+            <Campo rotulo="Nome" obrigatorio {...doCampo("nome")}>
+              <input
+                id="novo-nome"
+                className="mb-campo__entrada"
+                autoComplete="off"
+                autoCapitalize="words"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                {...ligado("nome")}
+              />
+            </Campo>
+            <Campo rotulo="WhatsApp" opcional="se o cliente der" {...doCampo("whatsapp")}>
+              <input
+                id="novo-whatsapp"
+                className="mb-campo__entrada"
+                type="tel"
+                inputMode="tel"
+                autoComplete="off"
+                placeholder="(11) 98765-4321"
+                value={whatsapp}
+                onChange={(e) => {
+                  setWhatsapp(e.target.value);
+                  setAvisoDup(null);
+                }}
+                onBlur={() => {
+                  const n = normalizarWhatsapp(whatsapp);
+                  if (n) setWhatsapp(formatarWhatsapp(n));
+                }}
+                {...ligado("whatsapp")}
+              />
+            </Campo>
+            <CampoEmGrupo id="novo-origem" rotulo="Origem" obrigatorio {...doCampo("origem")}>
+              <Seletor idRotulo="novo-origem" grade="linha" opcoes={origens.map((o) => ({ valor: o.slug, rotulo: o.nome }))} valor={origem} onChange={setOrigem} />
+            </CampoEmGrupo>
+            {origemAtual?.pede_campanha && (
+              <Campo rotulo="Campanha" opcional="opcional">
+                <input
+                  id="novo-campanha"
+                  className="mb-campo__entrada"
+                  placeholder="Ex.: Instagram, anúncio do Rudge Ramos"
+                  value={campanha}
+                  onChange={(e) => setCampanha(e.target.value)}
+                />
+              </Campo>
+            )}
+          </div>
+
+          {perfil && (
+            <Aviso
+              titulo="Perfil da mensagem"
+              texto={rotuloDoPerfil}
+              acoes={
+                <button type="button" className="mb-botao mb-botao--discreto mb-botao--p" onClick={() => setPerfil(null)}>
+                  Não usar
+                </button>
+              }
             />
-            <ListaEmpreendimentos id="empreendimentos-lista" />
-            <ConferirNoCatalogo nome={empreendimento} />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="email">
-              E-mail
-            </label>
-            <input
-              id="email"
-              className="input"
-              type="email"
-              inputMode="email"
-              autoComplete="off"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-          <div>
-            <span className="field-label">Próximo contato</span>
-            <CampoProximoContato idBase="novo-contato" {...contato} onChange={setContato} />
-          </div>
+          )}
+
+          <Recolhivel id="novo-detalhes" titulo="Mais detalhes" contagem="opcional" aberto={detalhes} onAlternar={setDetalhes}>
+            <div className="mb-form-grade">
+              <CampoEmGrupo id="novo-temperatura" rotulo="Temperatura">
+                <Seletor
+                  idRotulo="novo-temperatura"
+                  grade={3}
+                  opcoes={TEMPERATURAS.map((t) => ({
+                    valor: t.slug,
+                    rotulo: (
+                      <>
+                        <span aria-hidden="true">{t.sinal}</span> {t.nome}
+                      </>
+                    ),
+                  }))}
+                  valor={temperatura}
+                  // Tocar na marcada limpa a escolha (a temperatura é opcional), como antes.
+                  onChange={(v) => setTemperatura((t) => (t === v ? null : v))}
+                />
+              </CampoEmGrupo>
+              <BuscaComSugestoes
+                rotulo="Empreendimento"
+                idEntrada="novo-empreendimento"
+                valor={empreendimento}
+                onChange={setEmpreendimento}
+                opcoes={opcoesDeEmpreendimento}
+                ajuda={foraDoCatalogo ? "! Não está no catálogo. Confira o nome ou escolha da lista." : undefined}
+              />
+              <Campo rotulo="E-mail" {...doCampo("email")}>
+                <input
+                  id="novo-email"
+                  className="mb-campo__entrada"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="off"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  {...ligado("email")}
+                />
+              </Campo>
+              <CampoEmGrupo id="novo-contato" rotulo="Próximo contato" {...doCampo("contato")}>
+                <DataHora idRotulo="novo-contato" atalhosEmGrade data={contato.data} hora={contato.hora} onChange={setContato} />
+              </CampoEmGrupo>
+            </div>
+          </Recolhivel>
+
+          {avisoDup && (
+            <div ref={avisoRef}>
+              <Duplicado dados={avisoDup.dados} desabilitado={salvando} onSeguir={() => salvar(undefined, true)} />
+            </div>
+          )}
+          {erro && <Aviso tom="erro" titulo={erro} />}
         </div>
-      </details>
+      </Cartao>
 
-      {erro && <p className="aviso-erro">! {erro}</p>}
-
-      <RodapeAcao>
-        <button type="submit" className="btn btn-red btn-lg focus-ring" disabled={salvando}>
-          {salvando ? "Salvando…" : "Cadastrar"}
-        </button>
-      </RodapeAcao>
+      <BarraDeAcoes>{acaoFinal}</BarraDeAcoes>
     </form>
   );
 }
@@ -569,120 +626,103 @@ function ColarMensagem({
   const s = lido?.sugestoes;
   const temSugestao = !!s && (s.valor || s.dormitorios || s.bairros.length > 0);
 
+  // As sugestões de perfil, uma pílula por item (várias marcadas ao mesmo tempo): "valor", "dorm" ou o bairro.
+  const sugestoes = s
+    ? [
+        ...(s.valor ? [{ valor: "valor", rotulo: <span className="num">Até {reais(s.valor)}</span> }] : []),
+        ...(s.dormitorios ? [{ valor: "dorm", rotulo: `${s.dormitorios} ${s.dormitorios === 1 ? "dormitório" : "dormitórios"}` }] : []),
+        ...s.bairros.map((b) => ({ valor: `bairro:${b}`, rotulo: b })),
+      ]
+    : [];
+  const marcados = [...(usarValor ? ["valor"] : []), ...(usarDorm ? ["dorm"] : []), ...bairros.map((b) => `bairro:${b}`)];
+  function alternar(chave: string) {
+    if (chave === "valor") setUsarValor((x) => !x);
+    else if (chave === "dorm") setUsarDorm((x) => !x);
+    else {
+      const b = chave.slice("bairro:".length);
+      setBairros((xs) => (xs.includes(b) ? xs.filter((x) => x !== b) : [...xs, b]));
+    }
+  }
+
+  const usar = () =>
+    lido &&
+    onUsar(texto, lido, {
+      valor: usarValor ? s?.valor ?? null : null,
+      dormitorios: usarDorm ? s?.dormitorios ?? null : null,
+      regiao: bairros.length ? bairros.join(", ") : null,
+    });
+  const voltar = (
+    <button type="button" className="mb-botao mb-botao--discreto" onClick={onVoltar}>
+      Voltar
+    </button>
+  );
+  const usarDados = (
+    <button type="button" className="mb-botao mb-botao--primario" disabled={!lido} onClick={usar}>
+      Usar estes dados
+    </button>
+  );
+
   return (
-    <div className="grid max-w-[640px] gap-5 pb-24 md:pb-0">
-      <div>
-        <label className="field-label" htmlFor="mensagem">
-          Mensagem do WhatsApp ou e-mail do lead
-        </label>
-        <textarea
-          id="mensagem"
-          className="input min-h-[160px]"
-          autoFocus
-          placeholder="Cole aqui a conversa do WhatsApp, o e-mail do portal, do Facebook ou do RD Station."
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-        />
-      </div>
+    <div className="pagina-alicerce pagina-alicerce--estreita">
+      <h1 className="mb-visualmente-oculto">Colar mensagem</h1>
+      <Cartao id="mensagem-colada" titulo="Colar mensagem">
+        <Campo rotulo="Mensagem do WhatsApp ou e-mail do lead">
+          <textarea
+            id="mensagem"
+            className="mb-campo__entrada"
+            rows={8}
+            autoFocus
+            placeholder="Cole aqui a conversa do WhatsApp, o e-mail do portal, do Facebook ou do RD Station."
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+          />
+        </Campo>
+      </Cartao>
 
       {lido && (
-        <section className="card" aria-live="polite">
-          <span className="field-label">
-            <span className="num">{camposEncontrados(lido)}</span> de <span className="num">4</span> campos
-            encontrados
-          </span>
-          <dl className="mt-3 grid gap-3">
-            {campos.map((c) => (
-              <div key={c.rotulo} className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <dt className="text-[12px] text-ink-soft">{c.rotulo}</dt>
-                  <dd className={clsx("break-words", c.valor ? "num font-semibold" : "text-ink-soft")}>{c.valor ?? "–"}</dd>
-                </div>
-                <SeloCampo selo={c.campo.selo} />
-              </div>
-            ))}
-          </dl>
-          {!lido.nome.valor || !lido.whatsapp.valor ? (
-            <p className="mt-3 border-l-bar border-brand bg-tint-brand p-3 text-[14px] font-semibold text-ink">
-              ! Nome e WhatsApp são obrigatórios. Você completa no cadastro.
-            </p>
-          ) : null}
+        <section aria-live="polite" className="pagina-alicerce__grupo">
+          <Cartao id="campos-encontrados" titulo={`${camposEncontrados(lido)} de 4 campos encontrados`}>
+            <Pares
+              itens={campos.map((c) => ({
+                rotulo: c.rotulo,
+                valor: (
+                  <>
+                    {c.valor ?? "–"}
+                    <SeloDoCampo selo={c.campo.selo} />
+                  </>
+                ),
+              }))}
+            />
+          </Cartao>
+          {!lido.nome.valor ? <Aviso tom="alerta" titulo="O nome é obrigatório" texto="Você completa no cadastro." /> : null}
         </section>
       )}
 
       {temSugestao && s && (
-        <section className="card">
-          <span className="field-label">Perfil: toque no que quiser usar</span>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {s.valor && (
-              <Sugestao marcada={usarValor} onClick={() => setUsarValor((x) => !x)}>
-                Até {reais(s.valor)}
-              </Sugestao>
-            )}
-            {s.dormitorios && (
-              <Sugestao marcada={usarDorm} onClick={() => setUsarDorm((x) => !x)}>
-                {s.dormitorios} {s.dormitorios === 1 ? "dormitório" : "dormitórios"}
-              </Sugestao>
-            )}
-            {s.bairros.map((b) => (
-              <Sugestao
-                key={b}
-                marcada={bairros.includes(b)}
-                onClick={() => setBairros((xs) => (xs.includes(b) ? xs.filter((x) => x !== b) : [...xs, b]))}
-              >
-                {b}
-              </Sugestao>
-            ))}
-          </div>
-        </section>
+        <Cartao id="perfil-sugerido" titulo="Perfil: toque no que quiser usar">
+          <Seletor idRotulo="perfil-sugerido" multipla grade="linha" opcoes={sugestoes} marcados={marcados} valor={null} onChange={alternar} />
+        </Cartao>
       )}
 
-      <RodapeAcao>
-        <button type="button" className="btn btn-ghost btn-lg focus-ring" onClick={onVoltar}>
-          Voltar
-        </button>
-        <button
-          type="button"
-          className="btn btn-red btn-lg focus-ring"
-          disabled={!lido}
-          onClick={() =>
-            lido &&
-            onUsar(texto, lido, {
-              valor: usarValor ? s?.valor ?? null : null,
-              dormitorios: usarDorm ? s?.dormitorios ?? null : null,
-              regiao: bairros.length ? bairros.join(", ") : null,
-            })
-          }
-        >
-          Usar estes dados
-        </button>
-      </RodapeAcao>
+      <div className="mb-grupo-botoes mb-so-computador">
+        {voltar}
+        {usarDados}
+      </div>
+      <BarraDeAcoes grupo>
+        {voltar}
+        {usarDados}
+      </BarraDeAcoes>
     </div>
   );
 }
 
-/** Sugestão de perfil: só vale depois de tocada (✓ marcada). */
-function Sugestao({
-  marcada,
-  onClick,
-  children,
-}: {
-  marcada: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
+/** Selo só no que pede atenção (ImportacaoComPrevia): “! Conferir” e “✕ Não encontrado”. O lido sem dúvida fica sem selo. */
+function SeloDoCampo({ selo }: { selo: "detectado" | "conferir" | "faltando" }) {
+  if (selo === "detectado") return null;
   return (
-    <button
-      type="button"
-      aria-pressed={marcada}
-      onClick={onClick}
-      className={clsx(
-        "num focus-ring rounded-sm border px-3 py-2 text-[14px] font-semibold transition-colors",
-        marcada ? "border-ink bg-ink text-surface" : "border-line bg-surface text-ink hover:border-ink",
-      )}
-    >
-      {marcada ? <span aria-hidden>✓ </span> : <span aria-hidden>+ </span>}
-      {children}
-    </button>
+    <>
+      {" "}
+      {selo === "conferir" ? <Selo tom="alerta">! Conferir</Selo> : <Selo>✕ Não encontrado</Selo>}
+    </>
   );
 }

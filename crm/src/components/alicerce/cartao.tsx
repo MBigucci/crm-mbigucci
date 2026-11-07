@@ -9,12 +9,17 @@ export function Cartao({
   titulo,
   descricao,
   acao,
+  rodape,
+  rodapeClasse,
   children,
 }: {
   id: string;
   titulo?: string;
   descricao?: React.ReactNode;
   acao?: React.ReactNode;
+  /** O `.mb-cartao__rodape` (a ação final de um formulário); `rodapeClasse` junta uma classe, como `mb-so-computador`. */
+  rodape?: React.ReactNode;
+  rodapeClasse?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -31,6 +36,7 @@ export function Cartao({
         </header>
       )}
       <div className="mb-cartao__corpo">{children}</div>
+      {rodape && <footer className={`mb-cartao__rodape${rodapeClasse ? ` ${rodapeClasse}` : ""}`}>{rodape}</footer>}
     </section>
   );
 }

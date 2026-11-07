@@ -13,6 +13,8 @@ export function Seletor<T extends string>({
   onChange,
   grade,
   pequeno = false,
+  multipla = false,
+  marcados,
 }: {
   idRotulo: string;
   opcoes: { valor: T; rotulo: React.ReactNode }[];
@@ -20,11 +22,14 @@ export function Seletor<T extends string>({
   onChange: (valor: T) => void;
   grade?: 3 | 4 | 6 | "linha";
   pequeno?: boolean;
+  /** `.mb-opcoes--multipla`: cada pílula liga e desliga (o “+” vira “✓”); quem usa guarda a lista em `marcados` e alterna no `onChange`. */
+  multipla?: boolean;
+  marcados?: T[];
 }) {
   return (
-    <div className={clsx("mb-opcoes", grade === "linha" ? "mb-opcoes--linha" : grade && `mb-opcoes--${grade}`)} role="group" aria-labelledby={idRotulo}>
+    <div className={clsx("mb-opcoes", grade === "linha" ? "mb-opcoes--linha" : grade && `mb-opcoes--${grade}`, multipla && "mb-opcoes--multipla")} role="group" aria-labelledby={idRotulo}>
       {opcoes.map((o) => (
-        <button key={o.valor} className={clsx("mb-opcao", pequeno && "mb-opcao--p")} type="button" aria-pressed={valor === o.valor} onClick={() => onChange(o.valor)}>
+        <button key={o.valor} className={clsx("mb-opcao", pequeno && "mb-opcao--p")} type="button" aria-pressed={multipla ? !!marcados?.includes(o.valor) : valor === o.valor} onClick={() => onChange(o.valor)}>
           {o.rotulo}
         </button>
       ))}

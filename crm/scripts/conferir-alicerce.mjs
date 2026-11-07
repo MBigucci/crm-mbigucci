@@ -29,6 +29,9 @@
 // As páginas /qa-desfazer/ e /qa-quebrar/ e o ?qa=desativado e o ?qa=erro vêm do visual-preview.mjs (só na cópia local).
 // Com --mensagens roda só as mensagens: node scripts/conferir-alicerce.mjs local/alicerce/passo-d --mensagens
 // - Leads, Agenda e Fila de leads do passo e: veja o bloco "9b" (--leads): node scripts/conferir-alicerce.mjs local/alicerce/passo-e --leads
+// - o Novo lead do passo g (--novo; asserções: medidas, HTML dos previews, validação, WhatsApp, rascunho, empreendimento, duplicado e Cadastro Mágico): node scripts/conferir-alicerce.mjs local/alicerce/passo-g --novo
+//   Como corretor (/leads/novo/) e como gerente (?qa=gerente, o lead da empresa), em 375 e 1280, papel e grafite; o erro
+//   de validação, o aviso de duplicado (WhatsApp de um lead visível e o de outra carteira, dos fixtures) e o Cadastro Mágico.
 // Os prints vão para crm/local/ (fora do Git).
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -39,6 +42,7 @@ const soLista = argumentos.includes("--lista");
 const soMensagens = argumentos.includes("--mensagens");
 const soLeads = argumentos.includes("--leads");
 const soFicha = argumentos.includes("--ficha");
+const soNovo = argumentos.includes("--novo");
 
 const saida = argumentos.find((a) => !a.startsWith("--")) ?? "local/alicerce";
 const base = "http://127.0.0.1:4173/vendas";
@@ -87,7 +91,7 @@ async function print(nome) {
 const resultado = {};
 const confere = (nome, ok, detalhe) => { resultado[nome] = { ok: !!ok, detalhe }; console.log(`${ok ? "OK   " : "FALHA"} ${nome}${detalhe ? "  " + JSON.stringify(detalhe) : ""}`); };
 
-if (!soMoldura && !soLista && !soMensagens && !soLeads && !soFicha) {
+if (!soMoldura && !soLista && !soMensagens && !soLeads && !soFicha && !soNovo) {
 // 1. Migração da escolha antiga (três casos de tema e a barra).
 await tela(1280, 800);
 await esquemaAparelho("light");
@@ -356,7 +360,7 @@ async function printDe(nome, seletor) {
   return true;
 }
 
-if (!soMoldura && !soMensagens && !soLeads && !soFicha) {
+if (!soMoldura && !soMensagens && !soLeads && !soFicha && !soNovo) {
   for (const [w, h] of [[375, 812], [1280, 800]]) {
     for (const tema of ["papel", "grafite"]) {
       await abrirListaDoDia(w, h, tema);
@@ -957,6 +961,287 @@ if (soFicha) {
 }
 
 // 10. As mensagens do passo d. Roda com --mensagens, depois do visual-preview.mjs e do build da prévia.
+// 9c. Novo lead (passo g). Roda com --novo, depois do visual-preview.mjs e do build da prévia.
+if (soNovo) {
+  const CASOS = [["corretor", "/leads/novo/"], ["gerente", "/leads/novo/?qa=gerente"]];
+  const MENSAGEM = "Olá, meu nome é Carla Exemplo e tenho interesse no Residencial Exemplo. Meu WhatsApp é (11) 97777-1234 e o e-mail carla@example.invalid. Procuro um apartamento de 2 dormitórios, até R$ 600.000, na região do Centro.";
+  const visivel = "(e) => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden'";
+  const abrirNovo = async (w, h, tema, caminho) => {
+    erros.length = 0;
+    await tela(w, h);
+    // Sai do Novo lead antes de limpar o armazenamento: a tela viva guardaria o rascunho de novo (ele fica no sessionStorage).
+    await abrir("/entrar/");
+    await avaliar("sessionStorage.clear(); true");
+    await comArmazenamento({ mb_tema: tema }, caminho);
+    await avaliar("sessionStorage.clear(); true");
+    await abrir(caminho);
+    await espera(900);
+  };
+  const abrirNovo2 = async (caminho) => { await abrir(caminho); await espera(900); };
+  const preencher = (sel, v) => avaliar(`(() => { const e = document.querySelector(${JSON.stringify(sel)}); const set = Object.getOwnPropertyDescriptor(e.constructor.prototype, "value").set; set.call(e, ${JSON.stringify(v)}); e.dispatchEvent(new Event("input", { bubbles: true })); return true; })()`);
+  const tocar = (sel, texto) => avaliar(`(() => { const ok = ${visivel}; const b = [...document.querySelectorAll(${JSON.stringify(sel)})].filter(ok).find((e) => !${JSON.stringify(texto ?? null)} || e.textContent.trim() === ${JSON.stringify(texto ?? "")}); if (!b) return false; b.click(); return true; })()`);
+  const lateral = () => avaliar("document.documentElement.scrollWidth > document.documentElement.clientWidth");
+  const registrar = async (nome) => {
+    await espera(500);
+    // Viewport da altura da página: o menu e a barra do celular são sticky e, numa captura além da janela, apareceriam no meio.
+    const alturaTotal = await avaliar("Math.max(document.documentElement.scrollHeight, document.body.scrollHeight)");
+    const larguraAtual = await avaliar("document.documentElement.clientWidth");
+    await tela(larguraAtual, Math.max(alturaTotal, 640));
+    await espera(300);
+    const lat = await lateral();
+    await print(nome);
+    confere(`print ${nome}: sem rolagem lateral e sem erro no console`, !lat && erros.length === 0, { lat, erros: [...erros] });
+  };
+  for (const [caso, caminho] of CASOS) {
+    for (const [w, h] of [[375, 812], [1280, 800]]) {
+      for (const tema of ["papel", "grafite"]) {
+        const id = `novo-${caso}-${w}-${tema}`;
+        await abrirNovo(w, h, tema, caminho);
+        await registrar(id);
+        // Erro de validação: enviar vazio.
+        await tocar("form button[type=submit]");
+        await registrar(id + "-erro");
+        // Cadastro Mágico: a tela de colar e o formulário depois de "Usar estes dados".
+        await abrirNovo(w, h, tema, caminho);
+        await tocar("form button", "+ Colar mensagem");
+        await espera(400);
+        await preencher("#mensagem", MENSAGEM);
+        await registrar(id + "-magico");
+        await tocar("button", "Usar estes dados");
+        await registrar(id + "-magico-preenchido");
+        // Duplicado: o WhatsApp de um lead que a pessoa vê, e o de outra carteira.
+        for (const [forma, numero] of [["visivel", "11999990010"], ["outra", "11988880000"]]) {
+          await abrirNovo(w, h, tema, caminho);
+          await preencher("#novo-nome", "Teste Exemplo");
+          await preencher("#novo-whatsapp", numero);
+          await tocar(".mb-opcoes[aria-labelledby=novo-origem] button");
+          if (caso === "gerente") await avaliar("(() => { const e = document.querySelector('#novo-dono'); const set = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set; set.call(e, e.options[1].value); e.dispatchEvent(new Event('change', { bubbles: true })); return true; })()");
+          await tocar("form button[type=submit]");
+          await espera(700);
+          await registrar(`${id}-duplicado-${forma}`);
+        }
+      }
+    }
+  }
+  // ---- Asserções (passo g) ----
+  const pagina = (expr) => avaliar(`(() => { const q = (s) => document.querySelector(s); const qs = (s) => [...document.querySelectorAll(s)]; const t = (e) => (e?.textContent ?? '').trim().replace(/\\s+/g, ' '); return (${expr}); })()`);
+  const cliqueNoTexto = (seletor, texto) => avaliar(`(() => { const ok = ${visivel}; const b = [...document.querySelectorAll(${JSON.stringify(seletor)})].filter(ok).find((x) => x.textContent.trim().replace(/\\s+/g, ' ') === ${JSON.stringify(texto)}); if (!b) return false; b.click(); return true; })()`);
+  const escolherNoSelect = (seletor, valor) => avaliar(`(() => { const s = document.querySelector(${JSON.stringify(seletor)}); if (!s) return false; const set = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set; set.call(s, ${JSON.stringify(valor)}); s.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`);
+  function medirNovoNaPagina(largura) {
+    const vis = (e) => !!e && e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden";
+    const qs = (s) => [...document.querySelectorAll(s)];
+    const altura = (e) => { const r = e.getBoundingClientRect(); const ext = ["::before", "::after"].map((p) => { const a = getComputedStyle(e, p); return a.position === "absolute" && a.content !== "none" ? parseFloat(a.height) || 0 : 0; }); return Math.max(r.height, ext[0], ext[1]); };
+    const rotulo = (e) => (e.getAttribute("aria-label") || e.textContent || e.id || "").trim().replace(/\s+/g, " ").slice(0, 40);
+    const interativos = qs("main a[href], main button, main select, main input:not([type=hidden]), main textarea, main summary").filter(vis).filter((e) => !e.disabled);
+    return {
+      rolagemLateral: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      h1Visivel: qs("main h1").filter((e) => vis(e) && !e.classList.contains("mb-visualmente-oculto")).length,
+      h1Oculto: qs("main h1.mb-visualmente-oculto").length,
+      antigoForaDaPonte: qs("main .card, main .bar-brand, main .btn, main .input, main .field-label, main .selo-antigo, main .aviso-erro, main .aviso-ok, main .titulo-card, main .link-acao, main .opcao").filter((e) => !e.closest(".ds-antigo")).length,
+      ponteNaPagina: qs("main .ds-antigo").length,
+      pequenos: largura < 768 ? interativos.filter((e) => altura(e) < 43.5).map((e) => rotulo(e) + " " + Math.round(altura(e))) : [],
+      fontePequena: largura < 768 ? qs("main input:not([type=hidden]):not([type=checkbox]), main select, main textarea").filter(vis).filter((e) => parseFloat(getComputedStyle(e).fontSize) < 16).map((e) => e.id) : [],
+      semBarraLateral: qs("main .mb-cartao").every((e) => parseFloat(getComputedStyle(e).borderLeftWidth) <= 1.01),
+      barraDoCelular: (() => { const b = document.querySelector(".mb-barra-acoes"); return b ? getComputedStyle(b).display !== "none" : null; })(),
+      rodapeDoCartao: (() => { const b = document.querySelector(".mb-cartao__rodape"); return b ? getComputedStyle(b).display !== "none" : null; })(),
+    };
+  }
+  // O HTML de cada peça contra o preview (classes e aria-*): FormularioDenso, Campo, Seletor, Recolhivel, BarraDeAcoes e BuscaComSugestoes.
+  const SELETORES_DO_NOVO = [
+    "form > .mb-cartao > .mb-cartao__cabecalho .mb-cartao__titulo",
+    "form > .mb-cartao .mb-cartao__corpo > .mb-form-secao > .mb-form-grade > label.mb-campo > .mb-campo__rotulo > .mb-campo__obrigatorio[aria-hidden='true']",
+    "form .mb-form-grade > label.mb-campo > .mb-campo__rotulo > .mb-campo__opcional",
+    "form .mb-form-grade > label.mb-campo > input.mb-campo__entrada",
+    "form .mb-form-grade > .mb-campo > .mb-campo__rotulo + .mb-opcoes.mb-opcoes--linha[role='group'][aria-labelledby] > button.mb-opcao[type='button'][aria-pressed]",
+    "form details.mb-recolhivel > summary",
+    "form details.mb-recolhivel > .mb-recolhivel__corpo .mb-opcoes.mb-opcoes--3[role='group'] > .mb-opcao[aria-pressed]",
+    "form details.mb-recolhivel .mb-opcoes.mb-opcoes--4[role='group'] > .mb-opcao[aria-pressed]",
+    "form details.mb-recolhivel .mb-campo__par > input.mb-campo__entrada[type='date']",
+    "form details.mb-recolhivel .mb-campo.mb-sugestoes-alvo > label.mb-campo__rotulo + input.mb-campo__entrada[role='combobox'][aria-autocomplete='list'][aria-controls][aria-expanded]",
+    "form details.mb-recolhivel .mb-campo.mb-sugestoes-alvo > ul.mb-sugestoes[role='listbox'][aria-label='Sugestões']",
+    "form > .mb-cartao > footer.mb-cartao__rodape.mb-so-computador > button.mb-botao.mb-botao--primario[type='submit']",
+    "form > .mb-barra-acoes.mb-barra-acoes--unica.mb-so-celular > button.mb-botao.mb-botao--primario[type='submit']",
+    "form > .mb-cartao > .mb-cartao__cabecalho > .mb-salvo.mb-salvo--ok",
+  ];
+
+  for (const [caso, caminho] of CASOS) {
+    for (const [w, h] of [[375, 812], [1280, 800]]) {
+      for (const tema of ["papel", "grafite"]) {
+        const rot = `novo ${caso} ${w} ${tema}`;
+        await abrirNovo(w, h, tema, caminho);
+        await preencher("#novo-nome", "Rascunho Exemplo");
+        await espera(200);
+        const m = await avaliar(`(${medirNovoNaPagina.toString()})(${w})`);
+        confere(`${rot}: sem rolagem lateral`, !m.rolagemLateral);
+        confere(`${rot}: h1 só para o leitor de tela (o topo já tem o título)`, m.h1Visivel === 0 && m.h1Oculto === 1, { visivel: m.h1Visivel, oculto: m.h1Oculto });
+        confere(`${rot}: nada do DS antigo, nem a ponte`, m.antigoForaDaPonte === 0 && m.ponteNaPagina === 0, { antigo: m.antigoForaDaPonte, ponte: m.ponteNaPagina });
+        confere(`${rot}: cartões sem barra lateral`, m.semBarraLateral);
+        confere(`${rot}: ação no rodapé do cartão no computador e na barra do celular`, m.barraDoCelular === (w < 768) && m.rodapeDoCartao === (w >= 768), { barra: m.barraDoCelular, rodape: m.rodapeDoCartao });
+        if (w < 768) {
+          confere(`${rot}: alvos de 44px no celular`, m.pequenos.length === 0, m.pequenos);
+          confere(`${rot}: campos com 16px no celular`, m.fontePequena.length === 0, m.fontePequena);
+        }
+        const semAnel = await focoVisivel(w < 768 ? 8 : 14);
+        confere(`${rot}: foco visível ao navegar com Tab`, semAnel.length === 0, semAnel);
+        confere(`${rot}: sem erro no console`, erros.length === 0, erros.slice(0, 3));
+      }
+    }
+  }
+
+  // O HTML bate com os previews (corretor, papel, 1280; Mais detalhes aberto pelo rascunho do e-mail).
+  await abrirNovo(1280, 800, "papel", "/leads/novo/");
+  await preencher("#novo-email", "x@example.invalid");
+  await espera(200);
+  {
+    const faltam = await avaliar(`${JSON.stringify(SELETORES_DO_NOVO)}.filter((s) => !document.querySelector(s))`);
+    confere("novo: o HTML bate com FormularioDenso, Campo, Seletor, Recolhivel, BarraDeAcoes e BuscaComSugestoes (classes e aria-*)", faltam.length === 0, faltam);
+  }
+
+  // Validação no campo: as mesmas mensagens, na mesma ordem, e o foco vai ao campo errado.
+  {
+    await abrirNovo(1280, 800, "papel", "/leads/novo/");
+    const passo = async (esperado, campo) => {
+      await cliqueNoTexto("form button[type=submit]", "Cadastrar");
+      await espera(300);
+      const r = await pagina(`({ erro: t(q('.mb-campo--erro .mb-campo__erro')), foco: document.activeElement.id || document.activeElement.className, invalido: q('.mb-campo--erro input, .mb-campo--erro select')?.getAttribute('aria-invalid') ?? null, descrito: !!q('.mb-campo--erro [aria-describedby]') })`);
+      confere(`novo: erro de ${campo}: "${esperado}", foco no campo`, r.erro === esperado && (campo === "origem" ? /mb-opcao/.test(r.foco) : r.foco === `novo-${campo}` && r.invalido === "true" && r.descrito), r);
+    };
+    await passo("Preencha o nome.", "nome");
+    await preencher("#novo-nome", "Teste Exemplo");
+    await preencher("#novo-whatsapp", "123");
+    await passo("Confira o WhatsApp: DDD e número, como (11) 98765-4321.", "whatsapp");
+    await preencher("#novo-whatsapp", "");
+    await passo("Escolha a origem.", "origem");
+    await tocar(".mb-opcoes[aria-labelledby=novo-origem] button");
+    await preencher("#novo-email", "errado");
+    await passo("Confira o e-mail.", "email");
+    const aberta = await pagina("q('details.mb-recolhivel').open");
+    confere("novo: o e-mail com erro abre Mais detalhes", aberta === true);
+  }
+  {
+    await abrirNovo(1280, 800, "papel", "/leads/novo/?qa=gerente");
+    await preencher("#novo-nome", "Teste Exemplo");
+    await cliqueNoTexto("form button[type=submit]", "Cadastrar");
+    await espera(300);
+    const r = await pagina(`({ erro: t(q('.mb-campo--erro .mb-campo__erro')), foco: document.activeElement.id, origem: q('.mb-opcoes[aria-labelledby=novo-origem] .mb-opcao[aria-pressed=true]')?.textContent })`);
+    confere("novo (gerente): sem corretor, o erro pede o corretor, o foco vai ao campo e a origem já vem na Empresa", r.erro === "Escolha o corretor que vai receber o lead." && r.foco === "novo-dono" && r.origem === "Empresa", r);
+  }
+
+  // WhatsApp formatado ao sair do campo; temperatura que se desmarca; origem de uma escolha só; rascunho.
+  {
+    await abrirNovo(1280, 800, "papel", "/leads/novo/");
+    await preencher("#novo-whatsapp", "11988880000");
+    await avaliar("document.querySelector('#novo-whatsapp').focus(); document.querySelector('#novo-whatsapp').blur(); true");
+    await espera(200);
+    const zap = await pagina("q('#novo-whatsapp').value");
+    confere('novo: o WhatsApp sai formatado "(11) 98888-0000" ao sair do campo', zap === "(11) 98888-0000", zap);
+    await cliqueNoTexto(".mb-opcoes[aria-labelledby=novo-origem] button", "Plantão");
+    await cliqueNoTexto(".mb-opcoes[aria-labelledby=novo-origem] button", "Indicação");
+    const origem = await pagina("qs('.mb-opcoes[aria-labelledby=novo-origem] .mb-opcao[aria-pressed=true]').map(t)");
+    confere("novo: a origem é uma escolha só", origem.length === 1 && origem[0] === "Indicação", origem);
+    await cliqueNoTexto("summary", "Mais detalhes opcional");
+    await espera(200);
+    await cliqueNoTexto(".mb-recolhivel .mb-opcao", "! Quente");
+    const t1 = await pagina("q('.mb-recolhivel .mb-opcoes--3 .mb-opcao[aria-pressed=true]')?.textContent");
+    await cliqueNoTexto(".mb-recolhivel .mb-opcao", "! Quente");
+    const t2 = await pagina("q('.mb-recolhivel .mb-opcoes--3 .mb-opcao[aria-pressed=true]')?.textContent ?? null");
+    confere("novo: a temperatura marca e, tocando de novo, desmarca", /Quente/.test(t1 ?? "") && t2 === null, { t1, t2 });
+    await preencher("#novo-nome", "Rascunho Exemplo");
+    await espera(300);
+    const guardado = await pagina("Object.keys(sessionStorage).filter((k) => /novo/i.test(k)).length");
+    await abrirNovo2("/leads/novo/");
+    const restaurado = await pagina("({ nome: q('#novo-nome').value, zap: q('#novo-whatsapp').value, salvo: t(q('.mb-salvo')) })");
+    confere("novo: o rascunho fica no aparelho e volta ao reabrir", guardado >= 1 && restaurado.nome === "Rascunho Exemplo" && restaurado.zap === "(11) 98888-0000" && /Rascunho guardado/.test(restaurado.salvo), { guardado, restaurado });
+  }
+
+  // Empreendimento: a lista sugere (sem acento), setas e Enter escolhem, o texto livre continua valendo com o aviso.
+  {
+    await abrirNovo(1280, 800, "papel", "/leads/novo/");
+    await cliqueNoTexto("summary", "Mais detalhes opcional");
+    await espera(200);
+    await avaliar("document.querySelector('#novo-empreendimento').focus(); true");
+    await preencher("#novo-empreendimento", "resid");
+    await espera(200);
+    const a = await pagina("({ aberta: q('#novo-empreendimento').getAttribute('aria-expanded'), opcoes: qs('.mb-sugestoes [role=option]').map(t), semCriar: !q('.mb-sugestoes__opcao--criar') })");
+    await teclar("ArrowDown", "ArrowDown", 40);
+    await teclar("Enter", "Enter", 13);
+    await espera(200);
+    const b = await pagina("({ valor: q('#novo-empreendimento').value, aberta: q('#novo-empreendimento').getAttribute('aria-expanded'), aviso: t(q('.mb-sugestoes-alvo .mb-campo__ajuda')) })");
+    await preencher("#novo-empreendimento", "Xyz Inventado");
+    await espera(200);
+    const c = await pagina("({ ajuda: t(q('.mb-sugestoes-alvo .mb-campo__ajuda')), vazio: t(q('.mb-sugestoes__vazio')) })");
+    confere("novo: o empreendimento sugere da lista, setas e Enter escolhem, o texto livre vale com o aviso do catálogo",
+      a.aberta === "true" && a.opcoes.length >= 1 && /Residencial Exemplo/.test(a.opcoes[0]) && a.semCriar && b.valor === "Residencial Exemplo" && b.aberta === "false" && b.aviso === "" && /^! Não está no catálogo/.test(c.ajuda) && /Nenhum empreendimento com/.test(c.vazio), { a, b, c });
+  }
+
+  // Duplicado: as duas formas, com o que cada uma deixa fazer.
+  for (const [forma, numero, caminho] of [["visivel", "11999990010", "/leads/novo/"], ["outra", "11988880000", "/leads/novo/"], ["outra-gerente", "11988880000", "/leads/novo/?qa=gerente"]]) {
+    await abrirNovo(1280, 800, "papel", caminho);
+    await preencher("#novo-nome", "Teste Exemplo");
+    await preencher("#novo-whatsapp", numero);
+    await tocar(".mb-opcoes[aria-labelledby=novo-origem] button");
+    if (caminho.includes("gerente")) await escolherNoSelect("#novo-dono", "corretor-1");
+    await cliqueNoTexto("form button[type=submit]", "Cadastrar");
+    await espera(700);
+    const lerAviso = () => pagina(`({ tom: q('form .mb-aviso:not(.mb-aviso--erro):not(.mb-aviso--sucesso)')?.className ?? '', titulo: t(q('form .mb-aviso:not(.mb-aviso--erro):not(.mb-aviso--sucesso) .mb-aviso__titulo')), texto: t(q('form .mb-aviso:not(.mb-aviso--erro):not(.mb-aviso--sucesso) .mb-aviso__texto')), botoes: qs('form .mb-aviso__acoes > *').map(t), abrir: q('form .mb-aviso__acoes a')?.getAttribute('href') ?? null, erroDeGravacao: !!q('form .mb-aviso--erro') })`);
+    const a1 = await lerAviso();
+    // O Cadastrar principal, com o aviso na tela, não grava: nenhum erro de gravação (a prévia recusa toda gravação).
+    await cliqueNoTexto("form button[type=submit]", "Cadastrar");
+    await espera(700);
+    const a2 = await lerAviso();
+    if (forma === "visivel") {
+      confere("novo: duplicado visível é --alerta, com o nome e os dois botões; o Cadastrar principal não grava no segundo toque",
+        /mb-aviso--alerta/.test(a1.tom) && a1.titulo === "Já existe um lead ativo com este WhatsApp" && /Ana Exemplo/.test(a1.texto) && a1.botoes.join("|") === "Abrir o existente|Cadastrar assim mesmo" && /\/leads\/ficha\/\?id=lead-1$/.test(a1.abrir ?? "") && !a1.erroDeGravacao && !a2.erroDeGravacao && /mb-aviso--alerta/.test(a2.tom), { a1, a2 });
+      await cliqueNoTexto(".mb-aviso__acoes button", "Cadastrar assim mesmo");
+      await espera(700);
+      const a3 = await lerAviso();
+      confere("novo: Cadastrar assim mesmo é o botão que grava (a prévia devolve o erro de gravação)", a3.erroDeGravacao === true, a3);
+      await preencher("#novo-whatsapp", "11977771111");
+      await espera(200);
+      const a4 = await pagina("!q('form .mb-aviso__acoes')");
+      confere("novo: mudar o WhatsApp apaga o aviso de duplicado", a4 === true);
+    } else {
+      confere(`novo: duplicado em outra carteira (${forma}) é --info, sem botão e sem nome; o cadastro não grava`,
+        /mb-aviso--info/.test(a1.tom) && a1.botoes.length === 0 && !/Exemplo/.test(a1.titulo + a1.texto) && (forma === "outra" ? a1.texto === "Confira com seu gerente." && a1.titulo === "Este WhatsApp já está num lead ativo de outro corretor" : /outra equipe/.test(a1.titulo)) && !a1.erroDeGravacao && !a2.erroDeGravacao && /mb-aviso--info/.test(a2.tom), { a1, a2 });
+    }
+  }
+
+  // Cadastro Mágico: sem selo no que foi lido sem dúvida, o nome obrigatório, as sugestões de várias escolhas e o que volta ao formulário.
+  {
+    await abrirNovo(1280, 800, "papel", "/leads/novo/");
+    await cliqueNoTexto("form button", "+ Colar mensagem");
+    await espera(300);
+    await preencher("#mensagem", MENSAGEM);
+    await espera(300);
+    const a = await pagina("({ titulo: t(q('#campos-encontrados') ?? qs('main .mb-cartao__titulo').find((e) => /campos encontrados/.test(t(e)))), selos: qs('main .mb-pares .mb-selo').length, pares: qs('main .mb-pares dt').map(t), avisoNome: !!qs('main .mb-aviso').find((e) => /nome é obrigatório/.test(t(e))), pilulas: qs('.mb-opcoes--multipla .mb-opcao').map(t) })");
+    confere("mágico: 4 de 4 campos, sem selo no que foi lido sem dúvida e sem aviso de nome", /4 de 4 campos encontrados/.test(a.titulo) && a.selos === 0 && a.pares.join() === "Nome,WhatsApp,E-mail,Empreendimento" && !a.avisoNome, a);
+    await cliqueNoTexto(".mb-opcoes--multipla .mb-opcao", "Até R$ 600.000");
+    await cliqueNoTexto(".mb-opcoes--multipla .mb-opcao", "2 dormitórios");
+    const marcadas = await pagina("qs('.mb-opcoes--multipla .mb-opcao[aria-pressed=true]').map(t)");
+    confere("mágico: as sugestões de perfil marcam várias de uma vez", marcadas.length === 2, marcadas);
+    await cliqueNoTexto("button", "Usar estes dados");
+    await espera(300);
+    const f = await pagina("({ nome: q('#novo-nome').value, zap: q('#novo-whatsapp').value, email: q('#novo-email').value, emp: q('#novo-empreendimento').value, aviso: t(q('form .mb-aviso--sucesso .mb-aviso__titulo')), perfil: t(qs('form .mb-aviso').find((e) => /Perfil da mensagem/.test(t(e)))), detalhes: q('details.mb-recolhivel').open })");
+    confere("mágico: os campos voltam ao formulário, o perfil escolhido aparece e Mais detalhes abre", f.nome === "Carla Exemplo" && f.zap === "(11) 97777-1234" && f.email === "carla@example.invalid" && f.emp === "Residencial Exemplo" && f.aviso === "Dados da mensagem preenchidos" && /Até R\$ 600\.000 · 2 dorm\./.test(f.perfil) && f.detalhes, f);
+    await cliqueNoTexto("form .mb-aviso__acoes button", "Não usar");
+    const semPerfil = await pagina("!qs('form .mb-aviso').some((e) => /Perfil da mensagem/.test(t(e)))");
+    confere("mágico: Não usar tira o perfil", semPerfil === true);
+    await cliqueNoTexto("form .mb-aviso__acoes button", "Colar outra");
+    await espera(300);
+    await preencher("#mensagem", "Quero saber o preço. Meu e-mail é joana@example.invalid");
+    await espera(300);
+    const sem = await pagina("({ avisoNome: t(qs('main .mb-aviso').find((e) => /nome é obrigatório/.test(t(e)))), selos: qs('main .mb-pares .mb-selo').map(t) })");
+    confere("mágico: sem nome aparece “O nome é obrigatório” e o selo só no que pede atenção (✕ Não encontrado)", /O nome é obrigatório/.test(sem.avisoNome) && sem.selos.length >= 1 && sem.selos.every((x) => /Conferir|Não encontrado/.test(x)), sem);
+  }
+
+  writeFileSync(join(saida, "resultado.json"), JSON.stringify(resultado, null, 2));
+  const falhasNovo = Object.values(resultado).filter((r) => !r.ok).length;
+  console.log(`
+${Object.keys(resultado).length} conferências, ${falhasNovo} falhas. Prints em ${saida}`);
+  ws.close();
+  process.exit(falhasNovo ? 1 : 0);
+}
+
 if (soMensagens) {
   const medirMensagens = () => avaliar(`(() => { const doc = document.documentElement;
     const pequenos = window.innerWidth < 768 ? [...document.querySelectorAll('main button, main a, body > .mb-toast button, .mb-conexao button')].filter((e) => e.getClientRects().length && !e.id).filter((e) => e.getBoundingClientRect().height < 43.5).map((e) => (e.getAttribute('aria-label') || e.textContent || '').trim().slice(0, 28) + ' ' + Math.round(e.getBoundingClientRect().height)) : [];

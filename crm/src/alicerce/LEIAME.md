@@ -4,7 +4,7 @@
 
 **Origem:**
 - artifact: `https://claude.ai/artifact/52QJiDD4fLNu14iE3hce37`;
-- versão: `1794072878-3e8e`;
+- versão: `1794079529-4459` (os 8 arquivos abaixo são os mesmos da `1794072878-3e8e`);
 - trazida em 06/11/2026 (item 48, passo a) e atualizada em 07/11/2026 (passo b: menu fixo, ícones novos e o logo MBigucci; depois, a camada do menu e o toque de 44px da faixa do celular, que eram ajustes locais; por fim, o aviso de conexão logo abaixo do topo, no passo d, e a largura dele no celular; no passo e, a linha que abre painel, a linha "Você", a largura dos filtros e a contagem com o ordenar; no passo f, o botão como alvo do item, o rótulo longo da faixa e o Envio desativado).
 
 **O `tokens.css` é gerado.** Para refazer, rode em `crm/`:

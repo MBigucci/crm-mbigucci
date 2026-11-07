@@ -72,6 +72,7 @@ const distribuicao = (name: string): unknown => {
  }
  return undefined;
 };
+// Novo lead (passo g): 11 99999-0010 é de um lead que a pessoa vê (Duplicado --alerta); 11 98888-0000 está em outra carteira (--info).
 const leituras: Record<string, unknown> = {
  recepcao_clientes_hoje:[cliente],recepcao_pessoas:pessoas,
  recepcao_dia:pessoas.map(p=>({...p,presenca_id:p.id,pessoa_id:p.papel==='corretor'?p.id:null,especialista_id:p.papel==='especialista'?p.id:null,turno:'manha',entrada_em:at(0,9),rodadas:1,estado:'presente',da_vez:true,ordem:1})),
@@ -131,7 +132,7 @@ class Query implements PromiseLike<{data:any;error:any}> {
 }
 export const client = {
  from:(name:string)=>new Query(name),
- rpc:async(name:string)=> distribuicao(name)!==undefined || name==="distribuicao_app_aberto" || name==="distribuicao_sinal" ? {data:distribuicao(name)??null,error:null} : Object.hasOwn(leituras,name) ? {data:leituras[name],error:null} : name==='ranking_pontos'
+ rpc:async(name:string,args?:Record<string,any>)=> name==="whatsapp_em_outra_carteira" ? {data:args?.p_whatsapp==="5511988880000",error:null} : distribuicao(name)!==undefined || name==="distribuicao_app_aberto" || name==="distribuicao_sinal" ? {data:distribuicao(name)??null,error:null} : Object.hasOwn(leituras,name) ? {data:leituras[name],error:null} : name==='ranking_pontos'
      ? {data:profiles.map((p,i)=>({corretor_id:p.id,nome:p.nome,pontos:150-i*70})),error:null}
      : name==='plantao_corretores'
        ? {data:profiles.map(p=>({id:p.id,nome:p.nome,equipe:'Equipe Exemplo'})),error:null}
