@@ -113,7 +113,7 @@ export function useRegistrarInteracao({ leadId, toque, semResposta, onSalvo }: P
       .from("lead_interacoes")
       .insert({ id: idEnvio.current, lead_id: leadId, tipo, texto: texto.trim(), proximo_contato: proximo });
     setSalvando(false);
-    if (error && !jaEstavaSalvo(error)) return setErro(erroAoSalvar(error, "Registrar"));
+    if (error && !jaEstavaSalvo(error)) return setErro(erroAoSalvar(error));
     idEnvio.current = null;
     antesDoSemResposta.current = null;
     limparRascunho(chaveRascunhoInteracao(leadId));

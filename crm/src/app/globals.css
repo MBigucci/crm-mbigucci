@@ -259,33 +259,6 @@
       background: rgb(var(--paper));
     }
   }
-  /* Aviso de conexão: flutua sem deslocar o conteúdo; só o fundo é translúcido. */
-  .aviso-conexao {
-    @apply pointer-events-none fixed z-30 rounded-sm border border-line px-3 py-2 text-[13px] font-semibold text-ink;
-    top: 68px;
-    left: 12px;
-    right: 12px;
-    background: rgb(var(--surface) / 0.85);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
-  }
-  @media (min-width: 1024px) {
-    .aviso-conexao {
-      top: 76px;
-      left: auto;
-      right: 24px;
-      max-width: 360px;
-    }
-  }
-  /* Com o aviso na tela, o campo em foco rola para baixo dele, sem deslocar o conteúdo. */
-  html:has(.aviso-conexao) {
-    scroll-padding-top: 136px;
-  }
-  @media (min-width: 1024px) {
-    html:has(.aviso-conexao) {
-      scroll-padding-top: 140px;
-    }
-  }
 }
 
 /* Transição entre etapas: o único movimento além do acordeão */

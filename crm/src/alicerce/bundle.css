@@ -2015,3 +2015,12 @@ button.mb-folha__item { width: 100%; border: 0; background: none; font-family: v
   .mb-estoque__barra { border: 1pt solid #000000; }
   .mb-telao__controles, .mb-quadro__abas, .mb-notificacoes, .mb-ajustes__indice { display: none !important; }
 }
+
+/* Passo d do Vendas (07/11/2026): o aviso de conexão fica logo abaixo do topo (e da faixa de status no celular),
+   para não cobrir o +, o status nem a conta. Sem topo na tela (conta desativada, Entrar), volta para o alto. */
+.mb-conexao { top: calc(var(--topo-altura) + var(--esp-2)); }
+@media (max-width: 767px) {
+  .mb-conexao { top: calc(var(--controle-toque) + var(--esp-4) + var(--esp-2)); }
+  :root:has(.mb-celular-status) .mb-conexao { top: calc(var(--controle-toque) * 2 + var(--esp-4) + var(--esp-2)); }
+}
+:root:not(:has(.mb-topo, .mb-celular-topo)) .mb-conexao { top: var(--esp-3); }

@@ -31,20 +31,18 @@ export function mensagemErro(e: { message?: string } | null | undefined): string
 export const ehSemConexao = (e: { message?: string } | null | undefined): boolean =>
   /failed to fetch|network|load failed/i.test(e?.message ?? "");
 
-/** Toque sem rascunho (etapa, temperatura, descarte): nada ficou guardado. */
-export const SEM_CONEXAO_REFAZER = "Não foi salvo: sem conexão. Faça de novo quando a internet voltar.";
-
-/** Formulário com rascunho no aparelho (rascunho.ts): o texto continua guardado. */
-export const semConexaoComRascunho = (botao: string) =>
-  `Não foi salvo: sem conexão. O texto ficou guardado neste aparelho. Toque em ${botao} quando a internet voltar.`;
+/**
+ * Sem internet ao gravar (texto do Alicerce, aprovado em 07/11/2026): vale para o toque sem rascunho (etapa,
+ * temperatura, descarte) e para o formulário com rascunho (rascunho.ts), onde o que foi digitado continua na tela.
+ */
+export const SEM_CONEXAO_REFAZER = "Sem internet: não foi gravado. Tente de novo quando a conexão voltar.";
 
 /**
- * Erro de uma gravação. Sem conexão, diz o efeito no trabalho (Felipe, 06/11/2026):
- * com `botaoDoRascunho`, o texto ficou no aparelho; sem ele, é preciso refazer.
+ * Erro de uma gravação. Sem conexão, diz o efeito no trabalho: não foi gravado e é só tentar de novo.
  * Os outros erros seguem `mensagemErro`. Leitura continua com `mensagemErro`.
  */
-export function erroAoSalvar(e: { message?: string } | null | undefined, botaoDoRascunho?: string): string {
-  if (ehSemConexao(e)) return botaoDoRascunho ? semConexaoComRascunho(botaoDoRascunho) : SEM_CONEXAO_REFAZER;
+export function erroAoSalvar(e: { message?: string } | null | undefined): string {
+  if (ehSemConexao(e)) return SEM_CONEXAO_REFAZER;
   return mensagemErro(e);
 }
 

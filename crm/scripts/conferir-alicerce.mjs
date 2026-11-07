@@ -22,6 +22,13 @@
 //   nem rodapé fixo, alvos de 44px e foco visível.
 // Com --moldura roda só a moldura (e tira os prints dela):  node scripts/conferir-alicerce.mjs local/alicerce/passo-b --moldura
 // Com --lista roda só a Lista do dia (e tira os prints dela): node scripts/conferir-alicerce.mjs local/alicerce/passo-c --lista
+// - as mensagens do passo d (Toast com Desfazer, AvisoConexao, os estados da conta, sem permissão, 404 e error.tsx):
+//   o HTML bate com os previews Toast, AvisoConexao e EstadosDePagina, o Desfazer chama a mesma função uma vez
+//   (e o fim do aviso só limpa quando acaba o tempo ou toca no X), um toast por vez, nada técnico na tela,
+//   sem rolagem lateral, alvos de 44px e foco visível.
+// Com --preparar (antes do next build da prévia, depois de visual-preview.mjs) a prévia ganha, só na cópia local,
+// as páginas /qa-desfazer/ e /qa-quebrar/ (o ?qa=desativado e o ?qa=erro já vêm do visual-preview.mjs).
+// Com --mensagens roda só as mensagens: node scripts/conferir-alicerce.mjs local/alicerce/passo-d --mensagens
 // Os prints vão para crm/local/ (fora do Git).
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -29,6 +36,55 @@ import { join } from "node:path";
 const argumentos = process.argv.slice(2);
 const soMoldura = argumentos.includes("--moldura");
 const soLista = argumentos.includes("--lista");
+const soMensagens = argumentos.includes("--mensagens");
+
+if (argumentos.includes("--preparar")) {
+  const previa = join(process.cwd(), ".visual-preview", "src");
+  mkdirSync(join(previa, "app", "qa-desfazer"), { recursive: true });
+  mkdirSync(join(previa, "app", "qa-quebrar"), { recursive: true });
+  writeFileSync(join(previa, "app", "qa-desfazer", "page.tsx"), `"use client";
+import { useState } from "react";
+import { Casca } from "@/components/casca";
+import { AvisoDesfazer } from "@/components/leads/partes";
+import { useToast } from "@/components/alicerce/toast";
+declare global { interface Window { __log: string[] } }
+const log = (x: string) => { (window.__log ||= []).push(x); };
+function Corpo() {
+  const toast = useToast();
+  const [aviso, setAviso] = useState<{ texto: string; n: number } | null>(null);
+  return (
+    <>
+      <div style={{ padding: 16, display: "flex", gap: 8 }}>
+        <button id="mostrar" onClick={() => setAviso({ texto: "Etapa: Proposta", n: 1 })}>Mostrar</button>
+        <button id="outro" onClick={() => setAviso({ texto: "Descartado: Sem interesse", n: 1 })}>Outro</button>
+        <button id="mesmo" onClick={() => setAviso((a) => a && { texto: a.texto, n: a.n + 1 })}>Mesmo</button>
+        <button id="info" onClick={() => toast.mostrar("Interação registrada.", { tipo: "sucesso" })}>Info</button>
+      </div>
+      {aviso && <AvisoDesfazer texto={aviso.texto} chave={aviso.n} onDesfazer={() => { log("desfazer"); setAviso(null); }} onFim={() => { log("fim"); setAviso(null); }} />}
+    </>
+  );
+}
+export default function Qa() {
+  return (
+    <Casca titulo="QA do Desfazer" migrada>
+      <Corpo />
+    </Casca>
+  );
+}
+`);
+  writeFileSync(join(previa, "app", "qa-quebrar", "page.tsx"), `"use client";
+import { useEffect, useState } from "react";
+// Só quebra no navegador (a exportação estática renderiza a página no build).
+export default function Qa() {
+  const [quebrar, setQuebrar] = useState(false);
+  useEffect(() => setQuebrar(true), []);
+  if (quebrar) throw new Error("Falha fictícia de carga");
+  return null;
+}
+`);
+  console.log("Prévia preparada para as mensagens (rode o next build em .visual-preview).");
+  process.exit(0);
+}
 const saida = argumentos.find((a) => !a.startsWith("--")) ?? "local/alicerce";
 const base = "http://127.0.0.1:4173/vendas";
 mkdirSync(saida, { recursive: true });
@@ -76,7 +132,7 @@ async function print(nome) {
 const resultado = {};
 const confere = (nome, ok, detalhe) => { resultado[nome] = { ok: !!ok, detalhe }; console.log(`${ok ? "OK   " : "FALHA"} ${nome}${detalhe ? "  " + JSON.stringify(detalhe) : ""}`); };
 
-if (!soMoldura && !soLista) {
+if (!soMoldura && !soLista && !soMensagens) {
 // 1. Migração da escolha antiga (três casos de tema e a barra).
 await tela(1280, 800);
 await esquemaAparelho("light");
@@ -345,7 +401,7 @@ async function printDe(nome, seletor) {
   return true;
 }
 
-if (!soMoldura) {
+if (!soMoldura && !soMensagens) {
   for (const [w, h] of [[375, 812], [1280, 800]]) {
     for (const tema of ["papel", "grafite"]) {
       await abrirListaDoDia(w, h, tema);
@@ -449,6 +505,180 @@ if (soLista) {
   console.log(`\n${Object.keys(resultado).length} conferências, ${falhasLista} falhas. Prints em ${saida}`);
   ws.close();
   process.exit(falhasLista ? 1 : 0);
+}
+
+// 10. As mensagens do passo d. Roda com --mensagens, depois de --preparar e do build da prévia.
+if (soMensagens) {
+  const medirMensagens = () => avaliar(`(() => { const doc = document.documentElement;
+    const pequenos = window.innerWidth < 768 ? [...document.querySelectorAll('main button, main a, body > .mb-toast button, .mb-conexao button')].filter((e) => e.getClientRects().length && !e.id).filter((e) => e.getBoundingClientRect().height < 43.5).map((e) => (e.getAttribute('aria-label') || e.textContent || '').trim().slice(0, 28) + ' ' + Math.round(e.getBoundingClientRect().height)) : [];
+    return { rolagemLateral: doc.scrollWidth > doc.clientWidth, pequenos, antigo: !!document.querySelector('.ds-antigo, .cabecalho-vidro, .card, .aviso-conexao'), texto: document.body.innerText }; })()`);
+  const estadoDaPagina = () => avaliar(`(() => { const e = document.querySelector('.mb-estado'); if (!e) return null; const f = (q) => (e.querySelector(q) || {}).textContent || null; return { classes: e.className, icone: !!e.querySelector(':scope > .mb-estado__icone > svg.mb-icone[aria-hidden=true]'), ordem: [...e.children].map((c) => c.className.split(' ')[0]).join(), sobrelinha: f('.mb-estado__sobrelinha'), titulo: f('.mb-estado__titulo'), tituloTag: e.querySelector('.mb-estado__titulo')?.tagName, texto: f('.mb-estado__texto'), acoes: [...e.querySelectorAll('.mb-estado__acoes > .mb-botao')].map((b) => b.className.replace('mb-botao ', '') + ':' + b.textContent.trim() + (b.tagName === 'A' ? '@' + b.getAttribute('href') : '')), detalhe: [...e.querySelectorAll('.mb-estado__detalhe button')].map((b) => b.className.replace('mb-botao ', '') + ':' + b.textContent.trim()) }; })()`);
+  const TECNICO = /PGRST|JWT|Supabase|NEXT_PUBLIC|undefined|stack|Falha fictícia/i;
+  const clicar = (seletor) => avaliar(`document.querySelector(${JSON.stringify(seletor)}).click(); true`);
+  const fotoDoToast = `(() => { const t = document.querySelector('body > .mb-toast'); if (!t) return null; return { classes: t.className, role: t.getAttribute('role'), live: t.getAttribute('aria-live'), filhos: [...t.children].map((c) => c.tagName.toLowerCase() + '.' + (c.getAttribute('class') || '').split(' ').filter((x) => x !== 'mb-icone').join('.')).join(), texto: t.querySelector('.mb-toast__texto').textContent, acao: (t.querySelector('.mb-toast__acao') || {}).textContent, fechar: (t.querySelector('.mb-toast__fechar') || {}).getAttribute('aria-label') }; })()`;
+  const fotoDaConexao = `(() => { const c = document.querySelector('.mb-conexao'); const r = c.getBoundingClientRect(); return { oculto: c.hidden, classes: c.className, role: c.getAttribute('role'), filhos: [...c.children].map((x) => x.tagName.toLowerCase() + '.' + (x.getAttribute('class') || '').split(' ').filter((y) => y !== 'mb-icone').join('.')).join(), texto: c.textContent.trim(), noTopo: Math.round(r.top) <= 24, centro: Math.abs(r.left + r.width / 2 - document.documentElement.clientWidth / 2) < 2, cabe: r.left >= 0 && r.right <= document.documentElement.clientWidth }; })()`;
+  const ESTADOS = [
+    ["desativado", "/?qa=desativado", { classes: "mb-estado", sobrelinha: "Acesso desativado", titulo: "Seu acesso ao Base360 foi desativado", texto: "Se acha que é um engano, fale com o seu gerente.", acoes: "mb-botao--discreto:Sair", detalhe: "" }],
+    ["erro-da-conta", "/?qa=erro", { classes: "mb-estado mb-estado--erro", sobrelinha: "Erro de carga", titulo: "Não foi possível carregar a sua conta", acoes: "mb-botao--primario:Tentar de novo", detalhe: "mb-botao--discreto mb-botao--p:Copiar detalhes para o suporte" }],
+    ["sem-permissao", "/recepcao/", { classes: "mb-estado", sobrelinha: "Sem permissão", titulo: "Esta página não está liberada para o seu perfil", texto: "Peça o acesso ao gerente geral.", acoes: "mb-botao--secundario:Voltar para o início@/vendas/", detalhe: "" }],
+    ["404", "/404.html", { classes: "mb-estado", sobrelinha: "Não encontrado", titulo: "Esta página não existe ou mudou de endereço", acoes: "mb-botao--secundario:Ir para o início@/vendas/", detalhe: "" }],
+    ["erro-de-pagina", "/qa-quebrar/", { classes: "mb-estado mb-estado--erro", sobrelinha: "Erro de carga", titulo: "Não foi possível carregar esta página", acoes: "mb-botao--primario:Tentar de novo", detalhe: "mb-botao--discreto mb-botao--p:Copiar detalhes para o suporte" }],
+  ];
+  let primeira = true;
+  for (const [w, h] of [[375, 812], [1280, 800]]) {
+    for (const tema of ["papel", "grafite"]) {
+      await tela(w, h);
+      const sufixo = `${w}-${tema}`;
+
+      // Toast com Desfazer (o mesmo HTML do preview Toast, no <body> por portal).
+      erros.length = 0;
+      await comArmazenamento({ mb_tema: tema }, "/qa-desfazer/");
+      await avaliar("window.__log = []; true");
+      await clicar("#mostrar");
+      await espera(500);
+      const t = await avaliar(fotoDoToast);
+      const m1 = await medirMensagens();
+      await print(`toast-desfazer-${sufixo}`);
+      confere(`toast com Desfazer ${sufixo}`, t && t.classes === "mb-toast mb-toast--sucesso mb-toast--visivel" && t.role === "status" && t.live === "polite"
+        && t.filhos === "svg.,span.mb-toast__texto,button.mb-toast__acao,button.mb-toast__fechar" && t.texto === "Etapa: Proposta" && t.acao === "Desfazer" && t.fechar === "Fechar aviso"
+        && !m1.rolagemLateral && m1.pequenos.length === 0 && erros.length === 0, { t, m1: { ...m1, texto: undefined }, erros: [...erros] });
+      if (primeira) {
+        // Desfazer chama a função uma vez e tira o aviso; o fim não roda depois do Desfazer.
+        await clicar(".mb-toast__acao");
+        await espera(500);
+        const a = await avaliar("({ log: window.__log.join(), toasts: document.querySelectorAll('.mb-toast').length })");
+        confere("Desfazer chama onDesfazer uma vez e fecha o toast, sem onFim", a.log === "desfazer" && a.toasts === 0, a);
+        // Um toast por vez: o segundo substitui o primeiro; trocar o texto não dispara o onFim do antigo.
+        await avaliar("window.__log = []; true");
+        await clicar("#mostrar");
+        await espera(400);
+        await clicar("#outro");
+        await espera(500);
+        const b = await avaliar("({ log: window.__log.join(), toasts: [...document.querySelectorAll('.mb-toast')].map((x) => x.querySelector('.mb-toast__texto').textContent) })");
+        confere("um toast por vez e o antigo não chama onFim ao ser substituído", b.toasts.length === 1 && b.toasts[0] === "Descartado: Sem interesse" && b.log === "", b);
+        // O X chama o onFim, e a tela limpa o aviso.
+        await clicar(".mb-toast__fechar");
+        await espera(500);
+        const c = await avaliar("({ log: window.__log.join(), toasts: document.querySelectorAll('.mb-toast').length })");
+        confere("o X fecha o toast e chama onFim", c.log === "fim" && c.toasts === 0, c);
+        // Passou o tempo (8 s): some e chama o onFim.
+        await avaliar("window.__log = []; true");
+        await clicar("#mostrar");
+        await espera(7000);
+        const antes = await avaliar("document.querySelectorAll('.mb-toast').length");
+        await espera(1700);
+        const d = await avaliar("({ log: window.__log.join(), toasts: document.querySelectorAll('.mb-toast').length })");
+        confere("o toast com Desfazer fica 8 s e some chamando onFim", antes === 1 && d.log === "fim" && d.toasts === 0, { antes, d });
+        // O foco no botão pausa o tempo.
+        await avaliar("window.__log = []; true");
+        await clicar("#mostrar");
+        await espera(500);
+        await avaliar("document.querySelector('.mb-toast__acao').focus(); true");
+        await espera(8500);
+        const e2 = await avaliar("({ log: window.__log.join(), toasts: document.querySelectorAll('.mb-toast').length })");
+        confere("o foco no toast pausa o tempo", e2.log === "" && e2.toasts === 1, e2);
+        // Outro toast substitui o do Desfazer: o onFim roda (o aviso da tela não fica preso) e o mesmo texto volta a aparecer.
+        await clicar(".mb-toast__fechar");
+        await espera(400);
+        await avaliar("window.__log = []; true");
+        await clicar("#mostrar");
+        await espera(400);
+        await clicar("#info");
+        await espera(500);
+        const f = await avaliar("({ log: window.__log.join(), toasts: [...document.querySelectorAll('.mb-toast')].map((x) => x.querySelector('.mb-toast__texto').textContent) })");
+        await clicar("#mostrar");
+        await espera(500);
+        const g = await avaliar("[...document.querySelectorAll('.mb-toast')].map((x) => x.querySelector('.mb-toast__texto').textContent)");
+        confere("toast substituído por outro chama onFim uma vez e o mesmo texto volta a aparecer", f.log === "fim" && f.toasts.join() === "Interação registrada." && g.join() === "Etapa: Proposta", { f, g });
+        // Mesmo texto de novo, com outra chave, com o anterior na tela: é um toast novo e reinicia os 8 s.
+        await clicar(".mb-toast__fechar");
+        await espera(400);
+        await clicar("#mostrar");
+        await espera(5000);
+        await clicar("#mesmo");
+        await espera(4500);
+        const h = await avaliar("document.querySelectorAll('.mb-toast').length");
+        await espera(4500);
+        const i2 = await avaliar("document.querySelectorAll('.mb-toast').length");
+        confere("mesmo texto com outra chave reinicia os 8 s", h === 1 && i2 === 0, { h, i2 });
+      }
+
+      // AvisoConexao: sem conexão, conexão de volta e some em 4 s.
+      erros.length = 0;
+      await comArmazenamento({ mb_tema: tema }, "/");
+      await avaliar("window.dispatchEvent(new Event('offline')); true");
+      await espera(400);
+      const cx = await avaliar(fotoDaConexao);
+      const m2 = await medirMensagens();
+      // O aviso fica logo abaixo do topo (no celular, abaixo da faixa de status): não cobre o +, o status, o "Ver fila" nem a conta.
+      const cobre = await avaliar(`(() => { const c = document.querySelector('.mb-conexao').getBoundingClientRect();
+        const alvos = [...document.querySelectorAll('.mb-topo a, .mb-topo button, .mb-topo [role=button], .mb-celular-topo a, .mb-celular-topo button, .mb-celular-status a, .mb-celular-status button, .mb-celular-status .mb-status')].filter((e) => e.getClientRects().length);
+        const bate = (r) => r.left < c.right && r.right > c.left && r.top < c.bottom && r.bottom > c.top;
+        return { alvos: alvos.length, cobertos: alvos.filter((e) => bate(e.getBoundingClientRect())).map((e) => (e.getAttribute('aria-label') || e.textContent || e.className).trim().slice(0, 24)), topoDoAviso: Math.round(c.top) }; })()`);
+      await print(`conexao-sem-${sufixo}`);
+      confere(`AvisoConexao não cobre o topo ${sufixo}`, cobre.alvos >= 3 && cobre.cobertos.length === 0, cobre);
+      confere(`AvisoConexao sem conexão ${sufixo}`, !cx.oculto && cx.classes === "mb-conexao" && cx.role === "status" && cx.filhos === "svg.,span.mb-conexao__texto,span.mb-conexao__detalhe"
+        && cx.texto === "Sem conexão· nada é gravado sem internet" && cx.centro && cx.cabe && !m2.rolagemLateral && erros.length === 0, { cx, erros: [...erros] });
+      await avaliar("window.dispatchEvent(new Event('online')); true");
+      await espera(400);
+      const vt = await avaliar(fotoDaConexao);
+      await print(`conexao-voltou-${sufixo}`);
+      let sumiu = true;
+      if (primeira) {
+        await espera(4300);
+        sumiu = await avaliar("document.querySelector('.mb-conexao').hidden");
+      }
+      confere(`AvisoConexao de volta ${sufixo}`, !vt.oculto && vt.classes === "mb-conexao mb-conexao--voltou" && vt.texto === "Conexão de volta." && sumiu === true, { vt, sumiu });
+
+      // Os estados: conta desativada, erro da conta, sem permissão, 404 e error.tsx.
+      for (const [nome, caminho, esperado] of ESTADOS) {
+        erros.length = 0;
+        await comArmazenamento({ mb_tema: tema }, caminho);
+        await espera(500);
+        const e = await estadoDaPagina();
+        const m = await medirMensagens();
+        const semAnel = await focoVisivel(w < 768 ? 4 : 6);
+        await avaliar("document.activeElement && document.activeElement.blur && document.activeElement.blur(); window.scrollTo(0, 0); true");
+        await print(`${nome}-${sufixo}`);
+        const moldura = nome === "sem-permissao" || nome === "404";
+        const temMenu = await avaliar("!!document.querySelector('.mb-app')");
+        const ordem = "mb-estado__icone,mb-estado__sobrelinha,mb-estado__titulo,mb-estado__texto,mb-estado__acoes" + (esperado.detalhe ? ",mb-estado__detalhe" : "");
+        confere(`estado ${nome} ${sufixo}`, e && e.classes === esperado.classes && e.icone && e.ordem === ordem
+          && e.sobrelinha === esperado.sobrelinha && e.titulo === esperado.titulo && (!esperado.texto || e.texto === esperado.texto) && e.tituloTag === "H2" && e.acoes.join() === esperado.acoes && e.detalhe.join() === esperado.detalhe
+          && !TECNICO.test(m.texto) && !m.antigo && !m.rolagemLateral && m.pequenos.length === 0 && semAnel.length === 0 && temMenu === moldura
+          && (nome === "erro-de-pagina" || erros.length === 0), { e, m: { ...m, texto: undefined }, semAnel, temMenu, erros: [...erros] });
+      }
+      primeira = false;
+    }
+  }
+
+  // Registrar sem internet (rede desligada de verdade pelo CDP): o erro aparece no painel, perto do botão, com o
+  // texto aprovado, e o que foi digitado continua lá (e no rascunho do aparelho). A prévia grava nada: sem rede, o
+  // fixture devolve "Failed to fetch", como o Supabase real.
+  for (const [w, h] of [[375, 812], [1280, 800]]) {
+    erros.length = 0;
+    await tela(w, h);
+    await comArmazenamento({ mb_tema: "papel" }, "/");
+    await cdp("Network.enable");
+    await cdp("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0 });
+    await avaliar("[...document.querySelectorAll('.mb-item__faixa button')].find((b) => b.textContent.trim() === 'Registrar').click(); true");
+    await espera(700);
+    await avaliar("(() => { const p = document.querySelector('body > aside.mb-lateral'); const t = p.querySelector('textarea'); const set = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set; set.call(t, 'Falou que quer visitar no sábado'); t.dispatchEvent(new Event('input', { bubbles: true })); return true; })()");
+    await avaliar("document.querySelector('body > aside.mb-lateral .mb-opcoes--linha .mb-opcao').click(); true");
+    await espera(200);
+    await avaliar("[...document.querySelectorAll('body > aside.mb-lateral .mb-lateral__rodape button')].find((b) => b.textContent.trim() === 'Registrar').click(); true");
+    await espera(900);
+    await print(`registrar-sem-internet-${w}-papel`);
+    const r = await avaliar(`(() => { const p = document.querySelector('body > aside.mb-lateral'); const av = p.querySelector('.mb-aviso--erro .mb-aviso__titulo, .mb-aviso--erro'); const bt = [...p.querySelectorAll('.mb-lateral__rodape button')].find((b) => b.textContent.trim() === 'Registrar'); const a = av && av.getBoundingClientRect(); const b = bt && bt.getBoundingClientRect();
+      return { erro: av && av.textContent.trim(), aberto: p.classList.contains('mb-lateral--aberto'), digitado: p.querySelector('textarea').value, perto: !!a && !!b && Math.abs(a.bottom - b.top) < 400, offline: !navigator.onLine, rascunho: Object.keys(sessionStorage).filter((k) => /rascunho|interacao/i.test(k)).length }; })()`);
+    await cdp("Network.emulateNetworkConditions", { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
+    confere(`Registrar sem internet ${w}`, r.offline && /Sem internet: não foi gravado\. Tente de novo quando a conexão voltar\./.test(r.erro ?? "") && r.aberto && r.digitado === "Falou que quer visitar no sábado" && r.perto && r.rascunho > 0, r);
+  }
+  writeFileSync(join(saida, "resultado.json"), JSON.stringify(resultado, null, 2));
+  const falhasMsg = Object.values(resultado).filter((r) => !r.ok).length;
+  console.log(`\n${Object.keys(resultado).length} conferências, ${falhasMsg} falhas. Prints em ${saida}`);
+  ws.close();
+  process.exit(falhasMsg ? 1 : 0);
 }
 
 const PERFIS_MOLDURA = [["corretor", "/"], ["geral", "/?qa=geral"]];

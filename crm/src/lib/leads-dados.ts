@@ -114,7 +114,7 @@ export async function alterarLead(
   let q = db().from("leads").update(campos).eq("id", id);
   for (const [k, v] of Object.entries(seAinda ?? {})) q = v === null ? q.is(k, null) : q.eq(k, v);
   const { data, error } = await q.select("id");
-  if (error) return erroAoSalvar(error, botaoDoRascunho);
+  if (error) return erroAoSalvar(error);
   if (data?.length) return null;
   return seAinda ? "Não deu para desfazer: o lead mudou depois. Confira a ficha." : NAO_SALVOU;
 }

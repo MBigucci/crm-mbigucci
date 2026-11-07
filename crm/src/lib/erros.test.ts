@@ -17,15 +17,13 @@ test("sessão expirada e sem conexão viram frases para a tela", () => {
   assert.match(mensagemErro({ message: "Request rate limit reached" }), /Espere um minuto/);
 });
 
-test("gravação sem conexão diz o efeito: rascunho guardado ou refazer", () => {
+test("gravação sem conexão diz que não foi gravado e manda tentar de novo (com ou sem rascunho)", () => {
   const rede = { message: "TypeError: Failed to fetch" };
-  assert.equal(
-    erroAoSalvar(rede, "Registrar"),
-    "Não foi salvo: sem conexão. O texto ficou guardado neste aparelho. Toque em Registrar quando a internet voltar.",
-  );
-  assert.equal(erroAoSalvar(rede), "Não foi salvo: sem conexão. Faça de novo quando a internet voltar.");
+  const texto = "Sem internet: não foi gravado. Tente de novo quando a conexão voltar.";
+  assert.equal(erroAoSalvar(rede), texto);
+  assert.equal(erroAoSalvar(rede), texto);
   // Outros erros seguem a tradução de sempre.
-  assert.equal(erroAoSalvar({ message: "permission denied for table leads" }, "Registrar"), "Você não tem permissão para isso.");
+  assert.equal(erroAoSalvar({ message: "permission denied for table leads" }), "Você não tem permissão para isso.");
 });
 
 test("apelido repetido entre corretores ativos vira texto da tela", () => {

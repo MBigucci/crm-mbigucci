@@ -113,7 +113,7 @@ class Query implements PromiseLike<{data:any;error:any}> {
  upsert() {this.blocked=true;return this;}
  delete() {this.blocked=true;return this;}
  then<TResult1 = {data:any;error:any}, TResult2 = never>(ok?:((v:{data:any;error:any})=>TResult1|PromiseLike<TResult1>)|null,err?:((r:any)=>TResult2|PromiseLike<TResult2>)|null):Promise<TResult1|TResult2> {
-  return Promise.resolve({data:this.blocked?null:this.singleRow?(this.rows[0]??null):this.rows,error:this.blocked?{message:'Prévia visual: gravação desativada.'}:null}).then(ok,err);
+  return Promise.resolve({data:this.blocked?null:this.singleRow?(this.rows[0]??null):this.rows,error:this.blocked?{message:typeof navigator!=='undefined'&&!navigator.onLine?'TypeError: Failed to fetch':'Prévia visual: gravação desativada.'}:null}).then(ok,err);
  }
 }
 export const client = {

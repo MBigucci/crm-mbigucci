@@ -25,7 +25,7 @@ import { CardDeItem } from "@/components/alicerce/card-de-item";
 import { CarregandoLeads } from "@/components/alicerce/carregando";
 import { EstadoVazio } from "@/components/alicerce/estado-vazio";
 import { ResumoDePendencias } from "@/components/alicerce/resumo-de-pendencias";
-import { ToastProvider, useToast } from "@/components/alicerce/toast";
+import { useToast } from "@/components/alicerce/toast";
 
 /** O que a lista do dia lê para os aniversários (só o necessário para o card e a mensagem). */
 const COLUNAS_ANIVERSARIO = "id, nome, whatsapp, empreendimento, etapa, status, ultima_interacao_em, created_at, tentativas, nascimento";
@@ -41,17 +41,9 @@ const diaDaSemana = new Intl.DateTimeFormat("pt-BR", { weekday: "long" });
  * visitas de hoje, aniversários, hoje e sem próximo contato, cada seção com título e contagem.
  * Nada do que a tela faz mudou: as mesmas leituras, as mesmas regras e a mesma gravação.
  *
- * O ToastProvider fica aqui até o passo d (Mensagens) levá-lo para a Casca.
+ * O Toast vem do ToastProvider da Casca (um só para o app inteiro).
  */
 export function ListaDoDia() {
-  return (
-    <ToastProvider>
-      <Lista />
-    </ToastProvider>
-  );
-}
-
-function Lista() {
   const eu = usePerfil();
   const toast = useToast();
   const { catalogos } = useCatalogos();

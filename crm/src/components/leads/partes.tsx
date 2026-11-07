@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import clsx from "clsx";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   formatarQuando,
   formatarWhatsapp,
@@ -21,6 +21,7 @@ import { Chip } from "@/components/alicerce/chip";
 import { chipDaTemperatura, nivelDoPrazo, nivelDoSemContato, tomDaEtapa } from "@/components/alicerce/mapas";
 import { Prazo } from "@/components/alicerce/prazo";
 import { Selo } from "@/components/alicerce/selo";
+import { useToast } from "@/components/alicerce/toast";
 
 /** Temperatura sempre com sinal + palavra + cor. */
 export function SeloTemperatura({ valor }: { valor: Temperatura | null }) {
@@ -527,31 +528,34 @@ export function RodapeAcao({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Quanto tempo o Desfazer fica na tela. */
-const SEGUNDOS_DESFAZER = 8;
-
 /**
- * Aviso no rodapé com Desfazer, no lugar de pedir confirmação antes. Some
- * sozinho depois de alguns segundos. Desfazer grava de novo o valor anterior,
- * então o histórico mostra as duas mudanças.
+ * Desfazer no lugar de pedir confirmação antes: o Toast do Alicerce (sucesso, com o botão Desfazer, 8 s),
+ * com a mesma assinatura de sempre para as telas que o usam. Desfazer grava de novo o valor anterior,
+ * então o histórico mostra as duas mudanças. O Toast fica no ToastProvider da Casca.
+ * O `onFim` roda quando o aviso acaba (passou o tempo, tocou no X ou outro toast o substituiu), para a tela limpar o
+ * estado dela. Cada texto novo é um toast novo; para o mesmo texto de novo com o anterior ainda na tela, a tela passa
+ * uma `chave` diferente por aviso (opcional).
  */
-export function AvisoDesfazer({ texto, onDesfazer, onFim }: { texto: string; onDesfazer: () => void; onFim: () => void }) {
+export function AvisoDesfazer({ texto, onDesfazer, onFim, chave }: { texto: string; onDesfazer: () => void; onFim: () => void; chave?: string | number }) {
+  const toast = useToast();
+  const desfazer = useRef(onDesfazer);
+  const fim = useRef(onFim);
+  desfazer.current = onDesfazer;
+  fim.current = onFim;
   useEffect(() => {
-    const t = setTimeout(onFim, SEGUNDOS_DESFAZER * 1000);
-    return () => clearTimeout(t);
-  }, [texto, onFim]);
-  return (
-    <div className="fixed inset-x-0 bottom-0 z-20 px-3 pb-3 md:px-5 md:pb-5" role="status">
-      <div className="mx-auto flex max-w-[560px] items-center justify-between gap-3 rounded-sm border border-ink bg-ink px-4 py-3 text-surface">
-        <span className="min-w-0 text-[14px] font-semibold">✓ {texto}</span>
-        <button
-          type="button"
-          className="focus-ring shrink-0 rounded-sm border border-surface px-3 py-2 text-[13px] font-semibold"
-          onClick={onDesfazer}
-        >
-          Desfazer
-        </button>
-      </div>
-    </div>
-  );
+    let ativo = true;
+    const id = toast.mostrar(texto, {
+      tipo: "sucesso",
+      aoDesfazer: () => desfazer.current(),
+      // Depois de desfazer, a tela pode ter trocado o aviso (ou tirado): só avisa o fim se ainda for este.
+      aoFechar: () => {
+        if (ativo) fim.current();
+      },
+    });
+    return () => {
+      ativo = false;
+      toast.fechar(id);
+    };
+  }, [texto, chave, toast]);
+  return null;
 }

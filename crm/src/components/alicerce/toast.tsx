@@ -12,16 +12,30 @@ export type OpcoesDoToast = {
   acao?: string;
   /** Em milissegundos. Padrão: 8 s; o de erro fica até fechar (0). */
   duracao?: number;
+  /** Chamada uma vez quando o toast acaba por conta própria: passou o tempo, tocou no X ou outro toast o substituiu (a tela dona do aviso limpa o estado dela). Não é chamada ao tocar na ação (quem desfaz limpa o próprio estado) nem quando `fechar(id)` o tira (quem tira já cuidou do estado). */
+  aoFechar?: () => void;
 };
 
 const SEGUNDOS = 8_000;
 /** O mesmo valor de `--mov-base` (200ms): o tempo da saída antes de tirar o toast da tela. */
 const SAIDA_MS = 200;
 
-type Pedido = { id: number; texto: string; opcoes: OpcoesDoToast };
-type Api = { mostrar: (texto: string, opcoes?: OpcoesDoToast) => void; fechar: () => void };
+type Pedido = { id: number; texto: string; opcoes: OpcoesDoToast; fim: { feito: boolean } };
 
-const SemToast: Api = { mostrar: () => undefined, fechar: () => undefined };
+/** Chama o `aoFechar` do pedido uma vez só (passou o tempo, X, ou o toast foi substituído). */
+function terminar(p: Pedido) {
+  if (p.fim.feito) return;
+  p.fim.feito = true;
+  p.opcoes.aoFechar?.();
+}
+type Api = {
+  /** Devolve o id do toast, para `fechar(id)` tirar só ele (e não um que o tenha substituído). */
+  mostrar: (texto: string, opcoes?: OpcoesDoToast) => number;
+  /** Sem id, tira o toast da tela; com id, só se ainda for esse. */
+  fechar: (id?: number) => void;
+};
+
+const SemToast: Api = { mostrar: () => 0, fechar: () => undefined };
 const Contexto = createContext<Api>(SemToast);
 
 /** Toast do Alicerce: `const toast = useToast(); toast.mostrar("Interação registrada.", { tipo: "sucesso" })`. Sem o provider, não faz nada. */
@@ -38,8 +52,22 @@ let contador = 0;
  */
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [atual, setAtual] = useState<Pedido | null>(null);
-  const mostrar = useCallback((texto: string, opcoes: OpcoesDoToast = {}) => setAtual({ id: ++contador, texto, opcoes }), []);
-  const fechar = useCallback(() => setAtual(null), []);
+  const noAr = useRef<Pedido | null>(null);
+  const mostrar = useCallback((texto: string, opcoes: OpcoesDoToast = {}) => {
+    const anterior = noAr.current;
+    const pedido: Pedido = { id: ++contador, texto, opcoes, fim: { feito: false } };
+    noAr.current = pedido;
+    setAtual(pedido);
+    // O toast que sai por substituição também avisa o fim, para a tela dona dele não ficar com o aviso preso.
+    if (anterior) terminar(anterior);
+    return pedido.id;
+  }, []);
+  // Confere o id: o fim de um toast (a saída leva 200 ms) não pode apagar o toast novo que o substituiu.
+  const fechar = useCallback((id?: number) => {
+    if (id !== undefined && noAr.current?.id !== id) return;
+    noAr.current = null;
+    setAtual(null);
+  }, []);
   const api = useMemo(() => ({ mostrar, fechar }), [mostrar, fechar]);
   return (
     <Contexto.Provider value={api}>
@@ -49,7 +77,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Toast({ pedido, onFim }: { pedido: Pedido; onFim: () => void }) {
+function Toast({ pedido, onFim }: { pedido: Pedido; onFim: (id: number) => void }) {
   const { texto, opcoes } = pedido;
   const tipo = opcoes.tipo ?? "info";
   const [montado, setMontado] = useState(false);
@@ -60,8 +88,9 @@ function Toast({ pedido, onFim }: { pedido: Pedido; onFim: () => void }) {
   const fechar = useCallback(() => {
     if (cronometro.current) clearTimeout(cronometro.current);
     setVisivel(false);
-    setTimeout(onFim, SAIDA_MS);
-  }, [onFim]);
+    setTimeout(() => onFim(pedido.id), SAIDA_MS);
+    terminar(pedido);
+  }, [onFim, pedido]);
   const contar = useCallback(() => {
     if (cronometro.current) clearTimeout(cronometro.current);
     if (duracao > 0) cronometro.current = setTimeout(fechar, duracao);
@@ -99,6 +128,8 @@ function Toast({ pedido, onFim }: { pedido: Pedido; onFim: () => void }) {
           type="button"
           className="mb-toast__acao"
           onClick={() => {
+            // Quem desfaz já limpa o próprio estado (e pode ter trocado o aviso): o aoFechar não roda aqui.
+            pedido.fim.feito = true;
             opcoes.aoDesfazer?.();
             fechar();
           }}

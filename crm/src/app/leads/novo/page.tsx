@@ -248,7 +248,7 @@ function NovoLead() {
       : inserido;
     if (error) {
       setSalvando(false);
-      return setErro(erroAoSalvar(error, "Cadastrar"));
+      return setErro(erroAoSalvar(error));
     }
     gravarUltimaOrigem(eu.id, origemAtual.slug);
     if (mensagem) {

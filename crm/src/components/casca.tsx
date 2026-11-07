@@ -6,13 +6,15 @@ import { useSessao } from "@/lib/sessao";
 import { nomePerfil } from "@/lib/tipos";
 import { useDistribuicao, useDistribuicaoStore } from "@/lib/distribuicao-dados";
 import { mostraBotao } from "@/lib/distribuicao";
+import { AvisoConexao } from "./alicerce/aviso-conexao";
 import { BarraSuperior } from "./alicerce/barra-superior";
+import { CopiarDetalhes, EstadoDePagina, LinkDoEstado } from "./alicerce/estado-de-pagina";
+import { MarcaBase360 } from "./alicerce/marca-base360";
 import { MenuCelular } from "./alicerce/menu-celular";
 import { MenuDaConta } from "./alicerce/menu-da-conta";
 import { MenuLateral } from "./alicerce/menu-lateral";
+import { ToastProvider } from "./alicerce/toast";
 import { ATALHOS, ehListaDoDia, modulosDaPessoa, montarMenu } from "./alicerce/menu.ts";
-import { Cabecalho } from "./cabecalho";
-import { AvisoOffline } from "./aviso-offline";
 import { BotaoRecebimento, FolhasDistribuicao } from "./distribuicao/recebimento";
 
 export { ehListaDoDia };
@@ -38,7 +40,7 @@ export function Casca({
   migrada?: boolean;
   children: React.ReactNode;
 }) {
-  const { estado, pode, sair } = useSessao();
+  const { estado, pode, sair, recarregar } = useSessao();
   const router = useRouter();
   // A distribuição automática: um estado só para o app (lib/distribuicao-dados.ts).
   useDistribuicao(estado.fase === "pronto" ? estado.perfil.id : null);
@@ -48,36 +50,45 @@ export function Casca({
     if (estado.fase === "deslogado") router.replace("/entrar/");
   }, [estado.fase, router]);
 
-  // .ds-antigo: a ponte do item 48 para o que ainda está no DS antigo (veja crm/src/app/alicerce-local.css).
-  // Os estados de conta (passo d) ainda são do DS antigo; saem quando o passo d chegar.
+  // Sem sessão pronta não há moldura (nem menu, nem perfil): a marca e o estado da conta, com as palavras do
+  // Vocabulário (EstadosDePagina do Alicerce). O estado.mensagem técnico só vai em "Copiar detalhes para o suporte".
   if (estado.fase !== "pronto") {
     return (
-      <div className="ds-antigo">
-        <Cabecalho />
-        <main className="mx-auto max-w-content px-5 py-8">
-          {estado.fase === "sem-config" && <SemConfiguracao />}
-          {estado.fase === "desativado" && (
-            <div className="card bar-brand max-w-[520px]">
-              <h1 className="titulo-card">! Conta desativada</h1>
-              <p className="mt-2 text-ink-soft">
-                A conta {estado.email} não está ativa no Base360 Vendas. Fale com o gerente geral.
-              </p>
-              <button type="button" className="btn btn-ghost focus-ring mt-4" onClick={sair}>
+      <main className="grid min-h-screen content-center justify-items-center gap-6 px-4 py-10">
+        <MarcaBase360 modulo="Vendas" />
+        {estado.fase === "sem-config" && <SemConfiguracao />}
+        {estado.fase === "desativado" && (
+          <EstadoDePagina
+            tipo="desativado"
+            titulo="Seu acesso ao Base360 foi desativado"
+            texto="Se acha que é um engano, fale com o seu gerente."
+            acoes={
+              <button type="button" className="mb-botao mb-botao--discreto" onClick={sair}>
                 Sair
               </button>
-            </div>
-          )}
-          {estado.fase === "erro" && (
-            <div className="card bar-brand max-w-[520px]">
-              <h1 className="titulo-card">! Não foi possível carregar sua conta</h1>
-              <p className="mt-2 text-ink-soft">{estado.mensagem}</p>
-            </div>
-          )}
-          {(estado.fase === "carregando" || estado.fase === "deslogado") && (
-            <p className="text-concrete">Carregando…</p>
-          )}
-        </main>
-      </div>
+            }
+          />
+        )}
+        {estado.fase === "erro" && (
+          <EstadoDePagina
+            tipo="erro-de-carga"
+            titulo="Não foi possível carregar a sua conta"
+            texto="Pode ser a internet ou o sistema. O que você já salvou continua salvo."
+            acoes={
+              <button type="button" className="mb-botao mb-botao--primario" onClick={() => void recarregar()}>
+                Tentar de novo
+              </button>
+            }
+            detalhe={<CopiarDetalhes codigo={estado.mensagem} />}
+          />
+        )}
+        {(estado.fase === "carregando" || estado.fase === "deslogado") && (
+          <div aria-busy="true">
+            <span className="mb-visualmente-oculto">Carregando a sua conta…</span>
+          </div>
+        )}
+        <AvisoConexao />
+      </main>
     );
   }
 
@@ -104,57 +115,60 @@ export function Casca({
   const liberado = (!exige || pode(exige)) && (!soGerenteGeral || ehGG);
 
   return (
-    <div className="mb-app">
-      <MenuLateral modulo="Vendas" grupos={grupos} atalhos={ATALHOS} modulos={modulos} moduloAtual="vendas" />
-      <div className="mb-app__principal">
-        <BarraSuperior
-          titulo={titulo}
-          status={status}
-          novo={novo}
-          conta={<MenuDaConta nome={estado.perfil.nome} apelido={estado.perfil.apelido} perfil={perfil} equipe={equipe} onSair={sair} />}
-        />
-        <MenuCelular
-          modulo="Vendas"
-          grupos={grupos}
-          atalhos={ATALHOS}
-          modulos={modulos}
-          moduloAtual="vendas"
-          novo={novo}
-          status={status}
-          conta={{ nome: estado.perfil.nome, onSair: sair }}
-        />
-        <main className={migrada ? "mb-app__conteudo" : "mb-app__conteudo pb-16 pt-6"}>
-          {!migrada && <h1 className="titulo-pagina mb-5">{titulo}</h1>}
-          {liberado ? (
-            migrada ? (
-              children
+    <ToastProvider>
+      <div className="mb-app">
+        <MenuLateral modulo="Vendas" grupos={grupos} atalhos={ATALHOS} modulos={modulos} moduloAtual="vendas" />
+        <div className="mb-app__principal">
+          <BarraSuperior
+            titulo={titulo}
+            status={status}
+            novo={novo}
+            conta={<MenuDaConta nome={estado.perfil.nome} apelido={estado.perfil.apelido} perfil={perfil} equipe={equipe} onSair={sair} />}
+          />
+          <MenuCelular
+            modulo="Vendas"
+            grupos={grupos}
+            atalhos={ATALHOS}
+            modulos={modulos}
+            moduloAtual="vendas"
+            novo={novo}
+            status={status}
+            conta={{ nome: estado.perfil.nome, onSair: sair }}
+          />
+          <main className={migrada ? "mb-app__conteudo" : "mb-app__conteudo pb-16 pt-6"}>
+            {!migrada && liberado && <h1 className="titulo-pagina mb-5">{titulo}</h1>}
+            {liberado ? (
+              migrada ? (
+                children
+              ) : (
+                <div className="ds-antigo">{children}</div>
+              )
             ) : (
-              <div className="ds-antigo">{children}</div>
-            )
-          ) : (
-            <div className="ds-antigo">
-              <div className="card max-w-[520px]">
-                <p>! Seu perfil não tem acesso a esta página.</p>
-              </div>
-            </div>
-          )}
-        </main>
-        {/* Dentro da coluna principal: um filho solto do .mb-app viraria uma linha vazia da grade. */}
-        <AvisoOffline />
+              <EstadoDePagina
+                tipo="sem-permissao"
+                // O perfil que libera a página é uma permissão configurável: só o "soGerenteGeral" tem nome fixo.
+                titulo={soGerenteGeral ? "Esta página é do perfil Gerente geral" : "Esta página não está liberada para o seu perfil"}
+                texto="Peça o acesso ao gerente geral."
+                acoes={<LinkDoEstado href="/">Voltar para o início</LinkDoEstado>}
+              />
+            )}
+          </main>
+          {/* Dentro da coluna principal: um filho solto do .mb-app viraria uma linha vazia da grade. */}
+          <AvisoConexao />
+        </div>
+        <FolhasDistribuicao />
       </div>
-      <FolhasDistribuicao />
-    </div>
+    </ToastProvider>
   );
 }
 
 export function SemConfiguracao() {
   return (
-    <div className="card bar-brand max-w-[560px]">
-      <h1 className="titulo-card">! Supabase não configurado</h1>
-      <p className="mt-2 text-ink-soft">
-        Este build foi gerado sem NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY. Preencha o
-        arquivo .env.local e rode npm run build de novo (veja o README).
-      </p>
-    </div>
+    <EstadoDePagina
+      tipo="erro-de-carga"
+      titulo="Não foi possível abrir o Base360"
+      texto="Este endereço ainda não está pronto para uso. Fale com o suporte."
+      detalhe={<CopiarDetalhes codigo="Supabase não configurado: faltam NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY neste build." />}
+    />
   );
 }
