@@ -172,7 +172,7 @@ As quatro foram resolvidas no Alicerce `1794018834-0e30`:
 
 **Ainda pendentes:**
 - o "resultado antes de salvar" do Direcionador, que é consulta nova (item 49 do roadmap);
-- quem pode abrir o Repasse pelo item Módulos. O Vendas não tem esse dado; a regra precisa vir do Felipe antes do passo b.
+- o Repasse no item Módulos: por decisão do Felipe (06/11/2026), ninguém o vê por enquanto, porque o Vendas não tem o dado de quem acessa o Repasse. A entrada fica pronta e desligada.
 
 ## 6. Ordem da fase 2
 

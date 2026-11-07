@@ -127,7 +127,7 @@
    - **Módulos** (rodapé do menu e grupo na folha do celular):
      - Vendas: todo usuário ativo;
      - Marketing: o gerente geral, a mesma regra que o app do Marketing usa hoje (`ehGerenteGeral`);
-     - Repasse: **pendente**. O Vendas não tem nenhum dado de quem acessa o Repasse; a regra precisa vir do Felipe antes do passo b.
+     - Repasse: **ninguém por enquanto** (Felipe, 06/11/2026). O Vendas não tem nenhum dado de quem acessa o Repasse. A entrada fica pronta atrás de uma constante desligada, com o endereço `https://repasse.mbigucci.com.br/`, para ligar quando esse dado existir.
 10. **Status do módulo:** o botão de recebimento de leads (`distribuicao/recebimento.tsx`) vira o `.mb-status`, no topo e na faixa do celular, com as mesmas folhas que ele abre hoje.
 11. **Pacote antigo:** `marca/tokens/` e o artifact antigo do MBigucci DS (`QesJh8EPBkLqV5jjbpNFEi`) viram legado do Vendas.
     - O `conferir.mjs` compara o pacote com o `globals.css` antigo. Ele deixa de ser rodado a partir do passo a, e o pacote não é apagado.
