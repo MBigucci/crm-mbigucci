@@ -245,20 +245,6 @@
   .link-acao::after {
     content: " →";
   }
-
-  /* Cabeçalho antigo (só Entrar e os estados da conta da Casca, até os passos h e d do item 48):
-     como a barra do site, fundo do tema a 85%, desfoque de 12 px e borda fina. */
-  .cabecalho-vidro {
-    background: rgb(var(--paper) / 0.85);
-    border-bottom: 1px solid rgb(var(--line));
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
-  }
-  @supports not ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px))) {
-    .cabecalho-vidro {
-      background: rgb(var(--paper));
-    }
-  }
 }
 
 /* Transição entre etapas: o único movimento além do acordeão */

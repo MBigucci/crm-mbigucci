@@ -42,6 +42,23 @@ export function SessaoProvider({children}:{children:React.ReactNode}) {
 export const useSessao=()=>useContext(Context);
 export const usePerfil=()=>useSessao().estado.perfil as Profile;
 `);
+  // Avisos neste aparelho (passo h): o navegador sem cabeça não tem chave VAPID, então o push real devolveria "sem-chave" e
+  // os interruptores não apareceriam. Na cópia, ?qa=avisos-ligados e ?qa=avisos-desligados simulam o aparelho; sem ?qa, o real.
+  writeFileSync(join(dest,'src/lib/push.ts'), `import { TIPOS_AVISO, type TipoAviso } from "./avisos";
+export { TIPOS_AVISO, type TipoAviso };
+export type Disponibilidade = "ok" | "sem-suporte" | "iphone-instalar" | "sem-chave";
+const qa = () => new URLSearchParams(location.search).get("qa") ?? "";
+export const ehIphone = () => /iPad|iPhone|iPod/.test(navigator.userAgent);
+export const instalado = () => false;
+export function disponibilidade(): Disponibilidade { const q = qa(); return q === "avisos-sem-suporte" ? "sem-suporte" : q.startsWith("avisos-") ? "ok" : "sem-chave"; }
+export async function ligarAvisos(_tipos: TipoAviso[]) {}
+export async function desligarAvisos() {}
+export async function salvarTipos(_tipos: TipoAviso[]) {}
+export async function esteAparelho(): Promise<{ ligado: boolean; tipos: TipoAviso[] }> { return qa() === "avisos-ligados" ? { ligado: true, tipos: ["contato", "visita"] } : { ligado: false, tipos: ["contato", "visita", "atribuido", "prazo"] }; }
+export async function enviarTeste(): Promise<"enviado" | "removido" | "falhou"> { return "enviado"; }
+export async function sincronizarAvisos() {}
+export async function esquecerEsteAparelho() {}
+`);
   // As páginas de QA das mensagens (passo d): o Desfazer e o erro de carga, só na cópia local.
   {
   const previa = join(dest, "src");

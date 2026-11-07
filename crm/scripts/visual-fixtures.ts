@@ -139,5 +139,5 @@ export const client = {
    : name==='leads_perdidos'
      ? {data:[],error:null}
      : {data:null,error:{message:'Prévia visual: operação desativada.'}},
- auth:{getSession:async()=>({data:{session:null}}),getUser:async()=>({data:{user:null}})},
+ auth:{getSession:async()=>({data:{session:null}}),getUser:async()=>({data:{user:null}}),signInWithPassword:()=>typeof location!=='undefined'&&location.search.includes('qa=espera')?new Promise<never>(()=>{}):Promise.resolve({data:{session:null,user:null},error:{message:'Invalid login credentials'}}),updateUser:async()=>({data:{user:null},error:{message:'Prévia visual: gravação desativada.'}})},
 };

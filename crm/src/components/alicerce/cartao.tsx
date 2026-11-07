@@ -6,6 +6,7 @@
  */
 export function Cartao({
   id,
+  secao,
   titulo,
   descricao,
   acao,
@@ -14,6 +15,8 @@ export function Cartao({
   children,
 }: {
   id: string;
+  /** O `id` da `<section>`, para o índice de `Ajustes` (`href="#…"`); o `id` acima fica no título. */
+  secao?: string;
   titulo?: string;
   descricao?: React.ReactNode;
   acao?: React.ReactNode;
@@ -23,7 +26,7 @@ export function Cartao({
   children: React.ReactNode;
 }) {
   return (
-    <section className="mb-cartao" aria-labelledby={titulo ? id : undefined}>
+    <section className="mb-cartao" id={secao} aria-labelledby={titulo ? id : undefined}>
       {titulo && (
         <header className="mb-cartao__cabecalho">
           <div>

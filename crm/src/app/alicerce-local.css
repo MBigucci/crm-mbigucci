@@ -322,3 +322,16 @@ svg.mb-icone {
 .ficha__coluna .mb-pares .mb-selo {
   white-space: normal;
 }
+
+/* 4. Minha conta (passo h, 07/11/2026).
+   a) A base do Tailwind zera o list-style de ol e ul; o preview de MinhaConta mostra os passos de instalar
+      numerados (ol.mb-passos-instalar), então a numeração volta só nessa lista.
+   b) O corpo do cartão Avisos junta a nota do iPhone, o estado e as linhas de ajuste; o Alicerce não tem
+      espaço entre blocos do corpo de um cartão, então a distância é a do formulário (--esp-4). */
+.mb-passos-instalar {
+  list-style: decimal;
+}
+.avisos-corpo {
+  display: grid;
+  gap: var(--esp-4);
+}

@@ -43,6 +43,7 @@ const soMensagens = argumentos.includes("--mensagens");
 const soLeads = argumentos.includes("--leads");
 const soFicha = argumentos.includes("--ficha");
 const soNovo = argumentos.includes("--novo");
+const soConta = argumentos.includes("--conta");
 
 const saida = argumentos.find((a) => !a.startsWith("--")) ?? "local/alicerce";
 const base = "http://127.0.0.1:4173/vendas";
@@ -91,7 +92,7 @@ async function print(nome) {
 const resultado = {};
 const confere = (nome, ok, detalhe) => { resultado[nome] = { ok: !!ok, detalhe }; console.log(`${ok ? "OK   " : "FALHA"} ${nome}${detalhe ? "  " + JSON.stringify(detalhe) : ""}`); };
 
-if (!soMoldura && !soLista && !soMensagens && !soLeads && !soFicha && !soNovo) {
+if (!soMoldura && !soLista && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta) {
 // 1. Migração da escolha antiga (três casos de tema e a barra).
 await tela(1280, 800);
 await esquemaAparelho("light");
@@ -192,7 +193,7 @@ for (const [nome, caminho] of TELAS) {
       await comArmazenamento({ mb_tema: tema }, caminho);
       const m = await avaliar(`(() => {
         const vis = (e) => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden';
-        const pequenos = ${w < 768} ? [...document.querySelectorAll('.mb-aparencia button, .mb-cartao button')].filter(vis).filter(e => e.getBoundingClientRect().height < 44).map(e => e.textContent.trim()) : [];
+        const pequenos = ${w < 768} ? [...document.querySelectorAll('.mb-aparencia button, .mb-cartao button')].filter(vis).filter(e => (e.classList.contains('mb-campo__mostrar') ? e.closest('.mb-campo__grupo') : e).getBoundingClientRect().height < 44).map(e => e.textContent.trim()) : [];
         return { rolagemLateral: document.documentElement.scrollWidth > document.documentElement.clientWidth, theme: document.documentElement.dataset.theme, pequenos };
       })()`);
       await print(`${nome}-${w}-${tema}`);
@@ -289,7 +290,7 @@ function seletoresDeModulos() {
   return { posicaoFixa, porCima, faltam, ariaControlsBate: !!botao && !!caixa && botao.getAttribute("aria-controls") === caixa.id, aberto: !!caixa && !caixa.hidden && caixa.getClientRects().length > 0, itens: [...document.querySelectorAll(".mb-popup--lado .mb-popup__item")].map((e) => e.textContent.trim() + (e.getAttribute("aria-current") === "true" ? " (atual)" : "")), focoNoPrimeiro: document.activeElement === q(".mb-popup--lado .mb-popup__item") };
 }
 
-const anelDeFoco = () => avaliar(`(() => { const e = document.activeElement; if (!e || e === document.body) return null; const comAnel = (x) => { const c = getComputedStyle(x); return (c.outlineStyle !== 'none' && parseFloat(c.outlineWidth) >= 2) || (c.boxShadow && c.boxShadow !== 'none'); }; const pai = e.closest('.mb-item, .mb-lista__item, tr'); const anel = comAnel(e) || (!!pai && comAnel(pai)); return { ok: !!anel, quem: (e.getAttribute('aria-label') || e.textContent || e.className).trim().replace(/\\s+/g, ' ').slice(0, 30) }; })()`);
+const anelDeFoco = () => avaliar(`(() => { const e = document.activeElement; if (!e || e === document.body) return null; const comAnel = (x) => { const c = getComputedStyle(x); return (c.outlineStyle !== 'none' && parseFloat(c.outlineWidth) >= 2) || (c.boxShadow && c.boxShadow !== 'none'); }; const nome = (e.getAttribute('aria-label') || e.textContent || e.className).trim().replace(/\\s+/g, ' ').slice(0, 30); const g = e.closest('.mb-campo__grupo'); if (g) { /* entrada dentro de um grupo (senha com Mostrar): o anel está no grupo (focus-within); compara o grupo com e sem foco, sem transição */ const antes = g.style.transition; g.style.transition = 'none'; const com = getComputedStyle(g).boxShadow + getComputedStyle(g).borderColor; e.blur(); const sem = getComputedStyle(g).boxShadow + getComputedStyle(g).borderColor; e.focus(); g.style.transition = antes; return { ok: com !== sem, quem: nome }; } const pai = e.closest('.mb-item, .mb-lista__item, tr'); const anel = comAnel(e) || (!!pai && comAnel(pai)); return { ok: !!anel, quem: (e.getAttribute('aria-label') || e.textContent || e.className).trim().replace(/\\s+/g, ' ').slice(0, 30) }; })()`);
 async function focoVisivel(passos) {
   await avaliar("document.activeElement && document.activeElement.blur && document.activeElement.blur(); window.scrollTo(0, 0); true");
   const sem = [];
@@ -360,7 +361,7 @@ async function printDe(nome, seletor) {
   return true;
 }
 
-if (!soMoldura && !soMensagens && !soLeads && !soFicha && !soNovo) {
+if (!soMoldura && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta) {
   for (const [w, h] of [[375, 812], [1280, 800]]) {
     for (const tema of ["papel", "grafite"]) {
       await abrirListaDoDia(w, h, tema);
@@ -1240,6 +1241,239 @@ if (soNovo) {
 ${Object.keys(resultado).length} conferências, ${falhasNovo} falhas. Prints em ${saida}`);
   ws.close();
   process.exit(falhasNovo ? 1 : 0);
+}
+
+// 9d. Entrar e Minha conta (passo h). Roda com --conta, depois do visual-preview.mjs e do build da prévia:
+//   node scripts/conferir-alicerce.mjs local/alicerce/passo-h --conta
+//   Asserções: HTML dos previews Entrar e MinhaConta, sem DS antigo nem extras (Esqueci a senha, Continuar conectado), Mostrar/Ocultar,
+//   erros de login, Entrar esperando (aria-busy, ?qa=espera na prévia), o índice (topo, links e fim), as cinco seções, WhatsApp, Trocar senha,
+//   Avisos (?qa=avisos-ligados e ?qa=avisos-desligados, com o push simulado na prévia), a nota do iPhone, alvos de 44px, campos de 16px e foco visível.
+if (soConta) {
+  const visivel = "(e) => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden'";
+  const lateral = () => avaliar("document.documentElement.scrollWidth > document.documentElement.clientWidth");
+  const preencher = (sel, v) => avaliar(`(() => { const e = document.querySelector(${JSON.stringify(sel)}); const set = Object.getOwnPropertyDescriptor(e.constructor.prototype, "value").set; set.call(e, ${JSON.stringify(v)}); e.dispatchEvent(new Event("input", { bubbles: true })); return true; })()`);
+  const tocar = (sel, texto) => avaliar(`(() => { const ok = ${visivel}; const b = [...document.querySelectorAll(${JSON.stringify(sel)})].filter(ok).find((e) => !${JSON.stringify(texto ?? null)} || e.textContent.trim().replace(/\\s+/g, ' ') === ${JSON.stringify(texto ?? "")}); if (!b) return false; b.click(); return true; })()`);
+  const pagina = (expr) => avaliar(`(() => { const q = (s) => document.querySelector(s); const qs = (s) => [...document.querySelectorAll(s)]; const t = (e) => (e?.textContent ?? '').trim().replace(/\\s+/g, ' '); return (${expr}); })()`);
+  const abrirConta = async (w, h, tema, caminho) => {
+    erros.length = 0;
+    await tela(w, h);
+    await comArmazenamento({ mb_tema: tema }, caminho);
+    await espera(900);
+  };
+  const registrar = async (nome) => {
+    await espera(500);
+    // Viewport da altura da página: o menu e a barra do celular são sticky e, numa captura além da janela, apareceriam no meio.
+    const alturaTotal = await avaliar("Math.max(document.documentElement.scrollHeight, document.body.scrollHeight)");
+    const larguraAtual = await avaliar("document.documentElement.clientWidth");
+    await tela(larguraAtual, Math.max(alturaTotal, 640));
+    await espera(300);
+    const lat = await lateral();
+    await print(nome);
+    await tela(larguraAtual, 800);
+    confere(`print ${nome}: sem rolagem lateral e sem erro no console`, !lat && erros.length === 0, { lat, erros: [...erros] });
+  };
+  // Medidas da página (rodam dentro dela): rolagem, h1, DS antigo, alvos de 44px, campos de 16px.
+  function medirNaPagina(largura) {
+    const vis = (e) => !!e && e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden";
+    const qs = (s) => [...document.querySelectorAll(s)];
+    // O Mostrar preenche o campo por dentro da borda (o grupo tem 44px e a borda de 1px come 2px): o alvo é o campo inteiro.
+    const altura = (e) => (e.classList.contains("mb-campo__mostrar") ? e.closest(".mb-campo__grupo") : e).getBoundingClientRect().height;
+    const rotulo = (e) => (e.getAttribute("aria-label") || e.textContent || e.id || "").trim().replace(/\s+/g, " ").slice(0, 40);
+    const interativos = qs("main a[href], main button, main select, main input:not([type=hidden]), main textarea, .mb-entrar a[href], .mb-entrar button, .mb-entrar input").filter(vis).filter((e) => !e.disabled);
+    return {
+      rolagemLateral: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      h1Visivel: qs("h1").filter((e) => vis(e) && !e.classList.contains("mb-visualmente-oculto")).length,
+      h1Oculto: qs("h1.mb-visualmente-oculto").length,
+      antigo: qs(".card, .bar-brand, .btn, .input, .field-label, .aviso-erro, .aviso-ok, .titulo-card, .titulo-pagina, .eyebrow, .cabecalho-vidro, .checkbox").filter(vis).map((e) => e.className).slice(0, 5),
+      ponte: qs(".ds-antigo").length,
+      pequenos: largura < 768 ? interativos.filter((e) => altura(e) < 43.5).map((e) => rotulo(e) + " " + Math.round(altura(e))) : [],
+      fontePequena: largura < 768 ? qs("input:not([type=hidden]):not([type=checkbox]), select, textarea").filter(vis).filter((e) => parseFloat(getComputedStyle(e).fontSize) < 16).map((e) => e.id) : [],
+      semBarraLateral: qs(".mb-cartao, .mb-entrar__cartao").every((e) => parseFloat(getComputedStyle(e).borderLeftWidth) <= 1.01),
+    };
+  }
+  const medir = (w) => avaliar(`(${medirNaPagina.toString()})(${w})`);
+
+  for (const [w, h] of [[375, 812], [1280, 800]]) {
+    for (const tema of ["papel", "grafite"]) {
+      const id = `${w}-${tema}`;
+      // ---- Entrar ----
+      await abrirConta(w, h, tema, "/entrar/");
+      const m = await medir(w);
+      const semAnel = await focoVisivel(5);
+      const e = await pagina(`({
+        caixa: !!q('.mb-entrar > .mb-entrar__caixa > .mb-entrar__marca .mb-marca[role=img][aria-label="Base360 · Vendas"]'),
+        cartao: !!q('.mb-entrar__caixa > form.mb-entrar__cartao > .mb-entrar__cabeca > h1.mb-entrar__titulo + p.mb-entrar__texto'),
+        titulo: t(q('h1.mb-entrar__titulo')),
+        campos: qs('.mb-entrar__form > label.mb-campo > .mb-campo__rotulo').map(t),
+        email: !!q('.mb-entrar__form > label.mb-campo > input#email.mb-campo__entrada[type=email][autocomplete=username][inputmode=email]'),
+        senha: !!q('.mb-entrar__form > label.mb-campo > .mb-campo__grupo[data-mb-senha] > input#senha.mb-campo__entrada[type=password][autocomplete=current-password] + button.mb-campo__mostrar[type=button][aria-pressed=false]'),
+        mostrar: t(q('.mb-campo__mostrar')),
+        botao: !!q('.mb-entrar__form > button.mb-botao.mb-botao--primario.mb-botao--g.mb-botao--bloco[type=submit]'),
+        rodape: !!q('.mb-entrar__caixa > .mb-entrar__rodape > .mb-logo-mbigucci > img[alt=MBigucci]'),
+        fraseRodape: t(q('.mb-entrar__rodape > span:not(.mb-logo-mbigucci)')),
+        semMenu: !q('.mb-menu, .mb-topo, .mb-celular-topo'),
+        semExtras: !/Esqueci minha senha|Continuar conectado/.test(document.body.innerText),
+        conexao: !!q('.mb-conexao'),
+      })`);
+      confere(`entrar ${id}: HTML do preview, sem DS antigo, sem extras, alvos de 44px, campos de 16px, foco visível e sem erro no console`,
+        e.caixa && e.cartao && e.titulo === "Entrar" && e.email && e.senha && e.mostrar === "Mostrar" && e.botao && e.rodape && /gerente geral/.test(e.fraseRodape) && e.semMenu && e.semExtras && e.conexao
+          && !m.rolagemLateral && m.h1Visivel === 1 && m.antigo.length === 0 && m.ponte === 0 && m.pequenos.length === 0 && m.fontePequena.length === 0 && m.semBarraLateral && semAnel.length === 0 && erros.length === 0,
+        { e, m, semAnel, erros: [...erros] });
+
+      // Mostrar / Ocultar: alterna o tipo, o texto e o aria-pressed e devolve o foco à entrada.
+      await preencher("#senha", "segredo-ficticio");
+      await tocar(".mb-campo__mostrar");
+      const mostrando = await pagina(`({ tipo: q('#senha').type, texto: t(q('.mb-campo__mostrar')), pressed: q('.mb-campo__mostrar').getAttribute('aria-pressed'), foco: document.activeElement === q('#senha') })`);
+      await tocar(".mb-campo__mostrar");
+      const oculto = await pagina(`({ tipo: q('#senha').type, texto: t(q('.mb-campo__mostrar')), pressed: q('.mb-campo__mostrar').getAttribute('aria-pressed') })`);
+      confere(`entrar ${id}: Mostrar e Ocultar a senha`, mostrando.tipo === "text" && mostrando.texto === "Ocultar" && mostrando.pressed === "true" && mostrando.foco && oculto.tipo === "password" && oculto.texto === "Mostrar" && oculto.pressed === "false", { mostrando, oculto });
+
+      // Validação e erro de login (mesmas mensagens e condições de hoje).
+      await abrirConta(w, h, tema, "/entrar/");
+      await tocar("form button[type=submit]");
+      const vazio = await pagina(`({ texto: t(q('.mb-entrar__cartao .mb-aviso--erro .mb-aviso__titulo')), role: q('.mb-entrar__cartao .mb-aviso--erro')?.getAttribute('role') })`);
+      await preencher("#email", "marina@example.invalid");
+      await preencher("#senha", "senha-errada");
+      await tocar("form button[type=submit]");
+      await espera(600);
+      const errado = await pagina(`({ texto: t(q('.mb-entrar__cartao .mb-aviso--erro .mb-aviso__titulo')), role: q('.mb-aviso--erro')?.getAttribute('role'), antesDosCampos: !!q('.mb-aviso--erro + .mb-entrar__form') })`);
+      confere(`entrar ${id}: erro de e-mail inválido e de login (Aviso --erro acima dos campos, sem dizer qual errou)`,
+        vazio.texto === "Informe um e-mail válido." && vazio.role === "alert" && errado.texto === "E-mail ou senha não conferem." && errado.role === "alert" && errado.antesDosCampos && erros.length === 0, { vazio, errado, erros: [...erros] });
+      await registrar(`entrar-${id}-erro`);
+
+      // Esperando a resposta: botão com aria-busy="true" e "Entrando…", campos desativados, sem tela de carregando por cima.
+      await abrirConta(w, h, tema, "/entrar/?qa=espera");
+      await preencher("#email", "marina@example.invalid");
+      await preencher("#senha", "senha-errada");
+      await tocar("form button[type=submit]");
+      await espera(500);
+      const espera1 = await pagina(`({ busy: q('form button[type=submit]').getAttribute('aria-busy'), texto: t(q('form button[type=submit]')), desativado: q('form button[type=submit]').disabled, campos: qs('#email, #senha, .mb-campo__mostrar').map((e) => e.disabled), carregando: !!q('[aria-busy=true]:not(button)') })`);
+      confere(`entrar ${id}: esperando a resposta (aria-busy, Entrando…, campos desativados)`,
+        espera1.busy === "true" && espera1.texto === "Entrando…" && espera1.desativado && espera1.campos.every(Boolean) && !espera1.carregando && erros.length === 0, { espera1, erros: [...erros] });
+      await registrar(`entrar-${id}-espera`);
+
+      // ---- Minha conta ----
+      for (const qa of ["avisos-desligados", "avisos-ligados"]) {
+        await abrirConta(w, h, tema, `/conta/?qa=${qa}`);
+        const mc = await medir(w);
+        const anel = await focoVisivel(w < 768 ? 10 : 16);
+        const c = await pagina(`({
+          secoes: qs('.mb-ajustes__secoes section.mb-cartao').map((s) => s.id),
+          labelledby: qs('.mb-ajustes__secoes section.mb-cartao').every((s) => q('#' + s.getAttribute('aria-labelledby'))),
+          titulos: qs('.mb-ajustes__secoes .mb-cartao__titulo').map(t),
+          indice: qs('ul.mb-ajustes__indice[aria-label=Seções] > li > a').map((a) => a.getAttribute('href')),
+          subtitulo: t(q('.mb-cabecalho--compacto .mb-cabecalho__subtitulo')),
+          semBotaoSair: !qs('main button').some((b) => /^Sair/.test(t(b))),
+          acaoPrimaria: qs('main .mb-botao--primario').map(t),
+          whatsapp: !!q('section#whatsapp > .mb-cartao__corpo > label.mb-campo > input#meu-whatsapp.mb-campo__entrada[type=tel][autocomplete=tel]') && !!q('section#whatsapp > .mb-cartao__rodape > button.mb-botao.mb-botao--primario[type=submit]'),
+          whatsappValor: q('#meu-whatsapp').value,
+          aparencia: qs('#aparencia .mb-aparencia__linha').length === 4,
+          avisos: qs('#avisos button.mb-interruptor[role=switch][aria-checked][aria-label] > .mb-interruptor__estado + .mb-interruptor__trilho[aria-hidden=true]').length,
+          ajustes: qs('#avisos .mb-ajuste > .mb-ajuste__texto > .mb-ajuste__rotulo + .mb-ajuste__ajuda').length,
+          rodapeAvisos: qs('#avisos .mb-cartao__rodape button').map(t),
+          estado: t(q('#avisos .mb-salvo')),
+          notaIphone: !!qs('#avisos .mb-ajuste__ajuda').find((e) => /^iPhone:/.test(t(e))),
+          passos: qs('#instalar ol.mb-passos-instalar').map((o) => o.children.length),
+          numerados: qs('#instalar ol.mb-passos-instalar').every((o) => getComputedStyle(o).listStyleType === 'decimal'),
+          requisitos: qs('#senha ul.mb-requisitos > li[data-regra]').map((li) => li.dataset.regra),
+          senhaCampos: qs('#senha .mb-campo__grupo[data-mb-senha] > input[type=password][autocomplete=new-password] + button.mb-campo__mostrar[aria-pressed=false]').length,
+          instalarTextos: t(q('#instalar')),
+        })`);
+        const ligadoOk = qa === "avisos-ligados";
+        confere(`conta ${id} ${qa}: HTML do preview, só as cinco seções, sem DS antigo, alvos de 44px, campos de 16px, foco visível e sem erro no console`,
+          c.secoes.join() === "whatsapp,aparencia,avisos,senha,instalar" && c.labelledby && c.titulos.join("|") === "Seu WhatsApp|Aparência|Avisos neste aparelho|Trocar senha|Instalar no celular"
+            && c.indice.join() === "#whatsapp,#aparencia,#avisos,#senha,#instalar" && /Marina Exemplo · Corretor · /.test(c.subtitulo) && c.semBotaoSair && c.acaoPrimaria.length === 1 && c.acaoPrimaria[0] === "Salvar WhatsApp"
+            && c.whatsapp && c.whatsappValor === "(11) 99999-0000" && c.aparencia && c.avisos > 0 && c.ajustes === c.avisos
+            && (ligadoOk ? c.rodapeAvisos.join("|") === "Desligar neste aparelho|Enviar um aviso de teste" && /^✓ Ligados/.test(c.estado) : c.rodapeAvisos.join("|") === "Ligar avisos neste aparelho" && /^– Desligados/.test(c.estado))
+            && !c.notaIphone && c.passos.join() === "3,3" && c.numerados && c.requisitos.join() === "tamanho,igual" && c.senhaCampos === 2
+            && /Android/.test(c.instalarTextos) && /iPhone/.test(c.instalarTextos) && !/versão/.test(c.instalarTextos)
+            && !mc.rolagemLateral && mc.h1Visivel === 0 && mc.h1Oculto === 1 && mc.antigo.length === 0 && mc.ponte === 0 && mc.pequenos.length === 0 && mc.fontePequena.length === 0 && mc.semBarraLateral && anel.length === 0 && erros.length === 0,
+          { c, mc, anel, erros: [...erros] });
+        if (qa === "avisos-ligados") await registrar(`conta-${id}`);
+      }
+
+      // Índice: marca a primeira com a página no topo, cada seção ao seguir o link e a última no fim da rolagem.
+      if (w >= 1024) {
+        await abrirConta(w, h, tema, "/conta/?qa=avisos-ligados");
+        const marcada = () => pagina("qs('.mb-ajustes__indice a[aria-current=true]').map((a) => a.getAttribute('href')).join()");
+        const noTopo = await marcada();
+        const porLink = {};
+        for (const sid of ["aparencia", "avisos", "senha", "instalar", "whatsapp"]) {
+          await tocar(`.mb-ajustes__indice a[href="#${sid}"]`);
+          await espera(500);
+          porLink[sid] = await marcada();
+        }
+        await avaliar("window.scrollTo(0, 0); true");
+        await espera(300);
+        const topo2 = await marcada();
+        await avaliar("window.scrollTo(0, document.documentElement.scrollHeight); true");
+        await espera(400);
+        const fim = await marcada();
+        confere(`conta ${id}: o índice marca Seu WhatsApp no topo, cada seção ao seguir o link e a última no fim`,
+          noTopo === "#whatsapp" && topo2 === "#whatsapp" && fim === "#instalar" && Object.entries(porLink).every(([k, v]) => v === "#" + k), { noTopo, topo2, fim, porLink });
+      }
+
+      // Comportamento da página (sem gravar: a prévia desativa as gravações).
+      await abrirConta(w, h, tema, "/conta/?qa=avisos-desligados");
+      // WhatsApp: número inválido mostra o erro no campo; digitar limpa.
+      await preencher("#meu-whatsapp", "123");
+      await tocar("section#whatsapp button[type=submit]");
+      const zap = await pagina(`({ erro: t(q('#meu-whatsapp-erro')), invalido: q('#meu-whatsapp').getAttribute('aria-invalid'), desc: q('#meu-whatsapp').getAttribute('aria-describedby'), campoErro: !!q('#whatsapp label.mb-campo--erro') })`);
+      await preencher("#meu-whatsapp", "(11) 98765-4321");
+      const zapLimpou = await pagina("!q('#meu-whatsapp-erro') && !q('#meu-whatsapp').hasAttribute('aria-invalid')");
+      confere(`conta ${id}: WhatsApp inválido mostra o erro no campo e digitar limpa`, /Confira o WhatsApp/.test(zap.erro) && zap.invalido === "true" && zap.desc === "meu-whatsapp-erro" && zap.campoErro && zapLimpou, { zap, zapLimpou });
+      // Trocar senha: curta, diferente; os requisitos acendem.
+      await preencher("#nova", "curta");
+      await tocar("#senha button[type=submit]");
+      const curta = await pagina(`({ texto: t(q('#senha .mb-aviso--erro .mb-aviso__titulo')), ok: qs('#senha .mb-requisitos li[data-ok]').length })`);
+      await preencher("#nova", "senha-longa-1");
+      await preencher("#confirma", "outra-senha-1");
+      await tocar("#senha button[type=submit]");
+      const diferente = await pagina(`({ texto: t(q('#senha .mb-aviso--erro .mb-aviso__titulo')), ok: qs('#senha .mb-requisitos li[data-ok]').map((li) => li.dataset.regra).join() })`);
+      await preencher("#confirma", "senha-longa-1");
+      const iguais = await pagina(`qs('#senha .mb-requisitos li[data-ok]').map((li) => li.dataset.regra).join()`);
+      confere(`conta ${id}: Trocar senha com as mesmas validações e os dois requisitos acendendo`,
+        curta.texto === "A senha precisa ter ao menos 8 caracteres." && curta.ok === 0 && diferente.texto === "As duas senhas não são iguais." && diferente.ok === "tamanho" && iguais === "tamanho,igual", { curta, diferente, iguais });
+      await tocar("#senha .mb-campo__mostrar");
+      const mostrouNova = await pagina("q('#nova').type");
+      confere(`conta ${id}: Mostrar na senha nova`, mostrouNova === "text");
+      // Avisos desligados: o interruptor muda o tipo escolhido na hora; Ativar liga e mostra o aviso de sucesso.
+      const antes = await pagina("qs('#avisos button.mb-interruptor').map((b) => b.getAttribute('aria-checked')).join()");
+      await tocar("#avisos button.mb-interruptor");
+      const depois = await pagina("qs('#avisos button.mb-interruptor').map((b) => b.getAttribute('aria-checked')).join()");
+      await tocar("#avisos .mb-cartao__rodape button", "Ligar avisos neste aparelho");
+      await espera(400);
+      const ativou = await pagina(`({ estado: t(q('#avisos .mb-salvo')), aviso: t(q('#avisos .mb-aviso--sucesso .mb-aviso__titulo')), role: q('#avisos .mb-aviso--sucesso')?.getAttribute('role'), rodape: qs('#avisos .mb-cartao__rodape button').map(t).join('|') })`);
+      confere(`conta ${id}: Avisos (interruptor, Ligar avisos neste aparelho e o aviso de sucesso)`,
+        antes.split(",")[0] !== depois.split(",")[0] && /^✓ Ligados/.test(ativou.estado) && /Enviar um aviso de teste/.test(ativou.aviso) && ativou.role === "status" && ativou.rodape === "Desligar neste aparelho|Enviar um aviso de teste", { antes, depois, ativou });
+      await tocar("#avisos .mb-cartao__rodape button", "Enviar um aviso de teste");
+      await espera(300);
+      const teste = await pagina("t(q('#avisos .mb-aviso--sucesso .mb-aviso__titulo'))");
+      confere(`conta ${id}: Enviar um aviso de teste`, /Teste enviado/.test(teste), { teste });
+      // Aparência continua trocando na hora.
+      await tocar("#aparencia .mb-segmentado[data-mb-preferencia=movimento] button", "Reduzido");
+      const mov = await avaliar("document.documentElement.getAttribute('data-movimento')");
+      await tocar("#aparencia [data-mb-padrao]");
+      confere(`conta ${id}: Aparência troca na hora e volta ao padrão`, mov === "reduzido", { mov });
+    }
+  }
+
+  // A nota do iPhone só aparece no iPhone e fica separada do estado e da primeira linha.
+  await cdp("Emulation.setUserAgentOverride", { userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Version/17.0 Mobile/15E148 Safari/604.1" });
+  await abrirConta(375, 812, "papel", "/conta/?qa=avisos-ligados");
+  const iph = await pagina(`(() => { const nota = qs('#avisos .mb-ajuste__ajuda').find((e) => /^iPhone:/.test(t(e))); const estado = q('#avisos .mb-salvo'); const primeira = q('#avisos .mb-ajuste'); const r = (e) => e.getBoundingClientRect(); return nota && estado && primeira ? { nota: true, folga1: Math.round(r(estado).top - r(nota).bottom), folga2: Math.round(r(primeira).top - r(estado).bottom) } : { nota: !!nota }; })()`);
+  await cdp("Emulation.setUserAgentOverride", { userAgent: "" });
+  await abrirConta(375, 812, "papel", "/conta/?qa=avisos-ligados");
+  const semIph = await pagina("!qs('#avisos .mb-ajuste__ajuda').find((e) => /^iPhone:/.test(t(e)))");
+  await abrirConta(1280, 800, "papel", "/conta/?qa=avisos-ligados");
+  const folgas = await pagina(`(() => { const estado = q('#avisos .mb-salvo'); const primeira = q('#avisos .mb-ajuste'); return { folga: Math.round(primeira.getBoundingClientRect().top - estado.getBoundingClientRect().bottom) }; })()`);
+  confere("conta: a nota do iPhone só no iPhone, com folga de 16px até o estado e do estado até a primeira linha", iph.nota && iph.folga1 >= 15 && iph.folga2 >= 15 && semIph && folgas.folga >= 15, { iph, semIph, folgas });
+
+  writeFileSync(join(saida, "resultado.json"), JSON.stringify(resultado, null, 2));
+  const falhasConta = Object.values(resultado).filter((r) => !r.ok).length;
+  console.log(`\n${Object.keys(resultado).length} conferências, ${falhasConta} falhas. Prints em ${saida}`);
+  ws.close();
+  process.exit(falhasConta ? 1 : 0);
 }
 
 if (soMensagens) {

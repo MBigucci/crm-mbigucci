@@ -9,10 +9,26 @@ import { nomePerfil } from "@/lib/tipos";
 import { formatarWhatsapp, normalizarWhatsapp } from "@/lib/leads";
 import { AvisosNesteAparelho } from "@/components/avisos-aparelho";
 import { Aparencia } from "@/components/alicerce/aparencia";
+import { Ajuste } from "@/components/alicerce/ajuste";
+import { Ajustes } from "@/components/alicerce/ajustes";
+import { Aviso } from "@/components/alicerce/aviso";
+import { Campo } from "@/components/alicerce/campo";
+import { CampoSenha } from "@/components/alicerce/campo-senha";
+import { Cartao } from "@/components/alicerce/cartao";
+import { Requisitos } from "@/components/alicerce/requisitos";
+
+/** O índice de Minha conta (fora do componente: o observador do Ajustes depende dele). */
+const INDICE = [
+  { id: "whatsapp", rotulo: "Seu WhatsApp" },
+  { id: "aparencia", rotulo: "Aparência" },
+  { id: "avisos", rotulo: "Avisos neste aparelho" },
+  { id: "senha", rotulo: "Trocar senha" },
+  { id: "instalar", rotulo: "Instalar no celular" },
+];
 
 export default function ContaPage() {
   return (
-    <Casca titulo="Minha conta">
+    <Casca titulo="Minha conta" migrada>
       <Conta />
     </Casca>
   );
@@ -20,6 +36,28 @@ export default function ContaPage() {
 
 function Conta() {
   const perfil = usePerfil();
+  return (
+    <>
+      <h1 className="mb-visualmente-oculto">Minha conta</h1>
+      <header className="mb-cabecalho mb-cabecalho--compacto">
+        <div className="mb-cabecalho__texto">
+          <p className="mb-cabecalho__subtitulo">
+            {perfil.nome} · {nomePerfil(perfil.perfil)} · {perfil.email}
+          </p>
+        </div>
+      </header>
+      <Ajustes indice={INDICE}>
+        <MeuWhatsapp />
+        <Aparencia />
+        <AvisosNesteAparelho />
+        <TrocarSenha />
+        <InstalarNoCelular />
+      </Ajustes>
+    </>
+  );
+}
+
+function TrocarSenha() {
   const [senha, setSenha] = useState("");
   const [confirma, setConfirma] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; texto: string } | null>(null);
@@ -39,61 +77,47 @@ function Conta() {
   }
 
   return (
-    <div className="grid max-w-[520px] gap-4">
-      <div className="card">
-        <span className="eyebrow">{nomePerfil(perfil.perfil)}</span>
-        <p className="titulo-card mt-1">{perfil.nome}</p>
-        <p className="mt-1 text-ink-soft">{perfil.email}</p>
-      </div>
-      <MeuWhatsapp />
-      <Aparencia />
-      <AvisosNesteAparelho />
-      <form className="card" onSubmit={trocar} noValidate>
-        <h2 className="titulo-card">Trocar senha</h2>
-        <label className="field-label mt-4" htmlFor="nova">
-          Nova senha
-        </label>
-        <input
-          id="nova"
-          className="input"
-          type="password"
-          autoComplete="new-password"
-          value={senha}
-          onChange={(e) => setSenha(e.target.value)}
-        />
-        <label className="field-label mt-4" htmlFor="confirma">
-          Repita a nova senha
-        </label>
-        <input
-          id="confirma"
-          className="input"
-          type="password"
-          autoComplete="new-password"
-          value={confirma}
-          onChange={(e) => setConfirma(e.target.value)}
-        />
-        {msg && (
-          <p role="status" className={`${msg.ok ? "aviso-ok" : "aviso-erro"} mt-3`}>
-            {msg.ok ? "✓" : "!"} {msg.texto}
-          </p>
-        )}
-        <button type="submit" className="btn btn-ghost focus-ring mt-4" disabled={enviando}>
-          {enviando ? "Salvando…" : "Trocar senha"}
-        </button>
-      </form>
-      <div className="card">
-        <h2 className="titulo-card">Instalar no celular</h2>
-        <p className="mt-2 text-ink-soft">O Base360 Vendas abre como um app, em tela cheia, a partir do ícone Base360 na tela inicial.</p>
-        <p className="mt-3">
-          <span className="font-semibold">Android:</span> abra o Base360 Vendas no Chrome, toque no menu de três pontos e escolha{" "}
-          <span className="font-semibold">Instalar app</span> ou <span className="font-semibold">Adicionar à tela inicial</span>.
-        </p>
-        <p className="mt-2">
-          <span className="font-semibold">iPhone:</span> abra o Base360 Vendas no Safari, toque em{" "}
-          <span className="font-semibold">Compartilhar &gt; Adicionar à Tela de Início</span>.
-        </p>
-      </div>
-    </div>
+    <form onSubmit={trocar} noValidate>
+      <Cartao
+        id="t-senha"
+        secao="senha"
+        titulo="Trocar senha"
+        rodape={
+          <button type="submit" className="mb-botao mb-botao--secundario" aria-busy={enviando || undefined} disabled={enviando}>
+            {enviando ? "Salvando…" : "Trocar senha"}
+          </button>
+        }
+      >
+        <div className="mb-entrar__form">
+          {msg && <Aviso tom={msg.ok ? "sucesso" : "erro"} titulo={msg.texto} />}
+          <CampoSenha rotulo="Nova senha" id="nova" autoComplete="new-password" valor={senha} onChange={setSenha} />
+          <Requisitos
+            regras={[
+              { regra: "tamanho", texto: "8 caracteres ou mais", ok: senha.length >= 8 },
+              { regra: "igual", texto: "As duas senhas iguais", ok: senha.length > 0 && senha === confirma },
+            ]}
+          />
+          <CampoSenha rotulo="Repita a nova senha" id="confirma" autoComplete="new-password" valor={confirma} onChange={setConfirma} />
+        </div>
+      </Cartao>
+    </form>
+  );
+}
+
+function InstalarNoCelular() {
+  return (
+    <Cartao
+      id="t-instalar"
+      secao="instalar"
+      titulo="Instalar no celular"
+      descricao="O Base360 Vendas abre como um app, em tela cheia, a partir do ícone Base360 na tela inicial."
+    >
+      <Ajuste
+        rotulo="Android"
+        passos={["Abra o Base360 Vendas no Chrome.", "Toque no menu de três pontos.", "Escolha Instalar app ou Adicionar à tela inicial."]}
+      />
+      <Ajuste rotulo="iPhone" passos={["Abra o Base360 Vendas no Safari.", "Toque em Compartilhar.", "Toque em Adicionar à Tela de Início."]} />
+    </Cartao>
   );
 }
 
@@ -125,35 +149,46 @@ function MeuWhatsapp() {
     setMsg({ ok: true, texto: n ? "WhatsApp salvo." : "WhatsApp apagado." });
   }
 
+  const erro = msg && !msg.ok ? msg.texto : null;
   return (
-    <form className="card bar-brand" onSubmit={salvar} noValidate>
-      <h2 className="titulo-card">Seu WhatsApp</h2>
-      <p className="mt-2 text-ink-soft">Seu gerente usa este número para avisar quando você recebe um lead.</p>
-      <label className="field-label mt-4" htmlFor="meu-whatsapp">
-        WhatsApp
-      </label>
-      <input
-        id="meu-whatsapp"
-        className="input num"
-        type="tel"
-        inputMode="tel"
-        autoComplete="tel"
-        placeholder="(11) 98765-4321"
-        disabled={numero === null}
-        value={numero ?? ""}
-        onChange={(e) => {
-          setNumero(e.target.value);
-          setMsg(null);
-        }}
-      />
-      {msg && (
-        <p role="status" className={`${msg.ok ? "aviso-ok" : "aviso-erro"} mt-3`}>
-          {msg.ok ? "✓" : "!"} {msg.texto}
-        </p>
-      )}
-      <button type="submit" className="btn btn-red focus-ring mt-4" disabled={enviando || numero === null}>
-        {enviando ? "Salvando…" : "Salvar WhatsApp"}
-      </button>
+    <form onSubmit={salvar} noValidate>
+      <Cartao
+        id="t-whatsapp"
+        secao="whatsapp"
+        titulo="Seu WhatsApp"
+        descricao="Seu gerente usa este número para avisar quando você recebe um lead."
+        rodape={
+          <>
+            {msg?.ok && (
+              <span className="mb-salvo mb-salvo--ok" role="status">
+                ✓ {msg.texto}
+              </span>
+            )}
+            <button type="submit" className="mb-botao mb-botao--primario" aria-busy={enviando || undefined} disabled={enviando || numero === null}>
+              {enviando ? "Salvando…" : "Salvar WhatsApp"}
+            </button>
+          </>
+        }
+      >
+        <Campo rotulo="WhatsApp" erro={erro} idErro="meu-whatsapp-erro">
+          <input
+            id="meu-whatsapp"
+            className="mb-campo__entrada"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            placeholder="(11) 98765-4321"
+            disabled={numero === null}
+            value={numero ?? ""}
+            aria-invalid={erro ? true : undefined}
+            aria-describedby={erro ? "meu-whatsapp-erro" : undefined}
+            onChange={(e) => {
+              setNumero(e.target.value);
+              setMsg(null);
+            }}
+          />
+        </Campo>
+      </Cartao>
     </form>
   );
 }
