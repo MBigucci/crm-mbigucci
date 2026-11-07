@@ -42,7 +42,7 @@
 6. **Menu do gerente geral:** grupos Rotina, Gestão e Programa, e um item só, **Configurações**, que abre uma página com índice ao lado (`.mb-ajustes`) para usuários, equipes, faixas, distribuição e catálogos. Nenhuma rota muda.
 7. **Card de empreendimento sem estoque:** fase, nome, local e total, sem barra (fase 2).
 8. **Sino e busca do topo ficam fora:** escondidos, sem campo morto na tela.
-9. **Fase 1 = fundação, moldura, mensagens e as telas do corretor:** Lista do dia, Leads, Ficha do lead, Novo lead e Agenda.
+9. **Fase 1 = fundação, moldura, mensagens e as telas do corretor:** Lista do dia, Leads, Ficha do lead, Novo lead e Agenda. Depois do passo 0, o Felipe acrescentou **Entrar** e **Minha conta** inteira.
    - Com elas prontas e conferidas, o Vendas é publicado.
    - As telas de gestão e administração ficam para a fase 2.
 10. **Quem faz:** o passo a é da sessão master; os passos b em diante vão para frentes Sonnet, com o Opus como advisor.
@@ -68,7 +68,9 @@
      - um `LEIAME.md` com a versão do artifact e o sha256 de cada arquivo;
    - em `crm/public/alicerce/bundle.js`, porque ele é servido ao navegador;
    - o `tokens.css` é gerado com `node src/alicerce/ferramentas/tokens-css.mjs --fontes=./fonts/` e não se edita à mão. O `npm test` acusa quando ele difere do que o `tokens.json` gera;
-   - para atualizar o Alicerce, troque os arquivos pela versão nova, gere o `tokens.css` de novo, confira os hashes e anote a versão no `LEIAME.md`.
+   - para atualizar o Alicerce, troque os arquivos pela versão nova, gere o `tokens.css` de novo, confira os hashes e anote a versão no `LEIAME.md`;
+   - os arquivos são copiados com `cp` da pasta baixada, nunca reescritos;
+   - o `.gitattributes` marca `crm/src/alicerce/**` e `crm/public/alicerce/**` como `-text`, para o Git não trocar o fim de linha no Windows nem em outro computador (senão os hashes e o teste do `tokens.css` falham).
 2. **Ordem de carga:**
    - base do Tailwind (`@tailwind base`);
    - `tokens.css`;
@@ -81,7 +83,10 @@
    - logo depois, um script inline migra a escolha antiga uma vez e chama `MB.preferencias.restaurar()`;
    - saem o `scriptAparencia` e o `scriptBarra` atuais;
    - a meta `theme-color` acompanha o tema resolvido.
-4. **Ponte para as telas ainda não migradas:** o `data-tema` (claro ou escuro) acompanha o `data-theme` resolvido, para as variáveis antigas seguirem o tema. A ponte sai quando a última tela migrar, no fim da fase 2.
+4. **Ponte para as telas ainda não migradas:**
+   - o `data-tema` (claro ou escuro) acompanha o `data-theme` resolvido, para as variáveis antigas seguirem o tema. Essa parte sai quando a última tela migrar, no fim da fase 2;
+   - entre os passos a e b, o `data-barra` acompanha o `data-menu-recolhido`, para a lateral antiga continuar lembrando se estava recolhida. Essa parte sai no passo b.
+   - Confira no `out/index.html` exportado que a tag do `bundle.js` é um script comum, sem `async` nem `defer`, antes do script inline que chama `restaurar()`.
 5. **Classes em conflito:** o Alicerce define `.selo` e `.titulo-secao`, que o app também usa.
    - No passo a, as do app ganham outro nome, numa troca mecânica.
    - Nenhuma classe nova do app começa com `mb-`: esse prefixo é do Alicerce e das margens do Tailwind (`mb-4`).
@@ -130,7 +135,8 @@ A master revisa o diff, roda a suíte e faz um commit por passo. O passo seguint
 | e | frente | **Leads e Agenda:** `BarraDeFiltros` com os filtros de hoje e `CardLead` em `.mb-itens`; Agenda com `Compromisso` e `NavegadorDePeriodo` |
 | f | frente | **Ficha do lead:** a tela de referência `FichaDoLead` |
 | g | frente | **Novo lead:** `FormularioDenso`, `Campo`, `Seletor`, `BuscaComSugestoes` para o empreendimento, `Duplicado` com as regras de duplicado de hoje e `BarraDeAcoes --unica` no celular |
-| h | master | Conferência da fase 1 na tela real, com o Felipe, e publicação com o ok dele |
+| h | frente | **Entrar e Minha conta:** a tela de referência `Entrar` (o que ela tem hoje: e-mail, senha e a frase de quem procurar) e a página `MinhaConta` com `.mb-ajustes`, só com as seções que já existem (Seu WhatsApp, Aparência, Avisos neste aparelho, Trocar senha e Instalar no celular) |
+| i | master | Conferência da fase 1 na tela real, com o Felipe, e publicação com o ok dele |
 
 **Detalhe do passo c (Lista do dia):**
 - `ResumoDePendencias`;
@@ -160,6 +166,7 @@ Em todos os passos:
 | e | `app/leads/page.tsx`, `components/leads/filtros.tsx`, `app/agenda/page.tsx` e `components/visitas/visitas.tsx` |
 | f | `app/leads/ficha/page.tsx` e `components/leads/{perfil,mensagem,repasse,partes}.tsx` |
 | g | `app/leads/novo/page.tsx` e as partes dele |
+| h | `app/entrar/page.tsx`, `app/conta/page.tsx`, `components/avisos-aparelho.tsx` e `components/aparencia.tsx` |
 
 **Nunca:**
 - `crm/src/lib/*-dados.ts`, `crm/supabase/**`, `ref/`, `marketing/` ou `discovery/`;
@@ -186,7 +193,7 @@ Em todos os passos:
 - O menu recolhido já nasce recolhido, sem piscar.
 - O `.mb-icone` fica alinhado em botão e em link.
 
-**Fase 1 pronta:** a moldura e as cinco telas conferidas pelo Felipe na tela real.
+**Fase 1 pronta:** a moldura, as cinco telas do corretor, Entrar e Minha conta conferidas pelo Felipe na tela real.
 
 ## Fora da fase 1
 Viram lista no relatório e, quando for o caso, pedido ao Alicerce:
@@ -195,6 +202,7 @@ Viram lista no relatório e, quando for o caso, pedido ao Alicerce:
 - a busca do topo;
 - filtros e busca no endereço da página;
 - atalhos de teclado e `VersaoNova`;
+- seções de `MinhaConta` que o app não tem hoje (nome editável, atalhos, sair dos outros aparelhos, versão);
 - as telas de gestão e administração (fase 2).
 
 ## Limites
