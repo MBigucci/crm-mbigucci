@@ -1,0 +1,33 @@
+import clsx from "clsx";
+
+/**
+ * Seletor do Alicerce (project/components/Seletor), as pílulas de uma escolha: `.mb-opcoes` com botões
+ * `.mb-opcao[aria-pressed]`. `grade`: 3 ou 4 colunas, ou "linha" (cada pílula do tamanho do texto, quebrando
+ * linha). `pequeno` é o `--p` (filtros e atalhos). O estado é do React: quem usa guarda o valor.
+ * `idRotulo` é o id do texto que nomeia o grupo (aria-labelledby).
+ */
+export function Seletor<T extends string>({
+  idRotulo,
+  opcoes,
+  valor,
+  onChange,
+  grade,
+  pequeno = false,
+}: {
+  idRotulo: string;
+  opcoes: { valor: T; rotulo: React.ReactNode }[];
+  valor: T | null;
+  onChange: (valor: T) => void;
+  grade?: 3 | 4 | "linha";
+  pequeno?: boolean;
+}) {
+  return (
+    <div className={clsx("mb-opcoes", grade === "linha" ? "mb-opcoes--linha" : grade && `mb-opcoes--${grade}`)} role="group" aria-labelledby={idRotulo}>
+      {opcoes.map((o) => (
+        <button key={o.valor} className={clsx("mb-opcao", pequeno && "mb-opcao--p")} type="button" aria-pressed={valor === o.valor} onClick={() => onChange(o.valor)}>
+          {o.rotulo}
+        </button>
+      ))}
+    </div>
+  );
+}

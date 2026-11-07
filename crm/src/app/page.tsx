@@ -13,7 +13,13 @@ import { nomePerfil, type Team } from "@/lib/tipos";
 export default function InicioPage() {
   const { pode } = useSessao();
   const lista = ehListaDoDia(pode);
-  return <Casca titulo={lista ? "Lista do dia" : "Início"}>{lista ? <ListaDoDia /> : <Inicio />}</Casca>;
+  // `migrada` só quando a página mostra a Lista do dia (Alicerce, item 48 passo c). O Início dos outros perfis
+  // continua no DS antigo, dentro do .ds-antigo, até a fase 2.
+  return (
+    <Casca titulo={lista ? "Lista do dia" : "Início"} migrada={lista}>
+      {lista ? <ListaDoDia /> : <Inicio />}
+    </Casca>
+  );
 }
 
 function Inicio() {

@@ -44,6 +44,16 @@ Cada passo do item 48 acrescenta aqui uma linha: tela, passo, commit e o que fic
 | --- | --- | --- | --- |
 | Fundação (todas as telas) e a Aparência em Minha conta | a | `2e14858` e o ajuste da folha | 1. `svg.mb-icone` volta ao padrão do navegador; 2. a ponte `.ds-antigo` |
 | Moldura de todas as telas do `crm/` (menu lateral, topo, menu do celular, conta, Módulos) e o índice de Configurações | b | `6107d81` e o ajuste "passo b: Alicerce 1794027179-3a37" | 3. barras fixas das telas antigas começam depois do menu. A área de toque de 44px da faixa do celular e a camada do menu fixo foram ajustes locais e voltaram para o Alicerce na versão `1794027179-3a37` |
+| Lista do dia (a página `/` do corretor; `migrada`) | c | a definir pela master | 4. estrutura da tela (`.lista-do-dia*`, as medidas do preview ListaDoDia); 5. botão "Opções" da linha do stand com 44px no celular (sai no passo d) |
+
+**Como a Lista do dia ficou (passo c, 07/11/2026):**
+- **Peças** em `components/alicerce/`: `CardDeItem`, `Compromisso` (e `EdicaoNoCard`), `Chip`, `Selo`, `Prazo`, `ResumoDePendencias`, `PainelLateral`, `Meta`, `EstadoVazio`, `Toast` (provider e `useToast`), `Seletor`, `Campo`, `DataHora`, `Aviso`, `CarregandoLeads`, `BotaoWhatsapp` e `mapas.ts` (do dado ao tom: temperatura, etapa, estado da visita, nível do prazo). Os passos d, e e f completam `Aviso` e `Carregando`.
+- **Card do lead** (`CardLeadAlicerce`, em `leads/partes.tsx`): card inteiro abre a ficha; `Prazo` na primeira linha; `Chip` de temperatura no canto direito (só ele); etapa em `Selo` no rodapé; faixa Registrar · WhatsApp → (WhatsApp · Detalhar no grupo Detalhe o contato; sem telefone, sem WhatsApp). O WhatsApp é `<button>` que abre antes a mensagem pronta; o toque grava como antes.
+- **Visita** (`ListaVisitas alicerce`): `Compromisso` com o estado em `Selo` no rodapé. Agendada e confirmada: Remarcar · WhatsApp →; aguardando baixa: ✕ Não compareceu · ✓ Realizada; com baixa: Observação e Corrigir. Remarcar, Observação e Corrigir abrem no próprio card. Cliente confirmou e Cancelar visita ficam na ficha (decisão do Felipe, 07/11/2026). Agenda e Ficha seguem com o card antigo até os passos e e f.
+- **Registrar e Detalhar** abrem o `PainelLateral` (portal no body). `leads/registrar-interacao.tsx` tem o hook `useRegistrarInteracao` (gravação, rascunho e erros iguais), o cartão da ficha e o painel da lista. O que deu certo sai com o `Toast`.
+- **Aniversário:** `CardDeItem` com "Mandar parabéns no WhatsApp". **Metas:** `Meta` resumida (valor, barra, projeção); o detalhe fica em Painel e Metas. **Vazio:** `EstadoVazio`.
+- **Pendente:** a linha do stand (`LinhaDoStand`) sai da página no passo d, para a folha que o status do topo abre. O `ToastProvider` está na `ListaDoDia` até o passo d.
+- **Conferência:** `node scripts/conferir-alicerce.mjs local/alicerce/passo-c --lista` (inclui as pílulas de Próximo contato com 44px no celular).
 
 **Como a moldura ficou (passo b):**
 - **Peças** em `crm/src/components/alicerce/`, uma por arquivo, com o mesmo HTML, classes `.mb-*` e `aria-*` dos previews: `MenuLateral`, `BarraSuperior`, `MenuCelular`, `MenuDaConta`, `MarcaBase360`, `LogoMBigucci`, `Icone` e o índice `Ajustes` (`.mb-ajustes`). O estado (menu recolhido, folha, popups) é do React; o `MB.*.ligar` não toca o DOM do React.

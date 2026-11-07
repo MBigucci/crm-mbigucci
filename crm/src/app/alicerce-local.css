@@ -46,3 +46,45 @@ svg.mb-icone {
 /* A camada do menu fixo e o toque de 44px da faixa do celular foram ajustes locais no passo b e voltaram
    para o Alicerce na versão 1794027179-3a37 (07/11/2026). O ::after do .mb-status e dos links e botões da
    faixa do celular é a área de toque do Alicerce: não use para outra coisa. */
+
+/* 4. A estrutura da Lista do dia (passo c, 07/11/2026).
+   O preview ListaDoDia do Alicerce monta a tela com um <style> próprio (a pilha de seções com --esp-5, o grupo
+   com --esp-3, a linha do rodapé em 13px) e o bundle.css não tem classe para isso. São os mesmos tokens do
+   preview. O margin-top do grupo existe porque os links do resumo levam a #grupo-…: sem ele, o título ficaria
+   escondido atrás do topo fixo. A grade das metas é a do preview Meta (cartões de 300px, lado a lado). */
+.lista-do-dia {
+  display: grid;
+  gap: var(--esp-5);
+  padding-top: var(--esp-4);
+}
+.lista-do-dia__grupo {
+  display: grid;
+  gap: var(--esp-3);
+  scroll-margin-top: calc(var(--topo-altura) + var(--esp-4));
+}
+.lista-do-dia__grupo > h2 {
+  margin: 0;
+}
+.lista-do-dia__rodape {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--texto-suave);
+}
+.lista-do-dia__metas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  gap: var(--esp-4);
+  align-items: start;
+}
+
+/* 5. A linha do stand na Lista do dia (passo c, 07/11/2026; sai quando recebimento.tsx migrar).
+   LinhaDoStand ainda é do DS antigo e o botão "Opções" dela tem 22px de altura; no celular todo alvo tem 44px.
+   O botão ganha a altura do toque só aqui, sem mexer em recebimento.tsx (arquivo do passo b). */
+@media (max-width: 767px) {
+  .lista-do-dia .ds-antigo button {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--controle-toque);
+  }
+}

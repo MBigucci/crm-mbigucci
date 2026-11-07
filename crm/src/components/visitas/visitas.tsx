@@ -3,6 +3,7 @@
 import Link from "next/link";
 import clsx from "clsx";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { db, novoId } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
 import { mensagemErro } from "@/lib/erros";
@@ -26,7 +27,16 @@ import {
 } from "@/lib/visitas";
 import { agendarVisita, alterarVisita, corrigirVisita, type LeadDaVisita, type VisitaComLead } from "@/lib/visitas-dados";
 import { AvisoDesfazer, CampoProximoContato } from "@/components/leads/partes";
-import { BotaoMensagem } from "@/components/leads/mensagem";
+import { BotaoMensagem, DialogoMensagem } from "@/components/leads/mensagem";
+import { Aviso } from "@/components/alicerce/aviso";
+import { BotaoWhatsapp } from "@/components/alicerce/botao-whatsapp";
+import { Campo, CampoEmGrupo } from "@/components/alicerce/campo";
+import { Compromisso, EdicaoNoCard } from "@/components/alicerce/compromisso";
+import { DataHora } from "@/components/alicerce/data-hora";
+import { tomDaVisita } from "@/components/alicerce/mapas";
+import { Selo } from "@/components/alicerce/selo";
+import { Seletor } from "@/components/alicerce/seletor";
+import { useToast } from "@/components/alicerce/toast";
 
 /** O modelo de mensagem que a confirmação abre (tabela mensagens_modelo). */
 const MODELO_CONFIRMAR = "confirmar_visita";
@@ -49,6 +59,9 @@ export function ListaVisitas({
   nomeDe,
   comDia,
   onMudou,
+  alicerce = false,
+  destaquePrimeiro = false,
+  indiceInicial,
 }: {
   visitas: VisitaComLead[] | Visita[];
   agora: Date;
@@ -59,10 +72,16 @@ export function ListaVisitas({
   /** Mostra o dia além da hora (aguardando baixa, ficha). */
   comDia?: boolean;
   onMudou?: () => void;
+  /** Os cards como Compromisso do Alicerce (Lista do dia, item 48). As outras telas seguem no DS antigo até migrarem. */
+  alicerce?: boolean;
+  /** O primeiro card da lista leva o destaque (o primeiro da tela). */
+  destaquePrimeiro?: boolean;
+  /** Posição do primeiro card na cascata de entrada; sem ela, os cards não animam. */
+  indiceInicial?: number;
 }) {
   return (
-    <ul className="grid gap-3 md:grid-cols-2">
-      {visitas.map((v) => (
+    <ul className={alicerce ? "mb-itens mb-itens--duas" : "grid gap-3 md:grid-cols-2"}>
+      {visitas.map((v, i) => (
         <CardVisita
           key={v.id}
           visita={v}
@@ -72,10 +91,19 @@ export function ListaVisitas({
           corretor={nomeDe?.(v.corretor_id)}
           comDia={comDia}
           onMudou={onMudou}
+          alicerce={alicerce}
+          destaque={destaquePrimeiro && i === 0}
+          indice={indiceInicial === undefined ? undefined : indiceInicial + i}
         />
       ))}
     </ul>
   );
+}
+
+/** O quando do Compromisso: “Hoje, 15:00”, “Amanhã, 10:00” ou “Qua, 04/11, 23:00”. */
+function quandoDoCompromisso(iso: string, agora: Date): string {
+  const q = formatarQuando(iso, agora);
+  return /^(Hoje|Amanhã|Ontem)/.test(q) ? q : dataHoraVisita(iso);
 }
 
 type Painel = null | "remarcar" | "anotar" | "corrigir";
@@ -94,6 +122,9 @@ function CardVisita({
   corretor,
   comDia,
   onMudou,
+  alicerce = false,
+  destaque = false,
+  indice,
 }: {
   visita: Visita;
   lead: LeadDaVisita | null;
@@ -102,9 +133,15 @@ function CardVisita({
   corretor?: string;
   comDia?: boolean;
   onMudou?: () => void;
+  alicerce?: boolean;
+  destaque?: boolean;
+  indice?: number;
 }) {
   const eu = usePerfil();
   const { pode } = useSessao();
+  const toast = useToast();
+  // O diálogo da mensagem pronta (Confirmar no WhatsApp) do card no Alicerce.
+  const [mensagem, setMensagem] = useState(false);
   // A visita fica no card depois da ação (a lista do dia só a tira na próxima leitura).
   const [v, setV] = useState<Visita>(visita);
   useEffect(() => setV(visita), [visita]);
@@ -127,7 +164,12 @@ function CardVisita({
     const { data } = await db().from("visitas").select(COLUNAS_VISITA).eq("id", v.id).maybeSingle();
     if (data) setV(data as unknown as Visita);
     setPainel(null);
-    setOk(aviso ?? null);
+    // No Alicerce o que deu certo vira o Toast de sucesso; no DS antigo continua o aviso dentro do card.
+    if (alicerce) {
+      if (aviso) toast.mostrar(aviso, { tipo: "sucesso" });
+    } else {
+      setOk(aviso ?? null);
+    }
     onMudou?.();
     return true;
   }
@@ -141,6 +183,129 @@ function CardVisita({
     const anterior = v.status;
     if (await depois(await alterarVisita(v.id, { status: "cancelada" })))
       setDesfazer({ texto: `Visita cancelada: ${nome}`, status: anterior });
+  }
+
+  // A visita como Compromisso do Alicerce (Lista do dia). As ações são as da receita: Remarcar · WhatsApp →
+  // antes do horário, ✕ Não compareceu · ✓ Realizada depois dele e, com baixa, Observação e Corrigir.
+  // Cliente confirmou e Cancelar visita ficam na visita aberta (a ficha do lead, onde o card antigo as tem).
+  if (alicerce) {
+    const idDe = (nome: string) => `visita-${v.id}-${nome}`;
+    const fechar = (voltarPara: string) => {
+      setPainel(null);
+      requestAnimationFrame(() => document.getElementById(idDe(voltarPara))?.focus());
+    };
+    const secundario = (nome: string, rotulo: string, extra: { rotuloAcessivel?: string; painel?: Exclude<Painel, null>; onClick?: () => void }) => (
+      <button
+        id={idDe(nome)}
+        className="mb-botao mb-botao--secundario"
+        type="button"
+        aria-label={extra.rotuloAcessivel}
+        aria-expanded={extra.painel ? painel === extra.painel : undefined}
+        onClick={extra.onClick ?? (() => setPainel(painel === extra.painel ? null : (extra.painel ?? null)))}
+      >
+        {rotulo}
+      </button>
+    );
+    const confirmar =
+      lead?.whatsapp && estado !== "aguardando_baixa" ? (
+        <BotaoWhatsapp onClick={() => setMensagem(true)} rotuloAcessivel={`Confirmar visita pelo WhatsApp: ${quem}`} />
+      ) : null;
+
+    let faixa: React.ReactNode = null;
+    if (estado === "aguardando_baixa") {
+      if (daBaixa)
+        faixa = (
+          <>
+            {secundario("nao-compareceu", "✕ Não compareceu", { rotuloAcessivel: `Não compareceu: ${quem}`, onClick: () => baixa("nao_compareceu") })}
+            {secundario("realizada", "✓ Realizada", { rotuloAcessivel: `Visita realizada: ${quem}`, onClick: () => baixa("realizada") })}
+          </>
+        );
+    } else if (aberta) {
+      if (souCorretor)
+        faixa = (
+          <>
+            {secundario("remarcar", "Remarcar", { rotuloAcessivel: `Remarcar: ${quem}`, painel: "remarcar" })}
+            {confirmar}
+          </>
+        );
+    } else if (daBaixa) {
+      faixa = (
+        <>
+          {v.status !== "cancelada" &&
+            secundario("anotar", v.status === "realizada" ? "+ Observação e comprovante" : "+ Observação", { painel: "anotar" })}
+          {secundario("corrigir", "Corrigir", { painel: "corrigir" })}
+        </>
+      );
+    }
+
+    const edicao =
+      painel === "remarcar" ? (
+        <RemarcarNoCard
+          visita={v}
+          onCancelar={() => fechar("remarcar")}
+          onSalvar={async (inicio) => depois(await alterarVisita(v.id, { inicio }), `Visita remarcada para ${quandoVisita(inicio, new Date())}.`)}
+        />
+      ) : painel === "anotar" ? (
+        <AnotarNoCard visita={v} onCancelar={() => fechar("anotar")} onSalvar={async (campos) => depois(await alterarVisita(v.id, campos), "Salvo.")} />
+      ) : painel === "corrigir" ? (
+        <CorrigirNoCard
+          visita={v}
+          agora={agora}
+          onCancelar={() => fechar("corrigir")}
+          onSalvar={async (status, motivo) => depois(await corrigirVisita(v.id, status, motivo), `Visita corrigida para ${NOMES_STATUS[status]}.`)}
+        />
+      ) : null;
+
+    return (
+      <>
+        <Compromisso
+          href={lead ? `/leads/ficha/?id=${lead.id}` : "/agenda/"}
+          quando={quandoDoCompromisso(v.inicio, agora)}
+          quemEOnde={
+            <>
+              {mostrarLead && lead ? `${lead.nome} · ` : ""}
+              {v.empreendimento}
+              {v.local && ` · ${v.local}`}
+            </>
+          }
+          maisLinhas={
+            <>
+              {corretor && <span className="mb-item__linha">{corretor}</span>}
+              {v.baixa_em && <BaixaDada visita={v} agora={agora} alicerce />}
+              {v.comprovante && (
+                <span className="mb-item__linha">
+                  <a className="mb-link" href={v.comprovante} target="_blank" rel="noopener noreferrer">
+                    Ver comprovante →
+                  </a>
+                </span>
+              )}
+            </>
+          }
+          selo={<Selo tom={tomDaVisita(estado)}>{SELOS_VISITA[estado].texto}</Selo>}
+          texto={v.observacao}
+          avisos={erro ? <Aviso tom="erro" titulo={erro} /> : undefined}
+          faixa={faixa}
+          edicao={edicao}
+          destaque={destaque}
+          indice={indice}
+        />
+        {mensagem &&
+          lead &&
+          // O diálogo da mensagem pronta ainda é do DS antigo: a ponte .ds-antigo segura os links dele. Vai para o
+          // <body> por portal para não ficar dentro da <ul> da lista.
+          createPortal(
+            <div className="ds-antigo">
+              <DialogoMensagem
+                lead={{ ...lead, empreendimento: v.empreendimento }}
+                modelo={MODELO_CONFIRMAR}
+                visita={textoDaVisita(v, new Date())}
+                onFechar={() => setMensagem(false)}
+              />
+            </div>,
+            document.body,
+          )}
+      </>
+    );
   }
 
   return (
@@ -304,7 +469,7 @@ function CardVisita({
 }
 
 /** "✓ Baixa por Carla · Hoje, 15:20": quem deu a baixa e quando. */
-function BaixaDada({ visita, agora }: { visita: Visita; agora: Date }) {
+function BaixaDada({ visita, agora, alicerce = false }: { visita: Visita; agora: Date; alicerce?: boolean }) {
   const eu = usePerfil();
   const [nome, setNome] = useState<string | null>(null);
   useEffect(() => {
@@ -317,6 +482,12 @@ function BaixaDada({ visita, agora }: { visita: Visita; agora: Date }) {
       .then(({ data }) => setNome((data?.nome as string) ?? null));
   }, [visita.baixa_por, eu.id]);
   const quem = visita.baixa_por === eu.id ? "você" : (nome ?? "outro usuário");
+  if (alicerce)
+    return (
+      <span className="mb-item__linha">
+        Baixa por {quem} · {formatarQuando(visita.baixa_em!, agora)}
+      </span>
+    );
   return (
     <p className="num mt-2 text-[12px] text-ink-soft">
       Baixa por {quem} · {formatarQuando(visita.baixa_em!, agora)}
@@ -495,6 +666,134 @@ function Corrigir({
         </button>
       </div>
     </div>
+  );
+}
+
+// ---------- Edição dentro do card, no Alicerce (Lista do dia) ----------
+// As mesmas regras e os mesmos textos de Remarcar, Anotar e Corrigir acima; muda só o desenho (.mb-item__edicao).
+
+function BotoesDaEdicao({ rotulo, onCancelar, onSalvar }: { rotulo: string; onCancelar: () => void; onSalvar: () => void }) {
+  return (
+    <div className="mb-grupo-botoes mb-grupo-botoes--fim">
+      <button className="mb-botao mb-botao--discreto" type="button" data-mb-fechar onClick={onCancelar}>
+        Cancelar
+      </button>
+      <button className="mb-botao mb-botao--primario" type="button" onClick={onSalvar}>
+        {rotulo}
+      </button>
+    </div>
+  );
+}
+
+function RemarcarNoCard({
+  visita,
+  onCancelar,
+  onSalvar,
+}: {
+  visita: Visita;
+  onCancelar: () => void;
+  onSalvar: (inicio: string) => Promise<boolean>;
+}) {
+  const [campos, setCampos] = useState(() => paraCampos(new Date(visita.inicio)));
+  const [erro, setErro] = useState<string | null>(null);
+  async function salvar() {
+    const inicio = deCampos(campos.data, campos.hora);
+    const e = erroAgendamento({ inicio, empreendimento: visita.empreendimento }, new Date());
+    if (e) return setErro(e);
+    setErro(null);
+    await onSalvar(inicio!);
+  }
+  return (
+    <EdicaoNoCard titulo="Remarcar visita" onFechar={onCancelar}>
+      <CampoEmGrupo
+        id={`remarcar-${visita.id}`}
+        rotulo="Novo dia e hora"
+        ajuda={visita.status === "confirmada" ? "A visita volta para agendada. Confirme o novo horário com o cliente." : undefined}
+      >
+        <DataHora idRotulo={`remarcar-${visita.id}`} {...campos} onChange={setCampos} rotulosVisiveis />
+      </CampoEmGrupo>
+      {erro && <Aviso tom="erro" titulo={erro} />}
+      <BotoesDaEdicao rotulo="Salvar novo horário" onCancelar={onCancelar} onSalvar={salvar} />
+    </EdicaoNoCard>
+  );
+}
+
+function AnotarNoCard({
+  visita,
+  onCancelar,
+  onSalvar,
+}: {
+  visita: Visita;
+  onCancelar: () => void;
+  onSalvar: (c: Partial<Pick<Visita, "observacao" | "comprovante">>) => Promise<boolean>;
+}) {
+  const [observacao, setObservacao] = useState(visita.observacao ?? "");
+  const [comprovante, setComprovante] = useState(visita.comprovante ?? "");
+  const [erro, setErro] = useState<string | null>(null);
+  const comComprovante = visita.status === "realizada";
+  async function salvar() {
+    if (comComprovante && !comprovanteValido(comprovante)) return setErro("O comprovante precisa ser um link que começa com https://.");
+    setErro(null);
+    await onSalvar({
+      observacao: observacao.trim() || null,
+      ...(comComprovante ? { comprovante: comprovante.trim() || null } : {}),
+    });
+  }
+  return (
+    <EdicaoNoCard titulo={comComprovante ? "Observação e comprovante" : "Observação"} onFechar={onCancelar}>
+      <Campo rotulo="Observação (opcional)">
+        <textarea className="mb-campo__entrada" placeholder="Ex.: Gostou da planta de 2 dormitórios" value={observacao} onChange={(e) => setObservacao(e.target.value)} />
+      </Campo>
+      {comComprovante && (
+        <Campo rotulo="Comprovante (opcional)" ajuda="Link da foto ou da mensagem do cliente, no Drive ou no WhatsApp Web.">
+          <input className="mb-campo__entrada" type="url" inputMode="url" placeholder="https://" value={comprovante} onChange={(e) => setComprovante(e.target.value)} />
+        </Campo>
+      )}
+      {erro && <Aviso tom="erro" titulo={erro} />}
+      <BotoesDaEdicao rotulo="Salvar" onCancelar={onCancelar} onSalvar={salvar} />
+    </EdicaoNoCard>
+  );
+}
+
+function CorrigirNoCard({
+  visita,
+  agora,
+  onCancelar,
+  onSalvar,
+}: {
+  visita: Visita;
+  agora: Date;
+  onCancelar: () => void;
+  onSalvar: (s: StatusVisita, motivo: string) => Promise<boolean>;
+}) {
+  const passou = podeDarBaixa({ status: "agendada", inicio: visita.inicio }, agora);
+  const opcoes = (["realizada", "nao_compareceu", "agendada", "cancelada"] as StatusVisita[]).filter(
+    (s) => s !== visita.status && (passou || (s !== "realizada" && s !== "nao_compareceu")),
+  );
+  const [status, setStatus] = useState<StatusVisita>(opcoes[0]);
+  const [motivo, setMotivo] = useState("");
+  const [erro, setErro] = useState<string | null>(null);
+  async function salvar() {
+    if (motivo.trim().length < 3) return setErro("Escreva o motivo da correção.");
+    setErro(null);
+    await onSalvar(status, motivo.trim());
+  }
+  return (
+    <EdicaoNoCard titulo="Corrigir visita" onFechar={onCancelar}>
+      <CampoEmGrupo id={`corrigir-${visita.id}`} rotulo="Corrigir para">
+        <Seletor
+          idRotulo={`corrigir-${visita.id}`}
+          opcoes={opcoes.map((s) => ({ valor: s, rotulo: `${SELOS_VISITA[s].sinal} ${NOMES_STATUS[s]}` }))}
+          valor={status}
+          onChange={setStatus}
+        />
+      </CampoEmGrupo>
+      <Campo rotulo="Motivo" ajuda="A correção e o motivo ficam no histórico do lead.">
+        <textarea className="mb-campo__entrada" placeholder="Ex.: Toquei no botão errado" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+      </Campo>
+      {erro && <Aviso tom="erro" titulo={erro} />}
+      <BotoesDaEdicao rotulo="Corrigir" onCancelar={onCancelar} onSalvar={salvar} />
+    </EdicaoNoCard>
   );
 }
 

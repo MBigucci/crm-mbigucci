@@ -15,13 +15,20 @@
 // - a moldura do passo b (menu lateral, topo, menu do celular, Módulos e Configurações), como corretor e como
 //   gerente geral (?qa=geral na prévia): o HTML bate com o Alicerce, Módulos só para o gerente geral, a conta
 //   só no topo (no fim da folha no celular), sem sino e sem busca, alvos de 44px e foco visível.
+// - a Lista do dia do passo c, como corretor (fixtures de scripts/visual-fixtures.ts): o HTML bate com os previews
+//   ListaDoDia, CardLead, ResumoDePendencias, Compromisso e Meta, um só destaque, o card inteiro abre a ficha
+//   (sem Abrir e sem ⋯), a faixa Registrar · WhatsApp → (Detalhar no grupo Detalhe o contato, sem WhatsApp para
+//   quem não tem telefone), o PainelLateral de Registrar (foco, Esc, portal no body), sem + Novo lead na página
+//   nem rodapé fixo, alvos de 44px e foco visível.
 // Com --moldura roda só a moldura (e tira os prints dela):  node scripts/conferir-alicerce.mjs local/alicerce/passo-b --moldura
+// Com --lista roda só a Lista do dia (e tira os prints dela): node scripts/conferir-alicerce.mjs local/alicerce/passo-c --lista
 // Os prints vão para crm/local/ (fora do Git).
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const argumentos = process.argv.slice(2);
 const soMoldura = argumentos.includes("--moldura");
+const soLista = argumentos.includes("--lista");
 const saida = argumentos.find((a) => !a.startsWith("--")) ?? "local/alicerce";
 const base = "http://127.0.0.1:4173/vendas";
 mkdirSync(saida, { recursive: true });
@@ -69,7 +76,7 @@ async function print(nome) {
 const resultado = {};
 const confere = (nome, ok, detalhe) => { resultado[nome] = { ok: !!ok, detalhe }; console.log(`${ok ? "OK   " : "FALHA"} ${nome}${detalhe ? "  " + JSON.stringify(detalhe) : ""}`); };
 
-if (!soMoldura) {
+if (!soMoldura && !soLista) {
 // 1. Migração da escolha antiga (três casos de tema e a barra).
 await tela(1280, 800);
 await esquemaAparelho("light");
@@ -280,6 +287,169 @@ async function focoVisivel(passos) {
   return sem;
 }
 const caixaDe = (seletor) => avaliar(`(() => { const r = document.querySelector(${JSON.stringify(seletor)})?.getBoundingClientRect(); return r ? { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) } : null; })()`);
+
+// 9. A Lista do dia (passo c). A medição roda na página (vai por toString), como corretor, nos dois tamanhos e nos dois temas.
+function medirListaNaPagina(largura) {
+  const vis = (e) => !!e && e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden";
+  const q = (s) => document.querySelector(s);
+  const qs = (s) => [...document.querySelectorAll(s)];
+  const altura = (e) => { const r = e.getBoundingClientRect(); const ext = ["::before", "::after"].map((p) => { const a = getComputedStyle(e, p); return a.position === "absolute" && a.content !== "none" ? parseFloat(a.height) || 0 : 0; }); return Math.max(r.height, ...ext); };
+  const rotulo = (e) => (e.getAttribute("aria-label") || e.textContent || "").trim().replace(/\s+/g, " ").slice(0, 40);
+  const cards = qs("main .mb-item");
+  const faixa = (c) => [...c.querySelectorAll(".mb-item__faixa > :is(a, button)")].map((b) => b.textContent.trim());
+  const grupoDe = (c) => c.closest("section")?.id ?? "";
+  const grupos = qs("main section[id^='grupo-']").map((sec) => ({ id: sec.id, titulo: sec.querySelector("h2")?.textContent.trim().replace(/\s+/g, " "), contagem: Number(sec.querySelector("h2 .mb-num")?.textContent), cards: sec.querySelectorAll(".mb-item").length }));
+  const resumo = qs(".mb-resumo__item").map((a) => ({ href: a.getAttribute("href"), numero: Number(a.querySelector(".mb-resumo__numero")?.textContent), texto: a.querySelector(".mb-resumo__texto")?.textContent.trim() }));
+  const interativos = qs("main a[href], main button").filter(vis);
+  return {
+    rolagemLateral: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    h1: qs("main h1").map((e) => e.textContent.trim()),
+    cards: cards.length,
+    destaques: qs("main .mb-item--destaque").length,
+    destaqueEhOPrimeiro: cards.length > 0 && cards[0].classList.contains("mb-item--destaque"),
+    cardsSemAlvo: cards.filter((c) => !c.querySelector(".mb-item__cabeca .mb-item__titulo.mb-item__alvo[href]")).length,
+    abrirOuMais: cards.filter((c) => [...c.querySelectorAll("button, a")].some((b) => /^(abrir|mais|⋯|…)$/i.test(b.textContent.trim()) || b.getAttribute("aria-haspopup") === "menu")).length,
+    maisDeDuasAcoes: cards.filter((c) => faixa(c).length > 2).length,
+    grupos,
+    resumo,
+    resumoBate: resumo.length > 0 && resumo.every((r) => { const g = grupos.find((x) => "#" + x.id === r.href); return !!g && g.contagem === r.numero && g.cards === r.numero && !!r.texto && r.texto.endsWith("→"); }),
+    faixas: cards.map((c) => ({ nome: c.querySelector(".mb-item__titulo")?.textContent.trim(), grupo: grupoDe(c), botoes: faixa(c) })),
+    chips: qs(".mb-chip").map((e) => e.className),
+    estruturaDoCard: cards.slice(0, 3).map((c) => ["cabeca", "id", "texto", "rodape", "faixa"].filter((n) => !c.querySelector(".mb-item__" + n))).flat(),
+    cardAntigo: qs("main .card, main .bar-brand, main .veredito, main .selo-antigo, main .btn").filter((e) => !e.closest(".ds-antigo")).length,
+    novoLeadNaPagina: qs("main a[href$='/leads/novo/']").filter((a) => !a.closest(".mb-vazio")).length,
+    rodapeFixo: qs("main .fixed, .mb-app__conteudo .fixed").filter(vis).length,
+    metas: qs(".lista-do-dia__metas .mb-meta").map((m) => ({ rotulo: m.querySelector(".mb-meta__rotulo")?.textContent.trim(), aria: m.querySelector(".mb-meta__trilho")?.getAttribute("aria-label"), barra: m.querySelector(".mb-meta__barra span")?.style.width, projecao: m.querySelector(".mb-meta__projecao")?.style.left ?? null })),
+    pequenos: largura < 768 ? interativos.filter((e) => altura(e) < 43.5).map((e) => rotulo(e) + " " + Math.round(altura(e))) : [],
+    painelNoBody: !!q("body > aside.mb-lateral"),
+  };
+}
+
+async function abrirListaDoDia(w, h, tema) {
+  erros.length = 0;
+  await tela(w, h);
+  await comArmazenamento({ mb_tema: tema }, "/");
+  await espera(700);
+}
+async function printInteiro(nome) {
+  const dim = await avaliar("({ w: document.documentElement.clientWidth, h: Math.max(document.documentElement.scrollHeight, document.body.scrollHeight) })");
+  const s = await cdp("Page.captureScreenshot", { format: "png", captureBeyondViewport: true, clip: { x: 0, y: 0, width: dim.w, height: dim.h, scale: 1 } });
+  writeFileSync(join(saida, nome + ".png"), Buffer.from(s.result.data, "base64"));
+}
+async function printDe(nome, seletor) {
+  const r = await avaliar(`(() => { const e = document.querySelector(${JSON.stringify(seletor)}); if (!e) return null; e.scrollIntoView({ block: "center" }); const b = e.getBoundingClientRect(); return { x: 0, y: Math.max(0, b.top + window.scrollY - 12), w: document.documentElement.clientWidth, h: b.height + 24 }; })()`);
+  if (!r) return false;
+  await espera(250);
+  const s = await cdp("Page.captureScreenshot", { format: "png", captureBeyondViewport: true, clip: { x: r.x, y: r.y, width: r.w, height: r.h, scale: 1 } });
+  writeFileSync(join(saida, nome + ".png"), Buffer.from(s.result.data, "base64"));
+  return true;
+}
+
+if (!soMoldura) {
+  for (const [w, h] of [[375, 812], [1280, 800]]) {
+    for (const tema of ["papel", "grafite"]) {
+      await abrirListaDoDia(w, h, tema);
+      const m = await avaliar(`(${medirListaNaPagina.toString()})(${w})`);
+      const semAnel = await focoVisivel(w < 768 ? 8 : 14);
+      await avaliar("document.activeElement && document.activeElement.blur && document.activeElement.blur(); window.scrollTo(0, 0); true");
+      await printInteiro(`lista-${w}-${tema}`);
+      const semTelefone = m.faixas.find((f) => f.nome === "Rita Exemplo");
+      const detalhar = m.faixas.filter((f) => f.grupo === "grupo-detalhar");
+      const demais = m.faixas.filter((f) => f.grupo.startsWith("grupo-") && f.grupo !== "grupo-detalhar" && f.nome !== "Rita Exemplo");
+      confere(`lista do dia ${w} ${tema}`,
+        !m.rolagemLateral && m.h1.length === 1 && m.h1[0] === "Lista do dia" && m.cards > 0 && m.destaques === 1 && m.destaqueEhOPrimeiro
+          && m.cardsSemAlvo === 0 && m.abrirOuMais === 0 && m.maisDeDuasAcoes === 0 && m.resumoBate && m.estruturaDoCard.length === 0
+          && m.cardAntigo === 0 && m.novoLeadNaPagina === 0 && m.rodapeFixo === 0
+          && !!semTelefone && semTelefone.botoes.join() === "Registrar"
+          && detalhar.length > 0 && detalhar.every((f) => f.botoes.join() === "WhatsApp →,Detalhar")
+          && demais.every((f) => f.botoes.join() === "Registrar,WhatsApp →")
+          && m.chips.every((c) => /^mb-chip mb-chip--(alto|medio|baixo|sem)$/.test(c))
+          && m.pequenos.length === 0 && semAnel.length === 0 && erros.length === 0,
+        { ...m, semAnel, erros: [...erros] });
+    }
+  }
+
+  // A visita (Compromisso), a visita aguardando baixa e o aniversário: o HTML bate com os previews e cada um sai no seu print.
+  for (const [w, h] of [[375, 812], [1280, 800]]) {
+    for (const tema of ["papel", "grafite"]) {
+      await abrirListaDoDia(w, h, tema);
+      const okV = await printDe(`lista-visitas-${w}-${tema}`, "#bloco-visitas-hoje");
+      const okB = await printDe(`lista-visitas-baixa-${w}-${tema}`, "#bloco-visitas-baixa");
+      const okA = await printDe(`lista-aniversarios-${w}-${tema}`, "section[aria-labelledby='aniversarios']");
+      const c = await avaliar(`(() => { const q = (s) => document.querySelector(s); const sel = [
+        "#bloco-visitas-hoje .mb-item > .mb-item__cabeca > .mb-item__id > a.mb-item__titulo.mb-item__alvo[href] + .mb-item__linha",
+        "#bloco-visitas-hoje .mb-item > .mb-item__rodape > .mb-selo",
+        "#bloco-visitas-hoje .mb-item > .mb-item__faixa > button.mb-botao.mb-botao--secundario",
+        "#bloco-visitas-hoje .mb-item > .mb-item__faixa > button.mb-botao.mb-botao--whatsapp",
+        "#bloco-visitas-baixa .mb-item > .mb-item__faixa > button.mb-botao.mb-botao--secundario",
+        "section[aria-labelledby='aniversarios'] .mb-item > .mb-item__cabeca > .mb-item__id > a.mb-item__titulo.mb-item__alvo",
+        ".lista-do-dia > .mb-resumo > .mb-resumo__titulo", ".mb-resumo > .mb-resumo__itens > a.mb-resumo__item > .mb-resumo__numero + .mb-resumo__texto", ".mb-resumo > p.mb-resumo__rodape > a[href='#bloco-visitas-hoje']",
+        ".mb-meta > .mb-meta__rotulo + .mb-meta__valor + .mb-meta__trilho[role='img'] > .mb-meta__barra > span", ".mb-meta > .mb-meta__legenda > span",
+      ]; return { faltam: sel.filter((s) => !q(s)), selosDasVisitas: [...document.querySelectorAll("#bloco-visitas-hoje .mb-selo, #bloco-visitas-baixa .mb-selo")].map((e) => e.className + ": " + e.textContent.trim()), baixa: [...document.querySelectorAll("#bloco-visitas-baixa .mb-item__faixa > button")].map((b) => b.textContent.trim()) }; })()`);
+      confere(`visita e aniversário ${w} ${tema}: o HTML bate com os previews`, okV && okB && okA && c.faltam.length === 0 && c.baixa.join() === "✕ Não compareceu,✓ Realizada" && c.selosDasVisitas.some((x) => /etapa-vendas-agendada/.test(x)) && c.selosDasVisitas.some((x) => /mb-selo--alerta/.test(x)), c);
+    }
+  }
+
+  // O estado da visita vai no rodapé do card, não no canto direito (Alicerce de 07/11/2026).
+  {
+    await abrirListaDoDia(375, 812, 'papel');
+    const v = await avaliar("[...document.querySelectorAll('#bloco-visitas-hoje .mb-item, #bloco-visitas-baixa .mb-item')].map((c) => ({ noRodape: !!c.querySelector(':scope > .mb-item__rodape > .mb-selo'), noCanto: !!c.querySelector('.mb-item__cabeca > .mb-selo, .mb-item__cabeca > .mb-chip') }))");
+    confere('selo da visita no rodapé, sem nada no canto', v.length > 0 && v.every((x) => x.noRodape && !x.noCanto), v);
+  }
+
+  // Registrar abre o PainelLateral (no celular, a folha que sobe): portal no body, foco no primeiro campo, Tab preso, Esc fecha.
+  for (const [w, h] of [[375, 812], [1280, 800]]) {
+    for (const tema of ["papel", "grafite"]) {
+      await abrirListaDoDia(w, h, tema);
+      await avaliar("window.__botaoRegistrar = [...document.querySelectorAll('.mb-item__faixa button')].find((b) => b.textContent.trim() === 'Registrar'); window.__botaoRegistrar.focus(); window.__botaoRegistrar.click(); true");
+      await espera(700);
+      const a = await avaliar(`(() => { const p = document.querySelector('body > aside.mb-lateral'); const v = p && p.nextElementSibling; const r = p && p.getBoundingClientRect(); const foco = document.activeElement; return {
+        aberto: !!p && p.classList.contains('mb-lateral--aberto') && p.getAttribute('aria-hidden') === 'false', veuIrmao: !!v && v.classList.contains('mb-lateral__veu'), veuVisivel: !!v && getComputedStyle(v).visibility === 'visible',
+        titulo: p && p.querySelector('.mb-lateral__titulo').textContent.trim(), descricao: p && p.querySelector('.mb-lateral__descricao').textContent.trim(),
+        focoNoCorpo: !!foco && !!p && p.querySelector('.mb-lateral__corpo').contains(foco), campos: [...(p ? p.querySelectorAll('.mb-campo__rotulo') : [])].map((e) => e.textContent.trim()),
+        opcoes: [...(p ? p.querySelectorAll('.mb-opcoes--3 .mb-opcao') : [])].map((e) => e.textContent.trim()), rodape: [...(p ? p.querySelectorAll('.mb-lateral__rodape button') : [])].map((e) => e.textContent.trim()),
+        noCelular: window.innerWidth < 768, naBase: !!r && Math.round(r.bottom) === window.innerHeight, naDireita: !!r && Math.round(r.right) === document.documentElement.clientWidth,
+        modal: !!p && p.getAttribute('role') === 'dialog' && p.getAttribute('aria-modal') === 'true' && !!document.getElementById(p.getAttribute('aria-labelledby')),
+        pilulas: [...(p ? p.querySelectorAll('.mb-opcoes--linha .mb-opcao') : [])].map((e) => e.textContent.trim() + ' ' + Math.round(e.getBoundingClientRect().height)),
+        pequenos: window.innerWidth < 768 && p ? [...p.querySelectorAll('button, input, textarea')].filter((e) => e.getClientRects().length).filter((e) => e.getBoundingClientRect().height < 43.5).map((e) => (e.getAttribute('aria-label') || e.textContent || e.type).trim().slice(0, 24) + ' ' + Math.round(e.getBoundingClientRect().height)) : [],
+      }; })()`);
+      await print(`lista-painel-registrar-${w}-${tema}`);
+      // Tab preso: do último foco, o Tab volta ao primeiro (o X do topo).
+      await avaliar("(() => { const p = document.querySelector('body > aside.mb-lateral'); const f = [...p.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])')].filter((e) => e.getClientRects().length); f[f.length - 1].focus(); return f.length; })()");
+      await teclar("Tab", "Tab", 9);
+      const apos = await avaliar("(() => { const p = document.querySelector('body > aside.mb-lateral'); return p.contains(document.activeElement) && document.activeElement === p.querySelector('.mb-lateral__topo button'); })()");
+      await teclar("Escape", "Escape", 27);
+      await espera(500);
+      const fim = await avaliar("(() => { const p = document.querySelector('body > aside.mb-lateral'); return { fechou: !p.classList.contains('mb-lateral--aberto') && p.getAttribute('aria-hidden') === 'true', focoVoltou: document.activeElement === window.__botaoRegistrar }; })()");
+      confere(`painel Registrar ${w} ${tema}`,
+        a.aberto && a.veuIrmao && a.veuVisivel && a.titulo === "Registrar interação" && /·/.test(a.descricao) && a.focoNoCorpo && a.modal
+          && a.campos.join() === "Como foi,O que aconteceu,Próximo contato" && a.opcoes.slice(0, 5).join() === "WhatsApp,Ligação,E-mail,Visita,Anotação" && a.rodape.join() === "Cancelar,Registrar"
+          && a.pilulas.length === 4 && (a.noCelular ? a.naBase : a.naDireita) && a.pequenos.length === 0 && apos && fim.fechou && fim.focoVoltou && erros.length === 0,
+        { a, apos, fim, erros: [...erros] });
+    }
+  }
+  // A gravação na prévia é desativada (visual-fixtures.ts): Registrar mostra o erro e guarda o rascunho, como o app real sem conexão.
+  await abrirListaDoDia(375, 812, "papel");
+  await avaliar("[...document.querySelectorAll('.mb-item__faixa button')].find((b) => b.textContent.trim() === 'Registrar').click(); true");
+  await espera(600);
+  await avaliar("(() => { const p = document.querySelector('body > aside.mb-lateral'); const t = p.querySelector('textarea'); const set = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set; set.call(t, 'Falou que quer visitar no sábado'); t.dispatchEvent(new Event('input', { bubbles: true })); return true; })()");
+  await avaliar("document.querySelector('body > aside.mb-lateral .mb-opcoes--linha .mb-opcao').click(); true");
+  await espera(200);
+  await avaliar("[...document.querySelectorAll('body > aside.mb-lateral .mb-lateral__rodape button')].find((b) => b.textContent.trim() === 'Registrar').click(); true");
+  await espera(800);
+  await print("lista-painel-registrar-erro-375-papel");
+  {
+    const r = await avaliar("({ erro: (document.querySelector('body > aside.mb-lateral .mb-aviso--erro .mb-aviso__titulo') || {}).textContent || null, rascunho: Object.keys(sessionStorage).filter((k) => /rascunho|interacao/i.test(k)).length })");
+    confere("Registrar sem gravar mostra o erro no painel e guarda o rascunho", !!r.erro && r.rascunho > 0, r);
+  }
+}
+if (soLista) {
+  writeFileSync(join(saida, "resultado.json"), JSON.stringify(resultado, null, 2));
+  const falhasLista = Object.values(resultado).filter((r) => !r.ok).length;
+  console.log(`\n${Object.keys(resultado).length} conferências, ${falhasLista} falhas. Prints em ${saida}`);
+  ws.close();
+  process.exit(falhasLista ? 1 : 0);
+}
 
 const PERFIS_MOLDURA = [["corretor", "/"], ["geral", "/?qa=geral"]];
 for (const [perfil, caminho] of PERFIS_MOLDURA) {

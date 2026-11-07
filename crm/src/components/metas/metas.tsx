@@ -3,6 +3,7 @@
 import clsx from "clsx";
 import { useCallback, useMemo, useState } from "react";
 import { AvisoDesfazer } from "@/components/leads/partes";
+import { Meta as MetaAlicerce, Unidade } from "@/components/alicerce/meta";
 import {
   formatarPct,
   intervaloDaMeta,
@@ -636,18 +637,94 @@ function FormMeta({
   );
 }
 
+/** O "R$" menor e mais leve que o número (.mb-unidade); texto sem R$ fica como está. */
+function ComUnidade({ texto }: { texto: string }) {
+  const m = /^R\$\s?(.*)$/.exec(texto);
+  return m ? (
+    <>
+      <Unidade>R$</Unidade> {m[1]}
+    </>
+  ) : (
+    <>{texto}</>
+  );
+}
+
 /**
- * Metas na tela inicial do corretor (a lista do dia), como no Painel do Dia da
- * Bruna: a meta anual de VGV e as metas marcadas para o painel. Lê tudo sozinha.
+ * Metas na tela inicial do corretor (a lista do dia), no Alicerce (Meta): a meta anual de VGV e as metas
+ * marcadas para o painel, cada uma com o valor, a barra e a marca de projeção. Lê tudo sozinha, com os mesmos
+ * dados e cálculos de antes (progressoAnual, progressoMeta e textoRitmo). O que a Meta não mostra (falta,
+ * ritmo necessário e assinado com pendentes da meta anual) continua nas telas Painel e Metas.
  */
 export function MetasNoInicio({ corretor }: { corretor: string }) {
   const ano = new Date().getFullYear();
   const { linhas } = useMetasVgv(ano);
   const { vendas } = useVendasDoAno(ano, corretor);
+  const { metas } = useMetas(corretor);
+  const dados = useDadosMetas(corretor, metas);
+  const agora = useMemo(() => new Date(), [dados]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const anual =
+    linhas && vendas
+      ? (() => {
+          const p = progressoAnual(
+            metaAnualDe(corretor, ano, linhas).valor,
+            vendas.filter((v) => v.corretor_id === corretor),
+            ano,
+            new Date(),
+          );
+          const feito = Math.floor(p.razao * 100);
+          const proj = p.projecao !== null && p.meta > 0 ? Math.round((p.projecao / p.meta) * 100) : null;
+          return (
+            <MetaAlicerce
+              key="anual"
+              rotulo={`Meta anual de VGV · ${ano}`}
+              valor={
+                <>
+                  <ComUnidade texto={formatarReais(Math.floor(p.acumulado))} /> de <ComUnidade texto={formatarReais(p.meta)} />
+                </>
+              }
+              feitoPct={p.razao * 100}
+              projecaoPct={proj}
+              descricaoAria={`${feito}% da meta${proj !== null ? `; projeção de ${proj}% em dezembro` : ""}`}
+              legenda={[p.batida ? "✓ Meta batida" : `${feito}% feito`, proj !== null ? `Projeção para dezembro: ${proj}%` : undefined]}
+            />
+          );
+        })()
+      : null;
+
+  const proprias =
+    metas && dados
+      ? metas
+          .filter((m) => m.no_painel)
+          .map((m) => {
+            const p = progressoMeta(m, corretor, dados, agora);
+            const t = textoRitmo(p);
+            const alvo = Number(m.valor);
+            const proj = p.projecao !== null && alvo > 0 ? Math.round((p.projecao / alvo) * 100) : null;
+            const feito = Math.floor(Math.min(1, p.razao) * 100);
+            return (
+              <MetaAlicerce
+                key={m.id}
+                rotulo={`${metrica(m.metrica).nome} · ${p.intervalo.rotulo}`}
+                valor={
+                  <>
+                    <ComUnidade texto={numeroDaMetrica(m.metrica, p.valor)} /> de <ComUnidade texto={numeroDaMetrica(m.metrica, alvo)} />
+                  </>
+                }
+                feitoPct={p.razao * 100}
+                projecaoPct={proj}
+                descricaoAria={`${metrica(m.metrica).nome}: ${feito}% da meta${proj !== null ? `; projeção de ${proj}%` : ""}`}
+                legenda={[t.principal, t.detalhe]}
+              />
+            );
+          })
+      : [];
+
+  if (!anual && !proprias.length) return null;
   return (
-    <div className="grid gap-4 border-t border-line pt-5">
-      {linhas && vendas && <CartaoMetaAnual corretor={corretor} ano={ano} linhas={linhas} vendas={vendas} proprio destaque={false} />}
-      <MetasDoCorretor corretor={corretor} soPainel titulo="Suas metas" />
+    <div className="lista-do-dia__metas">
+      {anual}
+      {proprias}
     </div>
   );
 }

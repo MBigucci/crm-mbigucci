@@ -7,7 +7,6 @@ import clsx from "clsx";
 import { Casca } from "@/components/casca";
 import {
   AvisoDesfazer,
-  CampoProximoContato,
   PrazoPrimeiroContato,
   RespostaMensagemNova,
   EscolhaTemperatura,
@@ -17,27 +16,24 @@ import {
   SemContato,
 } from "@/components/leads/partes";
 import { BotaoLigar, BotaoMensagem } from "@/components/leads/mensagem";
+import { RegistrarInteracao } from "@/components/leads/registrar-interacao";
 import { AvisarCorretor } from "@/components/leads/repasse";
-import { db, novoId } from "@/lib/supabase";
+import { db } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
-import { erroAoSalvar, jaEstavaSalvo, mensagemErro } from "@/lib/erros";
+import { mensagemErro } from "@/lib/erros";
 import {
   COLUNAS_EVENTO,
   COLUNAS_INTERACAO,
-  deCampos,
   formatarQuando,
   formatarWhatsapp,
   MOTIVOS_DESCARTE,
   normalizarWhatsapp,
   textoDuplicado,
   nomeTipoInteracao,
-  paraCampos,
-  TIPOS_INTERACAO,
   type Evento,
   type Interacao,
   type Lead,
   type MotivoDescarte,
-  type TipoInteracao,
 } from "@/lib/leads";
 import {
   aDetalhar,
@@ -46,8 +42,6 @@ import {
   podeSemResposta,
   seloSemContato,
   sugereDescarte,
-  sugerirProximaTentativa,
-  TEXTO_SEM_RESPOSTA,
   TOQUE,
   type TipoToque,
 } from "@/lib/followup";
@@ -69,7 +63,7 @@ import { NomeEmpreendimento, RadarDoLead } from "@/components/empreendimentos/pa
 import { DadosDoCliente, DocumentosDoLead, PerfilCliente, ResumoDoPerfil } from "@/components/leads/perfil";
 import { usePerfilDoLead } from "@/lib/perfil-dados";
 import type { PerfilAmpliado } from "@/lib/perfil";
-import { chaveRascunhoInteracao, chaveRascunhoVenda, lerRascunho, limparRascunho, salvarRascunho } from "@/lib/rascunho";
+import { chaveRascunhoVenda, lerRascunho } from "@/lib/rascunho";
 
 export default function FichaPage() {
   return (
@@ -632,180 +626,6 @@ function Linha({ rotulo, children }: { rotulo: string; children: React.ReactNode
       <dt className="w-[110px] shrink-0 text-ink-soft sm:w-[120px]">{rotulo}</dt>
       <dd className="min-w-0 break-words">{children}</dd>
     </div>
-  );
-}
-
-/**
- * Toda interação tem um tipo (1 toque) e termina com o próximo contato: dia e hora.
- * Depois do toque em WhatsApp ou Ligar, o tipo já vem marcado. "Sem resposta"
- * só aparece com 2 dias ou mais desde a última interação detalhada; escolhê-lo
- * preenche o texto padrão e o próximo contato em 2 dias, e grava ao Registrar.
- */
-function RegistrarInteracao({
-  leadId,
-  toque,
-  semResposta,
-  onSalvo,
-}: {
-  leadId: string;
-  toque: { tipo: TipoToque; em: string } | null;
-  semResposta: { pode: boolean; n: number };
-  onSalvo: () => Promise<void>;
-}) {
-  const [tipo, setTipo] = useState<TipoInteracao>("whatsapp");
-  const [texto, setTexto] = useState("");
-  const [contato, setContato] = useState({ data: "", hora: "" });
-  const [erro, setErro] = useState<string | null>(null);
-  const [salvando, setSalvando] = useState(false);
-  // "✓ Interação registrada" por alguns segundos depois de gravar (Felipe, 06/11/2026).
-  const [registrado, setRegistrado] = useState(false);
-  useEffect(() => {
-    if (!registrado) return;
-    const t = setTimeout(() => setRegistrado(false), 6000);
-    return () => clearTimeout(t);
-  }, [registrado]);
-  // Mesmo id até gravar: se a resposta se perder e a pessoa tocar de novo, não duplica.
-  const idEnvio = useRef<string | null>(null);
-  const restauradoRef = useRef(false);
-  // O texto e a data de antes de escolher Sem resposta, para voltar se trocar de tipo.
-  const antesDoSemResposta = useRef<{ texto: string; contato: { data: string; hora: string } } | null>(null);
-
-  useEffect(() => {
-    const r = lerRascunho<{ tipo?: TipoInteracao; texto?: string; contato?: { data: string; hora: string } }>(
-      chaveRascunhoInteracao(leadId),
-    );
-    if (r) {
-      if (r.tipo) setTipo(r.tipo);
-      if (typeof r.texto === "string") setTexto(r.texto);
-      if (r.contato && typeof r.contato === "object") setContato(r.contato);
-    }
-    restauradoRef.current = true;
-  }, [leadId]);
-
-  // Depois do toque, Registrar interação já vem com o tipo marcado (WhatsApp ou Ligação).
-  const toqueEm = toque?.em;
-  const toqueTipo = toque?.tipo;
-  useEffect(() => {
-    if (toqueEm && toqueTipo) escolher(TOQUE[toqueTipo].tipoDetalhe);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toqueEm, toqueTipo]);
-
-  useEffect(() => {
-    if (!restauradoRef.current) return;
-    const vazio = !texto.trim() && !contato.data && !contato.hora && tipo === "whatsapp";
-    if (vazio) {
-      limparRascunho(chaveRascunhoInteracao(leadId));
-    } else {
-      salvarRascunho(chaveRascunhoInteracao(leadId), { tipo, texto, contato });
-    }
-  }, [leadId, tipo, texto, contato]);
-
-  function escolher(novo: TipoInteracao) {
-    if (novo === tipo) return;
-    if (novo === "tentativa") {
-      antesDoSemResposta.current = { texto, contato };
-      setTexto(TEXTO_SEM_RESPOSTA);
-      setContato(paraCampos(sugerirProximaTentativa(new Date())));
-    } else if (tipo === "tentativa" && antesDoSemResposta.current) {
-      setTexto(antesDoSemResposta.current.texto);
-      setContato(antesDoSemResposta.current.contato);
-      antesDoSemResposta.current = null;
-    }
-    setTipo(novo);
-  }
-
-  // Sem resposta some se deixou de valer (ex.: registrou uma conversa agora), a não ser que já esteja marcado.
-  const tipos = [
-    ...TIPOS_INTERACAO,
-    ...(semResposta.pode || tipo === "tentativa" ? [{ slug: "tentativa" as const, nome: "Sem resposta" }] : []),
-  ];
-
-  async function salvar(e: React.FormEvent) {
-    e.preventDefault();
-    setErro(null);
-    setRegistrado(false);
-    if (!texto.trim()) return setErro("Escreva o que aconteceu.");
-    if (!contato.data || !contato.hora) return setErro("Marque o dia e a hora do próximo contato.");
-    const proximo = deCampos(contato.data, contato.hora);
-    if (!proximo) return setErro("Confira o dia e a hora do próximo contato.");
-    setSalvando(true);
-    idEnvio.current ??= novoId();
-    const { error } = await db()
-      .from("lead_interacoes")
-      .insert({ id: idEnvio.current, lead_id: leadId, tipo, texto: texto.trim(), proximo_contato: proximo });
-    setSalvando(false);
-    if (error && !jaEstavaSalvo(error)) return setErro(erroAoSalvar(error, "Registrar"));
-    idEnvio.current = null;
-    antesDoSemResposta.current = null;
-    limparRascunho(chaveRascunhoInteracao(leadId));
-    setTipo("whatsapp");
-    setTexto("");
-    setContato({ data: "", hora: "" });
-    setRegistrado(true);
-    await onSalvo();
-  }
-
-  const nTentativa = Math.min(semResposta.n, LIMITE_TENTATIVAS);
-
-  return (
-    <form id="registrar" onSubmit={salvar} className="card order-[2] grid scroll-mt-[72px] gap-3" noValidate>
-      <h2 className="titulo-secao-antigo">Registrar interação</h2>
-      {toque && (
-        <p className="text-[13px] text-ink-soft">
-          → Você {toque.tipo === "toque_whatsapp" ? "abriu o WhatsApp" : "ligou"} {quandoNaFrase(toque.em, new Date())}.
-          Conte como foi.
-        </p>
-      )}
-      <fieldset>
-        <legend className="field-label">Como foi</legend>
-        <div className={clsx("grid grid-cols-3 gap-2", tipos.length > 5 ? "md:grid-cols-6" : "md:grid-cols-5")}>
-          {tipos.map((t) => {
-            const marcado = tipo === t.slug;
-            return (
-              <button
-                key={t.slug}
-                type="button"
-                aria-pressed={marcado}
-                onClick={() => escolher(t.slug)}
-                className={clsx(
-                  "opcao focus-ring rounded-sm border px-1 py-2 text-[13px] font-semibold transition-colors",
-                  marcado ? "border-ink bg-ink text-surface" : "border-line bg-surface text-ink hover:border-ink",
-                )}
-              >
-                {t.nome}
-              </button>
-            );
-          })}
-        </div>
-      </fieldset>
-      <div>
-        <label className="field-label" htmlFor="texto">
-          O que aconteceu
-        </label>
-        <textarea
-          id="texto"
-          className="input min-h-[88px]"
-          placeholder="Ex.: Falou que quer visitar no sábado"
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-        />
-      </div>
-      <div>
-        <span className="field-label">Próximo contato</span>
-        <CampoProximoContato idBase="interacao-contato" {...contato} onChange={setContato} />
-      </div>
-      {erro && <p className="aviso-erro">! {erro}</p>}
-      <p role="status" className={registrado ? "aviso-ok" : "sr-only"}>
-        {registrado ? "✓ Interação registrada" : ""}
-      </p>
-      <button type="submit" className="btn btn-red btn-lg focus-ring" disabled={salvando}>
-        {salvando
-          ? "Salvando…"
-          : tipo === "tentativa"
-            ? `Registrar tentativa ${nTentativa} de ${LIMITE_TENTATIVAS}`
-            : "Registrar"}
-      </button>
-    </form>
   );
 }
 
