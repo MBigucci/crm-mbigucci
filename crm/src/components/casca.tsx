@@ -3,20 +3,39 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSessao } from "@/lib/sessao";
-import { BarraLateral, Cabecalho, type ItemMenu } from "./cabecalho";
-import { BotaoRecebimento, FolhasDistribuicao } from "./distribuicao/recebimento";
+import { nomePerfil } from "@/lib/tipos";
 import { useDistribuicao, useDistribuicaoStore } from "@/lib/distribuicao-dados";
+import { mostraBotao } from "@/lib/distribuicao";
+import { BarraSuperior } from "./alicerce/barra-superior";
+import { MenuCelular } from "./alicerce/menu-celular";
+import { MenuDaConta } from "./alicerce/menu-da-conta";
+import { MenuLateral } from "./alicerce/menu-lateral";
+import { ATALHOS, ehListaDoDia, modulosDaPessoa, montarMenu } from "./alicerce/menu.ts";
+import { Cabecalho } from "./cabecalho";
+import { AvisoOffline } from "./aviso-offline";
+import { BotaoRecebimento, FolhasDistribuicao } from "./distribuicao/recebimento";
 
-/** Página interna: exige login, monta o menu pelo perfil e checa a permissão da tela. */
+export { ehListaDoDia };
+
+/**
+ * Página interna: exige login, monta o menu pelo perfil, checa a permissão da tela e põe a moldura do
+ * Alicerce (MenuLateral, BarraSuperior e, no celular, MenuCelular).
+ *
+ * `migrada`: a página já está no Alicerce (item 48). Sem ela, o conteúdo fica dentro da ponte .ds-antigo e
+ * leva o título antigo (h1); com ela, a Casca só entrega a moldura e a página cuida do próprio cabeçalho.
+ * Cada tela que migra passa `migrada` (veja crm/src/app/alicerce-local.css e docs/design-system.md).
+ */
 export function Casca({
   titulo,
   exige,
   soGerenteGeral,
+  migrada = false,
   children,
 }: {
   titulo: string;
   exige?: string;
   soGerenteGeral?: boolean;
+  migrada?: boolean;
   children: React.ReactNode;
 }) {
   const { estado, pode, sair } = useSessao();
@@ -30,7 +49,7 @@ export function Casca({
   }, [estado.fase, router]);
 
   // .ds-antigo: a ponte do item 48 para o que ainda está no DS antigo (veja crm/src/app/alicerce-local.css).
-  // Sai quando a tela migra para o Alicerce.
+  // Os estados de conta (passo d) ainda são do DS antigo; saem quando o passo d chegar.
   if (estado.fase !== "pronto") {
     return (
       <div className="ds-antigo">
@@ -63,68 +82,70 @@ export function Casca({
   }
 
   const ehGG = estado.perfil.perfil === "gerente_geral";
-  const itens: ItemMenu[] = [{ href: "/", rotulo: ehListaDoDia(pode) ? "Lista do dia" : "Início" }];
-  if (pode("leads.cadastrar") || pode("dados.ver_equipe") || pode("dados.ver_todos")) {
-    itens.push({ href: "/leads/", rotulo: "Leads" });
-    itens.push({ href: "/leads/quadro/", rotulo: "Quadro" });
-    itens.push({ href: "/agenda/", rotulo: "Agenda" });
-    itens.push({ href: "/painel/", rotulo: "Painel" });
-    itens.push({ href: "/vendas/", rotulo: "Vendas" });
-    itens.push({ href: "/metas/", rotulo: "Metas" });
-  }
-  // O catálogo é lido por todo usuário ativo.
-  itens.push({ href: "/empreendimentos/", rotulo: "Empreendimentos" });
-  // Simulador, Site MBigucci e Linktree são atalhos do cabeçalho (ATALHOS em cabecalho.tsx).
-  // Tela só do gerente geral, por regra fixa no banco (não é permissão do catálogo).
-  if (ehGG) itens.push({ href: "/faixas/", rotulo: "Faixas de VGV" });
-  // Programa de pontuação: pelas permissões (o banco filtra o resto).
-  if (ehGG) itens.push({ href: "/programa/", rotulo: "Pontos" });
-  if (pode("plantao.registrar") || pode("lancamentos.registrar")) itens.push({ href: "/plantao/", rotulo: "Plantão" });
-  if (pode("plantao.atendimentos")) itens.push({ href: "/recepcao/", rotulo: "Recepção" });
-  // Parcerias: pelas permissões do catálogo (o banco filtra quais parceiros cada um vê).
-  if (pode("parceiros.cadastrar") || pode("parceiros.ver_todos")) itens.push({ href: "/parceiros/", rotulo: "Parceiros" });
-  if (!ehGG && pode("leads.cadastrar")) itens.push({ href: "/meus-pontos/", rotulo: "Meus pontos" });
-  itens.push({ href: "/ranking/", rotulo: "Ranking" });
-  if (pode("usuarios.gerenciar")) itens.push({ href: "/usuarios/", rotulo: "Usuários" });
-  if (pode("equipes.gerenciar")) itens.push({ href: "/equipes/", rotulo: "Equipes" });
-  // Distribuição automática: a Fila de leads para quem recebe (com a fila visível), para o gerente
-  // com equipe e para o gerente geral; a página das chaves só para o gerente geral.
   const cfg = dist.config;
-  const recebeComFila = !!dist.estado?.recebe && !!cfg?.transparencia && cfg?.modo !== "gerentes";
-  if (cfg?.ligada && (recebeComFila || dist.temEquipe || ehGG)) itens.push({ href: "/fila/", rotulo: "Fila de leads" });
-  if (ehGG && cfg) itens.push({ href: "/distribuicao/", rotulo: "Distribuição" });
-  if (ehGG) itens.push({ href: "/configuracoes/", rotulo: "Configurações" });
-  // Minha conta e Sair ficam no menu da conta (cabeçalho no computador, fim do menu no celular).
-  const conta = { nome: estado.perfil.nome, apelido: estado.perfil.apelido, onSair: sair };
+  const grupos = montarMenu({
+    ehGG,
+    pode,
+    fila: {
+      ligada: !!cfg?.ligada,
+      recebeComFila: !!dist.estado?.recebe && !!cfg?.transparencia && cfg?.modo !== "gerentes",
+      temEquipe: dist.temEquipe,
+    },
+  });
+  const modulos = modulosDaPessoa(ehGG);
+  // O + Novo lead é de quem pode abrir /leads/novo/ (cadastrar o próprio lead ou atribuir o da empresa).
+  const novo = pode("leads.cadastrar") || pode("leads.atribuir") ? { href: "/leads/novo/", rotulo: "+ Novo lead" } : undefined;
+  // O status do módulo: o recebimento de leads de hoje (some quando a pessoa não recebe).
+  const temStatus = mostraBotao(dist.estado);
+  const status = temStatus ? <BotaoRecebimento /> : undefined;
+  const perfil = nomePerfil(estado.perfil.perfil);
+  const equipe = dist.estado?.equipe_nome ?? null;
 
   const liberado = (!exige || pode(exige)) && (!soGerenteGeral || ehGG);
 
   return (
-    <div className="ds-antigo">
-      <Cabecalho itens={itens} conta={conta} extra={<BotaoRecebimento />} />
-      <FolhasDistribuicao />
-      <BarraLateral itens={itens} />
-      <div className="area-principal">
-        <main className="mx-auto max-w-content px-5 pb-16 pt-6">
-          <h1 className="titulo-pagina mb-5">{titulo}</h1>
+    <div className="mb-app">
+      <MenuLateral modulo="Vendas" grupos={grupos} atalhos={ATALHOS} modulos={modulos} moduloAtual="vendas" />
+      <div className="mb-app__principal">
+        <BarraSuperior
+          titulo={titulo}
+          status={status}
+          novo={novo}
+          conta={<MenuDaConta nome={estado.perfil.nome} apelido={estado.perfil.apelido} perfil={perfil} equipe={equipe} onSair={sair} />}
+        />
+        <MenuCelular
+          modulo="Vendas"
+          grupos={grupos}
+          atalhos={ATALHOS}
+          modulos={modulos}
+          moduloAtual="vendas"
+          novo={novo}
+          status={status}
+          conta={{ nome: estado.perfil.nome, onSair: sair }}
+        />
+        <main className={migrada ? "mb-app__conteudo" : "mb-app__conteudo pb-16 pt-6"}>
+          {!migrada && <h1 className="titulo-pagina mb-5">{titulo}</h1>}
           {liberado ? (
-            children
+            migrada ? (
+              children
+            ) : (
+              <div className="ds-antigo">{children}</div>
+            )
           ) : (
-            <div className="card max-w-[520px]">
-              <p>! Seu perfil não tem acesso a esta página.</p>
+            <div className="ds-antigo">
+              <div className="card max-w-[520px]">
+                <p>! Seu perfil não tem acesso a esta página.</p>
+              </div>
             </div>
           )}
         </main>
+        {/* Dentro da coluna principal: um filho solto do .mb-app viraria uma linha vazia da grade. */}
+        <AvisoOffline />
       </div>
+      <FolhasDistribuicao />
     </div>
   );
 }
-
-/**
- * A lista do dia é o início de quem trabalha os próprios leads e não distribui
- * leads (o corretor, no padrão). Quem distribui fica com o painel.
- */
-export const ehListaDoDia = (pode: (p: string) => boolean) => pode("leads.cadastrar") && !pode("leads.atribuir");
 
 export function SemConfiguracao() {
   return (

@@ -31,11 +31,11 @@ export function LockupVendas({ className }: { className?: string }) {
 }
 
 /**
- * Logo MBigucci: o PNG fica na pasta do site (não vem no build). Sem ele, o texto
- * "MBigucci" entra no lugar, em nav-marca sobre a navegação grafite (brand não
- * tem contraste para texto pequeno ali) e em brand sobre o fundo do tema.
+ * Logo MBigucci do DS antigo, só para a tela Entrar (passo h do item 48): o PNG fica na pasta do site (não
+ * vem no build). Sem ele, o texto "MBigucci" entra no lugar, em brand sobre o fundo do tema. O menu novo usa
+ * components/alicerce/logo-mbigucci.tsx.
  */
-export function LogoMBigucci({ sobreEscuro = false, className }: { sobreEscuro?: boolean; className?: string }) {
+export function LogoMBigucci({ className }: { className?: string }) {
   const [semLogo, setSemLogo] = useState(false);
   const img = useRef<HTMLImageElement>(null);
   // O erro pode acontecer antes da hidratação, quando o onError ainda não existe.
@@ -45,9 +45,7 @@ export function LogoMBigucci({ sobreEscuro = false, className }: { sobreEscuro?:
   }, []);
   if (semLogo)
     return (
-      <span className={clsx("block font-display text-[15px] font-extrabold leading-none", sobreEscuro ? "marca-texto-nav" : "text-brand", className)}>
-        MBigucci
-      </span>
+      <span className={clsx("block font-display text-[15px] font-extrabold leading-none text-brand", className)}>MBigucci</span>
     );
   return (
     // eslint-disable-next-line @next/next/no-img-element

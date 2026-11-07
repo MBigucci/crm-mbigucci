@@ -13,8 +13,8 @@ const ler = (caminho) => readFileSync(new URL(caminho, raiz));
 const leiame = ler("src/alicerce/LEIAME.md").toString();
 const linhas = [...leiame.matchAll(/^\| `([^`]+)` \| `[^`]+` \| `([0-9a-f]{64})` \|$/gm)];
 
-test("a tabela de hashes do LEIAME.md tem os 7 arquivos do Alicerce", () => {
-  assert.equal(linhas.length, 7);
+test("a tabela de hashes do LEIAME.md tem os 8 arquivos do Alicerce", () => {
+  assert.equal(linhas.length, 8);
 });
 
 for (const [, caminho, esperado] of linhas) {

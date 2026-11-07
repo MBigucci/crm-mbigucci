@@ -2,7 +2,7 @@
 
 > **Desde 06/11/2026 o padrão do `crm/` é o Alicerce MBigucci**, o design system dos sistemas da empresa:
 > - endereço: `https://claude.ai/artifact/52QJiDD4fLNu14iE3hce37`, lido pela ação `read` do Artifact;
-> - versão adotada: `1794018834-0e30`;
+> - versão adotada: `1794023680-e181` (desde o passo b, 07/11/2026);
 > - comece pelo `project/README.md` e, de cada peça, `project/components/<Peça>/README.md` e `preview.html`.
 >
 > As telas migram no item 48 (brief `docs/codex-alicerce-vendas.md`). Até a migração terminar, as telas que faltam seguem o DS antigo (seção 3). A pesquisa (`discovery/`) continua no DS antigo. O DS do CRM da Bruna (`ref/CRM Bruna/design/`) é de **outra marca** e não serve aqui.
@@ -43,6 +43,19 @@ Cada passo do item 48 acrescenta aqui uma linha: tela, passo, commit e o que fic
 | Tela | Passo | Commit | Ajuste local |
 | --- | --- | --- | --- |
 | Fundação (todas as telas) e a Aparência em Minha conta | a | `2e14858` e o ajuste da folha | 1. `svg.mb-icone` volta ao padrão do navegador; 2. a ponte `.ds-antigo` |
+| Moldura de todas as telas do `crm/` (menu lateral, topo, menu do celular, conta, Módulos) e o índice de Configurações | b | o commit "passo b: moldura" | 3. barras fixas das telas antigas começam depois do menu; 4. área de toque do status na faixa do celular (42px → 44px); 5. camada do menu fixo (`z-index`), para o popup de Módulos e as dicas não ficarem sob o conteúdo |
+
+**Como a moldura ficou (passo b):**
+- **Peças** em `crm/src/components/alicerce/`, uma por arquivo, com o mesmo HTML, classes `.mb-*` e `aria-*` dos previews: `MenuLateral`, `BarraSuperior`, `MenuCelular`, `MenuDaConta`, `MarcaBase360`, `LogoMBigucci`, `Icone` e o índice `Ajustes` (`.mb-ajustes`). O estado (menu recolhido, folha, popups) é do React; o `MB.*.ligar` não toca o DOM do React.
+- **Menu fixo (Alicerce 1794023680-e181):** o `.mb-menu` é sticky e rola por dentro; Módulos e Recolher menu ficam sempre à vista. Em React: as dicas do menu recolhido usam `MB.menuLateral.dicas(menu)` com a ref do menu (só o cálculo de posição) e o popup de Módulos abre em `position: fixed`, com `left` = borda direita do botão + `--esp-3` e a base alinhada à dele, como o `MB.popup` calcula. O logo MBigucci é o `public/alicerce/mbigucci-logotipo.png`.
+- **Ícones e lockup** vêm do `bundle.js` por `scripts/gerar-icones-alicerce.mjs`, para `components/alicerce/icones.gerado.ts` (não se edita à mão; o `npm test` acusa quando fica desatualizado). `icones-menu.tsx` (Lucide) e `lib/barra.ts` saíram, e o `data-barra` da ponte também.
+- **O que cada perfil vê** está em `components/alicerce/menu.ts` (`montarMenu`, `modulosDaPessoa`, `itemAtual`), com teste em `src/lib/menu.test.ts`. As condições são as de antes da moldura. Grupos: Rotina, Gestão (com Plantão, para todos os perfis), Programa (Pontos ou Meus pontos, e Ranking); o gerente geral tem um grupo Administração com o item único Configurações; Atalhos por último. Cada tela tem o ícone próprio da biblioteca.
+- **Módulos:** Vendas para todo usuário ativo; Marketing só para o gerente geral (link comum para `/marketing/`, fora do basePath); Repasse atrás da constante `REPASSE_LIBERADO` (desligada: ninguém o vê por enquanto, decisão do Felipe de 06/11/2026; liga quando existir o dado de quem acessa). Quem só tem um módulo não vê o item.
+- **Status do módulo:** o recebimento de leads (`distribuicao/recebimento.tsx`) virou o `.mb-status`, com a posição como detalhe. A folha da fila continua a um toque, no botão "Ver fila" ao lado.
+- **Ponte:** a `Casca` envolve em `.ds-antigo` só o conteúdo (e a prop `migrada` tira o invólucro e o título antigo). Cada tela que migra passa `migrada`.
+- **Configurações:** o índice e os quatro links (Usuários, Equipes, Faixas de VGV, Distribuição) são do Alicerce e ficam fora do `.ds-antigo`; as seções antigas (horário, mensagens, permissões) ficam dentro.
+- **Conta no topo:** apelido ou, sem ele, o primeiro nome (regra de 05/11, confirmada em 07/11/2026).
+- **Sem sino e sem busca** no topo: não há fonte de notificações nem busca global.
 
 **Como a fundação ficou (passo a):**
 - **Arquivos do Alicerce:** em `crm/src/alicerce/` e `crm/public/alicerce/bundle.js`, sem edição, com a versão e os hashes no `LEIAME.md` dessa pasta. O `npm test` confere os hashes e o `tokens.css` gerado.

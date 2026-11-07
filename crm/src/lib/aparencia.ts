@@ -9,8 +9,8 @@
  * 2. Chama MB.preferencias.restaurar(): aplica a escolha da pessoa por cima do padrão do módulo
  *    (data-theme="auto", data-menu="claro", data-acao="grafite" no <html>).
  * 3. Ponte para as telas ainda não migradas (sai no fim da fase 2): data-tema (claro|escuro) acompanha
- *    o data-theme resolvido, e data-barra (aberta|recolhida) acompanha o data-menu-recolhido.
- *    A meta theme-color acompanha o --fundo do tema.
+ *    o data-theme resolvido. A meta theme-color acompanha o --fundo do tema.
+ *    (O data-barra, que a lateral antiga usava, saiu no passo b: o menu novo lê o data-menu-recolhido.)
  *
  * Autossuficiente para serialização inline: não use nada de fora da função.
  */
@@ -37,17 +37,12 @@ function iniciarAlicerce() {
 
   const ponte = () => {
     const escuro = raiz.getAttribute("data-theme") === "grafite";
-    const recolhida = raiz.getAttribute("data-menu-recolhido") === "sim";
     if (raiz.dataset.tema !== (escuro ? "escuro" : "claro")) raiz.dataset.tema = escuro ? "escuro" : "claro";
-    if (raiz.dataset.barra !== (recolhida ? "recolhida" : "aberta")) {
-      raiz.dataset.barra = recolhida ? "recolhida" : "aberta";
-      window.dispatchEvent(new Event("barra-atualizada"));
-    }
     const fundo = getComputedStyle(raiz).getPropertyValue("--fundo").trim();
     if (fundo) document.querySelector('meta[name="theme-color"]')?.setAttribute("content", fundo);
   };
   ponte();
-  new MutationObserver(ponte).observe(raiz, { attributes: true, attributeFilter: ["data-theme", "data-menu-recolhido"] });
+  new MutationObserver(ponte).observe(raiz, { attributes: true, attributeFilter: ["data-theme"] });
   document.addEventListener("DOMContentLoaded", ponte);
 }
 

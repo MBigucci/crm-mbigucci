@@ -1977,6 +1977,33 @@ html[data-movimento="reduzido"] .mb-lead:hover, html[data-movimento="reduzido"] 
   .mb-varios .mb-busca .mb-campo__entrada { height: var(--controle-toque); font-size: var(--texto-campo-toque, 16px); }
 }
 
+/* ---------- Ajustes pedidos pela implementação do Vendas (07/11/2026) ---------- */
+/* Menu fixo: acompanha a rolagem da página e rola por dentro quando tem mais itens que a altura da tela.
+   O rodapé (Módulos, Recolher menu) fica sempre à vista, preso embaixo. */
+.mb-app .mb-menu { position: sticky; top: 0; align-self: start; min-height: 0; height: 100vh; height: 100dvh; overflow-y: auto; scrollbar-width: thin; }
+.mb-app .mb-menu > * { flex-shrink: 0; }
+/* O sticky do rodapé mede pela caixa de conteúdo: sem padding embaixo no menu, para nada aparecer por baixo do rodapé */
+.mb-app .mb-menu { padding-bottom: 0; }
+.mb-app .mb-menu__mbigucci { padding-bottom: var(--esp-4); }
+.mb-app .mb-menu__rodape { position: sticky; bottom: 0; z-index: 1; background: inherit; padding-bottom: var(--esp-3); }
+:is(.mb-app--recolhido, :where(:root[data-menu-recolhido="sim"]) .mb-app) .mb-menu { scrollbar-width: none; }
+/* Recolhido, a dica sai do menu (que rola e cortaria): posição fixa, calculada por MB.menuLateral.dicas(menu) */
+:is(.mb-app--recolhido, :where(:root[data-menu-recolhido="sim"]) .mb-app) .mb-menu[data-mb-dicas] .mb-menu__rotulo { position: fixed; left: var(--mb-dica-x, calc(var(--menu-recolhido) + var(--esp-2))); top: var(--mb-dica-y, 50%); }
+
+/* Faixa de status do celular: 44px, e o status e o link ao lado ganham área de toque de 44px sem crescer */
+.mb-celular-status { min-height: var(--controle-toque); }
+.mb-celular-status .mb-status, .mb-celular-status > a, .mb-celular-status > button { position: relative; }
+.mb-celular-status .mb-status::before, .mb-celular-status > a::before, .mb-celular-status > button::before { content: ""; position: absolute; inset: -8px -4px; }
+/* Status como botão (ligar o recebimento, abrir a fila) */
+button.mb-status { appearance: none; }
+button.mb-status:focus-visible, a.mb-status:focus-visible { outline: var(--mb-foco-espessura) solid var(--foco); outline-offset: var(--mb-foco-afastamento); }
+
+/* Ação na folha do celular (Sair) como botão, com a mesma cara dos links */
+button.mb-folha__item { width: 100%; border: 0; background: none; font-family: var(--font-sans); text-align: left; cursor: pointer; }
+
+/* Impressão: o topo e o cabeçalho do celular não vão para o papel */
+@media print { .mb-topo, .mb-celular-topo, .mb-celular-status, .mb-folha { display: none !important; } }
+
 /* ---------- Leva 3 na impressão ---------- */
 @media print {
   .mb-espelho__unidade { background: none !important; border: 1pt solid #000000 !important; color: #000000 !important; opacity: 1 !important; }

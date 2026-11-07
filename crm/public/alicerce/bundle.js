@@ -11,6 +11,7 @@
   /* ---------- Constantes nomeadas ---------- */
   var TEMA_CLARO = 'papel';
   var TEMA_ESCURO = 'grafite';
+  var ESPACO_POPUP_LADO_PX = 12;                 // distância do popup “ao lado” até o menu (esp-3)
   var TEMA_AUTO = 'auto';                       // segue o claro/escuro do aparelho
   var ATRIBUTO_ESCOLHA_TEMA = 'data-tema-escolha'; // o que a pessoa escolheu (papel, grafite ou auto); data-theme guarda o resolvido
   var ATRIBUTO_MENU_RECOLHIDO = 'data-menu-recolhido'; // no <html>, para o menu nascer recolhido sem piscar
@@ -284,6 +285,12 @@
       function aoClicarFora(evento) { if (!caixa.contains(evento.target) && !botao.contains(evento.target)) { fechar(false); } }
       function abrir() {
         caixa.hidden = false;
+        if (caixa.classList.contains('mb-popup--lado')) {
+          var r = botao.getBoundingClientRect();
+          caixa.style.position = 'fixed';
+          caixa.style.left = Math.round(r.right + ESPACO_POPUP_LADO_PX) + 'px';
+          caixa.style.bottom = Math.max(ESPACO_POPUP_LADO_PX, Math.round(global.innerHeight - r.bottom)) + 'px';
+        }
         if (botao) { botao.setAttribute('aria-expanded', 'true'); }
         doc.addEventListener('keydown', aoTeclar);
         doc.addEventListener('click', aoClicarFora, true);
@@ -367,8 +374,28 @@
       }
       if (lerSalvo(CHAVE_MENU_RECOLHIDO) === 'sim') { app.classList.add(CLASSE_MENU_RECOLHIDO); }
       botao.addEventListener('click', function () { definir(!estaRecolhido()); });
+      var nav = botao.closest('.mb-menu');
+      if (nav) { menuLateral.dicas(nav); }
       pintar();
       return { recolher: function () { definir(true); }, expandir: function () { definir(false); } };
+    },
+    /** nav: o .mb-menu. O menu fixo rola por dentro, e uma dica posicionada dentro dele seria cortada;
+        aqui a dica do menu recolhido passa a usar posição fixa, calculada no hover e no foco de cada item.
+        Em React, chame uma vez com a ref do menu (ou desenhe a dica num portal). */
+    dicas: function (nav) {
+      if (nav.hasAttribute('data-mb-dicas')) { return; }
+      nav.setAttribute('data-mb-dicas', '');
+      function posicionar(evento) {
+        var item = evento.target.closest && evento.target.closest('.mb-menu__item');
+        if (!item || !nav.contains(item)) { return; }
+        var rotulo = item.querySelector('.mb-menu__rotulo');
+        if (!rotulo) { return; }
+        var r = item.getBoundingClientRect(), m = nav.getBoundingClientRect();
+        rotulo.style.setProperty('--mb-dica-x', Math.round(m.right + ESPACO_POPUP_LADO_PX / 2) + 'px');
+        rotulo.style.setProperty('--mb-dica-y', Math.round(r.top + r.height / 2) + 'px');
+      }
+      nav.addEventListener('pointerover', posicionar);
+      nav.addEventListener('focusin', posicionar);
     }
   };
 
@@ -957,6 +984,14 @@
     "comissao": "<path d=\"M5 2.5h10v15l-2-1.3-1.7 1.3-1.6-1.3-1.7 1.3-1.6-1.3L5 17.5z\"/><path d=\"M7.5 7h5M7.5 10h5\"/>",
     "financeiro": "<circle cx=\"10\" cy=\"10\" r=\"7.5\"/><path d=\"M12.5 7.2c-.5-.8-1.4-1.2-2.5-1.2-1.4 0-2.5.8-2.5 2s1.1 1.7 2.5 2 2.5.8 2.5 2-1.1 2-2.5 2c-1.1 0-2-.4-2.5-1.2M10 4.5V6M10 14v1.5\"/>",
     "banco": "<path d=\"M2.5 7.5L10 3l7.5 4.5\"/><path d=\"M4.5 8.5v6M8 8.5v6M12 8.5v6M15.5 8.5v6\"/><path d=\"M2.5 17h15\"/>",
+    "fila": "<path d=\"M8.5 5.5h8M8.5 10h8M8.5 14.5h8\"/><path d=\"M3.5 3.5l3 2-3 2z\"/><path d=\"M4 10h.01M4 14.5h.01\" style=\"stroke-width:2.6\"/>",
+    "recepcao": "<path d=\"M2.5 15.5h15\"/><path d=\"M4 15.5a6 6 0 0112 0\"/><path d=\"M10 9.5V7.5M8.5 7.5h3\"/>",
+    "parceiros": "<circle cx=\"7.5\" cy=\"10\" r=\"4.5\"/><circle cx=\"12.5\" cy=\"10\" r=\"4.5\"/>",
+    "pontos": "<circle cx=\"10\" cy=\"7.5\" r=\"4.5\"/><path d=\"M7.4 11.2l-1 6.3L10 15.5l3.6 2-1-6.3\"/>",
+    "plantao": "<path d=\"M3 8l1.5-4.5h11L17 8\"/><path d=\"M3 8h14v1a2.3 2.3 0 01-4.7 0 2.3 2.3 0 01-4.6 0A2.3 2.3 0 013 9z\"/><path d=\"M4.5 11.5v5h11v-5\"/>",
+    "vendas": "<path d=\"M10.5 3h6v6l-7 7a1.4 1.4 0 01-2 0L4 12.5a1.4 1.4 0 010-2z\"/><path d=\"M13.5 6h.01\" style=\"stroke-width:2.6\"/>",
+    "usuarios": "<rect x=\"2.5\" y=\"4\" width=\"15\" height=\"12\" rx=\"2\"/><circle cx=\"7.5\" cy=\"9\" r=\"2\"/><path d=\"M4.8 13.5c.4-1.3 1.4-2 2.7-2s2.3.7 2.7 2M12 8.5h3M12 11.5h3\"/>",
+    "equipes": "<circle cx=\"10\" cy=\"6.5\" r=\"2.5\"/><circle cx=\"4.5\" cy=\"9\" r=\"2\"/><circle cx=\"15.5\" cy=\"9\" r=\"2\"/><path d=\"M6 16.5c.5-2.3 2-3.5 4-3.5s3.5 1.2 4 3.5M1.8 15c.3-1.5 1.3-2.4 2.7-2.4M18.2 15c-.3-1.5-1.3-2.4-2.7-2.4\"/>",
     "oportunidade": "<circle cx=\"10\" cy=\"10\" r=\"7.5\"/><circle cx=\"10\" cy=\"10\" r=\"4\"/><circle cx=\"10\" cy=\"10\" r=\".8\"/>",
     "busca": "<circle cx=\"9\" cy=\"9\" r=\"5.5\"/><path d=\"M13 13l4 4\"/>",
     "novo": "<path d=\"M10 4.5v11M4.5 10h11\"/>",

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Casca } from "@/components/casca";
+import { Ajustes } from "@/components/alicerce/ajustes";
 import { useDistribuicaoStore } from "@/lib/distribuicao-dados";
 import { ConfigMensagens } from "@/components/config-mensagens";
 import { db } from "@/lib/supabase";
@@ -11,30 +12,96 @@ import { PERFIS, type Permissao } from "@/lib/tipos";
 import { esquecerHorarioAtendimento } from "@/lib/leads-dados";
 import { HORARIO_PADRAO, type HorarioAtendimento } from "@/lib/prazo";
 
+/** O índice ao lado (.mb-ajustes): as quatro seções da página, na ordem em que aparecem. */
+const INDICE = [
+  { id: "areas", rotulo: "Áreas de administração" },
+  { id: "horario", rotulo: "Horário de atendimento" },
+  { id: "mensagens", rotulo: "Mensagens prontas" },
+  { id: "permissoes", rotulo: "Permissões por perfil" },
+];
+
+/**
+ * Configurações (item 48, passo b): o índice e a moldura são do Alicerce (página `migrada`, fora do
+ * .ds-antigo). As três seções de hoje (horário, mensagens prontas e permissões) continuam no visual antigo,
+ * cada uma dentro do seu invólucro .ds-antigo, e migram na fase 2.
+ */
 export default function ConfiguracoesPage() {
   return (
-    <Casca titulo="Configurações" soGerenteGeral>
-      <div className="grid gap-8">
-        <AtalhoDistribuicao />
-        <Horario />
-        <ConfigMensagens />
-        <Permissoes />
-      </div>
+    <Casca titulo="Configurações" soGerenteGeral migrada>
+      <header className="mb-cabecalho mb-cabecalho--compacto">
+        <div className="mb-cabecalho__texto">
+          <h1 className="titulo-tela">Configurações</h1>
+        </div>
+      </header>
+      <Ajustes indice={INDICE}>
+        <Areas />
+        <SecaoAntiga id="horario">
+          <Horario />
+        </SecaoAntiga>
+        <SecaoAntiga id="mensagens">
+          <ConfigMensagens />
+        </SecaoAntiga>
+        <SecaoAntiga id="permissoes">
+          <Permissoes />
+        </SecaoAntiga>
+      </Ajustes>
     </Casca>
   );
 }
 
-/** A distribuição automática tem página própria; aqui fica só o atalho. */
-function AtalhoDistribuicao() {
-  const { config } = useDistribuicaoStore();
-  if (!config) return null;
+/** Uma seção ainda no DS antigo: o id do índice e a margem de rolagem ficam fora do invólucro (ele não gera caixa). */
+function SecaoAntiga({ id, children }: { id: string; children: React.ReactNode }) {
   return (
-    <Link href="/distribuicao/" className="card focus-ring block max-w-[560px] transition-colors hover:border-ink">
-      <span className="eyebrow">Leads da empresa</span>
-      <span className="titulo-card mt-1 block">Distribuição automática</span>
-      <span className="mt-1 block text-ink-soft">{config.ligada ? "✓ Ligada" : "– Desligada"} · modo {config.modo === "equipe" ? "equipe e depois corretor" : config.modo === "direto" ? "direto ao corretor" : "só gerentes"}</span>
-      <span className="link-acao mt-2 inline-block text-[13px]">Abrir</span>
-    </Link>
+    <div id={id} className="scroll-mt-20">
+      <div className="ds-antigo">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * As telas de administração que saíram do menu do gerente geral (as rotas não mudam). Fica sempre visível,
+ * porque abaixo de 1024px o índice ao lado some e esta seção é o único caminho até elas.
+ */
+function Areas() {
+  const { config } = useDistribuicaoStore();
+  // "✓ Ligada · equipe, depois corretor": o modo em rótulo curto, para caber em uma linha no celular.
+  const areas = [
+    { href: "/usuarios/", titulo: "Usuários", meta: "Contas, perfis e equipe de cada pessoa" },
+    { href: "/equipes/", titulo: "Equipes", meta: "Equipes e gerentes" },
+    { href: "/faixas/", titulo: "Faixas de VGV", meta: "Faixas da premiação por VGV" },
+  ];
+  // Distribuição só com a distribuição instalada, a mesma condição do item de menu de antes (ehGG && config).
+  if (config) {
+    const modo = config.modo === "equipe" ? "equipe, depois corretor" : config.modo === "direto" ? "direto ao corretor" : "só gerentes";
+    areas.push({ href: "/distribuicao/", titulo: "Distribuição", meta: `${config.ligada ? "✓ Ligada" : "– Desligada"} · ${modo}` });
+  }
+  return (
+    <section className="mb-cartao" id="areas" aria-labelledby="t-areas">
+      <header className="mb-cartao__cabecalho">
+        <div>
+          <h2 className="mb-cartao__titulo" id="t-areas">
+            Áreas de administração
+          </h2>
+        </div>
+      </header>
+      <div className="mb-cartao__corpo">
+        <ul className="mb-lista">
+          {areas.map((a) => (
+            <li key={a.href} className="mb-lista__item">
+              <span className="mb-lista__conteudo">
+                <Link className="mb-lista__titulo mb-lista__alvo" href={a.href}>
+                  {a.titulo}
+                </Link>
+                <span className="mb-lista__meta">{a.meta}</span>
+              </span>
+              <span className="mb-lista__lateral" aria-hidden="true">
+                →
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
   );
 }
 

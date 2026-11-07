@@ -227,15 +227,6 @@
   .marca-selo {
     display: block;
   }
-  /* "MBigucci" em texto quando falta o PNG, sobre a navegação grafite:
-     brand não tem contraste para texto pequeno ali, nav-marca tem. */
-  .marca-texto-nav {
-    color: rgb(var(--nav-marca));
-  }
-  /* Rodapé da lateral com o logo MBigucci: pequeno, abaixo dos destinos. */
-  .rodape-lateral {
-    @apply border-t px-[12px] pb-4 pt-4;
-  }
   .aviso-erro {
     @apply text-[13px] font-semibold text-brand;
   }
@@ -255,11 +246,8 @@
     content: " →";
   }
 
-  /*
-   * Navegação: lateral escura no computador e lista escura no celular, iguais
-   * nos dois temas. Ícone + rótulo; o atual com fundo e barra vermelha de 3 px.
-   */
-  /* Barra superior como a do site: fundo do tema a 85%, desfoque de 12 px e borda fina. */
+  /* Cabeçalho antigo (só Entrar e os estados da conta da Casca, até os passos h e d do item 48):
+     como a barra do site, fundo do tema a 85%, desfoque de 12 px e borda fina. */
   .cabecalho-vidro {
     background: rgb(var(--paper) / 0.85);
     border-bottom: 1px solid rgb(var(--line));
@@ -270,87 +258,6 @@
     .cabecalho-vidro {
       background: rgb(var(--paper));
     }
-  }
-  /* Botão do menu do celular, igual ao do site: 44 px, sem borda, 3 traços
-     de 2 px (o do meio mais curto) que viram ✕ ao abrir. */
-  .botao-hamburguer {
-    @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-sm;
-  }
-  .botao-hamburguer .traco {
-    @apply absolute left-0 block h-0.5 w-6 bg-ink transition-all duration-300;
-  }
-  .botao-hamburguer .traco-topo {
-    top: 0;
-  }
-  .botao-hamburguer .traco-meio {
-    @apply w-4 duration-200;
-    top: 50%;
-    transform: translateY(-50%);
-  }
-  .botao-hamburguer .traco-base {
-    top: 100%;
-    transform: translateY(-0.125rem);
-  }
-  .botao-hamburguer.aberto .traco-topo {
-    top: 50%;
-    transform: translateY(-50%) rotate(45deg);
-  }
-  .botao-hamburguer.aberto .traco-meio {
-    opacity: 0;
-    transform: translateY(-50%) scaleX(0);
-  }
-  .botao-hamburguer.aberto .traco-base {
-    top: 50%;
-    transform: translateY(-50%) rotate(-45deg);
-  }
-  /* Grafite do menu do site (#16181c). */
-  .menu-escuro {
-    background: rgb(var(--nav));
-    color: rgb(var(--on-dark-soft));
-  }
-  .divisoria-nav {
-    border-color: rgb(var(--nav-linha));
-  }
-  /* No tema escuro o grafite é quase o fundo da página: uma borda fina separa. */
-  :root[data-tema="escuro"] .barra-lateral {
-    border-right: 1px solid rgb(var(--line));
-  }
-  :root[data-tema="escuro"] #menu-celular {
-    border-bottom: 1px solid rgb(var(--line));
-  }
-  .item-menu {
-    @apply flex items-center gap-[10px] font-semibold leading-[1.2] transition-colors;
-    border-left: 3px solid transparent;
-    color: rgb(var(--on-dark-soft));
-  }
-  .item-menu:hover {
-    background: rgb(255 255 255 / 0.07);
-    color: rgb(var(--on-dark));
-  }
-  .item-menu-atual,
-  .item-menu-atual:hover {
-    background: rgb(var(--nav-ativo));
-    border-left-color: rgb(var(--nav-marca));
-    color: rgb(var(--on-dark));
-  }
-  .foco-escuro:focus-visible {
-    outline: 2px solid rgb(var(--nav-marca));
-    outline-offset: -4px;
-  }
-  .item-lateral {
-    @apply min-h-[40px] gap-[9px] rounded-sm text-[13px];
-    /* O ícone fica no mesmo x (23 px) aberta e recolhida: centrado nos 64 px. */
-    padding: 10px 6px 10px 12px;
-  }
-  /* Na lateral o rótulo quebra em vez de cortar, se algum dia não couber. */
-  .item-lateral .rotulo-menu {
-    @apply break-words;
-  }
-  .item-lateral.foco-escuro:focus-visible {
-    outline-offset: 2px;
-  }
-  .barra-lateral {
-    display: none;
   }
   /* Aviso de conexão: flutua sem deslocar o conteúdo; só o fundo é translúcido. */
   .aviso-conexao {
@@ -378,68 +285,6 @@
     html:has(.aviso-conexao) {
       scroll-padding-top: 140px;
     }
-  }
-  .dica-lateral {
-    @apply pointer-events-none fixed z-40 whitespace-nowrap rounded-sm px-2 py-[5px] text-[12px] font-semibold;
-    left: calc(var(--largura-barra) + 6px);
-    transform: translateY(-50%);
-    background: rgb(var(--band));
-    color: rgb(var(--on-dark));
-  }
-}
-
-/* Largura da lateral: 180 px aberta, 64 px recolhida (preferência deste aparelho). */
-:root {
-  --largura-barra: 180px;
-}
-:root[data-barra="recolhida"] {
-  --largura-barra: 64px;
-}
-@media (min-width: 1024px) {
-  .barra-lateral {
-    display: flex;
-    flex-direction: column;
-    position: fixed;
-    left: 0;
-    top: 64px;
-    bottom: 0;
-    z-index: 20;
-    width: var(--largura-barra);
-    padding: 20px 8px 0;
-  }
-  /* Só a lista de destinos rola, pela roda e pelo teclado, sem barra de rolagem
-     visível; a folga de 2 px deixa o contorno de foco inteiro. */
-  .lista-lateral {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    margin-inline: -2px;
-    padding: 2px 2px 20px;
-    scrollbar-width: none;
-  }
-  .lista-lateral::-webkit-scrollbar {
-    display: none;
-  }
-  /* Recolhida: o rótulo sai da tela, mas continua sendo o nome acessível. */
-  /* Recolhida, o logo MBigucci do rodapé some: não cabe nos 64 px. */
-  :root[data-barra="recolhida"] .rodape-lateral {
-    display: none;
-  }
-  :root[data-barra="recolhida"] .barra-lateral .rotulo-menu {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-  }
-  .area-principal {
-    padding-left: var(--largura-barra);
-  }
-  /* Rodapés fixos das telas começam depois da lateral. */
-  .area-principal .fixed.inset-x-0 {
-    left: var(--largura-barra);
   }
 }
 
@@ -530,8 +375,7 @@
     font-weight: 800;
     line-height: 1.1;
   }
-  main,
-  .area-principal {
+  main {
     max-width: none !important;
     padding: 0 !important;
   }

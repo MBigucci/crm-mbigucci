@@ -39,25 +39,36 @@ export const corDoTom: Record<Tom, string> = {
   neutro: "text-ink-soft",
 };
 
-/** O botão de recebimento e a posição, fixos no cabeçalho de todas as telas. */
+/**
+ * O status do módulo (.mb-status do Alicerce): o recebimento de leads de hoje, no topo do computador e na
+ * faixa do celular, com as mesmas folhas que o botão antigo abria. O sinal sai do rótulo ("✓ Recebendo") e
+ * dá a cor do estado: ✓ ok, ! atenção, → andamento, – parado. "Receber leads", que não traz sinal, é uma
+ * ação à espera: "!" em atenção. A posição ("3º na fila") entra como detalhe do status, que abre a folha
+ * do estado; a folha da fila continua a um toque, no botão "Ver fila" ao lado (só quando há posição).
+ */
+const SINAL_DO_STATUS: Record<string, string> = { "✓": "mb-status--ok", "!": "mb-status--atencao", "→": "mb-status--info", "–": "" };
+
 export function BotaoRecebimento() {
   const { estado } = useDistribuicaoStore();
   if (!estado || !mostraBotao(estado)) return null;
   const b = botaoDoEstado(estado);
   const pos = textoPosicao(estado);
+  const achou = /^([✓!→–])\s+(.*)$/.exec(b.rotulo);
+  const sinal = achou ? achou[1] : "!";
+  const texto = achou ? achou[2] : b.rotulo;
   return (
-    <div className="flex shrink-0 items-center gap-1">
-      <button
-        type="button"
-        onClick={() => abrirFolha("estado")}
-        aria-haspopup="dialog"
-        className={clsx(
-          "focus-ring inline-flex min-h-[36px] items-center whitespace-nowrap rounded-sm border px-2 text-[12px] font-semibold leading-tight",
-          b.tom === "red" ? "border-brand bg-brand text-on-brand hover:bg-brand-dark" : "border-control bg-surface",
-          b.tom !== "red" && corDoTom[b.tom],
+    <>
+      <button type="button" onClick={() => abrirFolha("estado")} aria-haspopup="dialog" className={clsx("mb-status", SINAL_DO_STATUS[sinal])}>
+        <span className="mb-status__sinal" aria-hidden="true">
+          {sinal}
+        </span>{" "}
+        {texto}
+        {pos && (
+          <>
+            {" "}
+            <span className="mb-status__detalhe">· {pos}</span>
+          </>
         )}
-      >
-        {b.rotulo}
       </button>
       {pos && (
         <button
@@ -65,13 +76,12 @@ export function BotaoRecebimento() {
           onClick={() => abrirFolha("fila")}
           aria-haspopup="dialog"
           aria-label={`${pos}. Ver a fila de leads`}
-          className="focus-ring num min-h-[36px] whitespace-nowrap rounded-sm px-[6px] text-[12px] font-bold text-ink underline decoration-line underline-offset-4 hover:decoration-ink"
+          className="mb-botao mb-botao--discreto mb-botao--p"
         >
-          <span className="sm:hidden">{textoPosicao(estado, true)}</span>
-          <span className="hidden sm:inline">{pos}</span>
+          Ver fila
         </button>
       )}
-    </div>
+    </>
   );
 }
 
