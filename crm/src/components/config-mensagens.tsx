@@ -41,7 +41,7 @@ export function ConfigMensagens() {
 
   return (
     <section className="grid gap-3">
-      <h2 className="titulo-secao">Mensagens prontas do WhatsApp</h2>
+      <h2 className="titulo-secao-antigo">Mensagens prontas do WhatsApp</h2>
       <p className="max-w-[640px] text-ink-soft">
         Corretores e gerentes escolhem a mensagem e ajustam o texto antes de enviar. A sugerida segue a etapa do lead.
         Desligue a que não quiser mais.
@@ -125,10 +125,10 @@ function ResumoModelo({ modelo, onEditar }: { modelo: ModeloMensagem; onEditar: 
         <p className="titulo-card">{modelo.titulo}</p>
         <p className="mt-1 line-clamp-2 text-[13px] text-ink-soft">{modelo.texto.replace(/\s+/g, " ")}</p>
         <div className="mt-2 flex flex-wrap gap-2">
-          <span className={clsx("selo", modelo.ativo ? "text-ok" : "text-ink-soft")}>
+          <span className={clsx("selo-antigo", modelo.ativo ? "text-ok" : "text-ink-soft")}>
             {modelo.ativo ? "✓ Ligada" : "– Desligada"}
           </span>
-          {quando.length > 0 && <span className="selo whitespace-normal">Sugerida: {quando.join(", ")}</span>}
+          {quando.length > 0 && <span className="selo-antigo whitespace-normal">Sugerida: {quando.join(", ")}</span>}
         </div>
       </div>
       <button type="button" className="btn btn-ghost focus-ring shrink-0" onClick={onEditar}>

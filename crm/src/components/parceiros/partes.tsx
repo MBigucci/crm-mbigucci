@@ -31,10 +31,10 @@ export function ComPermissao({ children }: { children: React.ReactNode }) {
 
 /** Selo do prazo de 90 dias: "✓ 21 dias", "! 36 dias", "✕ 84 dias". */
 export function SeloPrazo({ faixa, dias, estagio }: { faixa: Faixa; dias: number; estagio?: Estagio }) {
-  if (estagio === "novo" && faixa === "ok") return <span className="selo">Novo</span>;
+  if (estagio === "novo" && faixa === "ok") return <span className="selo-antigo">Novo</span>;
   const f = FAIXAS[faixa];
   return (
-    <span className={clsx("selo", f.classe)}>
+    <span className={clsx("selo-antigo", f.classe)}>
       <span aria-hidden>{f.sinal}</span>
       <span className="num">{dias}</span> {dias === 1 ? "dia" : "dias"}
     </span>

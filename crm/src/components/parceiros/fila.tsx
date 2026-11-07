@@ -43,7 +43,7 @@ export function VerFila({ fila, eu }: { fila: LinhaFila[] | null; eu: string }) 
             <p className="mt-3 border-t border-line pt-2 text-[13px] text-ink-soft">
               Último a receber: {ultimo.gerente_id === eu ? "você" : ultimo.gerente_nome} ·{" "}
               <span className="num">{formatarDataHora(ultimo.ultima_vez_em)}</span>
-              {ultimo.ultima_origem && <span className="selo ml-1">{ORIGEM_FILA[ultimo.ultima_origem]}</span>}
+              {ultimo.ultima_origem && <span className="selo-antigo ml-1">{ORIGEM_FILA[ultimo.ultima_origem]}</span>}
             </p>
           )}
           <p className="mt-2 text-[12px] text-concrete">

@@ -42,7 +42,7 @@ export default function EntrarPage() {
   }
 
   return (
-    <>
+    <div className="ds-antigo">
       <Cabecalho />
       <main className="mx-auto max-w-[440px] px-5 pb-16 pt-10">
         {estado.fase === "sem-config" ? (
@@ -92,6 +92,6 @@ export default function EntrarPage() {
           <LogoMBigucci />
         </div>
       </main>
-    </>
+    </div>
   );
 }

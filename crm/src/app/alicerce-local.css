@@ -1,0 +1,27 @@
+/* Ajuste local do Alicerce no Base360 Vendas. Carregado por último (layout.tsx).
+   Cada regra diz o porquê. O que valer para todos os módulos volta para o Alicerce, pelo Felipe.
+   Não ponha cor, raio, sombra, espaço ou duração escritos à mão: use os tokens (var(--…)). */
+
+/* 1. Ícones dentro de texto (passo a, 06/11/2026).
+   A base do Tailwind (preflight) põe "svg { display: block; vertical-align: middle }". O Alicerce
+   foi desenhado sem essa base e não define o display do .mb-icone. Sem este ajuste, um ícone num
+   link ou num texto corrido quebra a linha. "revert" devolve o padrão do navegador, o mesmo dos
+   previews do Alicerce. Dentro de botões e itens de menu (flex) não muda nada. */
+svg.mb-icone {
+  display: revert;
+  vertical-align: revert;
+}
+
+/* 2. Ponte: links do que ainda está no DS antigo (passo a, 06/11/2026; sai no fim da fase 2).
+   O Alicerce pinta todo <a> de azul sublinhado ("a, .mb-link"). O DS antigo contava com a base do
+   Tailwind, em que o link herda cor e sublinhado; sem isto, os itens do menu antigo e os nomes nos
+   cards ficavam azuis e sublinhados. O invólucro .ds-antigo (na Casca e em Entrar) marca o que não
+   migrou; ele não gera caixa, então não muda o layout. Especificidade zero (:where), para as classes
+   do DS antigo (.link-acao, underline do Tailwind) continuarem valendo por cima. */
+.ds-antigo {
+  display: contents;
+}
+:where(.ds-antigo) a:where(:not(.mb-link)) {
+  color: inherit;
+  text-decoration: inherit;
+}

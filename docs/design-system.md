@@ -42,7 +42,27 @@ Cada passo do item 48 acrescenta aqui uma linha: tela, passo, commit e o que fic
 
 | Tela | Passo | Commit | Ajuste local |
 | --- | --- | --- | --- |
-| (nenhuma ainda) | | | |
+| Fundação (todas as telas) e a Aparência em Minha conta | a | o do passo a | 1. `svg.mb-icone` volta ao padrão do navegador; 2. a ponte `.ds-antigo` |
+
+**Como a fundação ficou (passo a):**
+- **Arquivos do Alicerce:** em `crm/src/alicerce/` e `crm/public/alicerce/bundle.js`, sem edição, com a versão e os hashes no `LEIAME.md` dessa pasta. O `npm test` confere os hashes e o `tokens.css` gerado.
+- **Ordem do CSS** (`layout.tsx`):
+  - `tailwind-base.css`: o preflight e as regras de base do DS antigo;
+  - `tokens.css` e `bundle.css`;
+  - `globals.css`: o DS antigo e as utilitárias;
+  - `alicerce-local.css`.
+- **No `<head>`:** o `bundle.js` vem sem `async` e logo depois o script de `src/lib/aparencia.ts`. Esse script:
+  - migra uma vez a escolha antiga (`mbigucci-crm-aparencia` e `mbigucci-crm-barra`) para `mb_tema` e `mb_menu_recolhido`, e apaga as chaves antigas;
+  - chama `MB.preferencias.restaurar()`;
+  - mantém a ponte: `data-tema` segue o `data-theme`, `data-barra` segue o `data-menu-recolhido` e a `theme-color` segue o `--fundo`.
+- **Ponte `.ds-antigo`:**
+  - o que ainda está no DS antigo fica dentro de um invólucro `.ds-antigo` (`display: contents`): a `Casca` inteira e Entrar;
+  - ali o `<a>` volta a herdar cor e sublinhado, porque o Alicerce pinta todo link de azul sublinhado;
+  - **quando uma tela migra, o conteúdo dela sai do invólucro.** No passo b, a `Casca` nova deixa o `.ds-antigo` só em volta das telas que ainda não migraram.
+- **Fontes:** as três do Alicerce, pelo `@font-face` do `tokens.css`, com os mesmos nomes de família que o Tailwind usa. As woff2 antigas de `crm/src/app/fonts/` ficam só para os scripts de mockup.
+- **Aparência:** `components/alicerce/aparencia.tsx`, com o mesmo HTML do preview, o estado no React e a troca pelo `MB.preferencias`.
+- **Classes renomeadas:** `.selo` virou `.selo-antigo` e `.titulo-secao` virou `.titulo-secao-antigo` (48 usos), porque o Alicerce tem classes com os mesmos nomes.
+- **Conferência:** `node scripts/conferir-alicerce.mjs`, na prévia isolada e no Chrome headless de teste (instruções no topo do script).
 
 ## 3. DS antigo (telas ainda não migradas e discovery/)
 

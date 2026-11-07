@@ -425,7 +425,7 @@ function TabelaEquipe({
         </div>
       </section>
       <section aria-labelledby="t-entrada" className="min-w-0">
-        <h2 id="t-entrada" className="titulo-secao mb-3">
+        <h2 id="t-entrada" className="titulo-secao-antigo mb-3">
           Leads no período, por corretor
         </h2>
         <div className="card tabela-painel overflow-x-auto p-0">
@@ -454,7 +454,7 @@ function TabelaEquipe({
       </section>
 
       <section aria-labelledby="t-funil" className="min-w-0">
-        <h2 id="t-funil" className="titulo-secao mb-3">
+        <h2 id="t-funil" className="titulo-secao-antigo mb-3">
           Funil até a venda · leads que entraram na carteira no período
         </h2>
         <div className="card tabela-painel overflow-x-auto p-0">
@@ -564,7 +564,7 @@ function TabelaVisitas({ linhas, numeros, nomes }: { linhas: string[]; numeros: 
     ));
   return (
     <section aria-labelledby="t-visitas" className="min-w-0">
-      <h2 id="t-visitas" className="titulo-secao mb-3">
+      <h2 id="t-visitas" className="titulo-secao-antigo mb-3">
         Visitas no período, por corretor · pela data da visita
       </h2>
       <div className="card tabela-painel overflow-x-auto p-0">
@@ -640,7 +640,7 @@ function TabelaVendas({ linhas, vendas, nomes }: { linhas: string[]; vendas: Ven
   );
   return (
     <section aria-labelledby="t-vendas" className="min-w-0">
-      <h2 id="t-vendas" className="titulo-secao mb-3">
+      <h2 id="t-vendas" className="titulo-secao-antigo mb-3">
         Vendas no período, por corretor · pela data da assinatura
       </h2>
       <div className="card tabela-painel overflow-x-auto p-0">
@@ -734,7 +734,7 @@ function Conversao({
   };
   return (
     <section aria-labelledby="t-conversao" className="min-w-0">
-      <h2 id="t-conversao" className="titulo-secao mb-3">
+      <h2 id="t-conversao" className="titulo-secao-antigo mb-3">
         {titulo} · leads que entraram na carteira no período, até hoje
       </h2>
       <ResumoConversao linhas={linhas} vendas={vendas} />

@@ -227,7 +227,7 @@ function Agenda() {
 
       {semBaixa.length > 0 && (
         <section aria-labelledby="sem-baixa">
-          <h2 id="sem-baixa" className="titulo-secao mb-3">
+          <h2 id="sem-baixa" className="titulo-secao-antigo mb-3">
             Aguardando baixa · <span className="num">{semBaixa.length}</span>
           </h2>
           <ListaVisitas visitas={semBaixa} agora={hoje} nomeDe={nomeDe} comDia onMudou={carregar} />
@@ -235,7 +235,7 @@ function Agenda() {
       )}
 
       <section aria-labelledby="dias" className="grid gap-3">
-        <h2 id="dias" className="titulo-secao">
+        <h2 id="dias" className="titulo-secao-antigo">
           {semana ? (total || totalRetornos ? `${maiuscula(textoDoDia(total, totalRetornos))} na semana` : "Nada marcado na semana") : "Carregando…"}
         </h2>
         <div role="group" aria-label="Dias da semana" className="grid grid-cols-7 gap-1">
@@ -279,7 +279,7 @@ function Agenda() {
         {semana && !escolhido.visitas.length && !retornosDoDia.length && <p className="text-ink-soft">Nada marcado neste dia.</p>}
         {escolhido.visitas.length > 0 && (
           <div className="grid gap-3">
-            <h3 className="titulo-secao">
+            <h3 className="titulo-secao-antigo">
               Visitas · <span className="num">{escolhido.visitas.length}</span>
             </h3>
             <ListaVisitas visitas={escolhido.visitas} agora={hoje} nomeDe={nomeDe} onMudou={carregar} />
@@ -287,7 +287,7 @@ function Agenda() {
         )}
         {retornosDoDia.length > 0 && (
           <div className="grid gap-3">
-            <h3 className="titulo-secao">
+            <h3 className="titulo-secao-antigo">
               Retornos · <span className="num">{retornosDoDia.length}</span>
             </h3>
             <ul className="grid gap-3 md:grid-cols-2">

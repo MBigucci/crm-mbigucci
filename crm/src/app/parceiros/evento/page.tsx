@@ -164,7 +164,7 @@ function Evento() {
 
       <section className="card" aria-labelledby="quem-foi">
         <div className="flex items-baseline justify-between gap-2">
-          <h2 id="quem-foi" className="titulo-secao">
+          <h2 id="quem-foi" className="titulo-secao-antigo">
             Quem foi
           </h2>
           <span className="text-[13px] text-ink-soft">

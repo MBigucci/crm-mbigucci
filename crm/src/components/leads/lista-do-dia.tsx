@@ -94,7 +94,7 @@ export function ListaDoDia() {
 
   const mostrarGrupo = (g: (typeof grupos)[number]) => (
     <section key={g.grupo} id={`grupo-${g.grupo}`} aria-labelledby={`titulo-${g.grupo}`} className="scroll-mt-24">
-      <h2 id={`titulo-${g.grupo}`} className="titulo-secao mb-3">
+      <h2 id={`titulo-${g.grupo}`} className="titulo-secao-antigo mb-3">
         {TITULOS_GRUPO[g.grupo]} · <span className="num">{g.leads.length}</span>
       </h2>
       <ul className="grid gap-3 md:grid-cols-2">
@@ -167,7 +167,7 @@ export function ListaDoDia() {
           ([chave, titulo, lista, comDia]) =>
             lista.length > 0 && (
               <section key={chave} id={`bloco-visitas-${chave}`} aria-labelledby={`visitas-${chave}`} className="scroll-mt-24">
-                <h2 id={`visitas-${chave}`} className="titulo-secao mb-3">
+                <h2 id={`visitas-${chave}`} className="titulo-secao-antigo mb-3">
                   {titulo} · <span className="num">{lista.length}</span>
                 </h2>
                 <ListaVisitas visitas={lista} agora={agora} comDia={comDia} />
@@ -177,7 +177,7 @@ export function ListaDoDia() {
 
       {aniversarios.length > 0 && (
         <section aria-labelledby="aniversarios">
-          <h2 id="aniversarios" className="titulo-secao mb-3">
+          <h2 id="aniversarios" className="titulo-secao-antigo mb-3">
             Aniversários de hoje · <span className="num">{aniversarios.length}</span>
           </h2>
           <ul className="grid gap-3 md:grid-cols-2">

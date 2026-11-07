@@ -47,7 +47,7 @@ function Ranking() {
                   <span className="num w-[32px] shrink-0 font-display text-[20px] font-bold">{pos[i]}º</span>
                   <span className="min-w-0 flex-1 truncate">
                     {l.nome}
-                    {l.corretor_id === eu.id && <span className="selo ml-2">Você</span>}
+                    {l.corretor_id === eu.id && <span className="selo-antigo ml-2">Você</span>}
                   </span>
                   <span className="num shrink-0 font-display text-[18px] font-bold">{l.pontos}</span>
                 </li>

@@ -76,7 +76,7 @@ function Leads() {
 
       {f.veOutros && f.status === "ativo" && !f.corretor && !f.origem && !f.empreendimento && resumo.length > 0 && (
         <section aria-labelledby="resumo" className="min-w-0">
-          <h2 id="resumo" className="titulo-secao mb-3">
+          <h2 id="resumo" className="titulo-secao-antigo mb-3">
             Por corretor
           </h2>
           <div className="card bar-brand overflow-x-auto p-0">

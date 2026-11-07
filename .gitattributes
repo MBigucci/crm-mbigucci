@@ -1,3 +1,7 @@
 * text=auto eol=lf
 *.woff2 binary
 *.png binary
+
+# Alicerce MBigucci: copiado do artifact sem nenhuma mudança (os hashes ficam em crm/src/alicerce/LEIAME.md).
+crm/src/alicerce/** -text
+crm/public/alicerce/** -text

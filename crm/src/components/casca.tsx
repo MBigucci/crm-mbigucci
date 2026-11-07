@@ -29,9 +29,11 @@ export function Casca({
     if (estado.fase === "deslogado") router.replace("/entrar/");
   }, [estado.fase, router]);
 
+  // .ds-antigo: a ponte do item 48 para o que ainda está no DS antigo (veja crm/src/app/alicerce-local.css).
+  // Sai quando a tela migra para o Alicerce.
   if (estado.fase !== "pronto") {
     return (
-      <>
+      <div className="ds-antigo">
         <Cabecalho />
         <main className="mx-auto max-w-content px-5 py-8">
           {estado.fase === "sem-config" && <SemConfiguracao />}
@@ -56,7 +58,7 @@ export function Casca({
             <p className="text-concrete">Carregando…</p>
           )}
         </main>
-      </>
+      </div>
     );
   }
 
@@ -98,7 +100,7 @@ export function Casca({
   const liberado = (!exige || pode(exige)) && (!soGerenteGeral || ehGG);
 
   return (
-    <>
+    <div className="ds-antigo">
       <Cabecalho itens={itens} conta={conta} extra={<BotaoRecebimento />} />
       <FolhasDistribuicao />
       <BarraLateral itens={itens} />
@@ -114,7 +116,7 @@ export function Casca({
           )}
         </main>
       </div>
-    </>
+    </div>
   );
 }
 

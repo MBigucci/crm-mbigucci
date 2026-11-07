@@ -176,9 +176,9 @@ function Usuarios() {
                   <p className="truncate text-ink-soft">{u.email}</p>
                   {u.whatsapp && <p className="num truncate text-[13px] text-ink-soft">{formatarWhatsapp(u.whatsapp)}</p>}
                   <div className="mt-2 flex flex-wrap gap-2">
-                    <span className="selo">{nomePerfil(u.perfil)}</span>
-                    {u.equipe_id && <span className="selo">{nomeEquipe.get(u.equipe_id) ?? "Equipe"}</span>}
-                    <span className={`selo ${u.ativo ? "text-ok" : "text-brand"}`}>
+                    <span className="selo-antigo">{nomePerfil(u.perfil)}</span>
+                    {u.equipe_id && <span className="selo-antigo">{nomeEquipe.get(u.equipe_id) ?? "Equipe"}</span>}
+                    <span className={`selo-antigo ${u.ativo ? "text-ok" : "text-brand"}`}>
                       {u.ativo ? "✓ Ativo" : "– Desativado"}
                     </span>
                   </div>

@@ -174,7 +174,7 @@ export function TabelaMetaAnual({
   );
   return (
     <section aria-labelledby="t-meta-anual" className="min-w-0">
-      <h2 id="t-meta-anual" className="titulo-secao mb-3">
+      <h2 id="t-meta-anual" className="titulo-secao-antigo mb-3">
         Meta anual de VGV · <span className="num">{ano}</span> · assinado e pago, no mês da assinatura
       </h2>
       <div className="card tabela-painel overflow-x-auto p-0">
@@ -271,7 +271,7 @@ export function MetasDoCorretor({
     <section className="grid gap-3" aria-labelledby={`metas-${corretor}`}>
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h2 id={`metas-${corretor}`} className="titulo-secao">
+          <h2 id={`metas-${corretor}`} className="titulo-secao-antigo">
             {titulo ?? (editavel ? "Metas próprias" : "Metas do corretor")}
           </h2>
           {editavel && <p className="mt-1 text-[13px] text-ink-soft">Você define os alvos; o progresso vem do que já está registrado.</p>}
@@ -382,7 +382,7 @@ function CardMeta({
       <div className="flex items-start justify-between gap-3">
         <p className="min-w-0 text-[14px] font-semibold text-ink-soft">{nome}</p>
         {p.batida && (
-          <span className="selo shrink-0 border-current text-ok">
+          <span className="selo-antigo shrink-0 border-current text-ok">
             <span aria-hidden>✓</span> Meta batida
           </span>
         )}
@@ -512,7 +512,7 @@ function FormMeta({
   return (
     <form onSubmit={salvar} className="card grid gap-4" noValidate>
       <div>
-        <span className="titulo-secao">{meta ? "Editar meta" : "Nova meta"}</span>
+        <span className="titulo-secao-antigo">{meta ? "Editar meta" : "Nova meta"}</span>
         <p className="mt-1 text-[13px] text-ink-soft">Você escolhe o alvo; o progresso é calculado com o que já está registrado no Base360 Vendas.</p>
       </div>
       <div>

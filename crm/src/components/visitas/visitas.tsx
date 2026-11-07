@@ -35,7 +35,7 @@ const MODELO_CONFIRMAR = "confirmar_visita";
 export function SeloVisita({ visita, agora }: { visita: Pick<Visita, "status" | "inicio">; agora: Date }) {
   const s = SELOS_VISITA[estadoDaVisita(visita, agora)];
   return (
-    <span className={clsx("selo shrink-0", s.cor === "text-wa" ? "border-wa text-ink-soft" : `border-current ${s.cor}`)}>
+    <span className={clsx("selo-antigo shrink-0", s.cor === "text-wa" ? "border-wa text-ink-soft" : `border-current ${s.cor}`)}>
       <span aria-hidden>{s.sinal}</span> {s.texto}
     </span>
   );

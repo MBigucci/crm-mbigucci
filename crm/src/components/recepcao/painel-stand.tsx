@@ -24,7 +24,7 @@ export function TabelaStand({ linhas, numeros, nomes }: { linhas: string[]; nume
     ));
   return (
     <section aria-labelledby="t-stand" className="min-w-0">
-      <h2 id="t-stand" className="titulo-secao mb-3">
+      <h2 id="t-stand" className="titulo-secao-antigo mb-3">
         Clientes no stand, por corretor · pela recepção
       </h2>
       <ul className="grid gap-2 sm:hidden">

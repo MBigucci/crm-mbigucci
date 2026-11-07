@@ -18,9 +18,9 @@ import { BotaoMensagem } from "./mensagem";
 /** Temperatura sempre com sinal + palavra + cor. */
 export function SeloTemperatura({ valor }: { valor: Temperatura | null }) {
   const t = temperatura(valor);
-  if (!t) return <span className="selo">Sem temperatura</span>;
+  if (!t) return <span className="selo-antigo">Sem temperatura</span>;
   return (
-    <span className={clsx("selo", t.cor === "text-wa" ? "border-wa text-ink-soft" : `border-current ${t.cor}`)}>
+    <span className={clsx("selo-antigo", t.cor === "text-wa" ? "border-wa text-ink-soft" : `border-current ${t.cor}`)}>
       <span aria-hidden>{t.sinal}</span> {t.nome}
     </span>
   );
@@ -297,7 +297,7 @@ export function SeloCampo({ selo }: { selo: "detectado" | "conferir" | "faltando
     faltando: { sinal: "✕", texto: "Não encontrado", cor: "text-ink-soft" },
   }[selo];
   return (
-    <span className={clsx("selo shrink-0", selo !== "conferir" && "border-current", s.cor)}>
+    <span className={clsx("selo-antigo shrink-0", selo !== "conferir" && "border-current", s.cor)}>
       <span aria-hidden>{s.sinal}</span> {s.texto}
     </span>
   );

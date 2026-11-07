@@ -194,7 +194,7 @@ function Ficha() {
       <div className="grid gap-4">
         {meu && !editando && (
           <section id="registrar" className="card scroll-mt-[72px]" aria-labelledby="titulo-registrar">
-            <h3 id="titulo-registrar" className="titulo-secao mb-3">
+            <h3 id="titulo-registrar" className="titulo-secao-antigo mb-3">
               Registrar interação
             </h3>
             <RegistrarInteracao
@@ -384,7 +384,7 @@ function Editar({
 
   return (
     <form onSubmit={salvar} className="card grid gap-3" noValidate aria-labelledby="titulo-editar">
-      <h3 id="titulo-editar" className="titulo-secao">
+      <h3 id="titulo-editar" className="titulo-secao-antigo">
         Editar cadastro
       </h3>
       <p className="text-[13px] text-ink-soft">Editar não reinicia os 90 dias.</p>

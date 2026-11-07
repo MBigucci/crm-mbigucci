@@ -1,8 +1,11 @@
-@tailwind base;
+/* Ordem de carga (layout.tsx): tailwind-base.css → Alicerce (tokens.css, bundle.css) → este arquivo → alicerce-local.css.
+   A base do Tailwind (preflight) e as regras de base do visual antigo ficam em tailwind-base.css. */
 @tailwind components;
 @tailwind utilities;
 
-/* MBigucci DS: valores e pares auditados em docs/design-system.md. */
+/* DS antigo (MBigucci DS): vale para as telas ainda não migradas ao Alicerce, até a fase 2 do item 48.
+   Valores e pares auditados em docs/design-system.md, seção 3. O tema segue o data-tema, que a ponte
+   de src/lib/aparencia.ts mantém igual ao data-theme do Alicerce. */
 :root {
   color-scheme: light;
   --paper: 247 246 242;
@@ -93,38 +96,8 @@
 }
 
 
-/* Fontes do MBigucci Design System (variáveis, subconjunto latino, SIL OFL) */
-@font-face {
-  font-family: "Bricolage Grotesque";
-  src: url("./fonts/BricolageGrotesque-latin.woff2") format("woff2");
-  font-weight: 400 800;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Inter";
-  src: url("./fonts/Inter-latin.woff2") format("woff2");
-  font-weight: 400 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@layer base {
-  html {
-    -webkit-text-size-adjust: 100%;
-  }
-  body {
-    @apply bg-paper font-sans text-ink antialiased;
-    font-size: 14px;
-    line-height: 1.45;
-  }
-  h1,
-  h2,
-  h3 {
-    @apply font-display;
-    letter-spacing: -0.01em;
-  }
-}
+/* As fontes (Bricolage Grotesque, Inter e Geist Mono) vêm do @font-face do tokens.css do Alicerce,
+   com os mesmos nomes de família que o tailwind.config.ts usa. */
 
 @layer components {
   /* Eyebrow: caixa alta pelo CSS, concrete */
@@ -146,13 +119,13 @@
     font-family: theme("fontFamily.sans");
     font-variant-numeric: tabular-nums;
   }
-  :is(h1, h2, h3, .titulo-pagina, .titulo-card, .titulo-secao, .veredito, .font-display) .num,
+  :is(h1, h2, h3, .titulo-pagina, .titulo-card, .titulo-secao-antigo, .veredito, .font-display) .num,
   .num:is(.font-extrabold, .text-\[17px\], .text-\[18px\], .text-\[20px\], .text-\[22px\], .text-\[24px\], .text-\[26px\], .text-\[28px\], .text-\[30px\], .text-\[32px\], .text-\[34px\], .text-\[36px\]) {
     font-family: theme("fontFamily.display");
   }
 
   /* Título de seção que orienta uma decisão; eyebrow fica só como apoio. */
-  .titulo-secao {
+  .titulo-secao-antigo {
     @apply font-display text-[18px] font-bold leading-tight text-ink;
   }
 
@@ -270,7 +243,7 @@
     @apply text-[13px] font-semibold text-ok;
   }
   /* Selo de situação/perfil: texto com glifo, sem cor de fundo */
-  .selo {
+  .selo-antigo {
     @apply inline-flex items-center gap-1 whitespace-nowrap rounded-sm border border-line px-[6px] py-[2px] text-[12px] font-semibold uppercase leading-[1.3] tracking-eyebrow text-ink-soft;
   }
 

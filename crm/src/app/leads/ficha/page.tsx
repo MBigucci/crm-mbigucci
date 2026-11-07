@@ -749,7 +749,7 @@ function RegistrarInteracao({
 
   return (
     <form id="registrar" onSubmit={salvar} className="card order-[2] grid scroll-mt-[72px] gap-3" noValidate>
-      <h2 className="titulo-secao">Registrar interação</h2>
+      <h2 className="titulo-secao-antigo">Registrar interação</h2>
       {toque && (
         <p className="text-[13px] text-ink-soft">
           → Você {toque.tipo === "toque_whatsapp" ? "abriu o WhatsApp" : "ligou"} {quandoNaFrase(toque.em, new Date())}.

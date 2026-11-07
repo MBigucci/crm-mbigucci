@@ -47,7 +47,7 @@ function Quadro() {
                   aria-labelledby={`etapa-${e.slug}`}
                   className="w-[78vw] max-w-[280px] shrink-0 [scroll-snap-align:start]"
                 >
-                  <h2 id={`etapa-${e.slug}`} className="titulo-secao mb-3 flex items-baseline justify-between">
+                  <h2 id={`etapa-${e.slug}`} className="titulo-secao-antigo mb-3 flex items-baseline justify-between">
                     <span>{e.nome}</span>
                     <span className="num text-[24px]">{leads.length}</span>
                   </h2>

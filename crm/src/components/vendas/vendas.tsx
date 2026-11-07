@@ -24,7 +24,7 @@ import { RodapeAcao } from "@/components/leads/partes";
 export function SeloVenda({ venda }: { venda: Pick<Venda, "status" | "pagamento" | "pago_em"> }) {
   const s = seloVenda(venda);
   return (
-    <span className={clsx("selo shrink-0", s.cor === "text-wa" ? "border-wa text-ink-soft" : `border-current ${s.cor}`)}>
+    <span className={clsx("selo-antigo shrink-0", s.cor === "text-wa" ? "border-wa text-ink-soft" : `border-current ${s.cor}`)}>
       <span aria-hidden>{s.sinal}</span> {s.texto}
     </span>
   );

@@ -28,6 +28,10 @@
 2. **Atualizar o Apps Script:** colar o código e implantar como "Nova versão", sem trocar a URL.
 3. **Criar uma tela no DS MBigucci:** checklist de tokens, barra, glifos, contraste e campos de 16px no celular.
 
+## Sugeridos pelo item 48 (Alicerce, 06/11/2026), ainda não criados
+- **Hook:** bloquear edição em `crm/src/alicerce/` e `crm/public/alicerce/`, que são cópias do artifact do Alicerce. Hoje o `npm test` (`scripts/alicerce.test.mjs`) já acusa qualquer mudança pelos hashes, mas só depois do fato. Exceções: o `tokens.css` gerado pelo comando do `LEIAME.md` e a troca de versão.
+- **Teste:** nenhuma classe nova do app começa com `mb-` fora de `components/alicerce/` (o prefixo é do Alicerce e das margens do Tailwind).
+
 ## Sugeridos pela sessão "CRM base" (29/10/2026), ainda não criados
 Testes:
 - O schema roda duas ou mais vezes sem erro e não sobrescreve as permissões ajustadas no app.

@@ -30,9 +30,9 @@ import { useCatalogo } from "@/lib/catalogo-dados";
 
 /** Selo da fase: o lançamento em vermelho, sempre com a palavra. */
 export function SeloStatus({ e }: { e: Pick<Empreendimento, "status" | "ativo"> }) {
-  if (!e.ativo) return <span className="selo">– Fora de venda</span>;
+  if (!e.ativo) return <span className="selo-antigo">– Fora de venda</span>;
   return (
-    <span className={clsx("selo", ehLancamento(e) && "border-brand text-brand")}>
+    <span className={clsx("selo-antigo", ehLancamento(e) && "border-brand text-brand")}>
       {ehLancamento(e) ? "→ " : ""}
       {nomeStatus(e.status)}
     </span>

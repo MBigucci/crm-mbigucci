@@ -1,22 +1,9 @@
 /**
- * Barra lateral do computador: aberta (180 px) ou recolhida (64 px). A escolha
- * fica neste aparelho e é aplicada no <html> antes do conteúdo, sem pulo de layout.
+ * Barra lateral antiga do computador (até o passo b do item 48): aberta ou recolhida.
+ * A escolha fica com o Alicerce: data-menu-recolhido no <html> e a chave mb_menu_recolhido, as mesmas
+ * que o MB.preferencias.restaurar() lê antes da primeira pintura. A ponte de src/lib/aparencia.ts
+ * mantém o data-barra (que o CSS antigo usa) igual e avisa com o evento "barra-atualizada".
  */
-const chave = "mbigucci-crm-barra";
-
-/** Executado no head, antes do conteúdo. Autossuficiente para serialização inline. */
-function iniciarBarra() {
-  let valor = "aberta";
-  try {
-    if (window.localStorage.getItem("mbigucci-crm-barra") === "recolhida") valor = "recolhida";
-  } catch {
-    /* Sem armazenamento, a barra começa aberta. */
-  }
-  document.documentElement.dataset.barra = valor;
-}
-
-export const scriptBarra = `(${iniciarBarra.toString()})();`;
-
 export type EstadoBarra = "aberta" | "recolhida";
 
 export function lerBarra(): EstadoBarra {
@@ -24,13 +11,13 @@ export function lerBarra(): EstadoBarra {
 }
 
 export function definirBarra(valor: EstadoBarra) {
-  document.documentElement.dataset.barra = valor;
+  const recolher = valor === "recolhida";
+  document.documentElement.setAttribute("data-menu-recolhido", recolher ? "sim" : "nao");
   try {
-    window.localStorage.setItem(chave, valor);
+    window.localStorage.setItem("mb_menu_recolhido", recolher ? "sim" : "nao");
   } catch {
     /* A escolha vale nesta página mesmo sem armazenamento. */
   }
-  window.dispatchEvent(new Event("barra-atualizada"));
 }
 
 export function assinarBarra(avisar: () => void) {

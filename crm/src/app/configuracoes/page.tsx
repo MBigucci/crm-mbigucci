@@ -96,7 +96,7 @@ function Horario() {
 
   return (
     <section className="grid gap-3">
-      <h2 className="titulo-secao">Horário de atendimento</h2>
+      <h2 className="titulo-secao-antigo">Horário de atendimento</h2>
       <div className="card max-w-[720px]">
         <p className="text-ink-soft">
           Todo lead da empresa tem 15 min para o primeiro contato, contados só neste horário. Fora dele, o prazo começa
@@ -217,7 +217,7 @@ function Permissoes() {
 
   return (
     <section className="grid gap-3">
-      <h2 className="titulo-secao">Permissões por perfil</h2>
+      <h2 className="titulo-secao-antigo">Permissões por perfil</h2>
       <p className="max-w-[640px] text-ink-soft">
         O gerente geral tem todas as permissões. Qualquer usuário ativo sempre vê os próprios dados. As
         mudanças valem no próximo acesso de cada pessoa.

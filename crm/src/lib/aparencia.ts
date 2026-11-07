@@ -1,33 +1,57 @@
-/** Executado no head, antes do conteúdo. Autossuficiente para serialização inline. */
-function iniciarAparencia() {
-  const chave = "mbigucci-crm-aparencia";
+/**
+ * Aparência pelo Alicerce (item 48, passo a). Roda no <head>, logo depois do bundle.js e antes do
+ * conteúdo, então o tema e o menu recolhido já estão certos na primeira pintura.
+ *
+ * 1. Migra uma vez a escolha antiga deste aparelho para as chaves do Alicerce:
+ *    - mbigucci-crm-aparencia: automatico → auto, claro → papel, escuro → grafite (chave mb_tema);
+ *    - mbigucci-crm-barra: recolhida → sim, aberta → nao (chave mb_menu_recolhido).
+ *    A chave antiga é apagada depois, para "Voltar ao padrão" não trazer a escolha antiga de volta.
+ * 2. Chama MB.preferencias.restaurar(): aplica a escolha da pessoa por cima do padrão do módulo
+ *    (data-theme="auto", data-menu="claro", data-acao="grafite" no <html>).
+ * 3. Ponte para as telas ainda não migradas (sai no fim da fase 2): data-tema (claro|escuro) acompanha
+ *    o data-theme resolvido, e data-barra (aberta|recolhida) acompanha o data-menu-recolhido.
+ *    A meta theme-color acompanha o --fundo do tema.
+ *
+ * Autossuficiente para serialização inline: não use nada de fora da função.
+ */
+function iniciarAlicerce() {
   const raiz = document.documentElement;
-  const sistema = window.matchMedia("(prefers-color-scheme: dark)");
-  const validar = (valor: unknown) => valor === "claro" || valor === "escuro" ? valor : "automatico";
-  const ler = () => {
-    try { return validar(window.localStorage.getItem(chave)); }
-    catch { return "automatico"; }
+  try {
+    const ls = window.localStorage;
+    const antigo = ls.getItem("mbigucci-crm-aparencia");
+    if (antigo !== null) {
+      const tema = ({ automatico: "auto", claro: "papel", escuro: "grafite" } as Record<string, string>)[antigo];
+      if (tema && ls.getItem("mb_tema") === null) ls.setItem("mb_tema", tema);
+      ls.removeItem("mbigucci-crm-aparencia");
+    }
+    const barra = ls.getItem("mbigucci-crm-barra");
+    if (barra !== null) {
+      if (ls.getItem("mb_menu_recolhido") === null) ls.setItem("mb_menu_recolhido", barra === "recolhida" ? "sim" : "nao");
+      ls.removeItem("mbigucci-crm-barra");
+    }
+  } catch {
+    /* Sem armazenamento (navegação privada): vale o padrão do módulo. */
+  }
+  const mb = (window as unknown as { MB?: { preferencias?: { restaurar: () => void } } }).MB;
+  mb?.preferencias?.restaurar();
+
+  const ponte = () => {
+    const escuro = raiz.getAttribute("data-theme") === "grafite";
+    const recolhida = raiz.getAttribute("data-menu-recolhido") === "sim";
+    if (raiz.dataset.tema !== (escuro ? "escuro" : "claro")) raiz.dataset.tema = escuro ? "escuro" : "claro";
+    if (raiz.dataset.barra !== (recolhida ? "recolhida" : "aberta")) {
+      raiz.dataset.barra = recolhida ? "recolhida" : "aberta";
+      window.dispatchEvent(new Event("barra-atualizada"));
+    }
+    const fundo = getComputedStyle(raiz).getPropertyValue("--fundo").trim();
+    if (fundo) document.querySelector('meta[name="theme-color"]')?.setAttribute("content", fundo);
   };
-  let escolha = ler();
-  const aplicar = () => {
-    const escuro = escolha === "escuro" || (escolha === "automatico" && sistema.matches);
-    raiz.dataset.tema = escuro ? "escuro" : "claro";
-    raiz.dataset.aparencia = escolha;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", escuro ? "#151619" : "#f7f6f2");
-    window.dispatchEvent(new Event("aparencia-atualizada"));
-  };
-  aplicar();
-  sistema.addEventListener("change", aplicar);
-  window.addEventListener("storage", (evento) => {
-    if (evento.key === chave || evento.key === null) { escolha = ler(); aplicar(); }
-  });
-  window.addEventListener("aparencia-escolhida", (evento) => {
-    escolha = validar((evento as CustomEvent<unknown>).detail);
-    try { window.localStorage.setItem(chave, escolha); }
-    catch { /* A escolha continua válida nesta página quando o aparelho bloqueia armazenamento. */ }
-    aplicar();
-  });
+  ponte();
+  new MutationObserver(ponte).observe(raiz, { attributes: true, attributeFilter: ["data-theme", "data-menu-recolhido"] });
+  document.addEventListener("DOMContentLoaded", ponte);
 }
 
-export type Aparencia = "automatico" | "claro" | "escuro";
-export const scriptAparencia = `(${iniciarAparencia.toString()})();`;
+export const scriptAlicerce = `(${iniciarAlicerce.toString()})();`;
+
+/** Padrão do Base360 Vendas no <html> (decisão do Felipe, 06/11/2026). */
+export const PADRAO_VENDAS = { tema: "auto", menu: "claro", acao: "grafite" } as const;

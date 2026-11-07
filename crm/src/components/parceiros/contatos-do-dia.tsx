@@ -25,7 +25,7 @@ export function ContatosDoDiaParceiros({
   if (!itens.length) return null;
   return (
     <section aria-labelledby="parceiros-hoje" className="card">
-      <h2 id="parceiros-hoje" className="titulo-secao">
+      <h2 id="parceiros-hoje" className="titulo-secao-antigo">
         Parceiros para contatar hoje · <span className="num">{itens.length}</span>
       </h2>
       <ul className="mt-2 divide-y divide-line">

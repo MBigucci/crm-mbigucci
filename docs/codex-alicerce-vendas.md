@@ -97,7 +97,8 @@
    - a meta `theme-color` acompanha o tema resolvido.
 4. **Ponte para as telas ainda não migradas:**
    - o `data-tema` (claro ou escuro) acompanha o `data-theme` resolvido, para as variáveis antigas seguirem o tema. Essa parte sai quando a última tela migrar, no fim da fase 2;
-   - entre os passos a e b, o `data-barra` acompanha o `data-menu-recolhido`, para a lateral antiga continuar lembrando se estava recolhida. Essa parte sai no passo b.
+   - entre os passos a e b, o `data-barra` acompanha o `data-menu-recolhido`, para a lateral antiga continuar lembrando se estava recolhida. Essa parte sai no passo b;
+   - **`.ds-antigo`** (achado no passo a): o Alicerce pinta todo `<a>` de azul sublinhado. Por isso, o que ainda está no DS antigo fica dentro de um invólucro `.ds-antigo` (`display: contents`), onde o link volta a herdar (regra em `alicerce-local.css`). Hoje ele envolve a `Casca` inteira e Entrar. No passo b, a `Casca` nova envolve só o conteúdo das telas que ainda não migraram, por uma prop da página. Cada tela que migra sai do invólucro.
    - Confira no `out/index.html` exportado que a tag do `bundle.js` é um script comum, sem `async` nem `defer`, antes do script inline que chama `restaurar()`.
 5. **Classes em conflito:** o Alicerce define `.selo` e `.titulo-secao`, que o app também usa.
    - No passo a, as do app ganham outro nome, numa troca mecânica.

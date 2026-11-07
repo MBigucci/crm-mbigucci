@@ -75,7 +75,7 @@ export function ClientesDeHoje({
                 <tr key={c.id} className={clsx(c.status === "cancelado" && "text-concrete line-through")}>
                   <td className="num whitespace-nowrap border-b border-line py-2 pr-2 align-top">{horaCheia(c.registrado_em)}</td>
                   <td className="border-b border-line py-2 pr-2 align-top">
-                    <span className="selo">{nomeTipo(c.tipo)}</span>
+                    <span className="selo-antigo">{nomeTipo(c.tipo)}</span>
                     {c.antes_da_vez && <span className="mt-1 block text-[11px] text-concrete">antes da vez</span>}
                   </td>
                   <td className="border-b border-line py-2 pr-2 align-top">
@@ -118,7 +118,7 @@ export function ClientesDeHoje({
                 <div className={clsx("flex items-start justify-between gap-2", c.status === "cancelado" && "text-concrete line-through")}>
                   <div className="min-w-0">
                     <p className="text-[12px]">
-                      <span className="num text-ink-soft">{horaCheia(c.registrado_em)}</span> <span className="selo">{nomeTipo(c.tipo)}</span>
+                      <span className="num text-ink-soft">{horaCheia(c.registrado_em)}</span> <span className="selo-antigo">{nomeTipo(c.tipo)}</span>
                     </p>
                     <p className="mt-1 font-bold">{c.cliente_nome}</p>
                     <p className="text-[12px] text-concrete">

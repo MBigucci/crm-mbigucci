@@ -44,7 +44,7 @@ export const diaDaSemana = (dia: string) => SEMANA[new Date(`${dia}T12:00:00Z`).
 export function SeloStatus({ status }: { status: StatusLancamento }) {
   const s = STATUS_LANCAMENTO[status];
   return (
-    <span className={clsx("selo", status === "aprovado" && "border-ok text-ok", status === "recusado" && "border-brand text-brand")}>
+    <span className={clsx("selo-antigo", status === "aprovado" && "border-ok text-ok", status === "recusado" && "border-brand text-brand")}>
       {s.sinal} {s.nome}
     </span>
   );

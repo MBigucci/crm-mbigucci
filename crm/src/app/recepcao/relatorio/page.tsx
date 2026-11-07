@@ -154,7 +154,7 @@ function Relatorio() {
       </div>
       <div className="sem-impressao">
         <span className="eyebrow">{nomeStand}</span>
-        <p className="titulo-secao mt-1">{rotuloPeriodo(per)}</p>
+        <p className="titulo-secao-antigo mt-1">{rotuloPeriodo(per)}</p>
       </div>
 
       {erro && <p className="aviso-erro">✕ {erro}</p>}
