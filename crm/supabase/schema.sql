@@ -2863,6 +2863,9 @@ alter table public.push_log enable row level security;
 revoke all on public.push_assinaturas from anon, authenticated;
 revoke all on public.push_log from anon, authenticated;
 grant select, delete on public.push_assinaturas to authenticated;
+-- O "Enviar um aviso de teste" (Edge Function avisos) lê o aparelho direto com a chave de serviço;
+-- sem esta permissão a leitura volta 403 e o teste falha (achado em 07/11/2026, iPhone).
+grant select on public.push_assinaturas to service_role;
 
 -- Cada um vê e remove só os próprios aparelhos. Gravar e mudar os tipos é
 -- pela função push_assinar, porque o aparelho pode trocar de dono (sair e
