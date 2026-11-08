@@ -1,6 +1,6 @@
 // Avisos no celular (Web Push), do lado do navegador. Adaptado do CRM da Bruna
-// (ref/CRM Bruna/src/lib/push.ts). O service worker fica em public/sw.js, com
-// escopo no BASE_PATH (/vendas/, em base360.mbigucci.com.br). O envio é da Edge Function "avisos".
+// (ref/CRM Bruna/src/lib/push.ts). O service worker fica em /sw.js, com escopo /.
+// Fonte em portal/sw.fonte.js; crm/public/sw.js é cópia gerada. Envio: Edge Function "avisos".
 // Regras em docs/notificacoes.md.
 
 import { supabase } from "./supabase";
@@ -10,7 +10,6 @@ export { TIPOS_AVISO, type TipoAviso };
 
 const TODOS = TIPOS_AVISO.map((t) => t.slug);
 
-const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const CHAVE_PUBLICA = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
 export type Disponibilidade = "ok" | "sem-suporte" | "iphone-instalar" | "sem-chave";
@@ -32,17 +31,23 @@ export function disponibilidade(): Disponibilidade {
 }
 
 async function registro() {
-  const escopo = `${BASE}/`;
-  return (
-    (await navigator.serviceWorker.getRegistration(escopo)) ??
-    (await navigator.serviceWorker.register(`${BASE}/sw.js`, { scope: escopo }))
-  );
+  const reg = await appDoSite().iniciar();
+  if (!reg) throw new Error("Este navegador não aceita avisos.");
+  return reg;
+}
+
+function appDoSite() {
+  return (window as unknown as { Base360App: {
+    iniciar: () => Promise<ServiceWorkerRegistration | null>;
+    endpointsAntigos: () => string[];
+    esquecerEndpoint: (endpoint: string) => void;
+  } }).Base360App;
 }
 
 async function assinaturaAtual() {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) return null;
-  const reg = await navigator.serviceWorker.getRegistration(`${BASE}/`);
-  return (await reg?.pushManager.getSubscription()) ?? null;
+  const reg = await registro();
+  return (await reg.pushManager.getSubscription()) ?? null;
 }
 
 function deBase64Url(s: string) {
@@ -81,7 +86,9 @@ async function gravar(sub: PushSubscription, tipos: TipoAviso[] | null) {
 }
 
 async function apagarLinha(endpoint: string) {
-  await supabase?.from("push_assinaturas").delete().eq("endpoint", endpoint);
+  if (!supabase) return;
+  const { error } = await supabase.from("push_assinaturas").delete().eq("endpoint", endpoint);
+  if (error) throw new Error(error.message);
 }
 
 /** Pede a permissão, assina e grava este aparelho com os tipos escolhidos. */
@@ -90,7 +97,7 @@ export async function ligarAvisos(tipos: TipoAviso[]) {
   const permissao = await Notification.requestPermission();
   if (permissao !== "granted") throw new Error(permissao === "denied" ? "bloqueado" : "Permissão não concedida.");
   const reg = await registro();
-  await navigator.serviceWorker.ready;
+  // registro() aguarda este worker raiz, sem confundir ready com o antigo /vendas/.
   let sub = await reg.pushManager.getSubscription();
   if (sub && !chaveConfere(sub)) {
     await apagarLinha(sub.endpoint);
@@ -139,6 +146,12 @@ export async function enviarTeste(): Promise<"enviado" | "removido" | "falhou"> 
  */
 export async function sincronizarAvisos() {
   try {
+    if ("serviceWorker" in navigator) await registro();
+    // Chamado pela sessão autenticada: remover somente endpoints cancelados neste aparelho.
+    if (supabase) for (const endpoint of appDoSite().endpointsAntigos()) {
+      await apagarLinha(endpoint);
+      appDoSite().esquecerEndpoint(endpoint);
+    }
     if (disponibilidade() !== "ok" || Notification.permission !== "granted") return;
     const sub = await assinaturaAtual();
     if (!sub) return;

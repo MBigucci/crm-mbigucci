@@ -167,8 +167,9 @@ export function AvisosNesteAparelho() {
       <div className="avisos-corpo">
         {ehIphone() && disp !== null && (
           <p className="mb-ajuste__ajuda">
-            <span className="font-semibold">iPhone:</span> os avisos só funcionam com o Base360 instalado na Tela de Início (Safari &gt;
-            Compartilhar &gt; Adicionar à Tela de Início), no iOS 16.4 ou mais novo. Depois, abra o Base360 pelo ícone e ligue aqui.
+            <span className="font-semibold">iPhone:</span> no iOS 16.4 ou mais novo, abra base360.mbigucci.com.br no Safari e use
+            Compartilhar &gt; Adicionar à Tela de Início. Se instalou pelo Vendas antes, remova o ícone antigo e instale pela raiz.
+            Abra pelo novo ícone, entre no Vendas e ligue os avisos aqui de novo. Depois, use Enviar um aviso de teste.
           </p>
         )}
         {disp === null && (

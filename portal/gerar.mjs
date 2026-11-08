@@ -2,8 +2,8 @@
 // Uso: node portal/gerar.mjs  → grava portal/index.html, portal/.htaccess e portal/repasse/index.html
 // (vão por FTP para a raiz do site base360.mbigucci.com.br; o Vendas fica na pasta /vendas do mesmo site).
 // Monta a página a partir de portal/fonte.html com:
-// - o CSS dos tokens (marca/tokens/dist/mbigucci.css, gerado antes por marca/tokens/gerar.mjs);
-// - o lockup Base360 de docs/marca-base360/, com as cores trocadas por tokens (claro e escuro pelo sistema);
+// - tokens.css, bundle.css e fontes do Alicerce (somente leitura);
+// - lockup oficial MB.marca.html, ícones e preferências do Alicerce;
 // - o favicon da marca embutido, para a página abrir sem servidor.
 // Não edite o index.html à mão: mude a fonte ou as constantes abaixo e gere de novo.
 
@@ -17,8 +17,8 @@ const ENDERECO_VENDAS = "/vendas/";
 /** Caminho do Repasse dentro do site: só um redirecionamento para ENDERECO_REPASSE. */
 const CAMINHO_REPASSE = "/repasse/";
 
-import { execFileSync } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
+import { cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 const fs_mkdir = (p) => mkdirSync(p, { recursive: true });
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -27,40 +27,49 @@ const aqui = dirname(fileURLToPath(import.meta.url));
 const raiz = join(aqui, "..");
 const ler = (...p) => readFileSync(join(raiz, ...p), "utf8");
 
-execFileSync(process.execPath, [join(raiz, "marca/tokens/gerar.mjs")], { stdio: "inherit" });
-const tokens = ler("marca/tokens/dist/mbigucci.css").replace(/\/\*[\s\S]*?\*\/\n?/, "");
-
-// Cores fixas do arquivo claro → tokens: o mesmo SVG serve aos dois temas.
-const lockup = ler("docs/marca-base360/lockup-base360-claro.svg")
-  .replace(/ width="[\d.]+" height="[\d.]+"/, ' class="lockup"')
-  .replace(/ fill="#e11119"/g, ' style="fill:rgb(var(--brand))"')
-  .replace(/ fill="#0d0e11"/g, ' style="fill:rgb(var(--ink))"');
-if (/fill="#/.test(lockup)) throw new Error("O lockup tem uma cor que não virou token.");
+// Alicerce é somente leitura. Marca oficial pré-renderizada, sem depender de JS no corpo.
+const tokens = ler("crm/src/alicerce/tokens.css");
+const componentes = ler("crm/src/alicerce/bundle.css");
+const utilitarios = ler("crm/public/alicerce/bundle.js");
+const contexto = { window: {} };
+runInNewContext(utilitarios, contexto);
+const lockup = contexto.window.MB.marca.html("");
+cpSync(join(raiz, "crm/src/alicerce/fonts"), join(aqui, "fonts"), { recursive: true });
+cpSync(join(raiz, "crm/public/icons"), join(aqui, "icons"), { recursive: true });
+cpSync(join(raiz, "crm/public/alicerce/mbigucci-logotipo.png"), join(aqui, "mbigucci-logotipo.png"));
 
 const favicon = "data:image/svg+xml," + encodeURIComponent(ler("docs/marca-base360/favicon.svg").trim());
 
 const esc = (s) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
-const repasse = ENDERECO_REPASSE
-  ? `<section class="card" aria-labelledby="repasse">
-        <h2 class="titulo-card" id="repasse">Repasse</h2>
-        <p>Controle do repasse dos clientes.</p>
-        <a class="btn btn-ghost" href="${CAMINHO_REPASSE}">Abrir Repasse</a>
-      </section>`
-  : `<section class="card bar-neutra" aria-labelledby="repasse">
-        <h2 class="titulo-card" id="repasse">Repasse</h2>
-        <p>Controle do repasse dos clientes.</p>
-        <span class="selo">Em breve</span>
-      </section>`;
+const repasse = `<section class="mb-cartao portal-modulo" aria-labelledby="repasse">
+  <div class="mb-cartao__corpo">
+    <h2 class="titulo-secao portal-titulo" id="repasse">${contexto.window.MB.icone("banco")}Repasse</h2>
+    <p class="corpo portal-descricao">Controle do repasse dos clientes.</p>
+  </div>
+  <div class="mb-cartao__rodape">
+    ${ENDERECO_REPASSE ? `<a class="mb-botao mb-botao--secundario mb-botao--bloco-celular" href="${CAMINHO_REPASSE}">Abrir Repasse</a>` : '<span class="legenda">Em breve</span>'}
+  </div>
+</section>`;
 
 const pagina = ler("portal/fonte.html")
   .replace("<!--{{AVISO}}-->", "<!-- Gerado por portal/gerar.mjs a partir de portal/fonte.html. Não edite à mão. -->")
-  .replace("/*{{TOKENS}}*/", tokens.trim())
+  .replace("/*{{TOKENS}}*/", () => tokens.trim())
+  .replace("/*{{COMPONENTES}}*/", () => componentes.trim())
+  .replace("/*{{UTILITARIOS}}*/", () => utilitarios.trim())
+  .replace("/*{{APP}}*/", () => ler("portal/app.fonte.js").trim())
   .replace("{{FAVICON}}", esc(favicon))
   .replace("{{LOCKUP}}", lockup)
+  .replace("{{ICONE_VENDAS}}", () => contexto.window.MB.icone("vendas"))
   .replace("{{REPASSE}}", repasse)
   .replaceAll("{{VENDAS}}", ENDERECO_VENDAS);
 if (/\{\{[A-Z]+\}\}/.test(pagina)) throw new Error("Sobrou um marcador sem preencher na fonte.");
 writeFileSync(join(aqui, "index.html"), pagina);
+// Mesmo conteúdo na raiz publicada e nas cópias de desenvolvimento do Vendas.
+for (const [fonte, destino] of [["sw.fonte.js", "sw.js"], ["manifest.fonte.webmanifest", "manifest.webmanifest"]]) {
+  const conteudo = ler("portal", fonte);
+  writeFileSync(join(aqui, destino), conteudo);
+  writeFileSync(join(raiz, "crm/public", destino), conteudo);
+}
 
 // /repasse → o Repasse no subdomínio dele. 302 (temporário), porque o endereço muda na migração.
 // O .htaccess resolve no servidor; o repasse/index.html é a reserva se o servidor ignorar o .htaccess.

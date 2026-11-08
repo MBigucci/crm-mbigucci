@@ -31,3 +31,8 @@ insumos/
 
 # Testes e arquivos gerados locais (capturas, PNGs da marca, perfis de navegador)
 local/
+
+# Fontes do portal copiadas do Alicerce pelo gerador
+/portal/fonts/
+/portal/icons/
+/portal/mbigucci-logotipo.png

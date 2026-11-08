@@ -1,93 +1,75 @@
-<!doctype html>
-<html lang="pt-BR">
+﻿<!doctype html>
+<html lang="pt-BR" data-theme="auto" data-menu="claro" data-acao="grafite">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#151619" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f6f5f1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Base360">
+<link rel="manifest" href="/manifest.webmanifest">
 <title>Base360</title>
 <!--{{AVISO}}-->
 <link rel="icon" type="image/svg+xml" href="{{FAVICON}}">
-<link rel="icon" type="image/png" sizes="32x32" href="{{VENDAS}}icons/favicon-32.png">
-<link rel="apple-touch-icon" sizes="180x180" href="{{VENDAS}}icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
 <style>
 /*{{TOKENS}}*/
+/*{{COMPONENTES}}*/
+/* Apenas composição: peças e materiais vêm do Alicerce. */
 *, *::before, *::after { box-sizing: border-box; }
-body {
-  margin: 0;
-  min-height: 100vh;
-  background: rgb(var(--paper));
-  color: rgb(var(--ink));
-  font: 15px/1.5 Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
+body { min-height: 100vh; }
+.portal { max-width: calc(var(--esp-16) * 13); margin: 0 auto; padding: var(--esp-16) var(--esp-6) var(--esp-10); }
+.portal-marca { --portal-marca-tamanho: var(--esp-12); margin: 0; padding: calc(var(--portal-marca-tamanho) / 2) 0; }
+.portal-marca .mb-marca { --mb-marca-s: var(--portal-marca-tamanho); }
+.portal-intro { margin: var(--esp-8) 0 0; }
+.portal-modulos { list-style: none; margin: var(--esp-6) 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--esp-4); }
+.portal-modulo { height: 100%; display: flex; flex-direction: column; }
+.portal-modulo .mb-cartao__corpo { flex: 1; }
+.portal-modulo h2 { margin: 0; }
+.portal-titulo { display: flex; align-items: center; gap: var(--esp-2); }
+.portal-titulo .mb-icone { width: var(--esp-6); height: var(--esp-6); }
+.portal-descricao { margin: var(--esp-2) 0 0; color: var(--texto-suave); }
+.portal-rodape { margin-top: var(--esp-12); }
+.portal-rodape .mb-logo-mbigucci { height: var(--esp-10); }
+@media (max-width: 767px) {
+  .portal { padding: var(--esp-8) var(--esp-4); }
+  .portal-marca { --portal-marca-tamanho: var(--esp-10); }
+  .portal-modulos { grid-template-columns: minmax(0, 1fr); }
 }
-main { max-width: 760px; margin: 0 auto; padding: 56px 16px 48px; }
-h1 { margin: 0; }
-.lockup { display: block; height: 36px; width: auto; }
-.intro { margin: 20px 0 0; color: rgb(var(--ink-soft)); }
-.modulos { list-style: none; margin: 32px 0 0; padding: 0; display: grid; gap: 16px; }
-@media (min-width: 640px) { .modulos { grid-template-columns: 1fr 1fr; } }
-.card {
-  position: relative;
-  height: 100%;
-  /* Coluna com o botão no pé: os botões dos cartões ficam na mesma linha. */
-  display: flex; flex-direction: column; align-items: flex-start;
-  border: 1px solid rgb(var(--line));
-  border-radius: 3px;
-  background: rgb(var(--surface));
-  padding: 16px 18px 18px 21px;
-}
-.card::before {
-  content: "";
-  position: absolute; top: 0; bottom: 0; left: 0; width: 4px;
-  background: var(--mb-bar, rgb(var(--ink)));
-}
-.card.bar-brand { --mb-bar: rgb(var(--brand)); }
-.card.bar-neutra { --mb-bar: rgb(var(--concrete)); }
-.titulo-card { margin: 0; font-size: 19px; font-weight: 700; line-height: 1.15; }
-.card p { margin: 6px 0 16px; color: rgb(var(--ink-soft)); }
-.btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-height: 44px; margin-top: auto; padding: 9px 16px;
-  border: 1px solid transparent; border-radius: 2px;
-  font-size: 15px; font-weight: 600; line-height: 1.2; text-decoration: none;
-}
-.btn-red { background: rgb(var(--brand)); color: rgb(var(--on-brand)); }
-.btn-red:hover { background: rgb(var(--brand-dark)); }
-.btn:focus-visible, .btn-ghost:focus-visible { outline: 2px solid rgb(var(--brand)); outline-offset: 2px; }
-.btn-ghost {
-  background: rgb(var(--secondary)); color: rgb(var(--ink));
-  border-color: rgb(var(--secondary-edge));
-}
-.btn-ghost:hover { border-color: rgb(var(--ink)); }
-.selo {
-  display: inline-block; margin-top: 16px; padding: 2px 6px;
-  border: 1px solid rgb(var(--line)); border-radius: 2px;
-  font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
-  color: rgb(var(--ink-soft));
-}
-footer { margin-top: 40px; font-size: 13px; color: rgb(var(--concrete)); }
 </style>
+<script>
+/*{{APP}}*/
+Base360App.abrirPortal();
+Base360App.iniciar().catch(console.warn);
+/*{{UTILITARIOS}}*/
+MB.preferencias.restaurar();
+function atualizarCorPortal() {
+  document.querySelector('meta[name="theme-color"]').content = getComputedStyle(document.documentElement).getPropertyValue('--fundo').trim();
+}
+atualizarCorPortal();
+new MutationObserver(atualizarCorPortal).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+</script>
 </head>
 <body>
-<main>
-  <h1>{{LOCKUP}}</h1>
-  <p class="intro">Escolha o módulo.</p>
-  <ul class="modulos">
+<main class="portal">
+  <h1 class="portal-marca"><span class="mb-marca" role="img" aria-label="Base360">{{LOCKUP}}</span></h1>
+  <p class="leitura portal-intro">Escolha o módulo.</p>
+  <ul class="portal-modulos" aria-label="Módulos">
     <li>
-      <section class="card bar-brand" aria-labelledby="vendas">
-        <h2 class="titulo-card" id="vendas">Vendas</h2>
-        <p>Leads, lista do dia, visitas, vendas e o painel da equipe.</p>
-        <a class="btn btn-red" href="{{VENDAS}}">Abrir Vendas</a>
+      <section class="mb-cartao portal-modulo" aria-labelledby="vendas">
+        <div class="mb-cartao__corpo">
+          <h2 class="titulo-secao portal-titulo" id="vendas">{{ICONE_VENDAS}}Vendas</h2>
+          <p class="corpo portal-descricao">Leads, lista do dia, visitas, vendas e o painel da equipe.</p>
+        </div>
+        <div class="mb-cartao__rodape">
+          <a class="mb-botao mb-botao--primario mb-botao--bloco-celular" href="{{VENDAS}}">Abrir Vendas</a>
+        </div>
       </section>
     </li>
-    <li>
-      {{REPASSE}}
-    </li>
+    <li>{{REPASSE}}</li>
   </ul>
-  <footer>MBigucci Construtora</footer>
+  <footer class="portal-rodape"><span class="mb-logo-mbigucci"><img src="./mbigucci-logotipo.png" alt="MBigucci"></span></footer>
 </main>
 </body>
 </html>

@@ -14,10 +14,11 @@
 9. Como ajustar
 10. Testes
 11. Da Bruna: o que veio, o que foi adaptado e o que ficou de fora
+12. App do site todo e reinstalação no iPhone (08/11/2026)
 
 ## 1. O que entrou e o que ficou de fora
 
-- **Entrou:** service worker só para avisos (`crm/public/sw.js`, escopo `/vendas/` em `base360.mbigucci.com.br`, sem cache; antes de 05/11/2026 era `/crm/`), card "Avisos neste aparelho" em Minha conta (ligar, desligar, tipos, enviar teste), tabelas `push_assinaturas` e `push_log` com RLS, a Edge Function `avisos` (montagem, envio e criptografia sem dependências), o agendador a cada 5 min e o gatilho de lead atribuído (`crm/supabase/agendar-avisos.sql`).
+- **Entrou:** service worker só para avisos (`portal/sw.fonte.js` → `portal/sw.js`, escopo `/` em `base360.mbigucci.com.br`, sem cache; até 08/11/2026 era `/vendas/`, antes de 05/11 era `/crm/`), card "Avisos neste aparelho" em Minha conta (ligar, desligar, tipos, enviar teste), tabelas `push_assinaturas` e `push_log` com RLS, a Edge Function `avisos` (montagem, envio e criptografia sem dependências), o agendador a cada 5 min e o gatilho de lead atribuído (`crm/supabase/agendar-avisos.sql`).
 - **Avisos:** próximo contato, visita 1 hora antes, visitas aguardando baixa no fim do dia, lead da empresa atribuído, prazo de 15 min (faltando 5 e estourado) e resumo do dia.
 - **Depois (04/11/2026, item 28):** o tipo **Equipe**, para o gerente: o prazo de 15 min estourado num lead da empresa da equipe, na hora, e no fim do dia as visitas da equipe aguardando baixa.
 - **Ficou de fora:** lista dos aparelhos para remover um celular perdido (cada um só vê os próprios; o aparelho sai sozinho em 60 dias sem abrir o CRM), religar sozinho ao entrar de novo na mesma conta (a Bruna faz; aqui a pessoa liga de novo em Minha conta) e qualquer aviso do programa de pontuação.
@@ -25,7 +26,7 @@
 
 ## 2. Como funciona
 
-1. **Ligar:** em Minha conta, a pessoa toca em "Ligar avisos". O navegador pede a permissão, registra o `sw.js` com escopo `/vendas/` (o `BASE_PATH`) e assina o serviço de push com a chave pública VAPID (`NEXT_PUBLIC_VAPID_PUBLIC_KEY`). A assinatura vai para o banco pela função `push_assinar`.
+1. **Ligar:** o portal e o Vendas registram `/sw.js` com escopo `/` ao abrir, sem pedir permissão. Em Minha conta, a pessoa toca em "Ligar avisos": o navegador pede a permissão e assina o serviço de push com a chave pública VAPID (`NEXT_PUBLIC_VAPID_PUBLIC_KEY`) nesse registro raiz, após sua ativação e a limpeza do registro antigo. A assinatura vai para o banco pela função `push_assinar`.
 2. **Rodada:** a cada 5 min, o `pg_cron` chama a Edge Function `avisos` pelo `pg_net`, com o cabeçalho `x-avisos-segredo`. A função pergunta ao banco se o segredo confere (`avisos_segredo_ok`) e roda:
    - `avisos_limpar()`: tira o log com mais de 30 dias e os aparelhos sem abrir o CRM há 60;
    - `avisos_dados()`: devolve o horário de atendimento, as assinaturas, os leads e as visitas abertas de quem tem aparelho e conta ativa, com o fim do prazo já calculado por `private.fim_do_prazo` (a mesma conta do painel);
@@ -88,7 +89,7 @@ Por que assim: o site é exportação estática no WordPress, sem servidor. Na B
 - **Desligar:** apaga a linha (RLS: só a própria) e cancela a assinatura no navegador.
 - **Sair da conta:** o CRM apaga a linha deste aparelho antes do `signOut`.
 - **Abrir o CRM:** renova o `visto_em`. Se as chaves VAPID mudaram, a assinatura antiga é cortada e a pessoa liga de novo.
-- **iPhone:** só funciona com o CRM instalado na Tela de Início, no iOS 16.4 ou mais novo. Pelo Safari comum o card explica como instalar e não mostra o botão.
+- **iPhone:** só funciona com o Base360 instalado pela raiz (`https://base360.mbigucci.com.br/`) na Tela de Início, no iOS 16.4 ou mais novo. Pelo Safari comum o card explica como instalar e não mostra o botão. A instalação antiga pelo Vendas deve ser removida; roteiro na seção 12.
 
 ## 7. Segurança e segredos
 
@@ -125,7 +126,8 @@ Conferido em 375px em 29/10/2026 com o Supabase falso (`sqltest/fake-supabase-av
 - **`npm test`** (`crm/src/lib/avisos.test.ts`, 28 testes): do item 28, o prazo estourado na equipe (na hora, uma vez, ficha; só corretores da equipe e lead da empresa em novo; Lead perdido gera chave nova; mais de 3 viram um aviso que abre o painel), a baixa da equipe às 19h (contagem por corretor, uma por dia, nada sem visita), só para o aparelho com o tipo Equipe, e o tipo Equipe só na tela de quem vê a equipe. Antes: cada aviso e suas janelas, remarcar gera chave nova, lead da empresa fora do horário, prazo de 5 min e estourado, resumo com as 4 contagens, dia sem pendências e dia sem atendimento, não repetir (`soNovos`), preferências por aparelho, juntar contatos, tentar de novo só na falha, tipos iguais na tela e na função, endereços de push, cifra que o aparelho decifra (RFC 8291) e o JWT do VAPID verificado com a chave pública.
 - **`npm run test:banco`** (`crm/supabase/testes/avisos.test.mjs`, 13 testes no PGlite): do item 28, `avisos_dados` com a equipe do gerente que ligou o tipo Equipe (corretores ativos, leads e visitas do corretor sem aparelho), sem o corretor que marcou Equipe e sem o gerente que perdeu `dados.ver_equipe` no catálogo, o tipo aceito e o padrão sem ele. Antes: `push_assinar` com tipos padrão e escolhidos, RLS (cada um vê e apaga só os próprios; gerente e gerente geral não veem os da equipe; sem gravar direto), recusas (endereço, tipo, anônimo, desativado), aparelho que troca de conta, funções fechadas para o app, `avisos_dados` só de quem tem aparelho e conta ativa e com o fim do prazo, `avisos_registrar` sem repetir, `avisos_desmarcar`, `push_esquecer`, `avisos_limpar`, segredo no Vault e o gatilho de atribuição com um `pg_net` falso (chama só para o lead da empresa atribuído e não quebra o cadastro sem `pg_net`).
 - **Criptografia:** além do teste, conferida uma vez contra a biblioteca `http_ece` (a que o `web-push` usa): ela decifrou a mensagem da função.
-- **Ainda não validado:** o card com o tipo Equipe na tela, os avisos do gerente num celular de verdade, o envio num Supabase real e num celular de verdade (Android e iPhone instalado), e o toque no aviso abrindo a tela certa.
+- **Confirmado no iPhone em 07/11/2026 pelo Felipe:** aviso real recebido pelo botão "Enviar um aviso de teste" em Avisos neste aparelho, após o `grant` de `service_role` (commits `55a1b3e` e `f7d0a87`). Essa confirmação é anterior à migração do SW para a raiz; não implica teste de todos os avisos nem do clique na rota.
+- **Ainda não validado:** avisos do gerente/Equipe num celular real, Android, toque real na rota e reinstalação/push no iPhone após a migração de 08/11. A validação atual é local, sem Supabase real; seção 12.
 
 ## 11. Da Bruna: o que veio, o que foi adaptado e o que ficou de fora
 
@@ -153,3 +155,24 @@ Lido por inteiro em 29/10/2026: `ref/CRM Bruna/public/sw.js`, `src/lib/push.ts`,
 | Só endereços de serviços de push | ✓ Trazido, no banco e na função | |
 | Explicação do iPhone instalado e do desbloqueio | ✓ Trazido, com os caminhos em pt-BR do DS | |
 | Ícones com Lucide no card | ✕ Fora | O MBigucci DS não usa ícones; sinais ✓ – ! |
+
+## 12. App do site todo e reinstalação no iPhone (08/11/2026)
+
+Portal aprovado pelo Felipe em 08/11, no Alicerce. Um app Base360 instalado pela raiz, manifest com `id`, `start_url` e `scope` em `/`; o Vendas continua em `/vendas/`. Repasse continua em outro subdomínio e não compartilha SW nem storage.
+
+- **Fontes únicas:** `portal/sw.fonte.js`, `portal/manifest.fonte.webmanifest` e `portal/app.fonte.js`. `node portal/gerar.mjs` gera o pacote raiz e as cópias `crm/public/sw.js` e `crm/public/manifest.webmanifest` para desenvolvimento. Nunca editar essas cópias à mão nem registrar `/vendas/sw.js`. Não há cache de páginas, dados ou interceptação de requisições.
+- **Inicialização:** o gerador embute `app.fonte.js` no portal. `crm/src/app/layout.tsx` lê a mesma fonte durante o build (executado em `crm/`) e a embute no Vendas. O runtime registra `/sw.js`, aguarda sua ativação e desregistra somente o escopo exato `/vendas/`, cancelando antes a assinatura antiga. Se o cancelamento falhar, mantém o registro e permite nova tentativa; não cria assinatura nova nessa tentativa.
+- **Linha antiga no banco:** o endpoint cancelado fica em `base360:push-antigos`, no aparelho. Ao abrir o Vendas autenticado, `sincronizarAvisos` apaga a linha com as regras existentes de RLS. Falha de rede conserva a pendência para nova tentativa; storage bloqueado não impede cancelar o push antigo. Nenhuma permissão push é pedida automaticamente.
+- **Último módulo:** o Vendas grava `base360:ultimo-modulo=vendas` ao abrir, com `try/catch`. A raiz só redireciona no modo instalado (`display-mode: standalone` ou `navigator.standalone` no iPhone). Primeiro acesso, valor desconhecido, storage bloqueado e navegador normal mostram portal. O logo do Vendas retorna a `/?portal=1`; esse retorno explícito vence o redirecionamento e evita um ciclo. Nenhum arquivo do programa de pontos foi alterado para isso.
+- **Avisos:** o worker resolve caminhos relativos da Edge Function dentro de `/vendas/`, com fallback `/vendas/` e rejeição de origem externa; o ícone vem de `/icons/`. O toque prioriza uma janela do Vendas, depois uma do portal; navega e foca, ou abre outra se necessário.
+- **Pacote raiz:** conteúdo de `portal/` gerado para publicação: `index.html`, `.htaccess`, `repasse/`, `sw.js`, `manifest.webmanifest`, `icons/`, `fonts/` e `mbigucci-logotipo.png`. Fontes locais copiadas do Alicerce, fora do Git; não há dependências de CDN. Não publicar fontes de desenvolvimento (`*.fonte.*`), scripts de QA nem relatórios. O build do Vendas vai separadamente em `vendas/`.
+
+**Conferência local de 08/11:** `node --test crm/src/lib/portal-app.test.mjs`: 15 testes passaram. `node portal/conferir-mockup.mjs` serviu portal e o build já existente em `crm/out/` pela porta 4180, com o runtime novo injetado somente na resposta HTML local. HTTPS foi bloqueado antes da navegação: sem autenticação, Supabase real, instalação de dependências ou novo build. Conferidos SW raiz controlando `/` e `/vendas/`, instalação/remoção de um SW antigo simulado no escopo `/vendas/`, último módulo e retorno pelo logo com modo instalado simulado. O cancelamento da assinatura e a limpeza da linha foram testados com objetos falsos. Evidências e quatro capturas (375/1440, papel/grafite) em `crm/local/mockup-portal/`. A integração no build novo, typecheck completo e suíte geral ficam para a sessão master; isso não valida push real após a migração.
+
+**Roteiro do Felipe no iPhone, depois da publicação conjunta da raiz e do Vendas:**
+1. Se possível, abra a instalação antiga: Minha conta → Avisos neste aparelho → Desligar neste aparelho. Remova o ícone antigo instalado pelo Vendas.
+2. No Safari, abra **https://base360.mbigucci.com.br/**, sem `/vendas/` no endereço. Compartilhar → Adicionar à Tela de Início → Adicionar, com o nome Base360.
+3. Abra pelo novo ícone, escolha Vendas e entre na conta. Minha conta → Avisos neste aparelho → Ligar avisos neste aparelho; permita notificações e escolha os tipos.
+4. Toque em Enviar um aviso de teste, deixe o app em segundo plano e confirme o recebimento. Toque no aviso e confira a tela de destino no Vendas.
+5. Feche e reabra pelo ícone: deve entrar no Vendas. Toque no logo: deve mostrar o portal sem voltar sozinho. Pelo Safari normal, a raiz deve mostrar o portal.
+6. Confirme que há apenas um ícone Base360 e nenhum aviso duplicado. Se não receber, confira Ajustes → Notificações → Base360 → Permitir Notificações e tente o teste novamente.
