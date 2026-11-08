@@ -4,22 +4,24 @@
 // permissões, a aprovação só pelo gerente geral, o período sem duplicar) fica no
 // banco: aqui só se grava e se traduz o erro. Regras em docs/pontuacao-verba.md.
 
-import { useCallback, useEffect, useState } from "react";
-import { db } from "./supabase";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { db, novoId } from "./supabase";
 import { mensagemErro } from "./erros";
-import { COLUNAS_CRITERIO, COLUNAS_LANCAMENTO, type Criterio, type Lancamento, type SlugCriterio, type StatusLancamento, type Turno } from "./programa";
+import { COLUNAS_CRITERIO, COLUNAS_LANCAMENTO, type Criterio, type Lancamento, type SlugCriterio, type StatusLancamento, type Turno, type StandGerente, type CheckinGerente } from "./programa";
 
 type Resultado = Promise<string | null>;
 const PAGINA = 1000;
 
-function erroPrograma(e: { message?: string } | null): string | null {
+function erroPrograma(e: { message?: string; code?: string } | null): string | null {
   if (!e) return null;
   const m = e.message ?? "";
+  if (e.code === "P0001" || /^(Adicione|Envie|Escolha|Você |Este stand|Localização|Stand sem|Só o gerente|A data|Lançamentos|O comprovante)/.test(m)) return m;
   if (m.includes("lancamentos_periodo_unico")) return "Esse período já está marcado para o corretor.";
   if (m.includes("lancamentos_saida_com_foto")) return "Cole o link da foto da saída para visita.";
   if (m.includes("lancamentos_pontos_comprovante_check")) return "O comprovante precisa ser um link que começa com https://.";
   if (m.includes("lancamentos_recusa_tem_motivo")) return "Escreva o motivo da recusa.";
-  return mensagemErro(e);
+  const traduzido = mensagemErro(e);
+  return traduzido === m ? "Não foi possível concluir esta ação. Tente de novo." : traduzido;
 }
 
 export function useCriterios() {
@@ -51,8 +53,12 @@ export function useLancamentos(ini: string, fim: string, filtro?: { criterio?: S
   const [versao, setVersao] = useState(0);
   const recarregar = useCallback(() => setVersao((v) => v + 1), []);
   const { criterio, corretor, status } = filtro ?? {};
+  const leitura = useRef("");
   useEffect(() => {
     let vivo = true;
+    const chave = JSON.stringify([ini, fim, criterio, corretor, status]);
+    if (leitura.current !== chave) { setLancamentos(null); leitura.current = chave; }
+    setErro(null);
     (async () => {
       const lista: Lancamento[] = [];
       for (let de = 0; ; de += PAGINA) {
@@ -78,19 +84,23 @@ export function useLancamentos(ini: string, fim: string, filtro?: { criterio?: S
 }
 
 export type NovoLancamento = {
+  id?: string;
   corretor_id: string;
   criterio: Exclude<SlugCriterio, "visita">;
   data: string;
   periodo?: Turno | null;
   quantidade?: number;
   comprovante?: string | null;
+  tipo_acao?: "video" | "blitz" | null;
+  comprovante_arquivo?: string | null;
   saida_visita?: boolean;
   observacao?: string | null;
 };
 
 /** Lança (sempre pendente). Devolve o id, para o Desfazer. */
 export async function lancar(d: NovoLancamento): Promise<{ id: string | null; erro: string | null }> {
-  const { data, error } = await db().from("lancamentos_pontos").insert(d).select("id").maybeSingle();
+  const campos = d.criterio === "video" ? { ...d, tipo_acao: d.tipo_acao ?? "video" } : d;
+  const { data, error } = await db().from("lancamentos_pontos").insert(campos).select("id").maybeSingle();
   return { id: (data?.id as string) ?? null, erro: erroPrograma(error) };
 }
 
@@ -169,8 +179,71 @@ export function useFechamentos(mes: string) {
 }
 
 /** Fecha (ou fecha de novo) o mês: grava a foto do cálculo por corretor. */
-export async function fecharMes(linhas: Omit<Fechamento, "fechado_por" | "fechado_em">[]): Resultado {
-  const { error } = await db().from("fechamentos_verba").upsert(linhas, { onConflict: "mes,corretor_id" });
+export async function fecharMes(linhas: Omit<Fechamento, "fechado_por" | "fechado_em">[], mes = linhas[0]?.mes): Resultado {
+  const { error } = await db().rpc("fechar_programa_mes", { p_mes: mes, p_corretores: linhas });
   return erroPrograma(error);
+}
+
+export type DadosGerente = { parceiros: number; stands: StandGerente[]; checkins: CheckinGerente[]; parcerias_instaladas: boolean };
+export type GerentePrograma = { id: string; nome: string; dados: DadosGerente };
+export type FechamentoGerente = { mes: string; gerente_id: string; parceiros: number; pontos_parceiros: number; pontos_checkins: number; premio: number; fechado_em: string };
+
+function useRpcPrograma<T>(nome: string, args: Record<string, unknown>, ativo = true) {
+  const [dados, setDados] = useState<T | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const [versao, setVersao] = useState(0);
+  const chave = JSON.stringify(args);
+  const leitura = useRef("");
+  useEffect(() => {
+    if (!ativo) return;
+    let vivo = true;
+    // Atualizar o mesmo mês preserva painel, rascunho e foco durante a leitura.
+    if (leitura.current !== nome + chave) { setDados(null); leitura.current = nome + chave; }
+    setErro(null);
+    db().rpc(nome, JSON.parse(chave)).then(({ data, error }) => {
+      if (!vivo) return;
+      if (error) setErro(erroPrograma(error)); else setDados(data as T);
+    });
+    return () => { vivo = false; };
+  }, [nome, chave, versao, ativo]);
+  return { dados, erro, recarregar: useCallback(() => setVersao(v => v + 1), []) };
+}
+export const usePontosGerente = (mes: string) => useRpcPrograma<DadosGerente>("pontos_gerente", { p_mes: mes });
+export const useGerentesPrograma = (mes: string) => useRpcPrograma<GerentePrograma[]>("programa_gerentes", { p_mes: mes });
+
+export async function definirStandGerente(gerente: string, stand: string, ativo: boolean): Resultado {
+  const { error } = await db().rpc("definir_stand_gerente", { p_gerente: gerente, p_stand: stand, p_ativo: ativo });
+  return erroPrograma(error);
+}
+export async function registrarCheckinGerente(stand: string, p: { lat: number; lng: number; precisao: number }) {
+  const { data, error } = await db().rpc("checkin_gerente", { p_stand: stand, p_lat: p.lat, p_lng: p.lng, p_precisao: p.precisao });
+  return { dados: data as { repetido: boolean; distancia_m: number } | null, erro: erroPrograma(error) };
+}
+export async function verComprovante(caminho: string): Promise<{ url?: string; erro?: string }> {
+  const { data, error } = await db().storage.from("comprovantes").createSignedUrl(caminho, 120);
+  return error || !data ? { erro: "Não foi possível abrir o comprovante. Tente de novo." } : { url: data.signedUrl };
+}
+export async function cancelarAcao(id: string, desfazer = false): Resultado {
+  const { error } = await db().rpc("cancelar_acao", { p_id: id, p_desfazer: desfazer });
+  return erroPrograma(error);
+}
+
+/** Caminho do arquivo e id do lançamento estáveis contra reenvio após perda da resposta. */
+export async function enviarAcao(d: NovoLancamento, arquivo: Blob | null, dono: string): Promise<{ erro: string | null; id: string }> {
+  const id = d.id ?? novoId();
+  const caminho = arquivo ? `${dono}/${id}.jpg` : null;
+  if (arquivo && caminho) {
+    const { error } = await db().storage.from("comprovantes").upload(caminho, arquivo, { contentType: "image/jpeg", upsert: false });
+    // O mesmo nome só é usado ao repetir este envio: nunca sobrescreve o objeto.
+    if (error && !["409", "Duplicate"].includes(String((error as { statusCode?: string }).statusCode)) && !/already exists|Duplicate/i.test(error.message))
+      return { id, erro: "Não foi possível enviar a imagem. O arquivo continua aqui. Tente de novo." };
+  }
+  const r = await lancar({ ...d, id, comprovante_arquivo: caminho });
+  if (r.erro) {
+    // Se a resposta do primeiro insert se perdeu, uma repetição não cria outra ação.
+    const { data } = await db().from("lancamentos_pontos").select("id").eq("id", id).eq("lancado_por", dono).maybeSingle();
+    if (data?.id === id) return { id, erro: null };
+  }
+  return { id, erro: r.erro };
 }
 

@@ -8,7 +8,7 @@ Os acessos são **perfis com permissões configuráveis**, não regras fixas no 
 | --- | --- | --- |
 | **Gerente geral** (Felipe) | Tudo | Cadastra usuários, equipes, critérios de pontuação e metas. **Aprova todo lançamento de pontos.** Fecha o mês (verba e premiação). |
 | **Operacional** | _a definir_. Proposta: dados operacionais de todas as equipes, sem bônus em dinheiro | Lança pontos (períodos, vídeos, visitas), que ficam **pendentes de aprovação**. Cadastra e edita empreendimentos, tipologias e preços (`empreendimentos.gerenciar`, no padrão desde 29/10/2026). Proposta: conferir a conciliação de campanhas |
-| **Gerente** | Leads, atendimento, agendamentos e visitas **da própria equipe**, com o histórico de cada lead | Acompanha os leads da equipe, distribui os leads da empresa entre os corretores dela e lança pontos (pendentes de aprovação). **Não vende e não pontua.** |
+| **Gerente** | Leads, atendimento, agendamentos e visitas **da própria equipe**, com o histórico de cada lead; seus pontos e prêmio | Acompanha a equipe e lança pontos dela. Participa do programa próprio de prêmio por parceiros e check-ins (`pontos_gerente.participar`). Não vende; seu prêmio é separado da verba dos corretores. |
 | **Corretor** | Os próprios leads, a agenda, os pontos, a verba, a meta e o ranking | Cadastra e trabalha os próprios leads e cria metas próprias |
 | **Recepção** | Escala de períodos do dia e quem está no plantão | Registra os períodos cumpridos (manhã e tarde) e recebe a foto que comprova a saída para visita. Os lançamentos ficam pendentes de aprovação, como os demais. |
 | **Especialista** | _a definir_ | _a definir_ |
@@ -19,11 +19,15 @@ Desde 04/11/2026, sem chave: cada perfil vê o programa pelas permissões abaixo
 
 - **Gerente geral:** sempre vê tudo. **Só ele aprova, recusa e volta para pendente** (regra fixa no banco, não é permissão do catálogo). Fecha o mês e edita os critérios.
 - **Recepção:** permissão `plantao.registrar`. Na tela Plantão, marca os períodos e a saída para visita (com o link da foto) de **qualquer** corretor ativo e vê a roleta. Só períodos: não lança vídeo.
-- **Gerente:** permissão `lancamentos.registrar`. Lança períodos e vídeos **da equipe** e vê os lançamentos e a roleta da equipe.
+- **Gerente:** `lancamentos.registrar` mantém períodos/vídeos da equipe e roleta. Nova permissão `pontos_gerente.participar` dá Meus pontos, prêmio próprio, parceiros novos contados automaticamente e check-in nos stands definidos pelo gerente geral. Sem mínimo, até R$ 2.000 por mês; liberação no mês seguinte após fechamento.
 - **Operacional:** as duas permissões no padrão. Períodos de todos; vídeos só de quem ele vê (dê `dados.ver_todos` para todos).
-- **Corretor:** vê só os próprios pontos **aprovados**, a verba prevista e o ranking. Não lança nada, nem para si.
+- **Corretor:** vê os próprios pontos aprovados, verba e ranking. `acoes.registrar`, dada por padrão, permite enviar **só vídeo ou blitz para si**, com comprovante, sempre aguardando aprovação. Vê também as próprias ações pendentes e pode Desfazer. Não lança período ou visita para si, nem ação para outro corretor. Após 12 lançadas pode enviar reservas; só 12 aprovadas pontuam.
 - Quem lançou cancela o próprio lançamento pendente (é o Desfazer da recepção). O lançamento nunca é excluído, e cada mudança fica na auditoria.
 - As visitas realizadas entram sozinhas como pendentes, pela baixa da visita (`docs/visitas.md`).
+
+**Desde 08/11/2026:** `acoes.registrar` e `pontos_gerente.participar` são permissões configuráveis do catálogo, com padrão só na primeira criação. Só o gerente geral define/retira os stands e fecha os dois programas. As vigências preservam o histórico; inclusão/retirada valem na segunda seguinte. O gerente só registra para si, no stand e raio válidos, com hora/semana e distância conferidas no banco.
+
+**Comprovantes privados:** dono ativo e gerente geral leem; dono com permissão envia imagem JPEG reduzida no aparelho. Sem sobrescrita e sem excluir arquivo que já está referenciado. Recepção e outros gerentes não recebem acesso só por poderem ver a equipe. A foto do próprio check-in não é necessária: o check-in usa localização.
 
 ## Equipes
 

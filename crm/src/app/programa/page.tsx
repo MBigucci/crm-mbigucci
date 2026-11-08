@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import clsx from "clsx";
 import { Casca } from "@/components/casca";
+import { GerentesPrograma } from "@/components/programa/gerentes-programa";
+import { ConfirmarFechamento } from "@/components/programa/confirmar-fechamento";
 import { MESES, mesAtual, NavMes, type Mes } from "@/components/programa/partes";
 import { db } from "@/lib/supabase";
 import { COLUNAS_FAIXA, faixasDoMes, type Faixa } from "@/lib/faixas";
@@ -85,7 +87,7 @@ function Programa() {
   const mesFuturo = mes.ano * 12 + mes.mes > hojeMes.ano * 12 + hojeMes.mes;
 
   async function fechar() {
-    if (!linhas) return;
+    if (!linhas) return "Aguarde os dados do mês.";
     setMsg(null);
     const e = await fecharMes(
       linhas.map((l) => ({
@@ -97,10 +99,11 @@ function Programa() {
         vgv: l.vgv,
         verba: l.verba.verba,
         premio: l.premio,
-      })),
+      })), ini,
     );
     setMsg(e ? { ok: false, texto: e } : { ok: true, texto: `Mês fechado. A verba e o prêmio são liberados em ${MESES[lib.mes].toLowerCase()} de ${lib.ano}.` });
     recarregarFech();
+    return e;
   }
 
   const erro = erroCriterios ?? erroLanc ?? erroVendas;
@@ -129,6 +132,7 @@ function Programa() {
       </section>
 
       <NavMes valor={mes} onMudar={setMes} />
+      <GerentesPrograma mes={mes} />
 
       {erro && <p className="aviso-erro">! {erro}</p>}
       {!linhas && !erro && <p className="text-concrete">Carregando…</p>}
@@ -144,7 +148,7 @@ function Programa() {
                   <div className="min-w-0">
                     <p className="font-semibold">{nome.get(l.corretor) ?? "Corretor"}</p>
                     <p className="num text-[13px] text-ink-soft">
-                      {plural(l.contagens.periodo, "período", "períodos")} · {plural(l.contagens.video, "vídeo", "vídeos")} ·{" "}
+                      {plural(l.contagens.periodo, "período", "períodos")} · {plural(l.contagens.video, "ação", "ações")} ·{" "}
                       {plural(l.contagens.visita, "visita", "visitas")}
                       {l.pendentes > 0 && ` · ${plural(l.pendentes, "pendente", "pendentes")}`}
                     </p>
@@ -177,7 +181,7 @@ function Programa() {
           )}
           <p className="text-[13px] text-ink-soft">
             Só contam os lançamentos aprovados, com o limite de cada critério, e as vendas assinadas e pagas no mês da assinatura. Mínimo de{" "}
-            {REGRAS.minimo} pontos; teto de {REGRAS.tetoSemVenda} sem venda e {REGRAS.tetoComVenda} com venda; cada venda soma{" "}
+            {REGRAS.minimo} pontos; sem trava em 200, até a soma dos máximos dos critérios; cada venda soma{" "}
             {formatarReais(REGRAS.porVenda)}.
           </p>
 
@@ -194,9 +198,7 @@ function Programa() {
                 {pendentes > 0 && ` Ainda há ${pendentes} pendente${pendentes > 1 ? "s" : ""}.`}
               </p>
             )}
-            <button type="button" className="btn btn-red btn-lg focus-ring justify-self-start" disabled={mesFuturo || !linhas.length} onClick={fechar}>
-              {fechado ? "Fechar de novo" : `Fechar ${MESES[mes.mes].toLowerCase()}`}
-            </button>
+            <div><ConfirmarFechamento rotulo={fechado ? "Fechar de novo" : `Fechar ${MESES[mes.mes].toLowerCase()}`} disabled={mesFuturo} confirmar={fechar} /></div>
             {msg && <p className={msg.ok ? "aviso-ok" : "aviso-erro"}>{msg.ok ? "✓" : "!"} {msg.texto}</p>}
           </div>
         </section>

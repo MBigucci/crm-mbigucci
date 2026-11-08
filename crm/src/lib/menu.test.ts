@@ -36,6 +36,12 @@ test("gerente que atribui leads: Início no lugar da Lista do dia, sem Meus pont
   assert.ok(itens.includes("Painel") && itens.includes("Leads"));
 });
 
+test("Meus pontos dos gerentes e ações próprias dependem das permissões configuradas", () => {
+  assert.ok(todosOsItens(entrada("gerente", ["pontos_gerente.participar"])).includes("Meus pontos"));
+  assert.ok(todosOsItens(entrada("recepcao", ["acoes.registrar"])).includes("Meus pontos"));
+  assert.ok(!todosOsItens(entrada("recepcao")).includes("Meus pontos"));
+});
+
 test("gerente geral: Configurações é o único item de administração e Pontos entra no Programa", () => {
   const grupos = montarMenu(entrada("gg"));
   assert.deepEqual(

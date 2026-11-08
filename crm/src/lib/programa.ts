@@ -11,7 +11,7 @@ export const COLUNAS_CRITERIO = "slug, nome, pontos, limite_mes, maximo, ordem";
 /** Os critérios da regra (o banco tem a cópia editável pelo gerente geral). */
 export const CRITERIOS_PADRAO: Criterio[] = [
   { slug: "periodo", nome: "Período integral cumprido", pontos: 5, limite_mes: 24 },
-  { slug: "video", nome: "Vídeo com a marca MBigucci", pontos: 5, limite_mes: 8 },
+  { slug: "video", nome: "Vídeo ou blitz", pontos: 5, limite_mes: 12 },
   { slug: "visita", nome: "Visita realizada", pontos: 10, limite_mes: 12 },
 ];
 
@@ -21,10 +21,6 @@ export const REGRAS = {
   valorPonto: 10,
   /** Abaixo disso, a verba é zero. */
   minimo: 130,
-  /** Teto sem venda no mês. */
-  tetoSemVenda: 200,
-  /** A 1ª venda assinada e paga destrava até aqui. */
-  tetoComVenda: 280,
   /** R$ extra por venda assinada e paga, só para quem atingiu o mínimo. */
   porVenda: 1000,
 };
@@ -45,6 +41,8 @@ export type Lancamento = {
   periodo: Turno | null;
   quantidade: number;
   comprovante: string | null;
+  tipo_acao?: "video" | "blitz" | null;
+  comprovante_arquivo?: string | null;
   saida_visita: boolean;
   observacao: string | null;
   visita_id: string | null;
@@ -56,7 +54,7 @@ export type Lancamento = {
   decidido_em: string | null;
 };
 export const COLUNAS_LANCAMENTO =
-  "id, corretor_id, criterio, data, periodo, quantidade, comprovante, saida_visita, observacao, visita_id, status, motivo_recusa, lancado_por, lancado_em, decidido_por, decidido_em";
+  "id, corretor_id, criterio, data, periodo, quantidade, comprovante, tipo_acao, comprovante_arquivo, saida_visita, observacao, visita_id, status, motivo_recusa, lancado_por, lancado_em, decidido_por, decidido_em";
 
 export const STATUS_LANCAMENTO: Record<StatusLancamento, { sinal: string; nome: string }> = {
   pendente: { sinal: "!", nome: "Pendente" },
@@ -96,14 +94,13 @@ export type Verba = {
 /**
  * Verba do mês: pontos aprovados (já com os limites) e vendas assinadas e pagas.
  *   pontos < 130          → 0
- *   sem venda             → min(pontos, 200) × 10
- *   com venda             → min(pontos, 280) × 10 + vendas × 1.000
+ *   acima do mínimo       → pontos (até a soma dos máximos) × 10 + vendas × 1.000
  * Não há regra de primeiro mês: o que o corretor faz nele já conta para o segundo.
  */
-export function calcularVerba(pontos: number, vendas: number): Verba {
+export function calcularVerba(pontos: number, vendas: number, criterios: Criterio[] = CRITERIOS_PADRAO): Verba {
   const faltamParaMinimo = Math.max(0, REGRAS.minimo - pontos);
   if (pontos < REGRAS.minimo) return { situacao: "abaixo_do_minimo", pontosValidos: 0, daPontuacao: 0, dasVendas: 0, verba: 0, faltamParaMinimo };
-  const pontosValidos = Math.min(pontos, vendas > 0 ? REGRAS.tetoComVenda : REGRAS.tetoSemVenda);
+  const pontosValidos = Math.min(pontos, criterios.reduce((s, c) => s + c.pontos * c.limite_mes, 0));
   const daPontuacao = pontosValidos * REGRAS.valorPonto;
   const dasVendas = vendas * REGRAS.porVenda;
   return { situacao: vendas > 0 ? "com_venda" : "sem_venda", pontosValidos, daPontuacao, dasVendas, verba: daPontuacao + dasVendas, faltamParaMinimo };
@@ -164,7 +161,7 @@ export function resumoDoMes(
       pontos,
       vendas: validas.length,
       vgv: validas.reduce((s, v) => s + Number(v.vgv), 0),
-      verba: calcularVerba(pontos, validas.length),
+      verba: calcularVerba(pontos, validas.length, criterios),
     };
   });
 }
@@ -182,6 +179,36 @@ export function somarDias(dia: string, n: number): string {
   const d = new Date(`${dia}T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
+}
+
+export type StandGerente = { id: string; stand_id: string; nome: string; inicio_semana: string; fim_semana: string | null };
+export type CheckinGerente = { stand_id: string; semana: string; quando?: string };
+export type SemanaGerente = { stand_id: string; nome: string; semana: string; fim: string; estado: "feito" | "falta" | "perdido" | "futura" };
+
+/** Vigências [início, fim), em segundas-feiras. A semana pertence ao mês da segunda. */
+export function calcularPremioGerente(parceiros: number, stands: StandGerente[], checkins: CheckinGerente[], ano: number, mes: number, hoje: string) {
+  const { ini, fim } = limitesDoMes(ano, mes);
+  const semanas: SemanaGerente[] = [];
+  let primeira = segundaDaSemana(ini);
+  if (primeira < ini) primeira = somarDias(primeira, 7);
+  for (let semana = primeira; semana < fim; semana = somarDias(semana, 7)) {
+    for (const s of stands) {
+      if (semana < s.inicio_semana || (s.fim_semana && semana >= s.fim_semana)) continue;
+      if (semanas.some(x => x.stand_id === s.stand_id && x.semana === semana)) continue;
+      const feito = checkins.some(c => c.stand_id === s.stand_id && c.semana === semana);
+      const estado = feito ? "feito" : hoje >= somarDias(semana, 7) ? "perdido" : hoje < semana ? "futura" : "falta";
+      semanas.push({ stand_id: s.stand_id, nome: s.nome, semana, fim: somarDias(semana, 6), estado });
+    }
+  }
+  const considerados = Math.min(20, Math.max(0, Math.floor(parceiros)));
+  const pontosParceiros = considerados * 5;
+  const perdido = semanas.some(s => s.estado === "perdido");
+  const completo = semanas.length > 0 && semanas.every(s => s.estado === "feito");
+  const pontosCheckins = completo ? 100 : 0;
+  const pontos = pontosParceiros + pontosCheckins;
+  return { parceiros: considerados, pontosParceiros, pontosCheckins, pontos, premio: pontos * 10,
+    premioPossivel: (pontosParceiros + (semanas.length > 0 && !perdido ? 100 : 0)) * 10,
+    perdido, completo, semanas };
 }
 
 export const ROLETA = {

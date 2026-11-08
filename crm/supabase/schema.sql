@@ -2195,9 +2195,14 @@ create table if not exists public.criterios_pontos (
 
 insert into public.criterios_pontos (slug, nome, pontos, limite_mes, ordem) values
   ('periodo', 'Período integral cumprido', 5, 24, 1),
-  ('video',   'Vídeo com a marca MBigucci', 5, 8, 2),
+  ('video',   'Vídeo ou blitz', 5, 12, 2),
   ('visita',  'Visita realizada', 10, 12, 3)
 on conflict (slug) do nothing;
+
+-- Migra o padrão antigo uma vez, preservando limites personalizados.
+update public.criterios_pontos set nome = 'Vídeo ou blitz',
+  limite_mes = case when limite_mes = 8 then 12 else limite_mes end
+where slug = 'video' and nome = 'Vídeo com a marca MBigucci';
 
 drop trigger if exists criterios_pontos_carimbo on public.criterios_pontos;
 create trigger criterios_pontos_carimbo before update on public.criterios_pontos
@@ -2242,6 +2247,40 @@ create index if not exists lancamentos_status_idx on public.lancamentos_pontos (
 create unique index if not exists lancamentos_periodo_unico on public.lancamentos_pontos (corretor_id, data, periodo)
   where criterio = 'periodo' and status in ('pendente', 'aprovado');
 
+alter table public.lancamentos_pontos add column if not exists tipo_acao text;
+alter table public.lancamentos_pontos add column if not exists comprovante_arquivo text;
+alter table public.lancamentos_pontos add column if not exists acao_legada boolean not null default false;
+-- Somente registros existentes sem tipo entram como legados. A API não grava esta coluna.
+update public.lancamentos_pontos set tipo_acao = 'video', acao_legada = true
+where criterio = 'video' and tipo_acao is null;
+alter table public.lancamentos_pontos drop constraint if exists lancamentos_tipo_acao;
+alter table public.lancamentos_pontos add constraint lancamentos_tipo_acao
+  check ((criterio = 'video' and tipo_acao in ('video', 'blitz') and tipo_acao is not null)
+      or (criterio <> 'video' and tipo_acao is null and comprovante_arquivo is null));
+
+create or replace function public.caminho_comprovante_valido(p_nome text)
+returns boolean language sql immutable set search_path = '' as $$
+  select coalesce(p_nome ~ '^[0-9a-f-]{36}/[0-9a-f-]{36}[.]jpg$', false)
+$$;
+
+create or replace function public.pode_enviar_comprovante(p_nome text)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select public.current_perfil() is not null and public.caminho_comprovante_valido(p_nome)
+    and split_part(p_nome, '/', 1) = auth.uid()::text
+    and (public.has_permission('acoes.registrar') or public.has_permission('lancamentos.registrar'))
+$$;
+create or replace function public.pode_ler_comprovante(p_nome text)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select public.current_perfil() is not null and public.caminho_comprovante_valido(p_nome)
+    and (split_part(p_nome, '/', 1) = auth.uid()::text or public.is_gerente_geral())
+$$;
+create or replace function public.pode_remover_comprovante(p_nome text)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select public.current_perfil() is not null and split_part(p_nome, '/', 1) = auth.uid()::text
+    and public.caminho_comprovante_valido(p_nome)
+    and not exists(select 1 from public.lancamentos_pontos where comprovante_arquivo = p_nome)
+$$;
+
 -- Auditoria: cada lançamento e cada mudança, com quem fez e quando. Só o
 -- gatilho grava; só o gerente geral lê.
 create table if not exists public.lancamentos_pontos_historico (
@@ -2271,6 +2310,7 @@ declare
   v_livre boolean := auth.uid() is null or pg_trigger_depth() > 1;
   v_gg boolean := public.is_gerente_geral();
   v_hoje date := (now() at time zone 'America/Sao_Paulo')::date;
+  v_arquivo boolean := false;
 begin
   new.comprovante := nullif(btrim(coalesce(new.comprovante, '')), '');
   new.observacao := nullif(btrim(coalesce(new.observacao, '')), '');
@@ -2278,6 +2318,28 @@ begin
   new.updated_at := now();
 
   if tg_op = 'INSERT' then
+    new.acao_legada := false;
+    if new.criterio = 'video' then
+      if new.tipo_acao not in ('video', 'blitz') or new.tipo_acao is null then
+        raise exception 'Escolha vídeo ou blitz.';
+      end if;
+      if new.comprovante_arquivo is not null then
+        if not public.caminho_comprovante_valido(new.comprovante_arquivo)
+           or split_part(new.comprovante_arquivo, '/', 1) <> coalesce(v_eu, new.lancado_por)::text then
+          raise exception 'O comprovante precisa ser enviado por quem lança a ação.';
+        end if;
+        if to_regclass('storage.objects') is not null then
+          execute 'select exists(select 1 from storage.objects where bucket_id = ''comprovantes'' and name = $1)'
+            into v_arquivo using new.comprovante_arquivo;
+        end if;
+        if not v_arquivo then raise exception 'Envie a imagem do comprovante antes de lançar a ação.'; end if;
+      end if;
+      if new.tipo_acao = 'blitz' and not v_arquivo then raise exception 'Adicione a foto da blitz.'; end if;
+      if new.tipo_acao = 'video' and not v_arquivo and coalesce(new.comprovante, '') !~ '^https://[^\s]+$' then
+        raise exception 'Adicione o print ou o link do vídeo.';
+      end if;
+      if new.corretor_id = v_eu and new.quantidade <> 1 then raise exception 'Envie uma ação por vez.'; end if;
+    end if;
     new.lancado_em := now();
     if not v_livre then
       new.lancado_por := v_eu;
@@ -2303,6 +2365,9 @@ begin
     new.visita_id := old.visita_id;
     new.lancado_por := old.lancado_por;
     new.lancado_em := old.lancado_em;
+    new.tipo_acao := old.tipo_acao;
+    new.comprovante_arquivo := old.comprovante_arquivo;
+    new.acao_legada := old.acao_legada;
     if not v_livre and not v_gg then
       new.motivo_recusa := old.motivo_recusa;
       if new.status is distinct from old.status
@@ -2338,7 +2403,7 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_campos constant text[] := array['status', 'motivo_recusa', 'comprovante', 'observacao', 'decidido_por'];
+  v_campos constant text[] := array['status', 'motivo_recusa', 'comprovante', 'comprovante_arquivo', 'tipo_acao', 'observacao', 'decidido_por'];
   v_de jsonb := '{}';
   v_para jsonb := '{}';
   c text;
@@ -2506,7 +2571,7 @@ revoke all on public.criterios_pontos, public.lancamentos_pontos, public.lancame
 grant select on public.criterios_pontos to authenticated;
 grant update (nome, pontos, limite_mes) on public.criterios_pontos to authenticated;
 grant select on public.lancamentos_pontos to authenticated;
-grant insert (corretor_id, criterio, data, periodo, quantidade, comprovante, saida_visita, observacao)
+grant insert (id, corretor_id, criterio, data, periodo, quantidade, comprovante, tipo_acao, comprovante_arquivo, saida_visita, observacao)
   on public.lancamentos_pontos to authenticated;
 grant update (status, motivo_recusa) on public.lancamentos_pontos to authenticated;
 grant select on public.lancamentos_pontos_historico to authenticated;
@@ -2536,6 +2601,8 @@ create policy "ver lancamentos" on public.lancamentos_pontos
       (lancado_por = auth.uid() and corretor_id <> auth.uid())
       or (corretor_id <> auth.uid() and public.pode_ver_dados_de(corretor_id))
       or (corretor_id = auth.uid() and status = 'aprovado')
+      or (corretor_id = auth.uid() and lancado_por = auth.uid() and criterio = 'video'
+          and tipo_acao in ('video', 'blitz') and status = 'pendente')
       or (criterio = 'periodo' and public.has_permission('plantao.registrar'))
     ))
   );
@@ -2545,11 +2612,12 @@ create policy "ver lancamentos" on public.lancamentos_pontos
 drop policy if exists "lancar pontos" on public.lancamentos_pontos;
 create policy "lancar pontos" on public.lancamentos_pontos
   for insert to authenticated with check (
-    lancado_por = auth.uid() and corretor_id <> auth.uid()
-    and (public.is_gerente_geral() or (public.current_perfil() is not null and (
+    lancado_por = auth.uid() and public.current_perfil() is not null and (
+      (corretor_id = auth.uid() and criterio = 'video' and tipo_acao in ('video', 'blitz') and public.has_permission('acoes.registrar'))
+      or (corretor_id <> auth.uid() and (public.is_gerente_geral() or (
       (public.has_permission('lancamentos.registrar') and public.pode_ver_dados_de(corretor_id))
       or (criterio = 'periodo' and public.has_permission('plantao.registrar'))
-    )))
+    ))))
   );
 
 -- Alterar: o gerente geral (aprova, recusa, desfaz) ou quem lançou para outro
@@ -2557,8 +2625,10 @@ create policy "lancar pontos" on public.lancamentos_pontos
 drop policy if exists "alterar lancamentos" on public.lancamentos_pontos;
 create policy "alterar lancamentos" on public.lancamentos_pontos
   for update to authenticated
-  using (public.is_gerente_geral() or (public.current_perfil() is not null and lancado_por = auth.uid() and corretor_id <> auth.uid()))
-  with check (public.is_gerente_geral() or (public.current_perfil() is not null and lancado_por = auth.uid() and corretor_id <> auth.uid()));
+  using (public.is_gerente_geral() or (public.current_perfil() is not null and lancado_por = auth.uid()
+    and (corretor_id <> auth.uid() or (criterio = 'video' and public.has_permission('acoes.registrar') and status in ('pendente', 'cancelado')))))
+  with check (public.is_gerente_geral() or (public.current_perfil() is not null and lancado_por = auth.uid()
+    and (corretor_id <> auth.uid() or (criterio = 'video' and public.has_permission('acoes.registrar') and status in ('pendente', 'cancelado')))));
 
 drop policy if exists "gerente geral le auditoria" on public.lancamentos_pontos_historico;
 create policy "gerente geral le auditoria" on public.lancamentos_pontos_historico
@@ -3506,3 +3576,220 @@ begin
   return v_dados || jsonb_build_object('parceiros', coalesce(v_parceiros, '[]'::jsonb));
 end;
 $$;
+
+-- =====================================================================
+-- Pontos dos gerentes e ações próprias (08/11/2026).
+-- Dependências opcionais: recepcao.sql / distribuicao.sql e parcerias.sql.
+-- As RPCs informam a ausência; o schema básico continua instalável sozinho.
+-- =====================================================================
+with novas as (
+  insert into public.permissions (slug, descricao, ordem) values
+    ('acoes.registrar', 'Enviar as próprias ações de vídeo ou blitz para aprovação', 55),
+    ('pontos_gerente.participar', 'Participar do programa de prêmio dos gerentes', 56)
+  on conflict (slug) do update set descricao = excluded.descricao returning slug, (xmax = 0) as nova
+)
+insert into public.role_permissions (perfil, permissao)
+select v.perfil, v.permissao from (values ('corretor', 'acoes.registrar'), ('gerente', 'pontos_gerente.participar')) v(perfil, permissao)
+join novas n on n.slug = v.permissao and n.nova on conflict do nothing;
+
+create table if not exists public.gerente_stands (
+  id uuid primary key default gen_random_uuid(),
+  gerente_id uuid not null references public.profiles(id),
+  stand_id uuid not null,
+  inicio_semana date not null check (extract(isodow from inicio_semana) = 1),
+  fim_semana date check (extract(isodow from fim_semana) = 1),
+  definido_por uuid references public.profiles(id),
+  criado_em timestamptz not null default now(),
+  check (fim_semana is null or fim_semana >= inicio_semana)
+);
+create unique index if not exists gerente_stands_aberto on public.gerente_stands(gerente_id, stand_id) where fim_semana is null;
+create index if not exists gerente_stands_mes on public.gerente_stands(gerente_id, inicio_semana, fim_semana);
+
+create table if not exists public.checkins_gerente (
+  id uuid primary key default gen_random_uuid(),
+  gerente_id uuid not null references public.profiles(id),
+  stand_id uuid not null,
+  vinculo_id uuid not null references public.gerente_stands(id),
+  semana date not null check (extract(isodow from semana) = 1),
+  quando timestamptz not null default now(),
+  lat numeric not null check (lat between -90 and 90),
+  lng numeric not null check (lng between -180 and 180),
+  precisao_m numeric not null check (precisao_m between 0 and 100),
+  distancia_m numeric not null check (distancia_m >= 0),
+  unique (gerente_id, stand_id, semana)
+);
+-- Tabela irmã: não confunde prêmio de uso livre com verba de anúncios ou faixa de VGV.
+create table if not exists public.fechamentos_premio_gerente (
+  mes date not null check (extract(day from mes) = 1),
+  gerente_id uuid not null references public.profiles(id),
+  parceiros integer not null check (parceiros >= 0),
+  pontos_parceiros integer not null check (pontos_parceiros between 0 and 100),
+  pontos_checkins integer not null check (pontos_checkins in (0,100)),
+  premio numeric(12,2) not null check (premio >= 0),
+  fechado_por uuid references public.profiles(id),
+  fechado_em timestamptz not null default now(),
+  primary key(mes, gerente_id)
+);
+alter table public.gerente_stands enable row level security;
+alter table public.checkins_gerente enable row level security;
+alter table public.fechamentos_premio_gerente enable row level security;
+revoke all on public.gerente_stands, public.checkins_gerente, public.fechamentos_premio_gerente from anon, authenticated;
+grant select on public.gerente_stands, public.checkins_gerente, public.fechamentos_premio_gerente to authenticated;
+drop policy if exists "gerente le stands" on public.gerente_stands;
+create policy "gerente le stands" on public.gerente_stands for select to authenticated
+using (public.is_gerente_geral() or (gerente_id = auth.uid() and public.has_permission('pontos_gerente.participar')));
+drop policy if exists "gerente le checkins" on public.checkins_gerente;
+create policy "gerente le checkins" on public.checkins_gerente for select to authenticated
+using (public.is_gerente_geral() or (gerente_id = auth.uid() and public.has_permission('pontos_gerente.participar')));
+drop policy if exists "gerente le premio" on public.fechamentos_premio_gerente;
+create policy "gerente le premio" on public.fechamentos_premio_gerente for select to authenticated
+using (public.is_gerente_geral() or (gerente_id = auth.uid() and public.has_permission('pontos_gerente.participar')));
+
+-- Cancela/Desfaz sem expor os próprios cancelados pela policy de leitura.
+create or replace function public.cancelar_acao(p_id uuid, p_desfazer boolean default false)
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  if not public.has_permission('acoes.registrar') then raise exception 'Você não tem permissão para isso.'; end if;
+  update public.lancamentos_pontos set status = case when p_desfazer then 'pendente' else 'cancelado' end
+  where id = p_id and corretor_id = auth.uid() and lancado_por = auth.uid() and criterio = 'video'
+    and status = case when p_desfazer then 'cancelado' else 'pendente' end;
+  if not found then raise exception 'A ação já foi conferida ou não está disponível. Atualize a página.'; end if;
+end $$;
+
+create or replace function public.definir_stand_gerente(p_gerente uuid, p_stand uuid, p_ativo boolean)
+returns void language plpgsql security definer set search_path = '' as $$
+declare v_existe boolean; v_segunda date := date_trunc('week', now() at time zone 'America/Sao_Paulo')::date + 7;
+begin
+  if not public.is_gerente_geral() then raise exception 'Só o gerente geral define os stands.'; end if;
+  perform 1 from public.profiles where id = p_gerente for update;
+  if not exists(select 1 from public.profiles g join public.role_permissions rp on rp.perfil = g.perfil
+    where g.id = p_gerente and g.ativo and rp.permissao = 'pontos_gerente.participar') then
+    raise exception 'Escolha um participante ativo do programa de gerentes.';
+  end if;
+  if to_regclass('public.plantoes') is null then raise exception 'Cadastre os stands antes de definir os responsáveis.'; end if;
+  execute 'select exists(select 1 from public.plantoes where id = $1 and (ativo or not $2))' into v_existe using p_stand,p_ativo;
+  if not v_existe then raise exception 'Escolha um stand ativo.'; end if;
+  if p_ativo then
+    insert into public.gerente_stands(gerente_id, stand_id, inicio_semana, definido_por)
+      values(p_gerente, p_stand, v_segunda, auth.uid())
+      on conflict(gerente_id,stand_id) where fim_semana is null do nothing;
+  else
+    update public.gerente_stands set fim_semana = v_segunda
+    where gerente_id = p_gerente and stand_id = p_stand and fim_semana is null;
+  end if;
+end $$;
+
+create or replace function public.checkin_gerente(p_stand uuid, p_lat numeric, p_lng numeric, p_precisao numeric)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  v_eu uuid := auth.uid(); v_hoje date := (now() at time zone 'America/Sao_Paulo')::date;
+  v_semana date := date_trunc('week', now() at time zone 'America/Sao_Paulo')::date;
+  v_vinculo uuid; s record; v_dist numeric; v_id uuid;
+begin
+  if v_eu is null or not public.has_permission('pontos_gerente.participar') then raise exception 'Você não tem permissão para isso.'; end if;
+  if p_lat is null or p_lng is null or p_precisao is null or p_lat not between -90 and 90 or p_lng not between -180 and 180
+     or p_precisao < 0 or p_precisao > 100 then raise exception 'Localização imprecisa. Tente num lugar aberto.'; end if;
+  -- Bloqueia remoção/alteração do vínculo enquanto a presença é registrada.
+  select id into v_vinculo from public.gerente_stands where gerente_id = v_eu and stand_id = p_stand
+    and inicio_semana <= v_semana and (fim_semana is null or fim_semana > v_semana) for share;
+  if v_vinculo is null then raise exception 'Este stand não está definido para você nesta semana.'; end if;
+  if to_regclass('public.plantoes') is null then raise exception 'Stand sem localização cadastrada.'; end if;
+  execute 'select nome, lat, lng, raio_m from public.plantoes where id = $1 and ativo' into s using p_stand;
+  if s.lat is null or s.lng is null then raise exception 'Stand sem localização cadastrada.'; end if;
+  -- Haversine, mesmo raio do corretor. Recalculado aqui; nunca recebe distância do aparelho.
+  v_dist := 6371000 * 2 * asin(sqrt(least(1,
+    power(sin(radians((p_lat-s.lat)::double precision)/2),2)
+    + cos(radians(p_lat::double precision))*cos(radians(s.lat::double precision))
+    * power(sin(radians((p_lng-s.lng)::double precision)/2),2))));
+  if v_dist > s.raio_m then raise exception 'Você está fora do raio do stand. Aproxime-se e tente de novo.'; end if;
+  insert into public.checkins_gerente(gerente_id, stand_id, vinculo_id, semana, lat, lng, precisao_m, distancia_m)
+    values(v_eu,p_stand,v_vinculo,v_semana,p_lat,p_lng,p_precisao,v_dist)
+    on conflict(gerente_id,stand_id,semana) do nothing returning id into v_id;
+  return jsonb_build_object('registrado', true, 'repetido', v_id is null, 'distancia_m', round(v_dist), 'stand', s.nome);
+end $$;
+
+-- Devolve apenas contagem de parceiros (não os dados pessoais) e os próprios vínculos.
+-- Consulta dinâmica porque Parcerias e Recepção são módulos instalados à parte.
+create or replace function public.pontos_gerente(p_mes date, p_gerente uuid default auth.uid())
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare v_ini date := date_trunc('month', p_mes)::date; v_fim date := (date_trunc('month', p_mes)+interval '1 month')::date;
+  v_qtd integer := 0; v_stands jsonb; v_checkins jsonb;
+begin
+  if public.current_perfil() is null or not (public.is_gerente_geral() or (p_gerente = auth.uid() and public.has_permission('pontos_gerente.participar'))) then
+    raise exception 'Você não tem permissão para isso.';
+  end if;
+  if to_regclass('public.parceiros') is not null then
+    execute 'select count(*)::int from public.parceiros where criado_por = $1 and entrada = ''manual''
+      and criado_em >= ($2::date::timestamp at time zone ''America/Sao_Paulo'')
+      and criado_em < ($3::date::timestamp at time zone ''America/Sao_Paulo'')'
+      into v_qtd using p_gerente, v_ini, v_fim;
+  end if;
+  if to_regclass('public.plantoes') is not null then
+    execute 'select coalesce(jsonb_agg(jsonb_build_object(''id'',g.id,''stand_id'',g.stand_id,''nome'',p.nome,
+      ''inicio_semana'',g.inicio_semana,''fim_semana'',g.fim_semana) order by p.nome,g.inicio_semana),''[]'')
+      from public.gerente_stands g join public.plantoes p on p.id = g.stand_id
+      where g.gerente_id = $1 and g.inicio_semana < $3 and (g.fim_semana is null or g.fim_semana > $2)'
+      into v_stands using p_gerente,v_ini,v_fim;
+  end if;
+  select coalesce(jsonb_agg(jsonb_build_object('stand_id',stand_id,'semana',semana,'quando',quando)),'[]') into v_checkins
+    from public.checkins_gerente where gerente_id = p_gerente and semana >= v_ini and semana < v_fim;
+  return jsonb_build_object('parceiros',v_qtd,'stands',coalesce(v_stands,'[]'),'checkins',v_checkins,
+    'parcerias_instaladas',to_regclass('public.parceiros') is not null);
+end $$;
+
+create or replace function public.programa_gerentes(p_mes date)
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare v_result jsonb := '[]'; g record;
+begin
+  if not public.is_gerente_geral() then raise exception 'Você não tem permissão para isso.'; end if;
+  for g in select p.id,p.nome from public.profiles p where
+    exists(select 1 from public.role_permissions rp where rp.perfil = p.perfil and rp.permissao = 'pontos_gerente.participar')
+    and (p.ativo or exists(select 1 from public.gerente_stands gs where gs.gerente_id = p.id)) order by p.nome loop
+    v_result := v_result || jsonb_build_array(jsonb_build_object('id',g.id,'nome',g.nome,'dados',public.pontos_gerente(p_mes,g.id)));
+  end loop;
+  return v_result;
+end $$;
+
+-- Transação única para os dois programas. Valores dos gerentes são recalculados
+-- no servidor; os corretores continuam com a foto revisada pelo gerente geral.
+create or replace function public.fechar_programa_mes(p_mes date, p_corretores jsonb)
+returns void language plpgsql security definer set search_path = '' as $$
+declare g jsonb; v_dados jsonb; v_parceiros integer; v_checkins integer; v_obrigacoes integer; v_faltas integer;
+begin
+  if not public.is_gerente_geral() then raise exception 'Só o gerente geral fecha o mês.'; end if;
+  if p_mes is null or extract(day from p_mes) <> 1 then raise exception 'Escolha o mês do fechamento.'; end if;
+  if to_regclass('public.parceiros') is null and jsonb_array_length(public.programa_gerentes(p_mes)) > 0 then
+    raise exception 'Os cadastros de parceiros ainda não estão disponíveis. Conclua a configuração antes de fechar o mês.';
+  end if;
+  insert into public.fechamentos_verba(mes,corretor_id,pontos,pontos_validos,vendas,vgv,verba,premio)
+    select p_mes,x.corretor_id,x.pontos,x.pontos_validos,x.vendas,x.vgv,x.verba,x.premio
+    from jsonb_to_recordset(p_corretores) x(corretor_id uuid,pontos integer,pontos_validos integer,vendas integer,vgv numeric,verba numeric,premio numeric)
+    on conflict(mes,corretor_id) do update set pontos=excluded.pontos,pontos_validos=excluded.pontos_validos,
+      vendas=excluded.vendas,vgv=excluded.vgv,verba=excluded.verba,premio=excluded.premio;
+  for g in select value from jsonb_array_elements(public.programa_gerentes(p_mes)) loop
+    v_dados := g->'dados'; v_parceiros := (v_dados->>'parceiros')::integer;
+    with obrigatorias as (
+      select distinct s.stand_id, d::date as semana
+      from jsonb_to_recordset(v_dados->'stands') s(stand_id uuid,inicio_semana date,fim_semana date)
+      cross join generate_series(p_mes::timestamp,(p_mes+interval '1 month'-interval '1 day')::timestamp,interval '1 day') d
+      where extract(isodow from d) = 1 and d::date >= s.inicio_semana and (s.fim_semana is null or d::date < s.fim_semana)
+    ) select count(*)::integer, count(*) filter(where not exists(select 1 from public.checkins_gerente c
+      where c.gerente_id=(g->>'id')::uuid and c.stand_id=o.stand_id and c.semana=o.semana))::integer
+      into v_obrigacoes,v_faltas from obrigatorias o;
+    v_checkins := case when v_obrigacoes>0 and v_faltas=0 then 100 else 0 end;
+    insert into public.fechamentos_premio_gerente(mes,gerente_id,parceiros,pontos_parceiros,pontos_checkins,premio,fechado_por)
+      values(p_mes,(g->>'id')::uuid,v_parceiros,least(v_parceiros,20)*5,v_checkins,(least(v_parceiros,20)*5+v_checkins)*10,auth.uid())
+      on conflict(mes,gerente_id) do update set parceiros=excluded.parceiros,pontos_parceiros=excluded.pontos_parceiros,
+        pontos_checkins=excluded.pontos_checkins,premio=excluded.premio,fechado_por=auth.uid(),fechado_em=now();
+  end loop;
+end $$;
+
+do $$ declare f text; begin
+  foreach f in array array['public.caminho_comprovante_valido(text)','public.pode_enviar_comprovante(text)',
+    'public.pode_ler_comprovante(text)','public.pode_remover_comprovante(text)',
+    'public.cancelar_acao(uuid,boolean)','public.definir_stand_gerente(uuid,uuid,boolean)','public.checkin_gerente(uuid,numeric,numeric,numeric)',
+    'public.pontos_gerente(date,uuid)','public.programa_gerentes(date)','public.fechar_programa_mes(date,jsonb)'] loop
+    execute format('revoke all on function %s from public, anon',f);
+    execute format('grant execute on function %s to authenticated, service_role',f);
+  end loop;
+end $$;

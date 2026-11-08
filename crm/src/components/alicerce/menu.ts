@@ -67,7 +67,7 @@ export function montarMenu({ ehGG, pode, fila }: EntradaDoMenu): GrupoMenu[] {
   const programa: ItemMenu[] = [];
   // Programa de pontuação: pelas permissões (o banco filtra o resto).
   if (ehGG) programa.push({ href: "/programa/", rotulo: "Pontos", icone: "pontos" });
-  if (!ehGG && pode("leads.cadastrar")) programa.push({ href: "/meus-pontos/", rotulo: "Meus pontos", icone: "pontos" });
+  if (!ehGG && (pode("leads.cadastrar") || pode("acoes.registrar") || pode("pontos_gerente.participar"))) programa.push({ href: "/meus-pontos/", rotulo: "Meus pontos", icone: "pontos" });
   programa.push({ href: "/ranking/", rotulo: "Ranking", icone: "ranking" });
 
   const grupos: GrupoMenu[] = [

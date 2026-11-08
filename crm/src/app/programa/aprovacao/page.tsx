@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import clsx from "clsx";
 import { Casca } from "@/components/casca";
+import { Comprovante } from "@/components/programa/comprovante";
 import { AvisoDesfazer } from "@/components/leads/partes";
 import { diaCurto, diaDaSemana, SeloStatus } from "@/components/programa/partes";
 import { diaIso } from "@/lib/vendas";
@@ -278,6 +279,8 @@ function ItemFila({
           </p>
           <p className="text-[13px] text-ink-soft">
             <span className="num">{diaCurto(l.data)}</span> ({diaDaSemana(l.data)}) · lançado por {l.lancado_por ? (nomes.get(l.lancado_por) ?? "–") : "–"}
+            {l.tipo_acao && <p>{l.tipo_acao === "blitz" ? "Blitz" : "Vídeo"}</p>}
+            {l.comprovante_arquivo && <Comprovante caminho={l.comprovante_arquivo} />}
             {l.comprovante && (
               <>
                 {" · "}

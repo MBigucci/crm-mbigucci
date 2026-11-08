@@ -295,7 +295,7 @@ function LancarVideo({ corretores, hoje }: { corretores: CorretorPlantao[]; hoje
     const n = Number(qtd);
     if (!corretor) return setErro("Escolha o corretor.");
     if (!Number.isInteger(n) || n < 1 || n > 100) return setErro("Confira a quantidade: de 1 a 100.");
-    if (link.trim() && !/^https?:\/\/\S+$/i.test(link.trim())) return setErro("O link precisa começar com https://.");
+    if (!/^https:\/\/\S+$/i.test(link.trim())) return setErro("Cole o link do vídeo começando com https://.");
     setErro(null);
     const r = await lancar({ corretor_id: corretor, criterio: "video", data, quantidade: n, comprovante: link.trim() || null });
     if (r.erro) return setErro(r.erro);
@@ -348,7 +348,7 @@ function LancarVideo({ corretores, hoje }: { corretores: CorretorPlantao[]; hoje
         </div>
         <div>
           <label className="field-label" htmlFor="video-link">
-            Link do vídeo (opcional)
+            Link do vídeo
           </label>
           <input id="video-link" className="input" inputMode="url" placeholder="https://" value={link} onChange={(e) => setLink(e.target.value)} />
         </div>
