@@ -1,0 +1,230 @@
+/* Ajuste local do Alicerce no Base360 Marketing. Carregado por último (layout.tsx).
+   Cada regra diz o porquê. O que valer para todos os módulos volta para o Alicerce, pelo Felipe.
+   Não ponha cor, raio, sombra, espaço ou duração escritos à mão: use os tokens (var(--…)).
+   Classes do app começam com mkt-, nunca com mb- (o prefixo mb- é do Alicerce e das margens do Tailwind). */
+
+/* 1. Ícones dentro de texto, o mesmo ajuste do Vendas (crm/src/app/alicerce-local.css, regra 1).
+   A base do Tailwind (preflight) põe "svg { display: block; vertical-align: middle }" e o Alicerce foi desenhado
+   sem ela. "revert" devolve o padrão do navegador. Dentro de botões e itens de menu (flex) não muda nada. */
+svg.mb-icone {
+  display: revert;
+  vertical-align: revert;
+}
+
+/* 2. Página sem moldura (conta carregando, desativada, erro de carga, sem configuração, 404 e erro da página):
+   a marca e o estado centralizados na tela, com o respiro lateral de 16px (--esp-4) do celular. O Vendas faz
+   o mesmo com utilitários do Tailwind na Casca; o Marketing não carrega utilitários. */
+.mkt-solo {
+  display: grid;
+  min-height: 100vh;
+  align-content: center;
+  justify-items: center;
+  gap: var(--esp-6);
+  padding: var(--esp-8) var(--esp-4);
+}
+
+/* 3. Texto de apoio e números das telas do Marketing: o tamanho e a cor das notas do Alicerce
+   (.mb-cartao__descricao: 12/16, texto-sutil), para linhas soltas dentro de um Cartao. Número com algarismos
+   de largura fixa (como .mb-lista__lateral), para os contadores não pularem. */
+.mkt-nota {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--texto-sutil);
+}
+.mkt-num {
+  font-variant-numeric: tabular-nums;
+}
+.mkt-apagada {
+  opacity: var(--mb-opacidade-desativado);
+}
+
+/* 4. Direcionador: duas colunas no computador (regras à esquerda; simulador e destinos à direita), uma coluna
+   abaixo de 1024px, a mesma quebra do índice de Ajustes do Alicerce. Os 300px mínimos da coluna lateral mantêm o
+   simulador legível. Cada coluna empilha os cartões com o espaço do cartão (esp-4). */
+.mkt-direcionador {
+  display: grid;
+  gap: var(--esp-5);
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .mkt-direcionador {
+    grid-template-columns: minmax(0, 1.55fr) minmax(300px, 1fr);
+  }
+}
+.mkt-coluna {
+  display: grid;
+  gap: var(--esp-4);
+  min-width: 0;
+}
+.mkt-titulo-secao {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  margin-bottom: var(--esp-3);
+}
+.mkt-regras {
+  display: grid;
+  gap: var(--esp-3);
+}
+.mkt-regras__lista {
+  display: grid;
+  gap: var(--esp-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.mkt-regras .mb-cartao__corpo {
+  display: grid;
+  gap: var(--esp-3);
+}
+
+/* 5. Destinos: a linha da Lista guarda o endereço mascarado e o limite, que é o que o gerente confere. A
+   Lista corta o meta numa linha (nowrap); aqui ele quebra, e a linha cresce em vez de esconder o dado. */
+.mkt-destinos .mb-lista__meta {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+.mkt-destinos .mb-lista__item {
+  align-items: flex-start;
+  padding-block: var(--esp-3);
+}
+.mkt-destinos .mb-lista__lateral {
+  display: grid;
+  justify-items: end;
+  gap: var(--esp-2);
+}
+.mkt-selo-ao-lado {
+  margin-left: var(--esp-2);
+}
+
+/* 6. Simulador: campos empilhados com o espaço do cartão; o resultado em destaque com o fio do Alicerce
+   (o mesmo da frase do ConstrutorDeCondicoes) e o sinal ✓ / – de cada passo com a largura de um caractere. */
+.mkt-simulador {
+  display: grid;
+  gap: var(--esp-4);
+}
+.mkt-resultado {
+  display: grid;
+  gap: var(--esp-1);
+  padding-left: var(--esp-3);
+  border-left: 2px solid var(--linha-forte);
+}
+.mkt-resultado__destino {
+  font-family: var(--font-display);
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--texto);
+}
+.mkt-sinal {
+  flex: none;
+  width: 1.2ch;
+  font-weight: 700;
+  color: var(--texto-suave);
+}
+
+/* 7. Editor da regra no PainelLateral. O componente não tem a variante larga (.mb-lateral--larga existe no CSS, mas
+   a peça não a expõe): este :has() dá a largura larga só ao painel do ConstrutorDeCondicoes, onde as pílulas de
+   produto e fonte precisam de espaço. */
+.mb-lateral:has(.mkt-regra) {
+  width: min(var(--painel-largura-larga), 100vw);
+}
+.mkt-form {
+  display: grid;
+  gap: var(--esp-5);
+}
+.mkt-grupo {
+  display: grid;
+  gap: var(--esp-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+/* A grade do .mb-condicao tem cinco colunas pensadas para campo, comparação e valor curtos. Aqui o valor é um grupo
+   de pílulas, então a coluna do campo e a da comparação ficam estreitas e o valor leva o resto. O ✕ não existe
+   (as linhas são fixas), então a coluna dele sai. */
+.mkt-regra .mb-condicao {
+  grid-template-columns: 56px minmax(0, 112px) minmax(0, 72px) minmax(0, 1fr);
+  align-items: start;
+}
+.mkt-regra .mb-condicao__conector {
+  padding-top: var(--esp-2);
+}
+.mkt-condicao__campo,
+.mkt-condicao__comparacao {
+  padding-top: var(--esp-2);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--texto);
+}
+.mkt-condicao__comparacao {
+  color: var(--texto-suave);
+}
+.mkt-horario {
+  display: grid;
+  gap: var(--esp-2);
+  min-width: 0;
+}
+.mkt-pct {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+}
+.mkt-pct .mb-campo__entrada {
+  width: 96px;
+  text-align: right;
+}
+.mkt-curto {
+  max-width: 160px;
+}
+/* Rodapé do painel: o botão de excluir (ou o aviso de que não dá) vai para a esquerda, longe de Salvar. */
+.mkt-rodape-esquerda {
+  margin-right: auto;
+}
+@media (max-width: 767px) {
+  /* No celular o .mb-condicao do Alicerce empilha os campos e o valor ocupa a largura toda (bundle.css). */
+  .mkt-regra .mb-condicao {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .mkt-regra .mb-condicao__conector {
+    padding-top: 0;
+  }
+  .mkt-condicao__campo,
+  .mkt-condicao__comparacao {
+    padding-top: 0;
+  }
+}
+
+/* 8. Simulador em tela estreita (320px): os passos são frases e quebram em vez de terminar em reticências (a Lista
+   corta o título numa linha), e o dia e a hora empilham, porque a data não cabe em meia coluna. */
+.mkt-simulador .mb-lista__titulo {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+@media (max-width: 400px) {
+  .mkt-simulador .mb-campo__par {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* 9. Sem atalhos no Marketing (o brief pede só o Direcionador no menu; "Simulador" também é o nome de um cartão da
+   tela). O MenuLateral desenha o título "Atalhos" mesmo sem itens e o MenuCelular deixa o grupo vazio: aqui os dois
+   somem quando não há nada. Lacuna do Alicerce: as peças deveriam omitir o grupo vazio. */
+.mb-menu__grupo:has(+ .mb-menu__rodape) {
+  display: none;
+}
+.mb-folha__grupo:empty {
+  display: none;
+}
+
+/* 10. Minha conta: os dois campos só de leitura empilham com o espaço do FormularioDenso (esp-4); fora de um
+   .mb-formulario o Cartao não dá espaço entre campos soltos. */
+.mkt-campos {
+  display: grid;
+  gap: var(--esp-4);
+}

@@ -1,28 +1,34 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Aviso } from "@/components/alicerce/aviso";
+import { Campo, CampoEmGrupo } from "@/components/alicerce/campo";
+import { PainelLateral } from "@/components/alicerce/painel-lateral";
 import { excluirDestino, salvarDestino, salvarEndereco } from "@/lib/direcionador-dados";
 import { enderecoTxt, type DestinoTela } from "@/lib/telas";
-import { Chip } from "./editor-regra";
+
+const semSinal = (t: string) => t.replace(/^✕\s*/, "");
 
 /**
- * Criar ou editar um destino externo: nome, entrega, endereço, limite por dia,
- * Registrar os envios e ligado. O endereço vai para o cofre (Vault) e volta
- * mascarado; o campo fica vazio e só troca o guardado quando é preenchido.
+ * Criar ou editar um destino externo no PainelLateral (guia PainelLateral): nome, entrega, endereço, limite por
+ * dia, Registrar os envios e ligado. O endereço vai para o cofre (Vault) e volta mascarado; o campo fica vazio e
+ * só troca o guardado quando é preenchido. Entrega e as caixas ligar/desligar são do formulário (só valem ao
+ * salvar), então usam Marcador, não Interruptor (guia Interruptor, "Interruptor ou caixa de marcar?").
  */
 export function EditorDestino({
+  aberto,
   destino,
   usado,
   onFechar,
   onSalvo,
 }: {
+  aberto: boolean;
   destino: DestinoTela | null;
   /** Está em alguma regra: não dá para excluir. */
   usado: boolean;
   onFechar: () => void;
   onSalvo: (mensagem: string) => void;
 }) {
-  const dialogo = useRef<HTMLDialogElement>(null);
   const [nome, setNome] = useState(destino?.nome ?? "");
   const [modo, setModo] = useState<"email" | "porta">(destino?.modo === "porta" ? "porta" : "email");
   const [email, setEmail] = useState("");
@@ -34,15 +40,10 @@ export function EditorDestino({
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [confirmarExclusao, setConfirmarExclusao] = useState(false);
-  const alerta = useRef<HTMLParagraphElement>(null);
+  const alerta = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (erro) alerta.current?.scrollIntoView({ block: "nearest" });
   }, [erro]);
-
-  useEffect(() => {
-    const d = dialogo.current;
-    if (d && !d.open) d.showModal();
-  }, []);
 
   const trocouModo = destino && destino.modo !== modo;
   const temEndereco = !!destino?.endereco && !trocouModo;
@@ -63,7 +64,7 @@ export function EditorDestino({
       if (preencheu) {
         await salvarEndereco(id, modo === "email" ? { email: email.trim() } : { url: url.trim(), ...(chave.trim() ? { chave: chave.trim() } : {}) });
       }
-      onSalvo(destino ? "✓ Destino salvo" : "✓ Destino criado. Use-o numa regra para começar a receber leads");
+      onSalvo(destino ? "Destino salvo." : "Destino criado. Use-o numa regra para começar a receber leads.");
     } catch (e) {
       setErro(`✕ ${e instanceof Error ? e.message : String(e)}`);
       setSalvando(false);
@@ -75,7 +76,7 @@ export function EditorDestino({
     setSalvando(true);
     try {
       await excluirDestino(destino.id);
-      onSalvo(`✓ Destino excluído: ${destino.nome}`);
+      onSalvo(`Destino excluído: ${destino.nome}.`);
     } catch (e) {
       setErro(`✕ ${e instanceof Error ? e.message : String(e)}`);
       setSalvando(false);
@@ -83,122 +84,109 @@ export function EditorDestino({
   }
 
   return (
-    <dialog ref={dialogo} className="dialogo" aria-labelledby="dest-titulo" onClose={onFechar}>
-      <form className="flex max-h-[calc(100dvh-26px)] flex-col" onSubmit={salvar} noValidate>
-        <div className="dialogo-cab">
-          <span className="eyebrow">{destino ? "Destino" : "Novo destino"}</span>
-          <h2 className="titulo-card mt-[2px]" id="dest-titulo">
-            {destino ? "Editar destino" : "Cadastrar destino"}
-          </h2>
-        </div>
-        <div className="dialogo-corpo">
-          <div>
-            <label className="field-label" htmlFor="d-nome">
-              Nome
-            </label>
-            <input id="d-nome" className="input" maxLength={80} value={nome} onChange={(e) => setNome(e.target.value)} autoFocus />
-            <p className="mt-[6px] text-[13px] text-ink-soft">Só você vê este nome. Ele nunca vai no e-mail nem na chamada ao destino.</p>
-          </div>
-
-          <fieldset>
-            <legend className="field-label">Entrega</legend>
-            <div className="grid gap-[6px]">
-              {(
-                [
-                  ["email", "E-mail", "Sai da caixa de entrada, sem cópia em Enviados, com o assunto Novo contato."],
-                  ["porta", "Porta de entrada", "Uma chamada POST por lead, pela especificação da porta de entrada."],
-                ] as const
-              ).map(([v, titulo, ajuda]) => (
-                <label key={v} className="flex cursor-pointer items-start gap-[10px] rounded-sm border border-control px-3 py-[9px]">
-                  <input type="radio" name="d-modo" className="checkbox mt-[2px]" checked={modo === v} onChange={() => setModo(v)} />
-                  <span>
-                    <span className="font-semibold">{titulo}</span>
-                    <span className="block text-[13px] text-ink-soft">{ajuda}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          <fieldset>
-            <legend className="field-label">Endereço</legend>
-            {temEndereco && (
-              <p className="mb-2 text-[13px] text-ink-soft">
-                Guardado no cofre: <span className="num text-ink">{enderecoTxt(destino!)}</span>. Preencha só para trocar.
-              </p>
-            )}
-            {trocouModo && destino?.endereco && <p className="mb-2 text-[13px] font-semibold text-wa">! Trocar a entrega apaga o endereço guardado. Digite o novo.</p>}
-            {modo === "email" ? (
-              <>
-                <label className="field-label" htmlFor="d-email">
-                  E-mail de entrega
-                </label>
-                <input id="d-email" className="input" type="email" inputMode="email" autoComplete="off" value={email} onChange={(e) => setEmail(e.target.value)} />
-              </>
-            ) : (
-              <div className="grid gap-3">
-                <div>
-                  <label className="field-label" htmlFor="d-url">
-                    Endereço da porta (https://)
-                  </label>
-                  <input id="d-url" className="input" type="url" inputMode="url" autoComplete="off" value={url} onChange={(e) => setUrl(e.target.value)} />
-                </div>
-                <div>
-                  <label className="field-label" htmlFor="d-chave">
-                    Chave
-                  </label>
-                  <input id="d-chave" className="input" type="password" autoComplete="off" value={chave} onChange={(e) => setChave(e.target.value)} />
-                  <p className="mt-[6px] text-[13px] text-ink-soft">A chave nunca volta para a tela. Vazia, fica a que já está guardada.</p>
-                </div>
-              </div>
-            )}
-          </fieldset>
-
-          <div>
-            <label className="field-label" htmlFor="d-limite">
-              Limite por dia
-            </label>
-            <input id="d-limite" className="input num w-[140px]" type="number" min={1} step={1} inputMode="numeric" placeholder="Sem limite" value={limite} onChange={(e) => setLimite(e.target.value)} />
-            <p className="mt-[6px] text-[13px] text-ink-soft">Passou do limite, o resto do dia vai para o Base360 Vendas. Vazio, sem limite.</p>
-          </div>
-
-          <div>
-            <Chip marcado={registrar} onChange={() => setRegistrar((v) => !v)} texto="Registrar os envios" />
-            <p className="mt-[6px] text-[13px] text-ink-soft">
-              {registrar
-                ? "✓ Cada lead enviado entra na base de contatos do Marketing, com o envio no histórico."
-                : "– Nada fica registrado: nem contato, nem evento."}
-            </p>
-          </div>
-          <Chip marcado={ativo} onChange={() => setAtivo((v) => !v)} texto="Destino ligado" />
-
-          {erro && (
-            <p ref={alerta} className="aviso-erro" role="alert">
-              {erro}
-            </p>
-          )}
-        </div>
-        <div className="dialogo-rod">
+    <PainelLateral
+      aberto={aberto}
+      onFechar={onFechar}
+      titulo={destino ? "Editar destino" : "Cadastrar destino"}
+      descricao={destino ? destino.nome : "Novo destino"}
+      rodape={
+        <div className="mb-lateral__rodape">
           {destino &&
             (usado ? (
-              <p className="mr-auto basis-full text-[13px] text-ink-soft sm:basis-auto">Está em uma regra: tire de lá para excluir.</p>
+              <span className="mkt-nota mkt-rodape-esquerda">Está em uma regra: tire de lá para excluir.</span>
             ) : confirmarExclusao ? (
-              <button type="button" className="btn btn-ghost focus-ring mr-auto basis-full sm:basis-auto" onClick={excluir} disabled={salvando}>
-                ✕ Excluir de vez
+              <button type="button" className="mb-botao mb-botao--perigo mkt-rodape-esquerda" onClick={excluir} disabled={salvando}>
+                Excluir de vez
               </button>
             ) : (
-              <button type="button" className="link-texto focus-ring mr-auto min-h-[44px] basis-full text-left text-[13px] sm:min-h-0 sm:basis-auto" onClick={() => setConfirmarExclusao(true)}>
+              <button type="button" className="mb-botao mb-botao--discreto mkt-rodape-esquerda" onClick={() => setConfirmarExclusao(true)}>
                 Excluir destino
               </button>
             ))}
-          <button type="button" className="btn btn-ghost focus-ring flex-1 sm:flex-none" onClick={() => dialogo.current?.close()}>
+          <button type="button" className="mb-botao mb-botao--secundario" onClick={onFechar}>
             Cancelar
           </button>
-          <button type="submit" className="btn btn-red focus-ring flex-1 sm:flex-none" disabled={salvando}>
+          <button type="submit" form="form-destino" className="mb-botao mb-botao--primario" aria-busy={salvando || undefined} disabled={salvando}>
             {salvando ? "Salvando…" : "Salvar destino"}
           </button>
         </div>
-      </form>
-    </dialog>
+      }
+    >
+      <div className="mb-lateral__corpo">
+        <form id="form-destino" className="mkt-form" onSubmit={salvar} noValidate>
+          <Campo rotulo="Nome" ajuda="Só você vê este nome. Ele nunca vai no e-mail nem na chamada ao destino.">
+            <input className="mb-campo__entrada" maxLength={80} value={nome} onChange={(e) => setNome(e.target.value)} />
+          </Campo>
+
+          <fieldset className="mkt-grupo">
+            <legend className="mb-campo__rotulo">Entrega</legend>
+            {(
+              [
+                ["email", "E-mail", "Sai da caixa de entrada, sem cópia em Enviados, com o assunto Novo contato."],
+                ["porta", "Porta de entrada", "Uma chamada POST por lead, pela especificação da porta de entrada."],
+              ] as const
+            ).map(([v, titulo, ajuda]) => (
+              <label key={v} className="mb-marcador">
+                <input type="radio" name="d-modo" checked={modo === v} onChange={() => setModo(v)} />
+                <span>
+                  {titulo}
+                  <span className="mb-marcador__detalhe">{ajuda}</span>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+
+          <CampoEmGrupo id="d-endereco" rotulo="Endereço">
+            {temEndereco && (
+              <span className="mkt-nota">
+                Guardado no cofre: <span className="mkt-num">{enderecoTxt(destino!)}</span>. Preencha só para trocar.
+              </span>
+            )}
+            {trocouModo && destino?.endereco && <Aviso tom="alerta" titulo="Trocar a entrega apaga o endereço guardado" texto="Digite o novo." />}
+            {modo === "email" ? (
+              <Campo rotulo="E-mail de entrega">
+                <input className="mb-campo__entrada" type="email" inputMode="email" autoComplete="off" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </Campo>
+            ) : (
+              <>
+                <Campo rotulo="Endereço da porta (https://)">
+                  <input className="mb-campo__entrada" type="url" inputMode="url" autoComplete="off" value={url} onChange={(e) => setUrl(e.target.value)} />
+                </Campo>
+                <Campo rotulo="Chave" ajuda="A chave nunca volta para a tela. Vazia, fica a que já está guardada.">
+                  <input className="mb-campo__entrada" type="password" autoComplete="off" value={chave} onChange={(e) => setChave(e.target.value)} />
+                </Campo>
+              </>
+            )}
+          </CampoEmGrupo>
+
+          <Campo rotulo="Limite por dia" opcional="vazio, sem limite" ajuda="Passou do limite, o resto do dia vai para o Base360 Vendas.">
+            <input className="mb-campo__entrada mkt-curto" type="number" min={1} step={1} inputMode="numeric" placeholder="Sem limite" value={limite} onChange={(e) => setLimite(e.target.value)} />
+          </Campo>
+
+          <fieldset className="mkt-grupo">
+            <legend className="mb-campo__rotulo">Registro e estado</legend>
+            <label className="mb-marcador">
+              <input type="checkbox" checked={registrar} onChange={() => setRegistrar((v) => !v)} />
+              <span>
+                Registrar os envios
+                <span className="mb-marcador__detalhe">
+                  {registrar ? "Cada lead enviado entra na base de contatos do Marketing, com o envio no histórico." : "Nada fica registrado: nem contato, nem evento."}
+                </span>
+              </span>
+            </label>
+            <label className="mb-marcador">
+              <input type="checkbox" checked={ativo} onChange={() => setAtivo((v) => !v)} />
+              Destino ligado
+            </label>
+          </fieldset>
+
+          {erro && (
+            <div ref={alerta}>
+              <Aviso tom="erro" titulo={semSinal(erro)} />
+            </div>
+          )}
+        </form>
+      </div>
+    </PainelLateral>
   );
 }

@@ -3,9 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
-import { Cabecalho } from "@/components/cabecalho";
 import { SemConfiguracao } from "@/components/casca";
-import { LogoMBigucci } from "@/components/marca-base360";
+import { Aviso } from "@/components/alicerce/aviso";
+import { AvisoConexao } from "@/components/alicerce/aviso-conexao";
+import { Campo } from "@/components/alicerce/campo";
+import { CampoSenha } from "@/components/alicerce/campo-senha";
+import { EntrarCaixa } from "@/components/alicerce/entrar-caixa";
 import { supabase } from "@/lib/supabase";
 import { useSessao } from "@/lib/sessao";
 import { mensagemErro } from "@/lib/erros";
@@ -15,6 +18,7 @@ const Login = z.object({
   senha: z.string().min(1, "Informe a senha."),
 });
 
+// Entrar do Alicerce (guia: Entrar), a mesma tela do Vendas com o lockup do Marketing. Mesmo login (mesma origem).
 export default function EntrarPage() {
   const { estado } = useSessao();
   const router = useRouter();
@@ -37,61 +41,44 @@ export default function EntrarPage() {
     const { error } = await supabase.auth.signInWithPassword({ email: dados.data.email, password: dados.data.senha });
     setEnviando(false);
     if (error) {
-      setErro(/invalid login credentials/i.test(error.message) ? "E-mail ou senha incorretos." : mensagemErro(error));
+      setErro(/invalid login credentials/i.test(error.message) ? "E-mail ou senha não conferem." : mensagemErro(error));
     }
   }
 
   return (
     <>
-      <Cabecalho />
-      <main className="mx-auto max-w-[440px] px-5 pb-16 pt-10">
+      <EntrarCaixa modulo="Marketing">
         {estado.fase === "sem-config" ? (
           <SemConfiguracao />
         ) : (
-          <form onSubmit={entrar} className="card bar-brand" noValidate>
-            <span className="eyebrow">Base360</span>
-            <h1 className="titulo-pagina mt-1">Entrar</h1>
-            <label className="field-label mt-6" htmlFor="email">
-              E-mail
-            </label>
-            <input
-              id="email"
-              className="input"
-              type="email"
-              autoComplete="username"
-              inputMode="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <label className="field-label mt-4" htmlFor="senha">
-              Senha
-            </label>
-            <input
-              id="senha"
-              className="input"
-              type="password"
-              autoComplete="current-password"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-            />
-            {erro && (
-              <p role="alert" className="aviso-erro mt-3">
-                ! {erro}
-              </p>
-            )}
-            <button type="submit" className="btn btn-red btn-lg focus-ring mt-5 w-full" disabled={enviando}>
-              {enviando ? "Entrando…" : "Entrar"}
-            </button>
-            <p className="mt-4 text-[13px] text-ink-soft">
-              Não tem acesso ou esqueceu a senha? Fale com o gerente geral.
-            </p>
+          <form onSubmit={entrar} className="mb-entrar__cartao" noValidate>
+            <div className="mb-entrar__cabeca">
+              <h1 className="mb-entrar__titulo">Entrar</h1>
+              <p className="mb-entrar__texto">Use o e-mail cadastrado no Base360.</p>
+            </div>
+            {erro && <Aviso tom="erro" titulo={erro} />}
+            <div className="mb-entrar__form">
+              <Campo rotulo="E-mail">
+                <input
+                  id="email"
+                  className="mb-campo__entrada"
+                  type="email"
+                  autoComplete="username"
+                  inputMode="email"
+                  disabled={enviando}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </Campo>
+              <CampoSenha rotulo="Senha" id="senha" autoComplete="current-password" valor={senha} onChange={setSenha} desativado={enviando} />
+              <button type="submit" className="mb-botao mb-botao--primario mb-botao--g mb-botao--bloco" aria-busy={enviando ? "true" : undefined} disabled={enviando}>
+                {enviando ? "Entrando…" : "Entrar"}
+              </button>
+            </div>
           </form>
         )}
-        {/* O logo MBigucci fica abaixo do formulário; o cabeçalho mostra o Base360. */}
-        <div className="mt-10 flex justify-center">
-          <LogoMBigucci />
-        </div>
-      </main>
+      </EntrarCaixa>
+      <AvisoConexao />
     </>
   );
 }

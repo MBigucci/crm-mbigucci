@@ -138,6 +138,30 @@
 
 **Quem executa:** o Marketing tem a sua sessão master desde 05/11/2026. A proposta é a master do Vendas entregar a ela os componentes prontos e o pedido. Ela conduz a migração do Marketing com você.
 
+### Como ficou (fase 2, bloco 7, 08/11/2026)
+
+Etapas 1 e 2 feitas e aprovadas pela sessão do Marketing; a etapa 3 fecha os ajustes. Código em `marketing/`; capturas em `marketing/local/alicerce/` (fora do Git).
+
+- **Cópia gerada (opção A):** `marketing/scripts/copiar-alicerce.mjs` copia peças, tokens, bundle e fontes do `crm/`, com o aviso no topo; `src/lib/alicerce-copia.test.ts` falha se um lado mudar. Depois de qualquer mudança no Alicerce do `crm/`, rode o script de novo.
+- **Telas:** Direcionador (Dialogo ao desligar regra que distribui; simulador com Cartao, Seletor, DataHora e Lista), Início, Minha conta, Entrar, 404 e erro, com `EstadosDePagina`.
+- **Módulos:** Vendas e Marketing, só com os que a pessoa pode abrir; Repasse e Parcerias não aparecem (a sessão do Marketing não tem `pode`).
+
+**Lacunas do Alicerce** (nada foi editado na fonte nem na cópia; o pedido vai à sessão do Alicerce):
+
+1. Módulos decididos pelo `id`: o Vendas entra como `repasse` para abrir em `/vendas/`. Falta um módulo "externo".
+2. O `novo` só aceita `href`: o + Nova regra abre o painel por `?nova=1`. Falta `onClick`.
+3. `PainelLateral` sem a variante larga (existe `--larga` no CSS).
+4. Não há componente `Dialogo` nem `ConstrutorDeCondicoes`: montados localmente com as classes `.mb-*`.
+5. Nenhum ícone para o Direcionador (usado "fila").
+6. `Lista` corta meta e título numa linha (regra local para quebrar).
+7. `MenuLateral` desenha "Atalhos" sem itens e o `MenuCelular` deixa o grupo vazio (regras locais escondem).
+8. Rodapé da `Aparencia` fixo em "Padrão do Base360 Vendas".
+9. Grade do `.mb-condicao` pensada para valor curto (ajuste local para as pílulas).
+
+**Desvios do guia:** construtor com linhas fixas (modelo de dados fixo: produto, fonte, dias e horário, sempre "e"), sem "+ Adicionar", sem ✕ e sem todas/qualquer uma; sem "resultado antes de salvar" (item 49); sem atalhos externos no menu, porque o brief pede só o Direcionador; chave geral desliga sem Dialogo.
+
+**Pendências:** `error.tsx` da rota sem captura (o código é o do Vendas; a captura 12 cobre o erro de carga na tela); Parcerias fora de Módulos até a sessão do Marketing ter `pode`; o `out/` de teste não se publica.
+
 ## 4. Parcerias
 
 **Hoje:** Parcerias vive dentro do Vendas.

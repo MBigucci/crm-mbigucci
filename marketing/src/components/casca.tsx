@@ -1,26 +1,35 @@
 "use client";
 
-// Adaptado de crm/src/components/casca.tsx. O Marketing, nesta etapa, tem uma
-// tela só: o Direcionador, só do gerente geral. Para os outros perfis, nem o
-// item do menu nem a página mostram nada (o banco também não devolve nada).
+// A moldura do Base360 Marketing no Alicerce. Segue crm/src/components/casca.tsx: MenuLateral, BarraSuperior e,
+// no celular, MenuCelular, com o lockup "Base360 · Marketing" (prop modulo da MarcaBase360). O menu é um item só
+// (Direcionador), do gerente geral.
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSessao } from "@/lib/sessao";
-import { BarraLateral, Cabecalho, type ItemMenu } from "./cabecalho";
+import { nomePerfil } from "@/lib/tipos";
+import { MODULO_ATUAL, modulosDaPessoa, montarMenu } from "@/lib/menu-marketing";
+import { AvisoConexao } from "./alicerce/aviso-conexao";
+import { BarraSuperior } from "./alicerce/barra-superior";
+import { CopiarDetalhes, EstadoDePagina } from "./alicerce/estado-de-pagina";
+import { MarcaBase360 } from "./alicerce/marca-base360";
+import { MenuCelular } from "./alicerce/menu-celular";
+import { MenuDaConta } from "./alicerce/menu-da-conta";
+import { MenuLateral } from "./alicerce/menu-lateral";
+import { ToastProvider } from "./alicerce/toast";
+
+const MODULO = "Marketing";
 
 export function Casca({
   titulo,
-  eyebrow,
   soGerenteGeral,
-  acao,
+  novo,
   children,
 }: {
   titulo: string;
-  eyebrow?: string;
   soGerenteGeral?: boolean;
-  /** A ação principal da página, ao lado do título no computador. */
-  acao?: React.ReactNode;
+  /** O + do módulo no topo (BarraSuperior) e no celular (MenuCelular). Só para quem pode criar. */
+  novo?: { href: string; rotulo: string };
   children: React.ReactNode;
 }) {
   const { estado, ehGerenteGeral, sair } = useSessao();
@@ -30,75 +39,104 @@ export function Casca({
     if (estado.fase === "deslogado") router.replace("/entrar/");
   }, [estado.fase, router]);
 
+  // Sem sessão pronta não há moldura: a marca e o estado da conta, com as palavras do Vocabulário.
   if (estado.fase !== "pronto") {
     return (
-      <>
-        <Cabecalho />
-        <main className="mx-auto max-w-content px-5 py-8">
-          {estado.fase === "sem-config" && <SemConfiguracao />}
-          {estado.fase === "desativado" && (
-            <div className="card bar-brand max-w-[520px]">
-              <h1 className="titulo-card">! Conta desativada</h1>
-              <p className="mt-2 text-ink-soft">A conta {estado.email} não está ativa no Base360. Fale com o gerente geral.</p>
-              <button type="button" className="btn btn-ghost focus-ring mt-4" onClick={sair}>
+      <main className="mkt-solo">
+        <MarcaBase360 modulo={MODULO} />
+        {estado.fase === "sem-config" && <SemConfiguracao />}
+        {estado.fase === "desativado" && (
+          <EstadoDePagina
+            tipo="desativado"
+            titulo="Seu acesso ao Base360 foi desativado"
+            texto="Se acha que é um engano, fale com o gerente geral."
+            acoes={
+              <button type="button" className="mb-botao mb-botao--discreto" onClick={sair}>
                 Sair
               </button>
-            </div>
-          )}
-          {estado.fase === "erro" && (
-            <div className="card bar-brand max-w-[520px]">
-              <h1 className="titulo-card">! Não foi possível carregar sua conta</h1>
-              <p className="mt-2 text-ink-soft">{estado.mensagem}</p>
-            </div>
-          )}
-          {(estado.fase === "carregando" || estado.fase === "deslogado") && <p className="text-concrete">Carregando…</p>}
-        </main>
-      </>
+            }
+          />
+        )}
+        {estado.fase === "erro" && (
+          <EstadoDePagina
+            tipo="erro-de-carga"
+            titulo="Não foi possível carregar a sua conta"
+            texto="Pode ser a internet ou o sistema. O que você já salvou continua salvo."
+            acoes={
+              <button type="button" className="mb-botao mb-botao--primario" onClick={() => window.location.reload()}>
+                Tentar de novo
+              </button>
+            }
+            detalhe={<CopiarDetalhes codigo={estado.mensagem} />}
+          />
+        )}
+        {(estado.fase === "carregando" || estado.fase === "deslogado") && (
+          <div aria-busy="true">
+            <span className="mb-visualmente-oculto">Carregando a sua conta…</span>
+          </div>
+        )}
+        <AvisoConexao />
+      </main>
     );
   }
 
-  const itens: ItemMenu[] = [];
-  if (ehGerenteGeral) itens.push({ href: "/direcionador/", rotulo: "Direcionador", icone: "direcionador" });
-  // Minha conta e Sair ficam no menu da conta (cabeçalho no computador, fim do menu no celular).
-  const conta = { nome: estado.perfil.nome, apelido: estado.perfil.apelido, onSair: sair };
+  const grupos = montarMenu(ehGerenteGeral);
+  const modulos = modulosDaPessoa(ehGerenteGeral);
   const liberado = !soGerenteGeral || ehGerenteGeral;
+  const botaoNovo = liberado && ehGerenteGeral ? novo : undefined;
+  const conta = estado.perfil;
 
   return (
-    <>
-      <Cabecalho itens={itens} conta={conta} />
-      <BarraLateral itens={itens} />
-      <div className="area-principal">
-        <main className="mx-auto max-w-content px-4 pb-28 pt-5 sm:px-5 lg:pb-16 lg:pt-6">
-          {liberado ? (
-            <>
-              <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-                <div>
-                  {eyebrow && <span className="eyebrow">{eyebrow}</span>}
-                  <h1 className="titulo-pagina mt-[3px]">{titulo}</h1>
-                </div>
-                {acao}
-              </div>
-              {children}
-            </>
-          ) : (
-            <div className="card max-w-[520px]">
-              <p>! Seu perfil não tem acesso a esta página.</p>
-            </div>
-          )}
-        </main>
+    <ToastProvider>
+      <div className="mb-app">
+        <MenuLateral modulo={MODULO} grupos={grupos} atalhos={[]} modulos={modulos} moduloAtual={MODULO_ATUAL} />
+        <div className="mb-app__principal">
+          <BarraSuperior
+            titulo={titulo}
+            novo={botaoNovo}
+            conta={<MenuDaConta nome={conta.nome} apelido={conta.apelido} perfil={nomePerfil(conta.perfil)} onSair={sair} />}
+          />
+          <MenuCelular
+            modulo={MODULO}
+            grupos={grupos}
+            atalhos={[]}
+            modulos={modulos}
+            moduloAtual={MODULO_ATUAL}
+            novo={botaoNovo}
+            conta={{ nome: conta.nome, onSair: sair }}
+          />
+          <main className="mb-app__conteudo">
+            {liberado ? (
+              children
+            ) : (
+              <EstadoDePagina
+                tipo="sem-permissao"
+                titulo="Esta página é do perfil Gerente geral"
+                texto="Peça o acesso ao gerente geral."
+                // <a> comum, não o Link: o Vendas é um site irmão, fora do basePath do Marketing.
+                acoes={
+                  <a className="mb-botao mb-botao--secundario" href="/vendas/">
+                    Voltar para o Base360 Vendas
+                  </a>
+                }
+              />
+            )}
+          </main>
+          {/* Dentro da coluna principal: um filho solto do .mb-app viraria uma linha vazia da grade. */}
+          <AvisoConexao />
+        </div>
       </div>
-    </>
+    </ToastProvider>
   );
 }
 
 export function SemConfiguracao() {
   return (
-    <div className="card bar-brand max-w-[560px]">
-      <h1 className="titulo-card">! Supabase não configurado</h1>
-      <p className="mt-2 text-ink-soft">
-        Este build foi gerado sem NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY. Preencha as variáveis e gere
-        o build de novo.
-      </p>
-    </div>
+    <EstadoDePagina
+      tipo="erro-de-carga"
+      titulo="Não foi possível abrir o Base360"
+      texto="Este endereço ainda não está pronto para uso. Fale com o suporte."
+      detalhe={<CopiarDetalhes codigo="Supabase não configurado: faltam NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY neste build." />}
+    />
   );
 }

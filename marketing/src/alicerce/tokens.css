@@ -1,0 +1,329 @@
+/* Cópia gerada de crm/src/alicerce/tokens.css, não edite aqui; rode node scripts/copiar-alicerce.mjs */
+/* Alicerce MBigucci — gerado de tokens.json por ferramentas/tokens-css.mjs. Não edite à mão. */
+:root, [data-theme="papel"] {
+  --fundo: #f6f5f1;
+  --superficie: #ffffff;
+  --superficie-sutil: #f9f8f5;
+  --campo: #ffffff;
+  --areia-suave: #f1efea;
+  --areia: #e4e1da;
+  --trilho: var(--linha-forte);
+  --linha: #e2dfd9;
+  --linha-forte: #8d8881;
+  --texto: #16181c;
+  --texto-suave: #3a3d44;
+  --texto-sutil: #68635c;
+  --acao: var(--acao-grafite);
+  --acao-hover: var(--acao-grafite-hover);
+  --sobre-acao: var(--sobre-acao-grafite);
+  --acao-grafite: #202328;
+  --acao-grafite-hover: #35383e;
+  --sobre-acao-grafite: #ffffff;
+  --marca: #e11119;
+  --acao-marca: var(--marca);
+  --acao-marca-hover: #b90d14;
+  --sobre-acao-marca: #ffffff;
+  --foco: #2563eb;
+  --link: #2462ea;
+  --sucesso: #169152;
+  --sucesso-texto: #185e37;
+  --sucesso-fundo: #e2f6e7;
+  --alerta: #cb7300;
+  --alerta-texto: #834b14;
+  --alerta-fundo: #fff0d4;
+  --erro: #ce2a29;
+  --erro-texto: #a72724;
+  --erro-fundo: #ffebe9;
+  --sobre-erro: #ffffff;
+  --info: #2563eb;
+  --info-texto: #224dac;
+  --info-fundo: #e9f0fe;
+  --sobre-info: #ffffff;
+  --nivel-alto: #e2560c;
+  --nivel-alto-texto: #9a3412;
+  --nivel-alto-fundo: #ffe8d9;
+  --nivel-medio: #9e7f00;
+  --nivel-medio-texto: #6b5300;
+  --nivel-medio-fundo: #fcf3c7;
+  --nivel-baixo: #6b8197;
+  --nivel-baixo-texto: #3a4e62;
+  --nivel-baixo-fundo: #e8eef3;
+  --etapa-vendas-contato: #8a80ac;
+  --etapa-vendas-contato-texto: #4c4470;
+  --etapa-vendas-contato-fundo: #efecf7;
+  --etapa-vendas-agendada: #8069b8;
+  --etapa-vendas-agendada-texto: #4b3a7a;
+  --etapa-vendas-agendada-fundo: #ece6f6;
+  --etapa-vendas-realizada: #7a4fc4;
+  --etapa-vendas-realizada-texto: #4c2a83;
+  --etapa-vendas-realizada-fundo: #e7dcf5;
+  --etapa-vendas-novo: #7535d0;
+  --etapa-vendas-novo-texto: #4a1b8c;
+  --etapa-vendas-novo-fundo: #e4d3f6;
+  --etapa-vendas-proposta: #b02a9c;
+  --etapa-vendas-proposta-texto: #6d1260;
+  --etapa-vendas-proposta-fundo: #f3d3ed;
+  --etapa-perdido: #7a776f;
+  --etapa-perdido-texto: #55534e;
+  --etapa-perdido-fundo: #e8e7e4;
+  --etapa-descartado: #8a867f;
+  --etapa-descartado-texto: #68655f;
+  --etapa-descartado-fundo: #f0efec;
+  --whatsapp: #1f7a45;
+  --whatsapp-hover: #17653a;
+  --sobre-whatsapp: #ffffff;
+  --faixa: #16181c;
+  --sobre-faixa: #ffffff;
+  --sobre-faixa-suave: #d9d1cf;
+  --faixa-linha: rgba(255, 255, 255, 0.14);
+  --faixa-borda: var(--faixa);
+  --menu-escuro: #16181c;
+  --sobre-menu: #f5f1f0;
+  --sobre-menu-suave: #d9d1cf;
+  --menu-ativo: #212328;
+  --sobre-menu-ativo: #ffffff;
+  --menu-borda: #2b2e34;
+  --menu-hover: rgba(255, 255, 255, 0.07);
+  --vidro: rgba(255, 255, 255, 0.82);
+  --fase-futuro: #2563eb;
+  --fase-lancamento: #e11119;
+  --fase-obras: #e8890c;
+  --fase-pronto: #0f9d58;
+  --veu: rgba(22, 24, 28, 0.48);
+  --espelho-vendida: #d9466f;
+  --espelho-vendida-texto: #9b1d43;
+  --espelho-vendida-fundo: #fde6ec;
+  --grafico-1: #2f4a6d;
+  --grafico-2: #b8612a;
+  --grafico-3: #7562b0;
+  --grafico-4: #2f7f77;
+  --grafico-5: #94741a;
+  --grafico-outros: #8a857b;
+  --grafico-negativo: #b04a2b;
+  --grafico-positivo: #2d6a9a;
+  --sombra-campo: 0 1px 1px rgba(22, 24, 28, 0.04), 0 2px 6px rgba(22, 24, 28, 0.06);
+  --sombra-botao: 0 1px 2px rgba(22, 24, 28, 0.18), 0 2px 6px rgba(22, 24, 28, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  --sombra-cartao: 0 1px 1px rgba(22, 24, 28, 0.04), 0 2px 6px rgba(22, 24, 28, 0.06);
+  --sombra-foco: 0 0 0 4px rgba(37, 99, 235, 0.18);
+  --sombra-erro: 0 0 0 4px rgba(206, 42, 41, 0.16);
+  --sombra-flutuante: 0 1px 2px rgba(22, 24, 28, 0.06), 0 12px 32px rgba(22, 24, 28, 0.14);
+  --sombra-barra: 0 -8px 24px rgba(22, 24, 28, 0.06);
+  --sombra-elegante: 0 18px 50px -24px rgba(22, 24, 28, 0.45);
+  --sombra-botao-marca: 0 3px 8px rgba(225, 17, 25, 0.25);
+}
+
+[data-theme="grafite"] {
+  --fundo: #0f1013;
+  --superficie: #17181c;
+  --superficie-sutil: #1b1d20;
+  --campo: #1c1e21;
+  --areia-suave: #1e1f23;
+  --areia: #24262a;
+  --trilho: var(--linha-forte);
+  --linha: #292b2f;
+  --linha-forte: #71747b;
+  --texto: #f6f5f1;
+  --texto-suave: #cccac5;
+  --texto-sutil: #a7a49e;
+  --acao: var(--acao-grafite);
+  --acao-hover: var(--acao-grafite-hover);
+  --sobre-acao: var(--sobre-acao-grafite);
+  --acao-grafite: #f6f5f1;
+  --acao-grafite-hover: #d9d7d2;
+  --sobre-acao-grafite: #16181c;
+  --marca: #e11119;
+  --acao-marca: var(--marca);
+  --acao-marca-hover: #b90d14;
+  --sobre-acao-marca: #ffffff;
+  --foco: #6c9cfb;
+  --link: var(--foco);
+  --sucesso: #3fb972;
+  --sucesso-texto: #8cdda7;
+  --sucesso-fundo: #132d1c;
+  --alerta: #f19b37;
+  --alerta-texto: #fbc77c;
+  --alerta-fundo: #38240f;
+  --erro: #ec5b57;
+  --erro-texto: #f9aea7;
+  --erro-fundo: #3b1c1a;
+  --sobre-erro: #16181c;
+  --info: #6c9cfb;
+  --info-texto: #acc8fc;
+  --info-fundo: #19263f;
+  --sobre-info: #16181c;
+  --nivel-alto: #fb923c;
+  --nivel-alto-texto: #fdba8c;
+  --nivel-alto-fundo: #3b2114;
+  --nivel-medio: #d9bb3a;
+  --nivel-medio-texto: #f2dc78;
+  --nivel-medio-fundo: #332f12;
+  --nivel-baixo: #8aa0b5;
+  --nivel-baixo-texto: #b6c5d4;
+  --nivel-baixo-fundo: #1f2731;
+  --etapa-vendas-contato: #8e85ab;
+  --etapa-vendas-contato-texto: #cbc4e0;
+  --etapa-vendas-contato-fundo: #24222e;
+  --etapa-vendas-agendada: #9a85d6;
+  --etapa-vendas-agendada-texto: #c9bdf0;
+  --etapa-vendas-agendada-fundo: #272336;
+  --etapa-vendas-realizada: #a283e6;
+  --etapa-vendas-realizada-texto: #c8b2f5;
+  --etapa-vendas-realizada-fundo: #2a2140;
+  --etapa-vendas-novo: #a77cf5;
+  --etapa-vendas-novo-texto: #d2b8ff;
+  --etapa-vendas-novo-fundo: #2e1f4d;
+  --etapa-vendas-proposta: #e070cf;
+  --etapa-vendas-proposta-texto: #f3b2e6;
+  --etapa-vendas-proposta-fundo: #3a1a38;
+  --etapa-perdido: #8a8883;
+  --etapa-perdido-texto: #b5b3ae;
+  --etapa-perdido-fundo: #27282c;
+  --etapa-descartado: #6c6a65;
+  --etapa-descartado-texto: #a19f9a;
+  --etapa-descartado-fundo: #1f2023;
+  --whatsapp: #68ce92;
+  --whatsapp-hover: #8edcae;
+  --sobre-whatsapp: #16181c;
+  --faixa: #2c1a1d;
+  --sobre-faixa: #f6f5f1;
+  --sobre-faixa-suave: #d2cbc9;
+  --faixa-linha: rgba(255, 255, 255, 0.14);
+  --faixa-borda: #3a2226;
+  --menu-escuro: #16181c;
+  --sobre-menu: #f5f1f0;
+  --sobre-menu-suave: #d2cbc9;
+  --menu-ativo: #212328;
+  --sobre-menu-ativo: #ffffff;
+  --menu-borda: #2b2e34;
+  --menu-hover: rgba(255, 255, 255, 0.07);
+  --vidro: rgba(23, 24, 28, 0.82);
+  --veu: rgba(0, 0, 0, 0.64);
+  --espelho-vendida: #f47a99;
+  --espelho-vendida-texto: #f9a8c0;
+  --espelho-vendida-fundo: #3b1b27;
+  --grafico-1: #8fa8cc;
+  --grafico-2: #e39a68;
+  --grafico-3: #ad9fe2;
+  --grafico-4: #62b9ae;
+  --grafico-5: #d4b54d;
+  --grafico-outros: #76736d;
+  --grafico-negativo: #e58a6b;
+  --grafico-positivo: #79acd8;
+  --sombra-campo: 0 1px 1px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --sombra-botao: 0 1px 2px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.3), inset 0 -1px 0 rgba(0, 0, 0, 0.10);
+  --sombra-cartao: 0 1px 1px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --sombra-foco: 0 0 0 4px rgba(108, 156, 251, 0.28);
+  --sombra-erro: 0 0 0 4px rgba(236, 91, 87, 0.26);
+  --sombra-flutuante: 0 1px 2px rgba(0, 0, 0, 0.5), 0 12px 32px rgba(0, 0, 0, 0.55);
+  --sombra-barra: 0 -8px 24px rgba(0, 0, 0, 0.4);
+  --sombra-elegante: 0 18px 50px -24px rgba(0, 0, 0, 0.75);
+  --sombra-botao-marca: 0 3px 8px rgba(225, 17, 25, 0.35);
+}
+
+:root {
+  --esp-1: 4px;
+  --esp-2: 8px;
+  --esp-3: 12px;
+  --esp-4: 16px;
+  --esp-5: 20px;
+  --esp-6: 24px;
+  --esp-8: 32px;
+  --esp-10: 40px;
+  --esp-12: 48px;
+  --esp-16: 64px;
+  --raio-xs: 4px;
+  --raio-sm: 8px;
+  --raio-md: 12px;
+  --raio-lg: 16px;
+  --raio-total: 999px;
+  --controle-p: 32px;
+  --controle-m: 40px;
+  --controle-g: 48px;
+  --linha-tabela: 36px;
+  --linha-tabela-densa: 32px;
+  --linha-cabecalho: 32px;
+  --menu-largura: 248px;
+  --menu-recolhido: 64px;
+  --topo-altura: 56px;
+  --conteudo-max: 1280px;
+  --leitura-max: 720px;
+  --marca-simbolo: 28px;
+  --marca-simbolo-celular: 24px;
+  --marca-mbigucci: 24px;
+  --vidro-desfoque: 12px;
+  --painel-largura: 440px;
+  --painel-largura-larga: 880px;
+  --alvo-minimo: 28px;
+  --controle-toque: 44px;
+  --item-toque: 48px;
+  --texto-campo-toque: 16px;
+  --quebra-estreita: 640px;
+  --quebra-celular: 768px;
+  --quebra-larga: 1024px;
+  --tela-celular: 375px;
+  --tela-computador: 1280px;
+  --mov-rapido: 140ms;
+  --mov-base: 200ms;
+  --mov-entrada: 220ms;
+  --mov-cartao: 300ms;
+  --mov-curva: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --mov-entrada-y: 6px;
+  --mov-cascata: 40ms;
+  --mov-elevacao: -4px;
+  --mov-botao-y: -1px;
+  --mov-pressao: 0.97;
+  --camada-conteudo: 1;
+  --camada-fixo: 10;
+  --camada-topo: 20;
+  --camada-popup: 30;
+  --camada-painel: 40;
+  --camada-dialogo: 50;
+  --camada-aviso: 60;
+  --font-display: "Bricolage Grotesque", "Inter", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.titulo-tela { font-family: var(--font-display); font-size: 28px; line-height: 32px; font-weight: 700; letter-spacing: -0.02em; }
+
+.titulo-secao { font-family: var(--font-display); font-size: 20px; line-height: 24px; font-weight: 700; letter-spacing: -0.015em; }
+
+.titulo-cartao { font-family: var(--font-display); font-size: 16px; line-height: 20px; font-weight: 700; letter-spacing: -0.01em; }
+
+.numero-destaque { font-family: var(--font-display); font-size: 32px; line-height: 36px; font-weight: 700; letter-spacing: -0.02em; }
+
+.numero-faixa { font-family: var(--font-display); font-size: 40px; line-height: 40px; font-weight: 700; letter-spacing: -0.02em; }
+
+.titulo-item { font-family: var(--font-display); font-size: 17px; line-height: 20px; font-weight: 700; letter-spacing: -0.01em; }
+
+.nome-lead { font-family: var(--font-display); font-size: 17px; line-height: 20px; font-weight: 700; letter-spacing: -0.01em; }
+
+.leitura { font-family: var(--font-sans); font-size: 16px; line-height: 26px; font-weight: 400; }
+
+.corpo { font-family: var(--font-sans); font-size: 14px; line-height: 22px; font-weight: 400; }
+
+.corpo-forte { font-family: var(--font-sans); font-size: 14px; line-height: 22px; font-weight: 600; }
+
+.rotulo { font-family: var(--font-sans); font-size: 13px; line-height: 18px; font-weight: 600; }
+
+.botao { font-family: var(--font-sans); font-size: 14px; line-height: 20px; font-weight: 600; }
+
+.legenda { font-family: var(--font-sans); font-size: 12px; line-height: 16px; font-weight: 400; }
+
+.sobrelinha { font-family: var(--font-sans); font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.12em; }
+
+.selo { font-family: var(--font-sans); font-size: 11px; line-height: 16px; font-weight: 700; letter-spacing: 0.06em; }
+
+.corpo-compacto { font-family: var(--font-sans); font-size: 13px; line-height: 18px; font-weight: 400; }
+
+.dado { font-family: var(--font-sans); font-size: 13px; line-height: 18px; font-weight: 500; }
+
+.dado-codigo { font-family: var(--font-mono); font-size: 12px; line-height: 18px; font-weight: 500; }
+
+.cabecalho-tabela { font-family: var(--font-sans); font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; }
+
+@font-face { font-family: 'Bricolage Grotesque'; src: url('./fonts/BricolageGrotesque-Variable.woff2') format('woff2'); font-weight: 200 800; font-style: normal; font-display: swap; }
+
+@font-face { font-family: 'Inter'; src: url('./fonts/Inter-Variable.woff2') format('woff2'); font-weight: 100 900; font-style: normal; font-display: swap; }
+
+@font-face { font-family: 'Geist Mono'; src: url('./fonts/GeistMono-Variable.woff2') format('woff2'); font-weight: 100 900; font-style: normal; font-display: swap; }

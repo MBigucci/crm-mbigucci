@@ -1,0 +1,10 @@
+/* Só a base do Tailwind (preflight), carregada antes do Alicerce como no Vendas (crm/src/app/tailwind-base.css):
+   o tokens.css e o bundle.css vêm depois e mandam no body e nos elementos. O Marketing não usa utilitários do
+   Tailwind nas telas; o que é do app fica em alicerce-local.css, com tokens. */
+@tailwind base;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+}

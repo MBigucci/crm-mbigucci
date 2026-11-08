@@ -207,3 +207,6 @@ export function agoraSP(agora = new Date()): { dia: number; hora: string } {
   const g = (t: string) => p.find((x) => x.type === t)?.value ?? "";
   return { dia: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(g("weekday")), hora: `${g("hour")}:${g("minute")}` };
 }
+
+/** Quantos leads a regra já mandou desde que foi salva (a soma dos contadores das partes). Maior que zero = ela distribui. */
+export const totalEnviado = (r: Pick<RegraTela, "partes">) => r.partes.reduce((soma, p) => soma + p.enviados, 0);
