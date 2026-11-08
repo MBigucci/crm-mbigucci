@@ -427,11 +427,6 @@ svg.mb-icone {
      e a lista, para o par rótulo/valor não virar várias colunas flex. */
   .importacao-previa td[data-rotulo]::before { flex: 0 0 30%; }
 }
-/* FormularioDenso.md:5 pede uma coluna abaixo de 640px. No bundle, a regra --3
-   vem depois da regra geral do celular e a sobrescreve; compensa só neste formulário. */
-@media (max-width: 639px) {
-  .empreendimento-formulario .mb-form-grade--3 > * { grid-column: 1 / -1; }
-}
 /* Tabela dentro do cartão de importação: apenas o cartão externo tem sombra (Cartao.md:7). */
 .importacao-previa, .importacao-previa tbody tr { box-shadow: none; }
 /* BarraDeAcoes.md:7: duas ações não cabem lado a lado em 375px. Cada ação
@@ -470,9 +465,6 @@ svg.mb-icone {
   .admin-matriz .mb-matriz td:first-child { min-width: 0; }
   .admin-matriz .mb-matriz th:first-child, .admin-matriz .mb-matriz td:first-child { width: 58%; }
   .admin-pilha .mb-catalogo__nome { flex-direction: column; align-items: flex-start; }
-  /* O campo editável do catálogo vem depois da regra móvel no bundle. Mantém
-     os 44px e 16px do guia também aqui, evitando o zoom ao editar no iPhone. */
-  .admin-pilha .mb-catalogo__nome .mb-campo__entrada { min-height: var(--controle-toque); font-size: var(--texto-campo-toque); }
   .admin-pilha .mb-lista__alvo { min-height: var(--controle-toque); }
 }
 @media (max-width: 639px) { .admin-faixa__campos { grid-template-columns: minmax(0, 1fr); } }
