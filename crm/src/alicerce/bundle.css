@@ -2075,3 +2075,10 @@ button.mb-folha__item { width: 100%; border: 0; background: none; font-family: v
 @media (max-width: 767px) {
   .mb-item__faixa > .mb-botao { height: auto; min-height: var(--controle-toque); white-space: normal; text-align: center; line-height: 18px; padding-block: var(--esp-1); }
 }
+
+/* ---------- Entradas no celular: 44px e 16px também nas variantes densas (vem por último para não ser sobrescrito) ----------
+   Evita o zoom do iPhone ao focar. Lista de opções (nome e nova), busca e edição na linha da tabela. */
+@media (max-width: 767px) {
+  .mb-catalogo__nome .mb-campo__entrada, .mb-catalogo__item--nova .mb-campo__entrada, .mb-busca .mb-campo__entrada, .mb-tabela__editar .mb-campo__grupo { height: var(--controle-toque); font-size: var(--texto-campo-toque); }
+  .mb-tabela__editar .mb-campo__grupo .mb-campo__entrada { height: auto; font-size: var(--texto-campo-toque); }
+}
