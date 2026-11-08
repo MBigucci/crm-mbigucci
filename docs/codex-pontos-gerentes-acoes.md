@@ -33,6 +33,16 @@
 8. Máximo do gerente: 200 pontos, ou R$ 2.000.
 9. **Tela "Meus pontos" para o gerente**, como a do corretor: parceiros (x/20), check-ins por stand e semana (feito, falta, perdido) e o prêmio previsto. O gerente geral vê todos os gerentes na tela Pontos (`/programa/`) e fecha o mês junto.
 
+### Respostas do Felipe (07/11/2026)
+- **Stand incluído no meio do mês:** a obrigação começa na semana seguinte.
+- **Gerente sem stand:** zero pontos de check-in.
+- **12 ações lançadas:** o app avisa que o limite foi atingido e deixa enviar. O envio extra serve de reserva se algum for recusado; os pontos param em 12 ações aprovadas.
+- **Parceiros:** reativado ou recebido pela roleta não conta; só conta o cadastrado pelo próprio gerente dentro do mês.
+- **Liberação do prêmio do gerente:** no mês seguinte, após o fechamento.
+- **Stand retirado no meio do mês:** as semanas que já passaram e a semana atual continuam contando; a obrigação some a partir da segunda-feira seguinte (08/11/2026).
+- **Foto e print:** o app reduz a imagem no aparelho antes de enviar (cerca de 1 MB), sem limite para o corretor se preocupar (08/11/2026).
+- **Mockup aprovado em 08/11/2026**, com um ajuste: quando um check-in é perdido, o painel das semanas diz no topo que os 100 pontos do mês já foram perdidos, em vez de seguir mostrando "A cumprir".
+
 ## Decisões técnicas
 - **Critério:** o critério "vídeo" vira **"Vídeo ou blitz"** (limite 12, 5 pontos).
   - O lançamento ganha `tipo_acao` (`video` | `blitz`).
