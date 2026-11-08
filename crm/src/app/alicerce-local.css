@@ -392,3 +392,20 @@ svg.mb-icone {
 @media (max-width: 767px) {
   .pmr-numero, .pmr-corretor { min-height: var(--controle-toque); min-width: var(--controle-toque); }
 }
+
+/* 8. Quadro e Empreendimentos (fase 2, bloco 4): composição, sem desenhar peças do Alicerce.
+   O quadro usa as abas/colunas responsivas oficiais. A ficha e o catálogo mantêm largura mínima zero
+   para que textos longos quebrem; formulários e painéis usam o espaço de trabalho do guia. */
+.quadro-pilha, .catalogo-pilha { display: grid; min-width: 0; gap: var(--esp-4); align-content: start; }
+.quadro-ajuda { margin: 0; color: var(--texto-suave); font-size: 13px; line-height: 20px; }
+.catalogo-pilha .mb-pares dd { min-width: 0; overflow-wrap: anywhere; }
+.catalogo-ancora { scroll-margin-top: calc(var(--topo-altura) + var(--esp-4)); }
+.catalogo-compartilhar .mb-popup { left: auto; right: 0; }
+/* Os atalhos Inserir do MensagemPronta têm 24px no bundle; o alvo no aparelho é controle-toque. */
+@media (max-width: 767px) { .catalogo-pilha .mb-variavel, .mb-lateral__corpo.catalogo-pilha .mb-variavel { min-height: var(--controle-toque); } }
+/* A faixa de abas do Quadro tem conteúdo largo. O trilho implícito do grid herdava essa largura e
+   cortava o cabeçalho e os cards mesmo sem aumentar o scrollWidth do documento. O trilho fica limitado
+   à página e só as abas rolam por dentro, como Quadro.md:15 e Abas.md:11. */
+.quadro-pilha { grid-template-columns: minmax(0, 1fr); }
+.quadro-pilha > .mb-quadro__abas { min-width: 0; }
+.quadro-pilha > .mb-quadro__abas > .mb-abas { min-width: 0; max-width: 100%; }

@@ -46,6 +46,7 @@ const soNovo = argumentos.includes("--novo");
 const soConta = argumentos.includes("--conta");
 const soParcerias = argumentos.includes("--parcerias");
 const soInicioVendas = argumentos.includes("--inicio-vendas");
+const soQuadroEmpreendimentos = argumentos.includes("--quadro-empreendimentos");
 const soEtapas = argumentos.includes("--etapas-parceiro");
 const soPainelMetasRanking = argumentos.includes("--painel-metas-ranking");
 
@@ -107,6 +108,32 @@ if (argumentos.includes("--preparar-painel-metas-ranking")) {
   process.exit(0);
 }
 
+// Bloco 4: após os preparos de Parcerias, Início/Vendas e Painel/Metas/Ranking, só na cópia isolada.
+if (argumentos.includes('--preparar-quadro-empreendimentos')) {
+  const sessaoBloco4='.visual-preview/src/lib/sessao.tsx';writeFileSync(sessaoBloco4,readFileSync(sessaoBloco4,'utf8').replace("...profiles[0],perfil:'gerente_geral'","...profiles[0],id:'geral',perfil:'gerente_geral'"));
+  const caminho='.visual-preview/src/lib/visual-fixtures.ts';let s=readFileSync(caminho,'utf8');
+  s=s.replace("this.erroLeitura=(name==='vendas'", "this.erroLeitura=(name==='empreendimentos'&&qa==='catalogo-erro')||(name==='leads'&&qa==='quadro-erro')||(name==='vendas'");
+  s=s.replace("this.espera=(name==='vendas'", "this.espera=(name==='empreendimentos'&&qa==='catalogo-espera')||(name==='leads'&&qa==='quadro-espera')||(name==='vendas'");
+  s=s.replace("this.rows=[...(tables[name]??[])];", "this.rows=[...(tables[name]??[])];this.tabela=name;if(name==='leads'&&!['gerente','geral'].includes(qa ?? ''))this.rows=this.rows.filter(x=>x.dono_id==='corretor-1'); if((qa==='catalogo-vazio'&&name==='empreendimentos')||(qa==='quadro-vazio'&&name==='leads'))this.rows=[];");
+  s=s.replace('rows:Row[]; singleRow=false;',"rows:Row[]; tabela=''; alteracao:Row|null=null; singleRow=false;");
+  // Somente esta URL de QA permite simular etapa em memória. Nenhuma escrita externa existe no adaptador.
+  s=s.replace('update() {this.blocked=true;return this;}',`update(campos?:Row) { const qa=typeof location!=='undefined'?new URLSearchParams(location.search).get('qa'):''; if(qa==='quadro-mover'&&this.tabela==='leads'&&campos&&Object.keys(campos).length===1&&typeof campos.etapa==='string'&&['novo','em_contato','visita_agendada','visita_realizada','proposta','aguardando_lancamento'].includes(campos.etapa)){this.alteracao=campos;}else this.blocked=true;return this;}`);
+  s=s.replace('if(this.espera) return new Promise<never>(()=>{});',"if(this.alteracao){for(const linha of this.rows.filter(x=>x.dono_id==='corretor-1'&&x.status==='ativo'))Object.assign(linha,this.alteracao);} if(this.espera) return new Promise<never>(()=>{});");
+  const extra=`
+// Fixtures do bloco 4. Totais, andares e unidades continuam ausentes: não são tipologias.
+const produtoBase=tables.empreendimentos[0];
+produtoBase.preco_a_partir_de=520000;produtoBase.avisos=['Conferência fictícia da tabela e dos materiais.'];
+produtoBase.link_tabela='https://example.invalid/tabela.pdf';produtoBase.link_book='https://example.invalid/book.pdf';produtoBase.link_tour='https://example.invalid/tour';produtoBase.lazer=['Piscina','Salão de festas','Brinquedoteca'];produtoBase.endereco='Rua Exemplo, 100 · Centro';produtoBase.bairro='Centro';produtoBase.cidade='São Bernardo do Campo';
+produtoBase.tipologias=[{id:'tipo-1',empreendimento_id:produtoBase.id,rotulo:'2 dormitórios · 67 m²',tipo:'apartamento',dormitorios:2,suites:1,vagas_min:1,vagas_max:2,area_m2:67,deposito:true,preco_a_partir_de:520000,preco_nota:'Preço da tabela fictícia · novembro de 2026',condominio_valor:650,iptu_valor:90,esgotada:false,ordem:1},{id:'tipo-2',empreendimento_id:produtoBase.id,rotulo:'Cobertura · 120 m²',tipo:'cobertura',dormitorios:3,suites:2,vagas_min:2,vagas_max:2,area_m2:120,deposito:true,preco_a_partir_de:980000,preco_nota:'Tipologia esgotada na tabela fictícia.',condominio_valor:980,iptu_valor:130,esgotada:true,ordem:2}];
+tables.empreendimentos.push({...produtoBase,id:'empreendimento-futuro',slug:'aurora-exemplo',nome:'Aurora Exemplo',status:'breve_lancamento',preco_a_partir_de:null,tabela_mes:null,tipologias:[],bairro:'Jardim Exemplo',link_tabela:null,restricao_renda:'Renda de até 6 salários mínimos.',avisos:[]},{...produtoBase,id:'empreendimento-inativo',slug:'comercial-exemplo',nome:'Comercial Exemplo',ativo:false,status:'pronto',cidade:'São Caetano do Sul',bairro:'Centro',tipologias:[],preco_a_partir_de:null,link_tabela:null});
+leads.push({...leads[0],id:'lead-aguarda',nome:'Helena Exemplo',etapa:'aguardando_lancamento',ultima_interacao_em:at(-9),tentativas:0} as any);
+tables.lead_etapas.push({slug:'aguardando_lancamento',nome:'Aguardando lançamento',ordem:6,ativo:true});
+tables.mensagens_modelo=[{slug:'apresentar_empreendimento',titulo:'Apresentar empreendimento',texto:'Oi, {primeiro_nome}, tudo bem?\\nConheça o {empreendimento}.\\n{endereco}\\n{apresentacao}\\n{a_partir_de}',ativo:true,ordem:1},{slug:'primeiro_contato',titulo:'Primeiro contato',texto:'Oi, {primeiro_nome}, tudo bem? Sou {corretor}.',ativo:true,ordem:2}];
+`;
+  s=s.replace('// Adaptador só de leitura.',extra+'\n// Adaptador só de leitura.');writeFileSync(caminho,s);
+  console.log('Bloco 4 preparado: catálogo e leads fictícios; só qa=quadro-mover simula etapa em memória. Sem Supabase real.');process.exit(0);
+}
+
 const saida = argumentos.find((a) => !a.startsWith("--")) ?? "local/alicerce";
 const base = "http://127.0.0.1:4173/vendas";
 mkdirSync(saida, { recursive: true });
@@ -154,7 +181,7 @@ async function print(nome) {
 const resultado = {};
 const confere = (nome, ok, detalhe) => { resultado[nome] = { ok: !!ok, detalhe }; console.log(`${ok ? "OK   " : "FALHA"} ${nome}${detalhe ? "  " + JSON.stringify(detalhe) : ""}`); };
 
-if (!soMoldura && !soLista && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta && !soParcerias && !soInicioVendas && !soEtapas && !soPainelMetasRanking) {
+if (!soMoldura && !soLista && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta && !soParcerias && !soInicioVendas && !soEtapas && !soPainelMetasRanking && !soQuadroEmpreendimentos) {
 // 1. Migração da escolha antiga (três casos de tema e a barra).
 await tela(1280, 800);
 await esquemaAparelho("light");
@@ -453,6 +480,75 @@ if (soEtapas) {
   await cdp('Page.close');ws.close();process.exit(Object.values(resultado).some(r=>!r.ok)?1:0);
 }
 
+if (soQuadroEmpreendimentos) {
+  const tocar=(seletor,texto)=>avaliar(`(() => {const e=[...document.querySelectorAll(${JSON.stringify(seletor)})].find(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden'&&(${texto===undefined?'true':`e.textContent.trim()===${JSON.stringify(texto)}`}));if(!e)return false;e.focus();e.click();return true;})()`);
+  const preencher=(seletor,valor)=>avaliar(`(() => {const e=document.querySelector(${JSON.stringify(seletor)});if(!e)return false;const p=e.tagName==='SELECT'?HTMLSelectElement.prototype:e.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(p,'value').set.call(e,${JSON.stringify(valor)});e.dispatchEvent(new Event(e.tagName==='SELECT'?'change':'input',{bubbles:true}));return true;})()`);
+  const checar=async(id,w,h1=true)=>{
+    const r=await avaliar(`(() => {const vis=e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden';return {lateral:document.documentElement.scrollWidth>innerWidth,h1:document.querySelectorAll('main h1').length,excesso:[...document.querySelectorAll('.quadro-pilha > *, .catalogo-pilha > *')].filter(e=>vis(e)&&!e.classList.contains('mb-visualmente-oculto')).filter(e=>e.getBoundingClientRect().right>innerWidth+1||e.getBoundingClientRect().left< -1).map(e=>({classe:e.className,direita:e.getBoundingClientRect().right})),legado:!!document.querySelector('main .ds-antigo,main .card,main .btn,main .input,main [class*="-antigo"],.mb-lateral--aberto .ds-antigo'),pequenos:[...document.querySelectorAll('main button,main input:not([type=checkbox]),main select,.mb-lateral--aberto button,.mb-lateral--aberto input,.mb-lateral--aberto select,.mb-lateral--aberto a')].filter(vis).filter(e=>!e.disabled&&e.getBoundingClientRect().height<43.5).map(e=>({nome:String(e.textContent||e.id||e.getAttribute('aria-label')||e.getAttribute('type')||'Controle').trim().slice(0,40),h:e.getBoundingClientRect().height}))};})()`);
+    confere(id+' · sem rolagem lateral',!r.lateral&&r.excesso?.length===0,r);confere(id+' · Alicerce e título',!r.legado&&(!h1||r.h1===1),r);if(w<768)confere(id+' · alvos 44px',!r.pequenos.length,r.pequenos);
+  };
+  const rotas=[['quadro-proprio','/leads/quadro/?qa=corretor'],['quadro-equipe','/leads/quadro/?qa=gerente'],['quadro-geral','/leads/quadro/?qa=geral'],['catalogo','/empreendimentos/?qa=corretor'],['catalogo-geral','/empreendimentos/?qa=geral'],['empreendimento','/empreendimentos/ver/?qa=corretor&slug=residencial-exemplo'],['empreendimento-geral','/empreendimentos/ver/?qa=geral&slug=residencial-exemplo'],['empreendimento-futuro','/empreendimentos/ver/?qa=corretor&slug=aurora-exemplo']];
+  for(const [w,h] of [[375,812],[1280,800]])for(const tema of ['papel','grafite']){
+    await tela(w,h);await comArmazenamento({mb_tema:tema,mb_movimento:'reduzido'},rotas[0][1]);
+    for(const [nome,rota] of rotas){
+      await avaliar('sessionStorage.clear()');await abrir(rota);const id=`${nome}-${w}-${tema}`;await checar(id,w);
+      const foco=await focoVisivel(w<768?9:16);confere(id+' · foco visível',!foco.length,foco);await avaliar('document.activeElement?.blur();window.scrollTo(0,0)');await print(id);await printInteiro(id+'-inteiro');
+      if(nome.startsWith('quadro')){
+        confere(id+' · zero e um dia de contato',await avaliar(`!!document.querySelector('[data-id=lead-7]')?.textContent.includes('Contato hoje')&&!!document.querySelector('[data-id=lead-6]')?.textContent.includes('Sem contato há 1 dia')&&!document.querySelector('main')?.textContent.includes('há 1 dias')&&!document.querySelector('main')?.textContent.includes('há 0 dias')`));
+        confere(id+' · peças e saídas fora das colunas',await avaliar(`document.querySelectorAll('.mb-quadro__coluna').length===6&&!document.querySelector('[data-etapa=venda],[data-etapa=descartado]')&&!document.querySelector('.mb-quadro .mb-item__faixa')&&[...document.querySelectorAll('.mb-quadro .mb-chip')].every(e=>!!e.closest('.mb-item__rodape'))`));
+        confere(id+' · mais esquecido primeiro',await avaliar(`(() => {const nomes=[...document.querySelectorAll('[data-etapa=em_contato] .mb-item__titulo')].map(e=>e.textContent);return nomes.join('|')==='Ana Exemplo|Clara Exemplo|Rita Exemplo|Maria Aparecida dos Santos Exemplo|Lucas Exemplo'})()`));
+        if(w<768){
+          confere(id+' · uma coluna e sem arrastar',await avaliar(`[...document.querySelectorAll('.mb-quadro__coluna')].filter(e=>getComputedStyle(e).display!=='none').length===1&&![...document.querySelectorAll('.mb-quadro [draggable]')].some(e=>e.draggable)`));
+          await tocar('#quadro-aba-em_contato');await espera(250);confere(id+' · aba na URL',await avaliar(`new URLSearchParams(location.search).get('etapa')==='em_contato'`));await checar(id+'-em-contato',w);await printInteiro(id+'-em-contato');
+          await tocar('.mb-filtros__celular');await espera(400);await print(id+'-filtros');await teclar('Escape','Escape',27);await espera(250);
+        }else confere(id+' · só dono pode mover',await avaliar(nome==='quadro-proprio'?`document.querySelectorAll('[draggable=true]').length>0`:`document.querySelectorAll('[draggable=true]').length===0`));
+        await preencher('.mb-filtros input[type=search]','zzzzz');await espera(350);confere(id+' · vazio da busca e URL',await avaliar(`!!document.querySelector('main .mb-vazio')&&new URLSearchParams(location.search).get('busca')==='zzzzz'`));await print(id+'-busca-vazia');
+        await tocar('main button','Limpar filtros');await espera(350);
+      }
+      if(nome.startsWith('catalogo')){
+        confere(id+' · card sem estoque inventado',await avaliar(`document.querySelectorAll('.mb-empreendimentos > .mb-item').length===2&&!document.querySelector('.mb-estoque,.mb-empreendimento__imagem')&&[...document.querySelectorAll('.mb-empreendimentos .mb-item')].every(e=>e.querySelector('.mb-fase')&&e.querySelector('.mb-item__alvo')&&!e.textContent.includes('Total de unidades'))`));
+        confere(id+' · só Tabela na faixa',await avaliar(`[...document.querySelectorAll('.mb-empreendimentos .mb-item__faixa')].every(e=>e.querySelectorAll('a,button').length===1&&e.textContent.includes('Tabela de preços'))`));
+        if(nome==='catalogo-geral'){await tocar('summary');await espera(150);await tocar('main input[type=checkbox]');await espera(350);await printInteiro(id+'-inativos');confere(id+' · fora de venda controlado na URL',await avaliar(`document.querySelectorAll('.mb-empreendimentos > .mb-item').length===3&&new URLSearchParams(location.search).get('inativos')==='sim'`));}
+        await preencher('.mb-filtros input[type=search]','zzzzz');await espera(350);confere(id+' · vazio com limpar filtros',await avaliar(`!!document.querySelector('main .mb-vazio')`));await print(id+'-busca-vazia');
+        if(w<768){await tocar('.mb-filtros__celular');await espera(400);await checar(id+'-filtros',w);await print(id+'-filtros');await teclar('Escape','Escape',27);await espera(200);}
+      }
+      if(nome.startsWith('empreendimento')){
+        confere(id+' · sem espelho nem total estimado',await avaliar(`!document.querySelector('.mb-espelho__unidade,.mb-estoque,#estoque-unidades')&&!document.querySelector('main')?.textContent.includes('Total de unidades')`));
+        confere(id+' · pares planos',await avaliar(`![...document.querySelectorAll('dl.mb-pares')].some(dl=>[...dl.children].some(e=>!['DT','DD'].includes(e.tagName)))`));
+        confere(id+' · aviso da coleta só para quem gerencia',await avaliar(nome==='empreendimento-geral'?`!!document.querySelector('#avisos-coleta')`:`!document.querySelector('#avisos-coleta')`));
+        if(nome==='empreendimento-futuro')confere(id+' · sem preço e sem tipologia',await avaliar(`document.querySelector('main')?.textContent.includes('Sem preço na tabela do mês')&&document.querySelector('main')?.textContent.includes('Nenhuma tipologia no catálogo')`));
+        if(nome==='empreendimento'){
+          confere(id+' · três clientes e selo sem sinal dobrado',await avaliar(`document.querySelectorAll('#clientes .mb-item').length===3&&[...document.querySelectorAll('.mb-tabela .mb-selo')].some(e=>e.textContent==='Esgotada')&&!document.querySelector('main')?.textContent.includes('✕ Esgotada')`));
+          await tocar('button','Ver os 9 clientes');await espera(150);confere(id+' · expande todos os clientes',await avaliar(`document.querySelectorAll('#clientes .mb-item').length===9&&document.querySelector('.catalogo-ver-clientes')?.getAttribute('aria-expanded')==='true'`));await printInteiro(id+'-todos-clientes');await tocar('button','Ver menos');await espera(100);
+
+          await tocar('main button','Mandar ao cliente');await espera(450);await checar(id+'-mensagem',w);await print(id+'-mensagem');
+          confere(id+' · mensagem preenchida e foco no painel',await avaliar(`(() => {const p=document.querySelector('.mb-lateral--aberto');return p?.parentElement===document.body&&p.contains(document.activeElement)&&p.querySelector('textarea')?.value.includes('Residencial Exemplo')&&!p.querySelector('textarea')?.value.includes('{empreendimento}');})()`));
+          await preencher('.mb-lateral--aberto textarea','Texto de conferência fictício.');await espera(150);await teclar('Escape','Escape',27);await espera(250);confere(id+' · Esc devolve foco',await avaliar(`document.activeElement?.textContent==='Mandar ao cliente'`));
+          await tocar('main button','Mandar ao cliente');await espera(400);confere(id+' · rascunho restaurado',await avaliar(`document.querySelector('.mb-lateral--aberto textarea')?.value==='Texto de conferência fictício.'`));await teclar('Escape','Escape',27);await espera(200);
+          await avaliar("Object.defineProperty(navigator,'share',{value:undefined,configurable:true})");await tocar('main button','Compartilhar');await espera(200);confere(id+' · compartilhar usa só URL autenticada',await avaliar(`(() => {const a=document.querySelector('.catalogo-compartilhar [role=menuitem][href]');return !!a&&decodeURIComponent(a.href).includes('/vendas/empreendimentos/ver/?slug=residencial-exemplo')&&!decodeURIComponent(a.href).includes('qa=');})()`));await print(id+'-compartilhar');await teclar('Escape','Escape',27);await espera(200);
+        }
+      }
+    }
+    for(const [nome,rota,qa,tipo] of [['quadro','/leads/quadro/','quadro-erro','erro'],['catalogo','/empreendimentos/','catalogo-erro','erro'],['quadro','/leads/quadro/','quadro-espera','espera'],['catalogo','/empreendimentos/','catalogo-espera','espera'],['quadro','/leads/quadro/','quadro-vazio','vazio'],['catalogo','/empreendimentos/','catalogo-vazio','vazio'],['nao-encontrado','/empreendimentos/ver/','corretor','ausente']]){
+      await abrir(rota+'?qa='+qa);const id=`${nome}-${tipo}-${w}-${tema}`;await checar(id,w,false);await print(id);
+      confere(id+' · estado correto',await avaliar(tipo==='erro'?`document.querySelector('.mb-estado__sobrelinha')?.textContent==='Erro de carga'&&!document.querySelector('main')?.textContent.includes('Falha fictícia')`:tipo==='espera'?`!!document.querySelector('[aria-busy=true] .mb-esqueleto')`:tipo==='vazio'?`!!document.querySelector('main .mb-vazio')`:`document.querySelector('.mb-estado__sobrelinha')?.textContent==='Não encontrado'`));
+    }
+  }
+  // Escrita exclusivamente simulada em memória pela fixture; testa a mesma API usada pela ficha.
+  await tela(1280,800);await abrir('/leads/quadro/?qa=quadro-mover');
+  const l=await avaliar(`(() => {const e=document.querySelector('.mb-quadro [draggable=true]');window.__cardQuadro=e.dataset.id;return {id:e.dataset.id,etapa:e.closest('[data-etapa]').dataset.etapa}})()`);
+  await avaliar('document.querySelector("#quadro-card-"+window.__cardQuadro+" a").focus()');await teclar(' ','Space',32);await teclar('ArrowRight','ArrowRight',39);await espera(100);
+  confere('Quadro: teclado anuncia e desenha o estado pego',await avaliar(`!!document.querySelector('[data-mb-pego]')&&document.querySelector('[aria-live=polite][aria-atomic=true]')?.textContent.includes('posição')`));await print('quadro-teclado-pego');
+  await teclar('Escape','Escape',27);await espera(100);confere('Quadro: Esc mantém a etapa sem gravar',await avaliar(`document.querySelector('#quadro-card-'+window.__cardQuadro)?.closest('[data-etapa]').dataset.etapa===${JSON.stringify(l.etapa)}&&!document.querySelector('[data-mb-pego]')`));
+  await teclar(' ','Space',32);await teclar('ArrowRight','ArrowRight',39);await espera(100);await teclar(' ','Space',32);await espera(450);
+  confere('Quadro: mover por teclado e Desfazer',await avaliar(`document.querySelector('#quadro-card-'+window.__cardQuadro)?.closest('[data-etapa]').dataset.etapa!==${JSON.stringify(l.etapa)}&&document.querySelector('.mb-toast')?.textContent.includes('Desfazer')`));await print('quadro-movido');
+  const acionouDesfazer=await tocar('.mb-toast button','Desfazer');await espera(450);confere('Quadro: Desfazer restaura etapa',acionouDesfazer&&await avaliar(`document.querySelector('#quadro-card-'+window.__cardQuadro)?.closest('[data-etapa]').dataset.etapa===${JSON.stringify(l.etapa)}`));
+  await avaliar(`(() => {const c=document.querySelector('#quadro-card-'+window.__cardQuadro), col=c.closest('[data-etapa]'), cols=[...document.querySelectorAll('[data-etapa]')];window.__destinoQuadro=cols[cols.indexOf(col)+1];const d=new DataTransfer();window.__dadosDrag=d;c.dispatchEvent(new DragEvent('dragstart',{bubbles:true,dataTransfer:d}));})()`);await espera(150);await avaliar(`window.__destinoQuadro.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:window.__dadosDrag}))`);await espera(100);await avaliar(`window.__destinoQuadro.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:window.__dadosDrag}))`);await espera(450);
+  confere('Quadro: arrastar usa a mesma gravação',await avaliar(`document.querySelector('#quadro-card-'+window.__cardQuadro)?.closest('[data-etapa]')===window.__destinoQuadro`));
+  await abrir('/leads/quadro/?qa=corretor');await avaliar(`document.querySelector('.mb-quadro [draggable=true] a')?.focus()`);await teclar(' ','Space',32);await teclar('ArrowRight','ArrowRight',39);await espera(100);await teclar(' ','Space',32);await espera(350);confere('Quadro: erro de gravação preserva o lead e avisa',await avaliar(`document.querySelector('.mb-toast[role=alert]')?.textContent.includes('Não foi possível mudar')`));await print('quadro-erro-ao-mover');
+  confere('Nenhum erro no console',erros.length===0,erros);writeFileSync(join(saida,'resultado.json'),JSON.stringify(resultado,null,2));const falhas=Object.values(resultado).filter(r=>!r.ok).length;console.log(`${Object.keys(resultado).length} conferências, ${falhas} falhas. Capturas em ${saida}`);await cdp('Page.close');ws.close();process.exit(falhas?1:0);
+}
+
 // Revisão da master no bloco 3: só Ranking, usando a mesma prévia isolada.
 if (soPainelMetasRanking && argumentos.includes('--ranking-revisao')) {
   for (const [w,h] of [[375,812],[1280,800]]) for(const tema of ['papel','grafite']) {
@@ -720,7 +816,7 @@ if (soParcerias) {
   await cdp('Page.close'); ws.close(); process.exit(falhas ? 1 : 0);
 }
 
-if (!soMoldura && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta && !soParcerias && !soInicioVendas && !soEtapas && !soPainelMetasRanking) {
+if (!soMoldura && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta && !soParcerias && !soInicioVendas && !soEtapas && !soPainelMetasRanking && !soQuadroEmpreendimentos) {
   for (const [w, h] of [[375, 812], [1280, 800]]) {
     for (const tema of ["papel", "grafite"]) {
       await abrirListaDoDia(w, h, tema);

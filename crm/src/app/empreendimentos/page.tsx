@@ -1,187 +1,61 @@
-"use client";
+﻿"use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Casca } from "@/components/casca";
-import { RodapeAcao } from "@/components/leads/partes";
-import { CardEmpreendimento } from "@/components/empreendimentos/partes";
-import {
-  ehLancamento,
-  FAIXAS_PRECO,
-  filtrarCatalogo,
-  FILTROS_VAZIOS,
-  opcoesLocal,
-  STATUS_EMPREENDIMENTO,
-  type FiltrosCatalogo,
-  type StatusEmpreendimento,
-} from "@/lib/catalogo";
+import { BarraDeFiltros, type FiltroDaBarra } from "@/components/alicerce/barra-de-filtros";
+import { CarregandoTabela } from "@/components/alicerce/carregando";
+import { EstadoVazio } from "@/components/alicerce/estado-vazio";
+import { Recolhivel } from "@/components/alicerce/recolhivel";
+import { ErroPainel } from "@/components/painel/partes";
+import { CardDoCatalogo, FASES } from "@/components/empreendimentos/catalogo-alicerce";
+import { ehLancamento, FAIXAS_PRECO, filtrarCatalogo, FILTROS_VAZIOS, opcoesLocal, type FiltrosCatalogo, type StatusEmpreendimento } from "@/lib/catalogo";
 import { useCatalogo, useLeadsDoRadar } from "@/lib/catalogo-dados";
 import { clientesCompativeis } from "@/lib/match";
 import { useSessao } from "@/lib/sessao";
 
 export default function EmpreendimentosPage() {
-  return (
-    <Casca titulo="Empreendimentos">
-      <Catalogo />
-    </Casca>
-  );
+  return <Casca migrada titulo="Empreendimentos"><Suspense fallback={<CarregandoTabela texto="Carregando catálogo…" />}><Catalogo /></Suspense></Casca>;
 }
 
 function Catalogo() {
-  const { pode } = useSessao();
-  const gerencia = pode("empreendimentos.gerenciar");
+  const { pode } = useSessao();const gerencia = pode("empreendimentos.gerenciar");
   const temLeads = pode("leads.cadastrar") || pode("dados.ver_equipe") || pode("dados.ver_todos");
-  const { catalogo, erro } = useCatalogo();
-  const leads = useLeadsDoRadar(temLeads);
-  const [f, setF] = useState<FiltrosCatalogo>(FILTROS_VAZIOS);
-  const mudar = (x: Partial<FiltrosCatalogo>) => setF((a) => ({ ...a, ...x }));
+  const { catalogo, erro } = useCatalogo();const leads = useLeadsDoRadar(temLeads);
+  const sp = useSearchParams();const router = useRouter();const consulta = sp.toString();
+  const ler = () => ({ busca: sp.get("busca") ?? "", status: Object.hasOwn(FASES, sp.get("fase") ?? "") ? sp.get("fase") as StatusEmpreendimento : "" as const, local: sp.get("local") ?? "", dormitorios: sp.get("dormitorios") ?? "", faixa: sp.get("faixa") ?? "", inativos: gerencia && sp.get("inativos") === "sim" });
+  const [f, setF] = useState<FiltrosCatalogo>(ler);
+  // URL e Voltar restauram os mesmos filtros; os cálculos continuam em filtrarCatalogo.
+  useEffect(() => setF(ler()), [consulta, gerencia]); // eslint-disable-line react-hooks/exhaustive-deps
+  function mudar(x: Partial<FiltrosCatalogo>) {
+    const novo = { ...f, ...x };setF(novo);const q = new URLSearchParams(consulta);
+    for (const [chave, valor] of Object.entries({ busca: novo.busca, fase: novo.status, local: novo.local, dormitorios: novo.dormitorios, faixa: novo.faixa, inativos: novo.inativos ? "sim" : "" })) { if (valor) q.set(chave, valor);else q.delete(chave); }
+    router.replace("/empreendimentos/?" + q.toString(), { scroll: false });
+  }
   const agora = useMemo(() => new Date(), []);
-
   const lista = useMemo(() => filtrarCatalogo(catalogo ?? [], f), [catalogo, f]);
   const locais = useMemo(() => opcoesLocal(catalogo ?? []), [catalogo]);
-  // Lançamentos: quantos clientes de quem vê, aguardando lançamento, combinam.
   const aguardando = useMemo(() => {
-    const m = new Map<string, number>();
-    if (!leads?.length) return m;
-    for (const e of catalogo ?? []) {
-      if (!e.ativo || !ehLancamento(e)) continue;
-      const n = clientesCompativeis(e, leads, agora).filter((c) => c.destaque).length;
-      if (n) m.set(e.id, n);
-    }
+    const m = new Map<string, number>();if (!leads?.length) return m;
+    for (const e of catalogo ?? []) { if (!e.ativo || !ehLancamento(e)) continue;const n = clientesCompativeis(e, leads, agora).filter((c) => c.destaque).length;if (n) m.set(e.id, n); }
     return m;
   }, [catalogo, leads, agora]);
+  const filtros: FiltroDaBarra[] = [
+    { rotulo: "Fase", valor: f.status, onChange: (status) => mudar({ status: status as StatusEmpreendimento | "" }), opcoes: [{ valor: "", rotulo: "Todas as fases" }, ...Object.entries(FASES).map(([valor, fase]) => ({ valor, rotulo: fase.nome }))] },
+    { rotulo: "Cidade e bairro", valor: f.local, onChange: (local) => mudar({ local }), opcoes: [{ valor: "", rotulo: "Todos os locais" }, ...locais.flatMap((l) => [{ valor: l.cidade, rotulo: `Toda ${l.cidade}` }, ...l.bairros.map((b) => ({ valor: `${l.cidade}|${b}`, rotulo: `${b} · ${l.cidade}` }))])] },
+    { rotulo: "Dormitórios", valor: f.dormitorios, onChange: (dormitorios) => mudar({ dormitorios }), opcoes: [{ valor: "", rotulo: "Todos os dormitórios" }, { valor: "1", rotulo: "1 ou studio" }, { valor: "2", rotulo: "2" }, { valor: "3", rotulo: "3" }, { valor: "4", rotulo: "4 ou mais" }] },
+    { rotulo: "Faixa de preço", valor: f.faixa, onChange: (faixa) => mudar({ faixa }), opcoes: [{ valor: "", rotulo: "Todas as faixas de preço" }, ...FAIXAS_PRECO.map((x) => ({ valor: x.slug, rotulo: x.nome }))] },
+  ];
   const filtrando = JSON.stringify(f) !== JSON.stringify(FILTROS_VAZIOS);
-
-  return (
-    <div className="grid gap-5 pb-20 md:pb-0">
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="w-full md:w-auto md:min-w-[240px] md:flex-[2]">
-          <label className="field-label" htmlFor="busca">
-            Buscar
-          </label>
-          <input
-            id="busca"
-            className="input"
-            type="search"
-            placeholder="Nome, bairro ou cidade"
-            value={f.busca}
-            onChange={(e) => mudar({ busca: e.target.value })}
-          />
-        </div>
-        <div className="min-w-[140px] flex-1 md:flex-none">
-          <label className="field-label" htmlFor="filtro-status">
-            Fase
-          </label>
-          <select
-            id="filtro-status"
-            className="input"
-            value={f.status}
-            onChange={(e) => mudar({ status: e.target.value as StatusEmpreendimento | "" })}
-          >
-            <option value="">Todas</option>
-            {STATUS_EMPREENDIMENTO.map((s) => (
-              <option key={s.slug} value={s.slug}>
-                {s.nome}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="min-w-[140px] flex-1 md:flex-none">
-          <label className="field-label" htmlFor="filtro-local">
-            Cidade e bairro
-          </label>
-          <select id="filtro-local" className="input md:max-w-[240px]" value={f.local} onChange={(e) => mudar({ local: e.target.value })}>
-            <option value="">Todos</option>
-            {locais.map((l) => (
-              <optgroup key={l.cidade} label={l.cidade}>
-                <option value={l.cidade}>Toda {l.cidade}</option>
-                {l.bairros.map((b) => (
-                  <option key={b} value={`${l.cidade}|${b}`}>
-                    {b}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-        </div>
-        <div className="min-w-[120px] flex-1 md:flex-none">
-          <label className="field-label" htmlFor="filtro-dorms">
-            Dormitórios
-          </label>
-          <select id="filtro-dorms" className="input" value={f.dormitorios} onChange={(e) => mudar({ dormitorios: e.target.value })}>
-            <option value="">Todos</option>
-            <option value="1">1 ou studio</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4 ou mais</option>
-          </select>
-        </div>
-        <div className="min-w-[160px] flex-1 md:flex-none">
-          <label className="field-label" htmlFor="filtro-faixa">
-            Faixa de preço
-          </label>
-          <select id="filtro-faixa" className="input" value={f.faixa} onChange={(e) => mudar({ faixa: e.target.value })}>
-            <option value="">Todas</option>
-            {FAIXAS_PRECO.map((x) => (
-              <option key={x.slug} value={x.slug}>
-                {x.nome}
-              </option>
-            ))}
-          </select>
-        </div>
-        {gerencia && (
-          <label className="flex min-h-[44px] items-center gap-2 text-[13px] text-ink-soft">
-            <input type="checkbox" className="checkbox" checked={f.inativos} onChange={(e) => mudar({ inativos: e.target.checked })} />
-            Mostrar os fora de venda
-          </label>
-        )}
-        {gerencia && (
-          <p className="flex min-h-[44px] items-center">
-            <Link href="/empreendimentos/importar/" className="link-acao text-[13px]">
-              Importar tabela de preços
-            </Link>
-          </p>
-        )}
-      </div>
-
-      {erro && <p className="aviso-erro">! Não foi possível carregar o catálogo. {erro}</p>}
-      {!catalogo && <p className="text-concrete">Carregando…</p>}
-      {catalogo && !erro && catalogo.length === 0 && (
-        <div className="card max-w-[560px]">
-          <p className="text-ink-soft">
-            O catálogo está vazio. {gerencia ? "Cadastre o primeiro empreendimento ou rode a carga inicial no Supabase." : "Fale com o gerente geral."}
-          </p>
-        </div>
-      )}
-      {catalogo && catalogo.length > 0 && !lista.length && (
-        <p className="text-ink-soft">
-          Nenhum empreendimento com esses filtros.{" "}
-          <button type="button" className="link-acao focus-ring" onClick={() => setF(FILTROS_VAZIOS)}>
-            Limpar filtros
-          </button>
-        </p>
-      )}
-
-      {lista.length > 0 && (
-        <section aria-labelledby="lista">
-          <h2 id="lista" className="eyebrow mb-2">
-            {filtrando ? "Encontrados" : "Todos à venda"} · <span className="num">{lista.length}</span>
-          </h2>
-          <ul className="grid gap-3 md:grid-cols-2">
-            {lista.map((e) => (
-              <CardEmpreendimento key={e.id} e={e} agora={agora} aguardando={aguardando.get(e.id)} />
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {gerencia && (
-        <RodapeAcao>
-          <Link href="/empreendimentos/editar/" className="btn btn-red btn-lg focus-ring">
-            + Novo empreendimento
-          </Link>
-        </RodapeAcao>
-      )}
-    </div>
-  );
+  return <div className="catalogo-pilha">
+    <header className="mb-cabecalho"><div className="mb-cabecalho__texto"><h1 className="titulo-tela">Empreendimentos</h1></div>{gerencia && <div className="mb-grupo-botoes"><Link className="mb-botao mb-botao--secundario" href="/empreendimentos/importar/">Importar tabela de preços</Link><Link className="mb-botao mb-botao--primario" href="/empreendimentos/editar/">+ Novo empreendimento</Link></div>}</header>
+    <BarraDeFiltros busca={{ valor: f.busca, onChange: (busca) => mudar({ busca }), placeholder: "Nome, bairro, cidade ou endereço" }} filtros={filtros} contagem={catalogo ? `${lista.length} empreendimentos` : undefined} tituloDoPainel="Filtrar empreendimentos" />
+    {gerencia && <Recolhivel titulo="Mais filtros" contagem={f.inativos ? "1 ativo" : undefined}><label className="mb-marcador"><input type="checkbox" checked={f.inativos} onChange={(ev) => mudar({ inativos: ev.target.checked })} />Mostrar os fora de venda</label></Recolhivel>}
+    {f.inativos && <div className="mb-grupo-botoes"><button className="mb-opcao mb-opcao--p" type="button" onClick={() => mudar({ inativos: false })}>Mostrar os fora de venda ✕</button></div>}
+    {erro && <ErroPainel erro={erro} />}
+    {!catalogo && !erro && <CarregandoTabela texto="Carregando catálogo…" />}
+    {catalogo && !erro && !lista.length && <EstadoVazio titulo={filtrando ? "Nenhum empreendimento com esses filtros" : "O catálogo está vazio"} texto={filtrando ? "Mude a busca ou limpe os filtros para ver os empreendimentos." : gerencia ? "Cadastre o primeiro empreendimento para começar." : "Os empreendimentos aparecem depois que o catálogo for cadastrado."} acao={filtrando ? <button className="mb-botao mb-botao--secundario mb-botao--p" type="button" onClick={() => mudar(FILTROS_VAZIOS)}>Limpar filtros</button> : undefined} />}
+    {!erro && lista.length > 0 && <ul className="mb-empreendimentos" aria-label="Empreendimentos encontrados">{lista.map((e) => <CardDoCatalogo key={e.id} e={e} aguardando={aguardando.get(e.id)} />)}</ul>}
+  </div>;
 }
