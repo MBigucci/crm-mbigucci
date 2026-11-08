@@ -957,8 +957,17 @@ async function teste(amb: Ambiente, token: string, endpoint: string) {
     `${amb.url}/rest/v1/push_assinaturas?select=endpoint,p256dh,auth&usuario_id=eq.${encodeURIComponent(id)}&endpoint=eq.${encodeURIComponent(endpoint)}`,
     { headers: { apikey: amb.servico, Authorization: `Bearer ${amb.servico}` } },
   );
-  const [s] = (r.ok ? await r.json() : []) as Assinatura[];
-  if (!s) return resposta(404, { erro: "Este aparelho não está com os avisos ligados." });
+  // Diagnóstico (07/11/2026): o teste do iPhone voltava 404 com o aparelho gravado. O log diz se foi a leitura
+  // (status e corpo do PostgREST) ou o par usuário/aparelho que não bateu (só o começo e o tamanho do endereço).
+  if (!r.ok) {
+    console.error("[avisos] teste: leitura de push_assinaturas", r.status, (await r.text()).slice(0, 300));
+    return resposta(500, { erro: "Não foi possível ler os aparelhos." });
+  }
+  const [s] = (await r.json()) as Assinatura[];
+  if (!s) {
+    console.warn("[avisos] teste: aparelho não encontrado", id, endpoint.slice(0, 40), endpoint.length);
+    return resposta(404, { erro: "Este aparelho não está com os avisos ligados." });
+  }
   const resultado = await enviar(s, { titulo: "Teste do Base360", corpo: "Os avisos chegam neste aparelho.", url: "conta/", tag: "teste" }, amb.vapid);
   if (resultado === "removido") await rpc(amb, "push_esquecer", { p_endpoints: [s.endpoint] });
   return resposta(200, { resultado });
