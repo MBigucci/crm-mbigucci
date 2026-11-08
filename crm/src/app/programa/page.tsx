@@ -1,15 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import clsx from "clsx";
+import { Cartao } from "@/components/alicerce/cartao";
+import { Campo } from "@/components/alicerce/campo";
+import { Aviso } from "@/components/alicerce/aviso";
+import { CarregandoLeads } from "@/components/alicerce/carregando";
+import { EstadoVazio } from "@/components/alicerce/estado-vazio";
+import { PainelLateral } from "@/components/alicerce/painel-lateral";
+import { ErroPrograma, MesPrograma, moedaPrograma as formatarReais } from "@/components/programa/pecas";
 import { Casca } from "@/components/casca";
 import { GerentesPrograma } from "@/components/programa/gerentes-programa";
 import { ConfirmarFechamento } from "@/components/programa/confirmar-fechamento";
-import { MESES, mesAtual, NavMes, type Mes } from "@/components/programa/partes";
+import { MESES, mesAtual, type Mes } from "@/components/programa/partes";
 import { db } from "@/lib/supabase";
 import { COLUNAS_FAIXA, faixasDoMes, type Faixa } from "@/lib/faixas";
-import { formatarReais } from "@/lib/vendas";
 import { useVendas } from "@/lib/vendas-dados";
 import { limitesDoMes, mesDeLiberacao, REGRAS, resumoDoMes, type Criterio } from "@/lib/programa";
 import {
@@ -26,7 +31,7 @@ import {
  */
 export default function ProgramaPage() {
   return (
-    <Casca titulo="Pontos e verba" soGerenteGeral>
+    <Casca titulo="Pontos e verba" soGerenteGeral migrada>
       <Programa />
     </Casca>
   );
@@ -41,8 +46,9 @@ function Programa() {
   const { criterios, erro: erroCriterios, recarregar: recarregarCriterios } = useCriterios();
   const { lancamentos, erro: erroLanc } = useLancamentos(ini, fim);
   const { vendas, erro: erroVendas } = useVendas(ini, fim);
-  const { fechamentos, recarregar: recarregarFech } = useFechamentos(ini);
+  const { fechamentos, erro: erroFechamentos, recarregar: recarregarFech } = useFechamentos(ini);
   const [corretores, setCorretores] = useState<Corretor[] | null>(null);
+  const [erroAuxiliar, setErroAuxiliar] = useState<string | null>(null);
   const [faixas, setFaixas] = useState<Faixa[]>([]);
   const [msg, setMsg] = useState<{ ok: boolean; texto: string } | null>(null);
 
@@ -52,11 +58,11 @@ function Programa() {
       .select("id, nome, ativo")
       .eq("perfil", "corretor")
       .order("nome")
-      .then(({ data }) => setCorretores((data ?? []) as Corretor[]));
+      .then(({ data, error }) => error ? setErroAuxiliar("Não foi possível carregar os corretores. Tente de novo.") : setCorretores((data ?? []) as Corretor[]));
     db()
       .from("faixas_vgv")
       .select(COLUNAS_FAIXA)
-      .then(({ data }) => setFaixas((data ?? []) as Faixa[]));
+      .then(({ data, error }) => error ? setErroAuxiliar("Não foi possível carregar as faixas. Tente de novo.") : setFaixas((data ?? []) as Faixa[]));
   }, []);
 
   const lib = mesDeLiberacao(mes.ano, mes.mes);
@@ -106,127 +112,83 @@ function Programa() {
     return e;
   }
 
-  const erro = erroCriterios ?? erroLanc ?? erroVendas;
+  const erro = erroCriterios ?? erroLanc ?? erroVendas ?? erroFechamentos ?? erroAuxiliar;
 
-  return (
-    <div className="grid gap-5">
-      <section className="card bar-brand grid gap-2">
-        <p className="eyebrow">Programa de verba</p>
-        <p className="text-ink-soft">
-          Os corretores veem os próprios pontos, a verba e o ranking. Gerentes e recepção veem o plantão e a roleta.
-        </p>
-        <p className="flex flex-wrap gap-x-5 gap-y-1 text-[14px]">
-          <Link href="/programa/aprovacao/" className="link-acao focus-ring">
-            Aprovar lançamentos{pendentes ? ` (${pendentes} pendente${pendentes > 1 ? "s" : ""} no mês)` : ""}
-          </Link>
-          <Link href="/plantao/" className="link-acao focus-ring">
-            Plantão e roleta
-          </Link>
-          <Link href="/ranking/" className="link-acao focus-ring">
-            Ranking
-          </Link>
-          <Link href="/faixas/" className="link-acao focus-ring">
-            Faixas de VGV
-          </Link>
-        </p>
-      </section>
-
-      <NavMes valor={mes} onMudar={setMes} />
-      <GerentesPrograma mes={mes} />
-
-      {erro && <p className="aviso-erro">! {erro}</p>}
-      {!linhas && !erro && <p className="text-concrete">Carregando…</p>}
-      {linhas && (
-        <section aria-labelledby="t-resumo" className="grid min-w-0 gap-3">
-          <h2 id="t-resumo" className="eyebrow">
-            Por corretor · liberação em {MESES[lib.mes].toLowerCase()} de {lib.ano}
-          </h2>
-          {linhas.length ? (
-            <ul className="card lista-painel grid p-0">
-              {linhas.map((l) => (
-                <li key={l.corretor} className="grid gap-1 border-b border-line px-4 py-3 md:grid-cols-[1fr_auto] md:items-center md:gap-4">
-                  <div className="min-w-0">
-                    <p className="font-semibold">{nome.get(l.corretor) ?? "Corretor"}</p>
-                    <p className="num text-[13px] text-ink-soft">
-                      {plural(l.contagens.periodo, "período", "períodos")} · {plural(l.contagens.video, "ação", "ações")} ·{" "}
-                      {plural(l.contagens.visita, "visita", "visitas")}
-                      {l.pendentes > 0 && ` · ${plural(l.pendentes, "pendente", "pendentes")}`}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 md:justify-end md:text-right">
-                    <span className={clsx("num text-[14px]", l.pontos < REGRAS.minimo && "text-ink-soft")}>
-                      <span className="font-display text-[18px] font-bold text-ink">{l.pontos}</span> pontos
-                      {l.verba.pontosValidos > 0 && l.verba.pontosValidos < l.pontos && ` (vale ${l.verba.pontosValidos})`}
-                    </span>
-                    <span className="num text-[14px] text-ink-soft">{l.vendas ? plural(l.vendas, "venda paga", "vendas pagas") : "sem venda paga"}</span>
-                    <span className="num whitespace-nowrap text-[14px]">
-                      Verba <span className="font-display text-[18px] font-bold">{l.verba.verba ? formatarReais(l.verba.verba) : "–"}</span>
-                      {l.verba.situacao === "abaixo_do_minimo" && <span className="text-ink-soft"> · faltam {l.verba.faltamParaMinimo}</span>}
-                    </span>
-                    {l.premio > 0 && <span className="num whitespace-nowrap text-[14px]">Prêmio {formatarReais(l.premio)}</span>}
-                  </div>
-                </li>
-              ))}
-              <li className="flex flex-wrap justify-between gap-2 px-4 py-3 font-semibold">
-                <span>Total</span>
-                <span className="num">
-                  Verba {formatarReais(totalVerba)} · Prêmio {formatarReais(totalPremio)}
-                </span>
-              </li>
-            </ul>
-          ) : (
-            <div className="card">
-              <p className="text-ink-soft">Nenhum corretor ativo.</p>
-            </div>
-          )}
-          <p className="text-[13px] text-ink-soft">
-            Só contam os lançamentos aprovados, com o limite de cada critério, e as vendas assinadas e pagas no mês da assinatura. Mínimo de{" "}
-            {REGRAS.minimo} pontos; sem trava em 200, até a soma dos máximos dos critérios; cada venda soma{" "}
-            {formatarReais(REGRAS.porVenda)}.
-          </p>
-
-          <div className="card grid gap-3">
-            <h3 className="titulo-card">Fechamento do mês</h3>
-            {fechado ? (
-              <p className={clsx("text-[14px]", mudouDesde ? "font-semibold text-brand" : "text-ink-soft")}>
-                {mudouDesde ? "! " : "✓ "}Fechado em {new Date(fechado).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}.
-                {mudouDesde && " Os números mudaram depois disso. Feche de novo para atualizar."}
-              </p>
-            ) : (
-              <p className="text-[14px] text-ink-soft">
-                Feche depois de aprovar os lançamentos do mês. A foto do cálculo fica guardada e o corretor vê a verba liberada no mês seguinte.
-                {pendentes > 0 && ` Ainda há ${pendentes} pendente${pendentes > 1 ? "s" : ""}.`}
-              </p>
-            )}
-            <div><ConfirmarFechamento rotulo={fechado ? "Fechar de novo" : `Fechar ${MESES[mes.mes].toLowerCase()}`} disabled={mesFuturo} confirmar={fechar} /></div>
-            {msg && <p className={msg.ok ? "aviso-ok" : "aviso-erro"}>{msg.ok ? "✓" : "!"} {msg.texto}</p>}
+  return <div className="pagina-alicerce programa-pilha">
+    <header className="mb-cabecalho">
+      <div className="mb-cabecalho__texto">
+        <p className="mb-sobrelinha">Programa de pontos</p>
+        <h1 className="titulo-tela">Pontos e verba</h1>
+      </div>
+      <Link className="mb-botao mb-botao--secundario" href="/programa/aprovacao/">Aprovar lançamentos{pendentes ? ` (${pendentes})` : ""}</Link>
+    </header>
+    <p>Os corretores veem os próprios pontos, a verba e o ranking. Gerentes e recepção veem o plantão e a roleta.</p>
+    <nav aria-label="Telas do programa" className="flex flex-wrap gap-3">
+      <Link className="mb-botao mb-botao--discreto" href="/plantao/">Plantão e roleta</Link>
+      <Link className="mb-botao mb-botao--discreto" href="/ranking/">Ranking</Link>
+      <Link className="mb-botao mb-botao--discreto" href="/faixas/">Faixas de VGV</Link>
+    </nav>
+    <MesPrograma valor={mes} onMudar={setMes} permitirFuturo />
+    <GerentesPrograma mes={mes} />
+    {erro ? <ErroPrograma tentar={() => { recarregarCriterios(); location.reload(); }} /> : !linhas ? <CarregandoLeads texto="Carregando os pontos…" /> : <>
+      <Cartao id="t-resumo" titulo="Pontos dos corretores" descricao={`Liberação em ${MESES[lib.mes]} de ${lib.ano}`}>
+        {linhas.length ? <div className="mb-tabela-envoltorio" tabIndex={0} role="region" aria-label="Pontos, verba e prêmio por corretor. Role para ver as colunas.">
+          <table className="mb-tabela mb-tabela--numeros mb-tabela--primeira-fixa">
+            <thead>
+              <tr>
+                <th scope="col">Corretor</th>
+                <th scope="col">Pontos</th>
+                <th scope="col">Vendas pagas</th>
+                <th scope="col">Verba</th>
+                <th scope="col">Prêmio</th>
+              </tr>
+            </thead>
+            <tbody>{linhas.map(l => <tr key={l.corretor}>
+              <td>{nome.get(l.corretor) ?? "Corretor"}<small className="mb-tabela__secundario">{plural(l.contagens.periodo, "período", "períodos")} · {plural(l.contagens.video, "ação", "ações")} · {plural(l.contagens.visita, "visita", "visitas")}{l.pendentes > 0 && ` · ${plural(l.pendentes, "pendente", "pendentes")}`}</small>
+              </td>
+              <td className="mb-tabela__num">{l.pontos}{l.verba.pontosValidos > 0 && l.verba.pontosValidos < l.pontos && <small className="mb-tabela__secundario">Vale {l.verba.pontosValidos}</small>}</td>
+              <td className="mb-tabela__num">{l.vendas}</td>
+              <td className="mb-tabela__num">{formatarReais(l.verba.verba)}{l.verba.situacao === "abaixo_do_minimo" && <small className="mb-tabela__secundario">Faltam {l.verba.faltamParaMinimo} pontos</small>}</td>
+              <td className="mb-tabela__num">{formatarReais(l.premio)}</td>
+            </tr>)}</tbody>
+            <tfoot>
+              <tr>
+                <th scope="row">Total</th>
+                <td />
+                <td />
+                <td className="mb-tabela__num">{formatarReais(totalVerba)}</td>
+                <td className="mb-tabela__num">{formatarReais(totalPremio)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div> : <EstadoVazio titulo="Nenhum corretor ativo" texto="Os corretores com lançamentos ou vendas no mês também aparecem aqui." />}
+        <p className="mb-campo__ajuda">Só contam os lançamentos aprovados, com o limite de cada critério, e as vendas assinadas e pagas no mês da assinatura. Mínimo de {REGRAS.minimo} pontos; sem trava em 200, até a soma dos máximos dos critérios; cada venda soma {formatarReais(REGRAS.porVenda)}.</p>
+      </Cartao>
+      <Cartao id="fechamento-programa" titulo="Fechamento do mês">
+        <div className="grid gap-3">
+          {fechado ? <Aviso tom={mudouDesde ? "alerta" : "sucesso"} titulo={`Fechado em ${new Date(fechado).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}`} texto={mudouDesde ? "Os números mudaram depois disso. Feche de novo para atualizar." : "A foto do cálculo está guardada para liberação no mês seguinte."} /> : <p>Feche depois de aprovar os lançamentos do mês. A foto do cálculo fica guardada e o corretor vê a verba liberada no mês seguinte.{pendentes > 0 && ` Ainda há ${plural(pendentes, "pendente", "pendentes")}.`}</p>}
+          {mesFuturo && <Aviso tom="info" titulo="Este mês ainda não começou" texto="O fechamento fica disponível no mês de referência." />}
+          <div>
+            <ConfirmarFechamento rotulo={fechado ? "Fechar de novo" : `Fechar ${MESES[mes.mes]}`} disabled={mesFuturo} confirmar={fechar} />
           </div>
-        </section>
-      )}
-
-      {criterios && <EditarCriterios criterios={criterios} onMudou={recarregarCriterios} />}
-    </div>
-  );
+          {msg && <Aviso tom={msg.ok ? "sucesso" : "erro"} titulo={msg.texto} />}
+        </div>
+      </Cartao>
+    </>}
+    {criterios && <EditarCriterios criterios={criterios} onMudou={recarregarCriterios} />}
+  </div>;
 }
 
 function EditarCriterios({ criterios, onMudou }: { criterios: Criterio[]; onMudou: () => void }) {
-  return (
-    <section className="card grid gap-4" aria-labelledby="t-criterios">
-      <h2 id="t-criterios" className="titulo-card">
-        Critérios
-      </h2>
-      <ul className="grid gap-4">
-        {criterios.map((c) => (
-          <li key={c.slug} className="border-b border-line pb-4 last:border-0 last:pb-0">
-            <LinhaCriterio criterio={c} onMudou={onMudou} />
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
+  return <Cartao id="t-criterios" titulo="Critérios">
+    <div className="grid gap-4">{criterios.map(c => <LinhaCriterio key={c.slug} criterio={c} onMudou={onMudou} />)}</div>
+  </Cartao>;
 }
 
 function LinhaCriterio({ criterio, onMudou }: { criterio: Criterio; onMudou: () => void }) {
+  const [aberto, setAberto] = useState(false);
+  const origem = useRef<HTMLButtonElement>(null);
+  const [ocupado, setOcupado] = useState(false);
   const [nome, setNome] = useState(criterio.nome);
   const [pontos, setPontos] = useState(String(criterio.pontos));
   const [limite, setLimite] = useState(String(criterio.limite_mes));
@@ -237,43 +199,39 @@ function LinhaCriterio({ criterio, onMudou }: { criterio: Criterio; onMudou: () 
     if (!nome.trim()) return setMsg({ ok: false, texto: "Preencha o nome." });
     if (!Number.isInteger(p) || p < 0 || p > 1000 || !Number.isInteger(lim) || lim < 0 || lim > 1000)
       return setMsg({ ok: false, texto: "Pontos e limite: números inteiros de 0 a 1.000." });
+    setOcupado(true);
     const e = await salvarCriterio(criterio.slug, { nome: nome.trim(), pontos: p, limite_mes: lim });
+    setOcupado(false);
     setMsg(e ? { ok: false, texto: e } : { ok: true, texto: "Salvo" });
-    if (!e) onMudou();
+    if (!e) { onMudou(); setAberto(false); }
   }
   const id = criterio.slug;
-  return (
-    <div className="grid gap-3">
-      <div>
-        <label className="field-label" htmlFor={`nome-${id}`}>
-          Critério
-        </label>
-        <input id={`nome-${id}`} className="input" value={nome} onChange={(e) => (setNome(e.target.value), setMsg(null))} />
-      </div>
-      <div className="grid grid-cols-3 gap-3">
-        <div>
-          <label className="field-label" htmlFor={`pontos-${id}`}>
-            Pontos
-          </label>
-          <input id={`pontos-${id}`} className="input num" inputMode="numeric" value={pontos} onChange={(e) => (setPontos(e.target.value), setMsg(null))} />
-        </div>
-        <div>
-          <label className="field-label" htmlFor={`limite-${id}`}>
-            Limite no mês
-          </label>
-          <input id={`limite-${id}`} className="input num" inputMode="numeric" value={limite} onChange={(e) => (setLimite(e.target.value), setMsg(null))} />
-        </div>
-        <div>
-          <p className="field-label">Máximo</p>
-          <p className="num py-3 font-semibold">{Number.isFinite(p * lim) ? p * lim : "–"}</p>
-        </div>
-      </div>
-      <div className="flex flex-wrap items-center gap-3">
-        <button type="button" className="btn btn-ghost focus-ring" onClick={salvar}>
-          Salvar
-        </button>
-        {msg && <span className={msg.ok ? "aviso-ok" : "aviso-erro"}>{msg.ok ? "✓" : "!"} {msg.texto}</span>}
-      </div>
+  return <div className="programa-criterio flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <strong>{criterio.nome}</strong>
+      <p className="mb-campo__ajuda">{criterio.pontos} pontos cada · limite de {criterio.limite_mes} no mês · máximo de {criterio.pontos * criterio.limite_mes} pontos</p>
     </div>
-  );
+    <button ref={origem} className="mb-botao mb-botao--secundario" onClick={() => { setNome(criterio.nome); setPontos(String(criterio.pontos)); setLimite(String(criterio.limite_mes)); setMsg(null); setAberto(true); }}>Editar critério</button>
+    <PainelLateral aberto={aberto} onFechar={() => !ocupado && setAberto(false)} titulo="Editar critério" descricao={criterio.nome} foco={() => origem.current} rodape={<div className="mb-lateral__rodape">
+      <button className="mb-botao mb-botao--discreto" disabled={ocupado} onClick={() => setAberto(false)}>Cancelar</button>
+      <button className="mb-botao mb-botao--primario" disabled={ocupado} onClick={() => void salvar()}>{ocupado ? "Salvando…" : "Salvar critério"}</button>
+    </div>}>
+      <div className="mb-lateral__corpo">
+        <Campo rotulo="Critério" obrigatorio>
+          <input id={`nome-${id}`} className="mb-campo__entrada" value={nome} onChange={e => setNome(e.target.value)} />
+        </Campo>
+        <Campo rotulo="Pontos">
+          <input className="mb-campo__entrada" inputMode="numeric" value={pontos} onChange={e => setPontos(e.target.value)} />
+        </Campo>
+        <Campo rotulo="Limite no mês">
+          <input className="mb-campo__entrada" inputMode="numeric" value={limite} onChange={e => setLimite(e.target.value)} />
+        </Campo>
+        <div className="mb-campo mb-campo--calculado">
+          <label className="mb-campo__rotulo" htmlFor={`maximo-${id}`}>Máximo de pontos · calculado</label>
+          <input id={`maximo-${id}`} className="mb-campo__entrada" readOnly value={Number.isFinite(p * lim) ? p * lim : "–"} />
+        </div>
+        {msg && <Aviso tom={msg.ok ? "sucesso" : "erro"} titulo={msg.texto} />}
+      </div>
+    </PainelLateral>
+  </div>;
 }

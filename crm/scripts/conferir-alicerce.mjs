@@ -47,8 +47,43 @@ const soConta = argumentos.includes("--conta");
 const soParcerias = argumentos.includes("--parcerias");
 const soInicioVendas = argumentos.includes("--inicio-vendas");
 const soQuadroEmpreendimentos = argumentos.includes("--quadro-empreendimentos");
+const soPontosEmpreendimentos = argumentos.includes("--pontos-empreendimentos");
 const soEtapas = argumentos.includes("--etapas-parceiro");
 const soPainelMetasRanking = argumentos.includes("--painel-metas-ranking");
+
+// Bloco 5: depois dos quatro preparos anteriores. Apenas a cópia isolada, sem credenciais.
+if (argumentos.includes('--preparar-pontos-empreendimentos')) {
+  const sessao='.visual-preview/src/lib/sessao.tsx';
+  let se=readFileSync(sessao,'utf8');
+  se=se.replace("|| ['/vendas/configuracoes/'", "|| (qa!=='corretor' && ['/vendas/configuracoes/'").replace("].includes(path);", "].includes(path));");
+  se=se.replace("'vendas.corrigir_equipe']", "'vendas.corrigir_equipe','pontos_gerente.participar']").replace("['leads.cadastrar','distribuicao.receber']", "['leads.cadastrar','distribuicao.receber','acoes.registrar']");
+  writeFileSync(sessao,se);
+  const arquivo='.visual-preview/src/lib/visual-fixtures.ts';let s=readFileSync(arquivo,'utf8');
+  if(s.includes('// Fixtures do bloco 5.')) throw new Error('Gere a prévia de novo antes de repetir o preparo do bloco 5.');
+  const extra=`
+// Fixtures do bloco 5. Tudo fictício. Somente aprovação em memória na URL explícita de QA.
+const mesPontos=day.slice(0,7)+'-01';
+tables.criterios_pontos=[{slug:'periodo',nome:'Períodos completos',pontos:5,limite_mes:24,ordem:1},{slug:'video',nome:'Vídeos e blitz',pontos:5,limite_mes:12,ordem:2},{slug:'visita',nome:'Visitas realizadas',pontos:10,limite_mes:12,ordem:3}];
+const lancBase={corretor_id:'corretor-1',data:day,periodo:null,quantidade:1,comprovante:null,tipo_acao:null,comprovante_arquivo:null,saida_visita:false,observacao:null,visita_id:null,status:'aprovado',motivo_recusa:null,lancado_por:'gerente',lancado_em:at(0,9),decidido_por:null,decidido_em:null};
+tables.lancamentos_pontos=[...Array.from({length:21},(_,i)=>({...lancBase,id:'periodo-'+i,criterio:'periodo',periodo:i%2?'manha':'tarde'})),...Array.from({length:8},(_,i)=>({...lancBase,id:'acao-'+i,criterio:'video',tipo_acao:'video'})),...Array.from({length:9},(_,i)=>({...lancBase,id:'visita-'+i,criterio:'visita'})),{...lancBase,id:'pendente-video',criterio:'video',tipo_acao:'video',status:'pendente',lancado_por:'corretor-1',comprovante:'https://example.invalid/video',observacao:'Publicação de exemplo para conferir.'},{...lancBase,id:'pendente-blitz',criterio:'video',tipo_acao:'blitz',status:'pendente',comprovante_arquivo:'corretor-1/blitz-ficticia.jpg'},{...lancBase,id:'pendente-periodo',corretor_id:'corretor-2',criterio:'periodo',periodo:'manha',status:'pendente',observacao:'Período completo no stand.'},{...lancBase,id:'recusado-1',criterio:'video',tipo_acao:'video',status:'recusado',motivo_recusa:'Comprovante sem a data da ação.'}];
+tables.fechamentos_verba=[];tables.fechamentos_premio_gerente=[];
+const primeiraSegunda=new Date(now.getFullYear(),now.getMonth(),1,12);while(primeiraSegunda.getDay()!==1)primeiraSegunda.setDate(primeiraSegunda.getDate()+1);
+const semanaPontos=primeiraSegunda.toISOString().slice(0,10);
+const dadosGerentePontos={parceiros:13,parcerias_instaladas:true,stands:[{id:'vinculo-1',stand_id:stand.id,nome:'Stand Exemplo',inicio_semana:semanaPontos,fim_semana:null}],checkins:[{stand_id:stand.id,semana:semanaPontos,quando:at(0,9)}]};
+leituras.programa_gerentes=[{id:'gerente',nome:'Gerente Exemplo',dados:dadosGerentePontos}];leituras.pontos_gerente=dadosGerentePontos;
+`;
+  s=s.replace('// Adaptador só de leitura.',extra+'\n// Adaptador só de leitura.');
+  s=s.replace("this.erroLeitura=(name===", "this.erroLeitura=(['criterios_pontos','lancamentos_pontos'].includes(name)&&qa==='pontos-erro')||(name===");
+  s=s.replace("this.espera=(name===", "this.espera=(['criterios_pontos','lancamentos_pontos'].includes(name)&&qa==='pontos-espera')||(name===");
+  s=s.replace('this.tabela=name;',"this.tabela=name;if(qa==='pontos-vazio'&&['lancamentos_pontos','profiles'].includes(name))this.rows=[];");
+  s=s.replace("if(qa==='quadro-mover'", "if(qa==='pontos-aprovar'&&this.tabela==='lancamentos_pontos'&&campos&&Object.keys(campos).every(k=>['status','motivo_recusa'].includes(k))){this.alteracao=campos;}else if(qa==='quadro-mover'");
+  s=s.replace("this.rows.filter(x=>x.dono_id==='corretor-1'&&x.status==='ativo')", "this.rows.filter(x=>this.tabela==='lancamentos_pontos'||(x.dono_id==='corretor-1'&&x.status==='ativo'))");
+  // Retorna erro legível de comprovante; nenhum arquivo privado ou serviço externo é acessado.
+  s=s.replace('export const client = {', "export const client = {storage:{from:()=>({createSignedUrl:async()=>({data:null,error:{message:'Prévia sem arquivo real'}})})},");
+  writeFileSync(arquivo,s);
+  console.log('Prévia do bloco 5 preparada: dados fictícios, aprovação em memória só em qa=pontos-aprovar; demais escritas bloqueadas.');
+  process.exit(0);
+}
 
 // Só altera a cópia gerada, nunca a sessão, os dados ou as credenciais do app.
 // Execute depois de visual-preview.mjs e antes do build: node scripts/conferir-alicerce.mjs --preparar-parcerias
@@ -181,7 +216,7 @@ async function print(nome) {
 const resultado = {};
 const confere = (nome, ok, detalhe) => { resultado[nome] = { ok: !!ok, detalhe }; console.log(`${ok ? "OK   " : "FALHA"} ${nome}${detalhe ? "  " + JSON.stringify(detalhe) : ""}`); };
 
-if (!soMoldura && !soLista && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta && !soParcerias && !soInicioVendas && !soEtapas && !soPainelMetasRanking && !soQuadroEmpreendimentos) {
+if (!soMoldura && !soLista && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta && !soParcerias && !soInicioVendas && !soEtapas && !soPainelMetasRanking && !soQuadroEmpreendimentos && !soPontosEmpreendimentos) {
 // 1. Migração da escolha antiga (três casos de tema e a barra).
 await tela(1280, 800);
 await esquemaAparelho("light");
@@ -437,6 +472,7 @@ async function abrirListaDoDia(w, h, tema) {
   await espera(700);
 }
 async function printInteiro(nome) {
+  await avaliar("window.scrollTo(0,0)");await espera(100);
   const dim = await avaliar("({ w: document.documentElement.clientWidth, h: Math.max(document.documentElement.scrollHeight, document.body.scrollHeight) })");
   const s = await cdp("Page.captureScreenshot", { format: "png", captureBeyondViewport: true, clip: { x: 0, y: 0, width: dim.w, height: dim.h, scale: 1 } });
   writeFileSync(join(saida, nome + ".png"), Buffer.from(s.result.data, "base64"));
@@ -479,6 +515,90 @@ if (soEtapas) {
   writeFileSync(join(saida,'resultado-etapas.json'),JSON.stringify(resultado,null,2));
   await cdp('Page.close');ws.close();process.exit(Object.values(resultado).some(r=>!r.ok)?1:0);
 }
+
+// Bloco 5: Pontos, Aprovação e Empreendimentos (editar/importar), só com fixtures.
+if (soPontosEmpreendimentos && argumentos.includes('--pontos-revisao')) {
+  for(const [w,h] of [[375,812],[1280,800]])for(const tema of ['papel','grafite']){
+    await tela(w,h);await comArmazenamento({mb_tema:tema,mb_movimento:'reduzido'},'/programa/?qa=geral');
+    const id=`pontos-${w}-${tema}`;
+    const r=await avaliar(`(() => {const e=document.querySelector('.mb-tabela-envoltorio'),c=document.querySelector('.mb-tabela tbody td');return {lateral:document.documentElement.scrollWidth>innerWidth,corretor:c?.childNodes[0]?.textContent,caixa:c&&getComputedStyle(c).textTransform,largura:c?.getBoundingClientRect().width,quadro:e?.clientWidth,dinheiro:[...document.querySelectorAll('.mb-tabela td.mb-tabela__num')].map(e=>e.textContent).filter(t=>t.startsWith('R$')),pontos:document.querySelector('.mb-tabela tbody td.mb-tabela__num')?.textContent,fixa:c&&getComputedStyle(c).position};})()`);
+    confere(id+' · singular de check-in feito',await avaliar(`document.querySelector('#gerente-gerente')?.closest('.mb-cartao')?.textContent.includes('1 feito')&&!document.querySelector('#gerente-gerente')?.closest('.mb-cartao')?.textContent.includes('1 feitos')`));
+    confere(id+' · nomes em caixa de frase',r.corretor==='Marina Exemplo'&&r.caixa==='none',r);
+    confere(id+' · moeda com centavos e cálculo preservado',r.dinheiro.length===6&&r.dinheiro.every(t=>/,\d{2}/.test(t))&&r.pontos==='235',r);
+    confere(id+' · rolagem só dentro do quadro',!r.lateral&&r.fixa==='sticky'&&(w>=768||r.largura<r.quadro-44),r);
+    const foco=await focoVisivel(w<768?10:16);confere(id+' · foco visível',!foco.length,foco);await avaliar('document.activeElement?.blur();window.scrollTo(0,0)');await print(id);await printInteiro(id+'-inteiro');
+    for(const [rotulo,sufixo] of [['Conferir gerente','gerente'],['Editar critério','criterio']]){
+      await avaliar(`(() => {const b=[...document.querySelectorAll('main button')].find(b=>b.textContent.trim()===${JSON.stringify(rotulo)});b?.focus();b?.click()})()`);await espera(450);confere(id+' · painel '+sufixo,await avaliar(`!!document.querySelector('.mb-lateral--aberto')`));await print(id+'-'+sufixo);await teclar('Escape','Escape',27);await espera(150);
+    }
+    await avaliar(`(() => {const b=[...document.querySelectorAll('main button')].find(b=>b.textContent.startsWith('Fechar ')&&!b.disabled);b?.focus();b?.click()})()`);await espera(200);confere(id+' · fechamento com foco seguro',await avaliar(`document.activeElement?.textContent==='Continuar conferindo'`));await print(id+'-fechamento');await teclar('Escape','Escape',27);await espera(150);
+  }
+  confere('Nenhum erro no console',erros.length===0,erros);writeFileSync(join(saida,'resultado-pontos-revisao.json'),JSON.stringify(resultado,null,2));const falhas=Object.values(resultado).filter(r=>!r.ok).length;console.log(`${Object.keys(resultado).length} conferências de revisão, ${falhas} falhas.`);await cdp('Page.close');ws.close();process.exit(falhas?1:0);
+}
+if (soPontosEmpreendimentos) {
+  const tocar=(sel,txt)=>avaliar(`(() => {const e=[...document.querySelectorAll(${JSON.stringify(sel)})].find(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden'&&(${txt===undefined?'true':`e.textContent.trim()===${JSON.stringify(txt)}`}));if(!e)return false;e.focus();e.click();return true;})()`);
+  const preencher=(sel,v)=>avaliar(`(() => {const e=document.querySelector(${JSON.stringify(sel)});if(!e)return false;const p=e.tagName==='SELECT'?HTMLSelectElement.prototype:e.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(p,'value').set.call(e,${JSON.stringify(v)});e.dispatchEvent(new Event(e.tagName==='SELECT'?'change':'input',{bubbles:true}));return true;})()`);
+  const checar=async(id,w,normal=true)=>{
+    const r=await avaliar(`(() => {const vis=e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden';const alvo=e=>e.type==='checkbox'?e.closest('label')??e:e;return {lateral:document.documentElement.scrollWidth>innerWidth,h1:document.querySelectorAll('main h1').length,excesso:[...document.querySelectorAll('.programa-pilha > *, .empreendimento-formulario')].filter(vis).filter(e=>e.getBoundingClientRect().right>innerWidth+1).map(e=>e.className),legado:!!document.querySelector('main .ds-antigo,main .card,main .btn,main .input,main .field-label,main [class*="-antigo"]'),primarios:[...document.querySelectorAll('main .mb-botao--primario')].filter(vis).length,pequenos:[...document.querySelectorAll('main button,main a[href],main input,main select,main textarea,.mb-lateral--aberto button,.mb-lateral--aberto input,.mb-lateral--aberto select,.mb-dialogo button')].filter(vis).filter(e=>!e.disabled&&alvo(e).getBoundingClientRect().height<43.5).map(e=>({nome:(e.textContent||e.id||e.getAttribute('aria-label')||e.type||'controle').trim().slice(0,45),altura:alvo(e).getBoundingClientRect().height})),semRotulo:[...document.querySelectorAll('main input,main textarea,main select')].filter(vis).filter(e=>!e.labels?.length&&!e.getAttribute('aria-label')).map(e=>e.id||e.type)};})()`);
+    confere(id+' · sem rolagem lateral',!r.lateral&&r.excesso.length===0,r);confere(id+' · Alicerce e título',!r.legado&&(!normal||r.h1===1),r);confere(id+' · campos nomeados',!r.semRotulo.length,r.semRotulo);if(normal)confere(id+' · uma ação principal',r.primarios<=1,r.primarios);if(w<768)confere(id+' · alvos 44px',!r.pequenos.length,r.pequenos);
+  };
+  const resposta=JSON.stringify({formato:'mbigucci-empreendimentos/1',tabela_mes:'2026-11',empreendimentos:[{id:'residencial-exemplo',nome:'Residencial Exemplo',tipologias:[{rotulo:'2 dormitórios · 67 m²',tipo:'apartamento',dormitorios:2,area_m2:67,preco_a_partir_de:550000}]},{id:'novo-exemplo',nome:'Novo Exemplo',status:'lancamento',tipologias:[{rotulo:'Apartamento · 48 m²',tipo:'apartamento',area_m2:48,preco_a_partir_de:420000}]},{id:'sem-fase-exemplo',nome:'Sem Fase Exemplo',tipologias:[{rotulo:'Apartamento',tipo:'apartamento',preco_a_partir_de:390000}]}]});
+  writeFileSync(join(saida,'resposta-ficticia.json'),resposta);
+  const rotas=[['pontos','/programa/?qa=geral'],['aprovacao','/programa/aprovacao/?qa=geral'],['meus-pontos-corretor','/meus-pontos/?qa=corretor'],['meus-pontos-gerente','/meus-pontos/?qa=gerente'],['editar','/empreendimentos/editar/?qa=geral&slug=residencial-exemplo'],['novo','/empreendimentos/editar/?qa=geral'],['importar','/empreendimentos/importar/?qa=geral']];
+  for(const [w,h] of [[375,812],[1280,800]])for(const tema of ['papel','grafite']){
+    await tela(w,h);await comArmazenamento({mb_tema:tema,mb_movimento:'reduzido'},rotas[0][1]);
+    for(const [nome,rota] of rotas){
+      await avaliar('sessionStorage.clear()');await abrir(rota);const id=`${nome}-${w}-${tema}`;await checar(id,w);const foco=await focoVisivel(w<768?10:16);confere(id+' · foco visível',!foco.length,foco);await avaliar('document.activeElement?.blur();window.scrollTo(0,0)');await print(id);await printInteiro(id+'-inteiro');
+      if(nome==='pontos'){
+        confere(id+' · cálculos e tabela numérica',await avaliar(`!!document.querySelector('.mb-tabela--numeros.mb-tabela--primeira-fixa tfoot')&&document.querySelector('main').textContent.includes('235')&&document.querySelector('main').textContent.includes('130')`));
+        await tocar('button','Conferir gerente');await espera(450);await checar(id+'-gerente',w);await print(id+'-gerente');await teclar('Escape','Escape',27);await espera(150);
+        await tocar('button','Editar critério');await espera(450);confere(id+' · critério abre painel',await avaliar(`!!document.querySelector('.mb-lateral--aberto .mb-campo--calculado')&&document.querySelector('.mb-lateral--aberto').contains(document.activeElement)`));await print(id+'-criterio');await teclar('Escape','Escape',27);await espera(200);
+        await avaliar(`(() => {const b=[...document.querySelectorAll('main button')].find(b=>b.textContent.startsWith('Fechar ')&&!b.disabled);b?.focus();b?.click()})()`);await espera(250);confere(id+' · fechamento confirma ambos os programas',await avaliar(`!!document.querySelector('.mb-dialogo')&&document.activeElement?.textContent==='Continuar conferindo'&&document.querySelector('.mb-dialogo').textContent.includes('gerentes')`));await print(id+'-fechamento');await teclar('Escape','Escape',27);await espera(150);
+        await tocar('.mb-periodo button','← Anterior');await espera(350);confere(id+' · período na URL e voltar para hoje',await avaliar(`!!new URLSearchParams(location.search).get('mes')&&!!document.querySelector('.mb-periodo__hoje')&&/^[A-Z]/.test(document.querySelector('.mb-periodo__rotulo').textContent)`));await tocar('.mb-periodo__hoje');await espera(200);
+      }
+      if(nome==='aprovacao'){
+        confere(id+' · um valor por par no card',await avaliar(`Array.from(document.querySelectorAll('tbody td[data-rotulo=Critério]')).every(e=>e.children.length===1&&e.textContent.includes(' · '))&&Array.from(document.querySelectorAll('tbody td[data-rotulo=Data]')).every(e=>/^\\d{2}\\/\\d{2}$/.test(e.textContent))`));
+        confere(id+' · pendentes de qualquer data e seleção',await avaliar(`document.querySelectorAll('tbody tr').length===3&&document.querySelectorAll('input[data-mb-marcar]').length===3`));
+        if(w<768){await tocar('.mb-filtros__celular');await espera(400);await print(id+'-filtros');await teclar('Escape','Escape',27);await espera(200);}
+        await tocar('.mb-tabela__alvo');await espera(450);confere(id+' · registro aberto sem botões repetidos',await avaliar(`!!document.querySelector('.mb-lateral--aberto')&&!document.querySelector('.mb-tabela tbody .mb-botao')`));await checar(id+'-detalhe',w);await print(id+'-detalhe');
+        await tocar('.mb-lateral--aberto button','Recusar lançamento');await espera(350);await tocar('button','Recusar lançamentos');await espera(200);confere(id+' · recusa pede motivo no card',await avaliar(`!!document.querySelector('#recusar-titulo')&&document.querySelector('main').textContent.includes('Escreva o motivo')`));
+        await preencher('main textarea','Comprovante ilegível no exemplo.');await tocar('button','Recusar lançamentos');await espera(350);confere(id+' · erro conserva motivo',await avaliar(`document.querySelector('main textarea')?.value==='Comprovante ilegível no exemplo.'&&!!document.querySelector('main .mb-campo__erro')`));await printInteiro(id+'-recusa-erro');await tocar('main button','Cancelar');await espera(150);
+        if(w<768){await tocar('.mb-filtros__celular');await espera(400);}
+        // Os selects estão dentro de Campos; o alvo do terceiro campo é explícito.
+        await preencher(w<768?'.mb-lateral--aberto .mb-campo:nth-child(3) select':'.programa-filtros__campos .mb-campo:nth-child(3) select','video');await espera(400);
+        confere(id+' · filtro e URL',await avaliar(`new URLSearchParams(location.search).get('criterio')==='video'&&document.querySelectorAll('tbody tr').length===2`));
+        if(w<768){await teclar('Escape','Escape',27);await espera(150);}await tocar('main button','Limpar filtros');await espera(350);
+        await tocar('.mb-tabela tbody tr:nth-child(2) .mb-tabela__alvo');await espera(400);await tocar('.mb-lateral--aberto button','Ver comprovante ↗');await espera(200);confere(id+' · comprovante privado falha sem expor arquivo',await avaliar(`!!document.querySelector('.mb-lateral--aberto .mb-aviso--erro')&&!document.querySelector('.mb-lateral--aberto a[href*=storage]')`));await print(id+'-comprovante');await teclar('Escape','Escape',27);await espera(150);
+        await tocar('input[data-mb-marcar]');await espera(150);confere(id+' · lote só ao selecionar',await avaliar(`!!document.querySelector('.mb-lote')&&document.querySelectorAll('tbody tr[aria-selected=true]').length===1`));await print(id+'-lote');await tocar('button','Limpar seleção');
+      }
+      if(nome==='meus-pontos-corretor'){
+        confere(id+' · mínimo, reserva e ações próprias',await avaliar(`!!document.querySelector('.mb-meta__minimo')&&document.querySelector('main').textContent.includes('235 pontos aprovados')&&!!document.querySelector('#acoes-pendentes')`));
+        await tocar('button','Lançar ação');await espera(450);await checar(id+'-acao',w);await print(id+'-acao');await teclar('Escape','Escape',27);await espera(150);
+      }
+      if(nome==='meus-pontos-gerente'){
+        confere(id+' · prêmio e semanas separados',await avaliar(`document.querySelector('main').textContent.includes('13 de 20 parceiros')&&document.querySelector('main').textContent.includes('100 condicionados')`));await tocar('button','Ver semanas');await espera(450);await checar(id+'-semanas',w);await print(id+'-semanas');await teclar('Escape','Escape',27);await espera(150);
+      }
+      if(nome==='editar'||nome==='novo'){
+        confere(id+' · formulário denso e rascunho',await avaliar(`!!document.querySelector('.mb-form-grade--3')&&document.querySelector('.mb-salvo').textContent.includes('Rascunho guardado')&&document.querySelectorAll('form .mb-botao--primario').length===1`));
+        await preencher('#e-chamada','Texto fictício guardado no rascunho.');await abrir(rota);confere(id+' · restaura rascunho',await avaliar(`document.querySelector('#e-chamada')?.value==='Texto fictício guardado no rascunho.'`));
+        if(nome==='novo') {await tocar('button','Salvar empreendimento');await espera(150);confere(id+' · validação foca o nome',await avaliar(`document.activeElement?.id==='e-nome'&&document.querySelector('main').textContent.includes('Preencha o nome')`));await print(id+'-validacao');await preencher('#e-nome','Empreendimento Fictício');await preencher('#e-link_tabela','endereco-invalido');await tocar('button','Salvar empreendimento');await espera(100);confere(id+' · validação de URL preservada',await avaliar(`document.activeElement?.id==='e-link_tabela'&&!document.querySelector('#e-link_tabela').validity.valid`));}
+        else {await tocar('button','Salvar empreendimento');await espera(350);confere(id+' · erro de gravação conserva campos',await avaliar(`document.querySelector('#e-chamada')?.value==='Texto fictício guardado no rascunho.'&&document.querySelector('.mb-salvo').textContent.includes('Não foi salvo')`));await print(id+'-erro-salvar');}
+      }
+      if(nome==='importar'){
+        await preencher('#resposta','resposta inválida');await tocar('button','Conferir prévia');await espera(150);confere(id+' · erro de leitura sem aplicar',await avaliar(`!!document.querySelector('main .mb-aviso--erro')&&![...document.querySelectorAll('main button')].some(b=>b.textContent.startsWith('Aplicar'))`));await print(id+'-leitura-erro');
+        await preencher('#resposta',resposta);await tocar('button','Conferir prévia');await espera(250);confere(id+' · prévia completa e erro no topo',await avaliar(`document.querySelectorAll('tbody tr').length===3&&document.querySelector('tbody tr .mb-selo').textContent==='Não entra'&&document.querySelector('main').textContent.includes('520.000,00')&&document.querySelector('main').textContent.includes('550.000,00')&&document.querySelector('main').textContent.includes('Cobertura')`));confere(id+' · aviso único e borda sem seleção',await avaliar(`!document.querySelector('.mb-etapa__detalhe')&&document.querySelectorAll('tbody [aria-selected]').length===0&&Array.from(document.querySelectorAll('main .mb-aviso')).filter(e=>e.textContent.includes('Nada foi gravado ainda')).length===1`));confere(id+' · ações inteiras no celular',await avaliar(`Array.from(document.querySelectorAll('.importacao-acoes button')).every(e=>{const r=e.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&e.scrollWidth<=e.clientWidth})`));await checar(id+'-previa',w);await print(id+'-previa');await printInteiro(id+'-previa-inteiro');
+        await tocar('button','Voltar à resposta');await espera(100);confere(id+' · voltar conserva resposta',await avaliar(`document.querySelector('#resposta')?.value===${JSON.stringify(resposta)}`));await tocar('button','Conferir prévia');await espera(150);await tocar('button','Aplicar 2 mudanças');await espera(200);confere(id+' · confirmação segura e efeito explícito',await avaliar(`document.activeElement?.textContent==='Continuar conferindo'&&document.querySelector('.mb-dialogo')?.textContent.includes('não tem Desfazer')`));await print(id+'-confirmar');await teclar('Escape','Escape',27);await espera(200);confere(id+' · Esc restaura foco',await avaliar(`document.activeElement?.textContent==='Aplicar 2 mudanças'`));
+        await tocar('main button','Aplicar 2 mudanças');await espera(150);await tocar('.mb-dialogo button','Aplicar 2 mudanças');await espera(450);confere(id+' · falha por item preserva resposta',await avaliar(`document.querySelector('#resposta')?.value===${JSON.stringify(resposta)}&&document.querySelectorAll('[aria-label="Resultado da importação"] .mb-aviso--erro').length===2&&!document.querySelector('.mb-dialogo')`));await printInteiro(id+'-resultado-erro');
+      }
+    }
+    for(const [nome,rota] of [['pontos','/programa/'],['aprovacao','/programa/aprovacao/'],['editar','/empreendimentos/editar/'],['importar','/empreendimentos/importar/']]){await abrir(rota+'?qa=corretor');confere(`${nome}-${w}-${tema} · acesso preservado`,await avaliar(`document.querySelector('.mb-estado__sobrelinha')?.textContent==='Sem permissão'&&!document.querySelector('main form,main table')`));}
+    for(const [nome,rota,qa,tipo] of [['pontos','/programa/','pontos-erro','erro'],['aprovacao','/programa/aprovacao/','pontos-erro','erro'],['pontos','/programa/','pontos-espera','espera'],['aprovacao','/programa/aprovacao/','pontos-vazio','vazio'],['editar','/empreendimentos/editar/','catalogo-erro','erro'],['importar','/empreendimentos/importar/','catalogo-erro','erro']]){await abrir(rota+'?qa='+qa);const id=`${nome}-${tipo}-${w}-${tema}`;await checar(id,w,false);confere(id+' · estado correto',await avaliar(tipo==='erro'?`!!document.querySelector('.mb-estado')&&!document.querySelector('main').textContent.includes('Falha fictícia')`:tipo==='espera'?`!!document.querySelector('[aria-busy=true] .mb-esqueleto')`:`!!document.querySelector('.mb-vazio')`));await print(id);}
+  }
+  // A mesma função de domínio, com gravação limitada a objetos da fixture nesta URL.
+  await tela(375,812);await abrir('/programa/aprovacao/?qa=pontos-aprovar');await tocar('input[data-mb-marcar]');await espera(100);await tocar('button','Aprovar selecionados');await espera(350);confere('Aprovação em memória e Desfazer',await avaliar(`document.querySelectorAll('tbody tr').length===2&&document.querySelector('.mb-toast')?.textContent.includes('Desfazer')`));await print('aprovacao-desfazer');await tocar('.mb-toast button','Desfazer');await espera(350);confere('Desfazer restaura pendente',await avaliar(`document.querySelectorAll('tbody tr').length===3`));
+  await tocar('input[data-mb-marcar]');await tocar('input[data-mb-marcar]:not(:checked)');await espera(100);await tocar('button','Recusar selecionados');await espera(100);await preencher('main textarea','Motivo fictício da recusa em lote.');await tocar('button','Recusar lançamentos');await espera(350);confere('Recusa em lote com motivo e Desfazer',await avaliar(`document.querySelectorAll('tbody tr').length===1&&document.querySelector('.mb-toast')?.textContent.includes('Desfazer')`));await tocar('.mb-toast button','Desfazer');await espera(300);confere('Desfazer restaura o lote',await avaliar(`document.querySelectorAll('tbody tr').length===3`));
+  confere('Nenhum erro no console',erros.length===0,erros);writeFileSync(join(saida,'resultado.json'),JSON.stringify(resultado,null,2));const falhas=Object.values(resultado).filter(r=>!r.ok).length;console.log(`${Object.keys(resultado).length} conferências, ${falhas} falhas. Capturas em ${saida}`);await cdp('Page.close');ws.close();process.exit(falhas?1:0);
+}
+
 
 if (soQuadroEmpreendimentos) {
   const tocar=(seletor,texto)=>avaliar(`(() => {const e=[...document.querySelectorAll(${JSON.stringify(seletor)})].find(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden'&&(${texto===undefined?'true':`e.textContent.trim()===${JSON.stringify(texto)}`}));if(!e)return false;e.focus();e.click();return true;})()`);
@@ -816,7 +936,7 @@ if (soParcerias) {
   await cdp('Page.close'); ws.close(); process.exit(falhas ? 1 : 0);
 }
 
-if (!soMoldura && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta && !soParcerias && !soInicioVendas && !soEtapas && !soPainelMetasRanking && !soQuadroEmpreendimentos) {
+if (!soMoldura && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta && !soParcerias && !soInicioVendas && !soEtapas && !soPainelMetasRanking && !soQuadroEmpreendimentos && !soPontosEmpreendimentos) {
   for (const [w, h] of [[375, 812], [1280, 800]]) {
     for (const tema of ["papel", "grafite"]) {
       await abrirListaDoDia(w, h, tema);

@@ -409,3 +409,34 @@ svg.mb-icone {
 .quadro-pilha { grid-template-columns: minmax(0, 1fr); }
 .quadro-pilha > .mb-quadro__abas { min-width: 0; }
 .quadro-pilha > .mb-quadro__abas > .mb-abas { min-width: 0; max-width: 100%; }
+
+/* 9. Pontos e edição/importação de empreendimentos (fase 2, bloco 5).
+   Só composição: tabelas e formulários seguem os modificadores oficiais. Os quatro
+   filtros da aprovação incluem uma data; a mesma grade entra no PainelLateral no celular. */
+.programa-pilha { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: var(--esp-4); align-content: start; }
+.programa-pilha > *, .empreendimento-formulario, .empreendimento-formulario .mb-campo { min-width: 0; }
+.programa-filtros__campos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--esp-3); width: 100%; }
+.programa-criterio + .programa-criterio { border-top: var(--mb-borda) solid var(--linha); padding-top: var(--esp-4); }
+/* O estado do rascunho é uma frase, e precisa quebrar em vez de alargar o cabeçalho. */
+.empreendimento-formulario .mb-salvo { white-space: normal; }
+.importacao-resposta { min-height: calc(var(--controle-g) * 4); font-family: var(--font-mono); }
+.programa-pilha td, .programa-pilha th { overflow-wrap: anywhere; }
+@media (max-width: 767px) {
+  .programa-filtros__campos { display: none; }
+  /* A prévia tem uma explicação longa por item. Uma única célula contém o resumo
+     e a lista, para o par rótulo/valor não virar várias colunas flex. */
+  .importacao-previa td[data-rotulo]::before { flex: 0 0 30%; }
+}
+/* FormularioDenso.md:5 pede uma coluna abaixo de 640px. No bundle, a regra --3
+   vem depois da regra geral do celular e a sobrescreve; compensa só neste formulário. */
+@media (max-width: 639px) {
+  .empreendimento-formulario .mb-form-grade--3 > * { grid-column: 1 / -1; }
+}
+/* Tabela dentro do cartão de importação: apenas o cartão externo tem sombra (Cartao.md:7). */
+.importacao-previa, .importacao-previa tbody tr { box-shadow: none; }
+/* BarraDeAcoes.md:7: duas ações não cabem lado a lado em 375px. Cada ação
+   ocupa uma linha no celular, sem cortar o texto nem a área de toque. */
+@media (max-width: 767px) {
+  .importacao-acoes .mb-grupo-botoes { flex-direction: column; width: 100%; }
+  .importacao-acoes .mb-botao { width: 100%; white-space: normal; }
+}

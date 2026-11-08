@@ -1,12 +1,19 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import clsx from "clsx";
+import { useRouter, useSearchParams } from "next/navigation";
+import { PainelLateral } from "@/components/alicerce/painel-lateral";
+import { Campo, CampoSelecao } from "@/components/alicerce/campo";
+import { Selo } from "@/components/alicerce/selo";
+import { Aviso } from "@/components/alicerce/aviso";
+import { CarregandoLeads } from "@/components/alicerce/carregando";
+import { EstadoVazio } from "@/components/alicerce/estado-vazio";
+import { ErroPrograma } from "@/components/programa/pecas";
 import { Casca } from "@/components/casca";
 import { Comprovante } from "@/components/programa/comprovante";
 import { AvisoDesfazer } from "@/components/leads/partes";
-import { diaCurto, diaDaSemana, SeloStatus } from "@/components/programa/partes";
+import { diaCurto, diaDaSemana } from "@/components/programa/partes";
 import { diaIso } from "@/lib/vendas";
 import { useNomes } from "@/lib/vendas-dados";
 import { filtrarLancamentos, segundaDaSemana, somarDias, STATUS_LANCAMENTO, TURNOS, type Lancamento, type SlugCriterio, type StatusLancamento } from "@/lib/programa";
@@ -19,8 +26,10 @@ import { mudarStatus, useCriterios, useLancamentos } from "@/lib/programa-dados"
  */
 export default function AprovacaoPage() {
   return (
-    <Casca titulo="Aprovar lançamentos" soGerenteGeral>
-      <Aprovacao />
+    <Casca titulo="Aprovar lançamentos" soGerenteGeral migrada>
+      <Suspense fallback={<CarregandoLeads texto="Carregando os lançamentos…" />}>
+        <Aprovacao />
+      </Suspense>
     </Casca>
   );
 }
@@ -29,6 +38,12 @@ type Desfazer = { texto: string; ids: string[] };
 
 function Aprovacao() {
   const hoje = diaIso(new Date());
+  const sp = useSearchParams(); const router = useRouter(); const consulta = sp.toString();
+  const [filtrosAbertos, setFiltrosAbertos] = useState(false);
+  const filtroOrigem = useRef<HTMLButtonElement>(null); const origem = useRef<HTMLElement | null>(null);
+  const [detalhe, setDetalhe] = useState<Lancamento | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+  const motivoCampo = useRef<HTMLTextAreaElement>(null);
   const [status, setStatus] = useState<StatusLancamento | "">("pendente");
   const [corretor, setCorretor] = useState("");
   const [criterio, setCriterio] = useState<SlugCriterio | "">("");
@@ -38,13 +53,14 @@ function Aprovacao() {
   const [motivo, setMotivo] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<Desfazer | null>(null);
+  useEffect(() => { if (recusando) motivoCampo.current?.focus(); }, [recusando]);
   const fimAviso = useCallback(() => setAviso(null), []);
 
   // Pendentes de qualquer data; os demais status, dos últimos 120 dias (ou da semana escolhida).
   const ini = semana ?? (status === "pendente" ? "2000-01-01" : somarDias(hoje, -120));
   const fim = semana ? somarDias(semana, 7) : somarDias(hoje, 1);
   const { lancamentos, erro: erroLeitura, recarregar } = useLancamentos(ini, fim, status ? { status } : undefined);
-  const { criterios } = useCriterios();
+  const { criterios, erro: erroCriterios, recarregar: recarregarCriterios } = useCriterios();
   const todos = lancamentos ?? [];
   const nomes = useNomes([...todos.map((l) => l.corretor_id), ...todos.flatMap((l) => (l.lancado_por ? [l.lancado_por] : []))]);
   const lista = useMemo(
@@ -63,13 +79,27 @@ function Aprovacao() {
       else n.add(id);
       return n;
     });
-  const todosMarcados = lista.length > 0 && lista.every((l) => marcados.has(l.id));
-  const marcarTodos = () => setMarcados((m) => (lista.every((l) => m.has(l.id)) ? new Set() : new Set(lista.map((l) => l.id))));
+  const elegiveis = lista.filter(l => l.status === "pendente");
+  const todosMarcados = elegiveis.length > 0 && elegiveis.every(l => marcados.has(l.id));
+  const marcarTodos = () => setMarcados(m => elegiveis.every(l => m.has(l.id)) ? new Set() : new Set(elegiveis.map(l => l.id)));
+  const todas = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (todas.current) todas.current.indeterminate = !todosMarcados && pendentesSel.length > 0; }, [todosMarcados, pendentesSel.length]);
+  useEffect(() => { const q = new URLSearchParams(consulta); const st = q.get("situacao"); setStatus(st === "todas" ? "" : st && Object.hasOwn(STATUS_LANCAMENTO, st) ? st as StatusLancamento : "pendente"); setCorretor(q.get("corretor") ?? ""); setCriterio((q.get("criterio") ?? "") as SlugCriterio | ""); const d = q.get("semana"); setSemana(d && /^\d{4}-\d{2}-\d{2}$/.test(d) && !isNaN(Date.parse(d)) ? segundaDaSemana(d) : null); setMarcados(new Set()); }, [consulta]);
+  function mudar(f: { situacao?: string; corretor?: string; criterio?: string; semana?: string }) {
+    const q = new URLSearchParams(consulta); for (const [k, v] of Object.entries(f)) { if (v) q.set(k, v); else q.delete(k); }
+    router.replace("/programa/aprovacao/?" + q.toString(), { scroll: false });
+  }
+  const limpar = () => mudar({ situacao: "pendente", corretor: "", criterio: "", semana: "" });
+  const ativos = [status !== "pendente" && { nome: "Situação", texto: status ? STATUS_LANCAMENTO[status].nome : "Todas as situações", tirar: () => mudar({ situacao: "pendente" }) }, corretor && { nome: "Corretor", texto: nomes.get(corretor) ?? "Corretor", tirar: () => mudar({ corretor: "" }) }, criterio && { nome: "Critério", texto: nomeCriterio(criterio), tirar: () => mudar({ criterio: "" }) }, semana && { nome: "Semana", texto: diaCurto(semana), tirar: () => mudar({ semana: "" }) }].filter(Boolean) as { nome: string; texto: string; tirar: () => void }[];
+
 
   async function decidir(ids: string[], para: "aprovado" | "recusado", txt?: string) {
-    setErro(null);
+    if (ocupado) return;
+    setOcupado(true); setErro(null);
     const e = await mudarStatus(ids, para, txt);
+    setOcupado(false);
     if (e) return setErro(e);
+    setDetalhe(null);
     setMarcados(new Set());
     setRecusando(null);
     setMotivo("");
@@ -78,7 +108,10 @@ function Aprovacao() {
     setAviso({ texto: `${n} lançamento${n > 1 ? "s" : ""} ${para === "aprovado" ? "aprovado" : "recusado"}${n > 1 ? "s" : ""}`, ids });
   }
   async function voltar(ids: string[]) {
+    if (ocupado) return; setOcupado(true);
     const e = await mudarStatus(ids, "pendente");
+    setOcupado(false);
+    if (!e) setDetalhe(null);
     setAviso(null);
     if (e) setErro(e);
     recarregar();
@@ -89,228 +122,129 @@ function Aprovacao() {
     decidir(recusando, "recusado", motivo.trim());
   }
 
-  return (
-    <div className="grid gap-5 pb-24">
-      <p className="text-ink-soft">
-        Os lançamentos só contam depois de aprovados. A visita realizada entra sozinha, pela baixa.{" "}
-        <Link href="/programa/" className="link-acao focus-ring">
-          Resumo do mês
-        </Link>
-      </p>
-
-      <section aria-label="Filtros" className="card grid gap-3 md:grid-cols-4">
-        <div>
-          <label className="field-label" htmlFor="f-status">
-            Situação
-          </label>
-          <select id="f-status" className="input" value={status} onChange={(e) => (setStatus(e.target.value as StatusLancamento | ""), setMarcados(new Set()))}>
-            {(Object.keys(STATUS_LANCAMENTO) as StatusLancamento[]).map((s) => (
-              <option key={s} value={s}>
-                {STATUS_LANCAMENTO[s].nome}s
-              </option>
-            ))}
-            <option value="">Todas</option>
-          </select>
-        </div>
-        <div>
-          <label className="field-label" htmlFor="f-corretor">
-            Corretor
-          </label>
-          <select id="f-corretor" className="input" value={corretor} onChange={(e) => setCorretor(e.target.value)}>
-            <option value="">Todos</option>
-            {corretores.map((c) => (
-              <option key={c} value={c}>
-                {nomes.get(c) ?? "Corretor"}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="field-label" htmlFor="f-criterio">
-            Critério
-          </label>
-          <select id="f-criterio" className="input" value={criterio} onChange={(e) => setCriterio(e.target.value as SlugCriterio | "")}>
-            <option value="">Todos</option>
-            {(criterios ?? []).map((c) => (
-              <option key={c.slug} value={c.slug}>
-                {c.nome}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="field-label" htmlFor="f-semana">
-            Semana de
-          </label>
-          <input
-            id="f-semana"
-            type="date"
-            className="input num"
-            value={semana ?? ""}
-            onChange={(e) => setSemana(e.target.value ? segundaDaSemana(e.target.value) : null)}
-          />
-          {semana && (
-            <p className="mt-1 text-[13px] text-ink-soft">
-              {diaCurto(semana)} a {diaCurto(somarDias(semana, 6))} ·{" "}
-              <button type="button" className="link-acao focus-ring" onClick={() => setSemana(null)}>
-                Todas
-              </button>
-            </p>
-          )}
-        </div>
-      </section>
-
-      {(erroLeitura || erro) && <p className="aviso-erro">! {erroLeitura ?? erro}</p>}
-      {!lancamentos && !erroLeitura && <p className="text-concrete">Carregando…</p>}
-
-      {lancamentos && (
-        <section aria-labelledby="t-fila" className="grid gap-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 id="t-fila" className="eyebrow">
-              {lista.length} lançamento{lista.length === 1 ? "" : "s"}
-            </h2>
-            {lista.length > 0 && (
-              <label className="flex cursor-pointer items-center gap-2 text-[14px] font-semibold">
-                <input type="checkbox" className="checkbox focus-ring" checked={todosMarcados} onChange={marcarTodos} />
-                Selecionar todos
+  function campos() {
+    return <>
+      <CampoSelecao rotulo="Situação">
+        <select className="mb-campo__entrada" value={status} onChange={e => mudar({ situacao: e.target.value || "todas" })}>{(Object.keys(STATUS_LANCAMENTO) as StatusLancamento[]).map(st => <option key={st} value={st}>{STATUS_LANCAMENTO[st].nome}s</option>)}<option value="">Todas as situações</option>
+        </select>
+      </CampoSelecao>
+      <CampoSelecao rotulo="Corretor">
+        <select className="mb-campo__entrada" value={corretor} onChange={e => mudar({ corretor: e.target.value })}>
+          <option value="">Todos os corretores</option>{corretores.map(c => <option key={c} value={c}>{nomes.get(c) ?? "Corretor"}</option>)}</select>
+      </CampoSelecao>
+      <CampoSelecao rotulo="Critério">
+        <select className="mb-campo__entrada" value={criterio} onChange={e => mudar({ criterio: e.target.value })}>
+          <option value="">Todos os critérios</option>{(criterios ?? []).map(c => <option key={c.slug} value={c.slug}>{c.nome}</option>)}</select>
+      </CampoSelecao>
+      <Campo rotulo="Semana de" ajuda={semana ? `${diaCurto(semana)} a ${diaCurto(somarDias(semana, 6))}` : "Pendentes de qualquer data. Outras situações: últimos 120 dias."}>
+        <input type="date" className="mb-campo__entrada" value={semana ?? ""} onChange={e => mudar({ semana: e.target.value ? segundaDaSemana(e.target.value) : "" })} />
+      </Campo>
+    </>;
+  }
+  function abrirRecusa(ids: string[]) { setErro(null); setMotivo(""); setDetalhe(null); setRecusando(ids); }
+  return <div className="pagina-alicerce programa-pilha">
+    <nav aria-label="Caminho">
+      <ol className="mb-trilha">
+        <li>
+          <Link href="/programa/">Pontos e verba</Link>
+        </li>
+        <li aria-current="page">Aprovar lançamentos</li>
+      </ol>
+    </nav>
+    <header className="mb-cabecalho">
+      <div className="mb-cabecalho__texto">
+        <h1 className="titulo-tela">Aprovar lançamentos</h1>
+        <p className="mb-cabecalho__subtitulo">Os lançamentos só contam depois de aprovados. A visita realizada entra pela baixa.</p>
+      </div>
+    </header>
+    <form className="mb-filtros programa-filtros" role="search" aria-label="Filtrar lançamentos" onSubmit={e => e.preventDefault()}>
+      <div className="programa-filtros__campos">{campos()}</div>
+      <button ref={filtroOrigem} className="mb-botao mb-botao--secundario mb-filtros__celular" type="button" aria-haspopup="dialog" onClick={() => setFiltrosAbertos(true)}>Filtros{ativos.length ? ` · ${ativos.length}` : ""}</button>
+      <div className="mb-filtros__ativos">
+        <span>{lista.length} lançamentos</span>{ativos.map(f => <button type="button" className="mb-opcao mb-opcao--p" aria-label={`Tirar filtro ${f.nome}`} key={f.nome} onClick={f.tirar}>{f.texto}</button>)}{!!ativos.length && <button type="button" className="mb-botao mb-botao--discreto mb-botao--p" onClick={limpar}>Limpar filtros</button>}</div>
+    </form>
+    <PainelLateral aberto={filtrosAbertos} onFechar={() => setFiltrosAbertos(false)} titulo="Filtrar lançamentos" foco={() => filtroOrigem.current} rodape={<div className="mb-lateral__rodape">
+      <button className="mb-botao mb-botao--discreto" onClick={limpar}>Limpar filtros</button>
+      <button className="mb-botao mb-botao--primario" onClick={() => setFiltrosAbertos(false)}>Ver {lista.length} lançamentos</button>
+    </div>}>
+      <div className="mb-lateral__corpo">{campos()}</div>
+    </PainelLateral>
+    {(erroLeitura || erroCriterios) ? <ErroPrograma tentar={() => { recarregar(); recarregarCriterios(); }} /> : !lancamentos || !criterios ? <CarregandoLeads texto="Carregando os lançamentos…" /> : !lista.length ? <EstadoVazio titulo={status === "pendente" && !ativos.length ? "Nenhum lançamento esperando aprovação" : "Nenhum lançamento com esses filtros"} texto="Os lançamentos aparecem aqui para conferência." acao={ativos.length ? <button className="mb-botao mb-botao--secundario" onClick={limpar}>Limpar filtros</button> : undefined} /> : <div className="mb-tabela-envoltorio">
+      <table className="mb-tabela mb-tabela--registros mb-tabela--linhas">
+        <thead>
+          <tr>
+            <th className="mb-tabela__marcar" scope="col">
+              <label className="mb-marcador">
+                <input ref={todas} type="checkbox" data-mb-marcar-todas aria-label="Selecionar todos os pendentes" checked={todosMarcados} disabled={!elegiveis.length || ocupado} onChange={marcarTodos} />
               </label>
-            )}
-          </div>
-          {!lista.length && (
-            <div className="card">
-              <p className="text-ink-soft">{status === "pendente" ? "✓ Nenhum lançamento esperando aprovação." : "Nenhum lançamento com esses filtros."}</p>
-            </div>
-          )}
-          <ul className="grid gap-3">
-            {lista.map((l) => (
-              <li key={l.id}>
-                <ItemFila
-                  l={l}
-                  nomeCriterio={nomeCriterio(l.criterio)}
-                  nomes={nomes}
-                  marcado={marcados.has(l.id)}
-                  onMarcar={() => alternar(l.id)}
-                  onAprovar={() => decidir([l.id], "aprovado")}
-                  onRecusar={() => (setRecusando([l.id]), setMotivo(""))}
-                  onVoltar={() => voltar([l.id])}
-                />
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {(recusando || pendentesSel.length > 0) && !aviso && (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface px-3 py-3 md:px-5">
-          <div className="mx-auto grid max-w-content gap-2">
-            {recusando ? (
-              <>
-                <label className="field-label" htmlFor="motivo-recusa">
-                  Motivo da recusa ({recusando.length})
-                </label>
-                <input id="motivo-recusa" className="input" value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Ex.: saiu antes das 14h" autoFocus />
-                <div className="flex flex-wrap items-center gap-3">
-                  <button type="button" className="btn btn-red btn-lg focus-ring" onClick={recusar}>
-                    Recusar
-                  </button>
-                  <button type="button" className="link-acao focus-ring text-[13px]" onClick={() => setRecusando(null)}>
-                    Cancelar
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="flex items-center gap-2">
-                <span className="min-w-0 flex-1 text-[14px] font-semibold">
-                  <span className="num">{pendentesSel.length}</span> selecionado{pendentesSel.length > 1 ? "s" : ""}
-                </span>
-                <button type="button" className="btn btn-ghost focus-ring px-3 py-3 text-[14px]" onClick={() => (setRecusando(pendentesSel), setMotivo(""))}>
-                  ✕ Recusar
-                </button>
-                <button type="button" className="btn btn-red focus-ring px-3 py-3 text-[14px]" onClick={() => decidir(pendentesSel, "aprovado")}>
-                  ✓ Aprovar
-                </button>
-              </div>
-            )}
-          </div>
+            </th>
+            <th scope="col">Corretor</th>
+            <th scope="col">Critério</th>
+            <th scope="col">Data</th>
+            <th scope="col">Situação</th>
+          </tr>
+        </thead>
+        <tbody>{lista.map(l => <tr key={l.id} aria-selected={marcados.has(l.id)}>
+          <td className="mb-tabela__marcar">{l.status === "pendente" && <label className="mb-marcador">
+            <input type="checkbox" data-mb-marcar aria-label={`Selecionar lançamento de ${nomes.get(l.corretor_id) ?? "corretor"}, ${diaCurto(l.data)}`} checked={marcados.has(l.id)} disabled={ocupado} onChange={() => alternar(l.id)} />
+          </label>}</td>
+          <td>
+            <button className="mb-tabela__alvo" onClick={e => { origem.current = e.currentTarget; setErro(null); setDetalhe(l); }}>{nomes.get(l.corretor_id) ?? "Corretor"}</button>
+          </td>
+          <td data-rotulo="Critério"><span>{nomeCriterio(l.criterio)}{l.periodo ? ` · ${TURNOS.find(t => t.slug === l.periodo)?.nome}` : l.tipo_acao ? ` · ${l.tipo_acao === "blitz" ? "Blitz" : "Vídeo"}` : ""}</span></td>
+          <td data-rotulo="Data"><span>{diaCurto(l.data)}</span></td>
+          <td data-rotulo="Situação">
+            <StatusDaFila l={l} />
+          </td>
+        </tr>)}</tbody>
+      </table>
+    </div>}
+    {erro && !detalhe && !recusando && <Aviso tom="erro" titulo={erro} />}
+    {pendentesSel.length > 0 && !recusando && <div className="mb-lote">
+      <span className="mb-lote__contagem">{pendentesSel.length} selecionados</span>
+      <button className="mb-botao mb-botao--discreto" disabled={ocupado} onClick={() => setMarcados(new Set())}>Limpar seleção</button>
+      <button className="mb-botao mb-botao--secundario" disabled={ocupado} onClick={e => { origem.current = e.currentTarget; abrirRecusa(pendentesSel); }}>Recusar selecionados</button>
+      <button className="mb-botao mb-botao--primario" disabled={ocupado} onClick={() => void decidir(pendentesSel, "aprovado")}>{ocupado ? "Aprovando…" : "Aprovar selecionados"}</button>
+    </div>}
+    <PainelLateral aberto={!!detalhe} onFechar={() => !ocupado && setDetalhe(null)} titulo="Conferir lançamento" descricao={detalhe ? nomes.get(detalhe.corretor_id) : undefined} foco={() => origem.current} rodape={detalhe && <div className="mb-lateral__rodape">{detalhe.status === "pendente" ? <>
+      <button className="mb-botao mb-botao--secundario" disabled={ocupado} onClick={() => abrirRecusa([detalhe.id])}>Recusar lançamento</button>
+      <button className="mb-botao mb-botao--primario" disabled={ocupado} onClick={() => void decidir([detalhe.id], "aprovado")}>{ocupado ? "Aprovando…" : "Aprovar lançamento"}</button>
+    </> : (detalhe.status === "aprovado" || detalhe.status === "recusado") ? <button className="mb-botao mb-botao--primario" disabled={ocupado} onClick={() => void voltar([detalhe.id])}>Voltar para pendente</button> : null}</div>}>
+      <div className="mb-lateral__corpo">{detalhe && <>
+        <StatusDaFila l={detalhe} />
+        <dl className="mb-pares">
+          <dt>Critério</dt>
+          <dd>{nomeCriterio(detalhe.criterio)}{detalhe.tipo_acao ? ` · ${detalhe.tipo_acao === "blitz" ? "Blitz" : "Vídeo"}` : ""}</dd>
+          <dt>Data</dt>
+          <dd>{diaCurto(detalhe.data)} · {diaDaSemana(detalhe.data)}</dd>{detalhe.periodo && <>
+            <dt>Período</dt>
+            <dd>{TURNOS.find(t => t.slug === detalhe.periodo)?.nome} · {TURNOS.find(t => t.slug === detalhe.periodo)?.horario}</dd>
+          </>}<dt>Quantidade</dt>
+          <dd>{detalhe.quantidade}</dd>
+          <dt>Lançado por</dt>
+          <dd>{detalhe.lancado_por ? nomes.get(detalhe.lancado_por) ?? "–" : "–"}</dd>
+        </dl>
+        {detalhe.saida_visita && <p>Saída para visita</p>}{detalhe.comprovante_arquivo && <Comprovante caminho={detalhe.comprovante_arquivo} />}{detalhe.comprovante && <a className="mb-botao mb-botao--discreto" href={detalhe.comprovante} target="_blank" rel="noreferrer">Ver comprovante ↗</a>}{detalhe.observacao && <p>{detalhe.observacao}</p>}{detalhe.motivo_recusa && <Aviso tom="alerta" titulo="Motivo da recusa" texto={detalhe.motivo_recusa} />}{erro && <Aviso tom="erro" titulo={erro} />}
+      </>}</div>
+    </PainelLateral>
+    {recusando && <section className="mb-cartao" aria-labelledby="recusar-titulo">
+      <header className="mb-cartao__cabecalho">
+        <div>
+          <h2 className="mb-cartao__titulo" id="recusar-titulo">Recusar {recusando.length} {recusando.length === 1 ? "lançamento" : "lançamentos"}</h2>
+          <p className="mb-cartao__descricao">A recusa pode ser desfeita.</p>
         </div>
-      )}
-
-      {aviso && <AvisoDesfazer texto={aviso.texto} onDesfazer={() => voltar(aviso.ids)} onFim={fimAviso} />}
-    </div>
-  );
-}
-
-function ItemFila({
-  l,
-  nomeCriterio,
-  nomes,
-  marcado,
-  onMarcar,
-  onAprovar,
-  onRecusar,
-  onVoltar,
-}: {
-  l: Lancamento;
-  nomeCriterio: string;
-  nomes: Map<string, string>;
-  marcado: boolean;
-  onMarcar: () => void;
-  onAprovar: () => void;
-  onRecusar: () => void;
-  onVoltar: () => void;
-}) {
-  const turno = TURNOS.find((t) => t.slug === l.periodo);
-  return (
-    <div className={clsx("card grid gap-2", marcado && "bg-tint-brand")}>
-      <div className="flex items-start gap-3">
-        {l.status === "pendente" && (
-          <input type="checkbox" className="checkbox focus-ring mt-[3px]" checked={marcado} onChange={onMarcar} aria-label={`Selecionar ${nomes.get(l.corretor_id) ?? "lançamento"}`} />
-        )}
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="titulo-card">{nomes.get(l.corretor_id) ?? "Corretor"}</p>
-            <SeloStatus status={l.status} />
-          </div>
-          <p className="text-[14px]">
-            {nomeCriterio}
-            {turno && ` · ${turno.nome} ${turno.horario}`}
-            {l.criterio === "video" && ` · ${l.quantidade} vídeo${l.quantidade > 1 ? "s" : ""}`}
-            {l.saida_visita && " · saiu para visita"}
-          </p>
-          <p className="text-[13px] text-ink-soft">
-            <span className="num">{diaCurto(l.data)}</span> ({diaDaSemana(l.data)}) · lançado por {l.lancado_por ? (nomes.get(l.lancado_por) ?? "–") : "–"}
-            {l.tipo_acao && <p>{l.tipo_acao === "blitz" ? "Blitz" : "Vídeo"}</p>}
-            {l.comprovante_arquivo && <Comprovante caminho={l.comprovante_arquivo} />}
-            {l.comprovante && (
-              <>
-                {" · "}
-                <a className="link-acao focus-ring" href={l.comprovante} target="_blank" rel="noreferrer">
-                  Comprovante
-                </a>
-              </>
-            )}
-          </p>
-          {l.observacao && <p className="text-[13px] text-ink-soft">{l.observacao}</p>}
-          {l.status === "recusado" && l.motivo_recusa && <p className="text-[13px] text-ink-soft">Motivo: {l.motivo_recusa}</p>}
-        </div>
+      </header>
+      <div className="mb-cartao__corpo">
+        <Campo rotulo="Motivo da recusa" obrigatorio erro={erro}>
+          <textarea ref={motivoCampo} className="mb-campo__entrada" value={motivo} onChange={e => setMotivo(e.target.value)} />
+        </Campo>
       </div>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        {l.status === "pendente" && (
-          <>
-            <button type="button" className="btn btn-ghost focus-ring" onClick={onAprovar}>
-              ✓ Aprovar
-            </button>
-            <button type="button" className="link-acao focus-ring text-[13px]" onClick={onRecusar}>
-              Recusar
-            </button>
-          </>
-        )}
-        {(l.status === "aprovado" || l.status === "recusado") && (
-          <button type="button" className="link-acao focus-ring text-[13px]" onClick={onVoltar}>
-            Voltar para pendente
-          </button>
-        )}
-      </div>
-    </div>
-  );
+      <footer className="mb-cartao__rodape">
+        <button className="mb-botao mb-botao--discreto" disabled={ocupado} onClick={() => { setRecusando(null); requestAnimationFrame(() => origem.current?.focus()); }}>Cancelar</button>
+        <button className="mb-botao mb-botao--primario" disabled={ocupado} onClick={recusar}>{ocupado ? "Recusando…" : "Recusar lançamentos"}</button>
+      </footer>
+    </section>}
+    {aviso && <AvisoDesfazer texto={aviso.texto} onDesfazer={() => void voltar(aviso.ids)} onFim={fimAviso} />}
+  </div>;
 }
+function StatusDaFila({ l }: { l: Lancamento }) { return <Selo tom={l.status === "pendente" ? "alerta" : l.status === "aprovado" ? "sucesso" : l.status === "recusado" ? "erro" : undefined}>{STATUS_LANCAMENTO[l.status].nome}</Selo>; }
