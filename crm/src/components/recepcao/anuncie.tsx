@@ -22,30 +22,30 @@ export function Anuncie({ registrado, onDesfazer }: { registrado: Registrado; on
   }, [registrado]);
 
   return (
-    <section className="card bar-brand" role="status" aria-live="polite">
-      <span className="eyebrow">Anuncie</span>
+    <section className="mb-cartao stand-cartao" role="status" aria-live="polite">
+      <span className="mb-sobrelinha">Anuncie</span>
       <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[13px] font-semibold text-ok">✓ Cliente registrado</p>
+          <p className="stand-nota font-semibold">✓ Cliente registrado</p>
           {quem.length ? (
-            <p className="mt-1 font-display text-[22px] font-extrabold leading-tight">
+            <p className="titulo-secao">
               {quem.map((q, i) => (
                 <span key={q.papel + q.nome}>
-                  {i > 0 && <span className="mx-2 font-sans text-[14px] font-semibold text-ink-soft">e</span>}
-                  <span className="font-sans text-[14px] font-semibold text-ink-soft">{i === 0 ? q.papel : q.papel.toLowerCase()} </span>
+                  {i > 0 && <span className="mx-2 font-sans stand-nota font-semibold">e</span>}
+                  <span className="font-sans stand-nota font-semibold">{i === 0 ? q.papel : q.papel.toLowerCase()} </span>
                   {q.nome}
                 </span>
               ))}
             </p>
           ) : (
-            <p className="mt-1 font-semibold text-wa">! Ninguém para anunciar.</p>
+            <p className="mt-1 font-semibold stand-nota">! Ninguém para anunciar.</p>
           )}
-          <p className="mt-1 text-[13px] text-ink-soft">{linha}</p>
-          {aviso && <p className="mt-1 text-[13px] font-semibold text-wa">{aviso}</p>}
+          <p className="mt-1 stand-nota">{linha}</p>
+          {aviso && <p className="mt-1 stand-nota font-semibold">{aviso}</p>}
         </div>
         {resta > 0 && (
-          <button type="button" className="btn btn-ghost focus-ring shrink-0" onClick={onDesfazer}>
-            Desfazer · <span className="num">{resta} s</span>
+          <button type="button" className="mb-botao mb-botao--secundario shrink-0" onClick={onDesfazer}>
+            Desfazer · <span className="stand-num">{resta} s</span>
           </button>
         )}
       </div>

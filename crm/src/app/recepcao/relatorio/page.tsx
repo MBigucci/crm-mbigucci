@@ -2,8 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import clsx from "clsx";
+import { Tabela } from "@/components/alicerce/tabela";
+import { AreaStand, FalhaStand, useStandFiltros } from "@/components/recepcao/area-stand";
+import { CarregandoTabela } from "@/components/alicerce/carregando";
+import { Aviso } from "@/components/alicerce/aviso";
+import { EstadoVazio } from "@/components/alicerce/estado-vazio";
 import { Casca } from "@/components/casca";
+import { diaIso } from "@/lib/vendas";
 import { db } from "@/lib/supabase";
 import { mensagemErro } from "@/lib/erros";
 import { deslocar, periodo, rotuloPeriodo, TIPOS_PERIODO, type Periodo, type TipoPeriodo } from "@/lib/painel";
@@ -18,8 +23,8 @@ import { useMidias, useStands } from "@/lib/recepcao-dados";
  */
 export default function RelatorioStandPage() {
   return (
-    <Casca titulo="Relatório do stand" exige="plantao.atendimentos_ver">
-      <Relatorio />
+    <Casca migrada titulo="Relatório" exige="plantao.atendimentos_ver">
+      <AreaStand titulo="Relatório"><Relatorio /></AreaStand>
     </Casca>
   );
 }
@@ -78,9 +83,15 @@ function useNomes(tabela: string, ids: string[]) {
 }
 
 function Relatorio() {
-  const [tipo, setTipo] = useState<TipoPeriodo>("semana");
-  const [per, setPer] = useState<Periodo>(() => periodo("semana", new Date()));
-  const [standId, setStandId] = useState("");
+  const [filtros, alterarFiltros] = useStandFiltros({ periodo: "semana", d: diaIso(new Date()), stand: "" });
+  const tipo: TipoPeriodo = TIPOS_PERIODO.some(t => t.slug === filtros.periodo) ? filtros.periodo as TipoPeriodo : "semana";
+  const hoje = diaIso(new Date());
+  const candidato = new Date(filtros.d + "T12:00:00");
+  const data = /^\d{4}-\d{2}-\d{2}$/.test(filtros.d) && Number.isFinite(candidato.getTime()) && diaIso(candidato) === filtros.d && filtros.d <= hoje ? filtros.d : hoje;
+  const per = useMemo(() => periodo(tipo, new Date(data + "T12:00:00")), [tipo, data]);
+  const standId = filtros.stand;
+  const setStandId = (stand: string) => alterarFiltros({ stand });
+  const setPer = (p: Periodo) => alterarFiltros({ periodo: p.tipo, d: diaIso(p.ini) });
   const { stands } = useStands();
   const { midias } = useMidias();
   const { xs, erro } = useAtendimentos(per);
@@ -98,19 +109,15 @@ function Relatorio() {
     <div className="grid gap-5">
       <section className="sem-impressao flex flex-wrap items-end gap-3" aria-label="Período">
         <fieldset>
-          <legend className="field-label">Período</legend>
-          <div className="flex gap-2">
+          <legend className="mb-campo__rotulo">Período</legend>
+          <div className="mb-opcoes mb-opcoes--linha">
             {TIPOS_PERIODO.map((t) => (
               <button
                 key={t.slug}
                 type="button"
                 aria-pressed={tipo === t.slug}
-                className={clsx(
-                  "opcao focus-ring rounded-sm border px-3 py-[9px] text-[13px] font-semibold",
-                  tipo === t.slug ? "border-ink bg-ink text-surface" : "border-control bg-surface",
-                )}
+                className="mb-opcao"
                 onClick={() => {
-                  setTipo(t.slug);
                   setPer(periodo(t.slug, per.ini));
                 }}
               >
@@ -119,61 +126,56 @@ function Relatorio() {
             ))}
           </div>
         </fieldset>
-        <div className="flex gap-2">
-          <button type="button" className="btn btn-ghost focus-ring" onClick={() => setPer(deslocar(per, -1))}>
-            ← Anterior
-          </button>
-          <button type="button" className="btn btn-ghost focus-ring" disabled={ehAtual} onClick={() => setPer(deslocar(per, 1))}>
-            Seguinte →
-          </button>
-        </div>
-        <div className="min-w-[180px]">
-          <label className="field-label" htmlFor="stand">
+        <nav className="mb-periodo" aria-label="Período do relatório">
+          <button className="mb-botao mb-botao--secundario mb-botao--p" onClick={() => setPer(deslocar(per, -1))}>← Anterior</button>
+          <span className="mb-periodo__rotulo" aria-live="polite">{rotuloPeriodo(per).replace(/^./, c => c.toUpperCase())}</span>
+          <button className="mb-botao mb-botao--secundario mb-botao--p" disabled={ehAtual} onClick={() => setPer(deslocar(per, 1))}>Seguinte →</button>
+          {!ehAtual && <button className="mb-botao mb-botao--discreto mb-periodo__hoje" onClick={() => setPer(periodo(tipo, new Date()))}>Voltar para hoje</button>}
+        </nav>
+        <div className="mb-campo">
+          <label className="mb-campo__rotulo" htmlFor="stand">
             Stand
           </label>
-          <select id="stand" className="input md:py-[9px] md:text-[14px]" value={standId} onChange={(e) => setStandId(e.target.value)}>
-            <option value="">Todos</option>
+          <div className="mb-campo__selecao"><select id="stand" className="mb-campo__entrada" value={standId} onChange={(e) => setStandId(e.target.value)}>
+            <option value="">Todos os stands</option>
             {(stands ?? []).map((s) => (
               <option key={s.id} value={s.id}>
                 {s.nome}
               </option>
             ))}
-          </select>
+          </select></div>
         </div>
-        <button type="button" className="btn btn-ghost focus-ring" onClick={() => window.print()}>
+        <button type="button" className="mb-botao mb-botao--secundario" onClick={() => window.print()}>
           Imprimir
         </button>
       </section>
 
       <div className="so-impressao">
-        <p className="eyebrow text-[12px] text-ink-soft">MBigucci · Base360 Vendas</p>
+        <p className="mb-sobrelinha stand-nota">MBigucci · Base360 Vendas</p>
         <h2 className="titulo-impressao">Relatório do stand · {nomeStand}</h2>
-        <p className="num">
+        <p className="stand-num">
           {TIPOS_PERIODO.find((t) => t.slug === per.tipo)?.nome}: {rotuloPeriodo(per)} · impresso em {impresso}
         </p>
       </div>
-      <div className="sem-impressao">
-        <span className="eyebrow">{nomeStand}</span>
-        <p className="titulo-secao-antigo mt-1">{rotuloPeriodo(per)}</p>
-      </div>
 
-      {erro && <p className="aviso-erro">✕ {erro}</p>}
-      {!r && !erro && <p className="text-ink-soft">Carregando…</p>}
+
+      {erro && <FalhaStand texto={erro} />}
+      {!r && !erro && <CarregandoTabela />}
       {r && (
         <>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+          <div className="mb-indicadores">
             <Numero rotulo="Clientes" n={r.total} destaque />
             {r.tipos.map((t) => (
               <Numero key={t.chave} rotulo={nomeTipo(t.chave as never)} n={t.n} />
             ))}
           </div>
           {r.antesDaVez > 0 && (
-            <p className="text-[13px] text-ink-soft">
-              <span className="num">{r.antesDaVez}</span> {r.antesDaVez === 1 ? "cliente novo atendido" : "clientes novos atendidos"} antes da vez.
+            <p className="stand-nota">
+              <span className="stand-num">{r.antesDaVez}</span> {r.antesDaVez === 1 ? "cliente novo atendido" : "clientes novos atendidos"} antes da vez.
             </p>
           )}
           {!r.total ? (
-            <p className="text-ink-soft">Nenhum cliente registrado neste período.</p>
+            <EstadoVazio titulo="Nenhum cliente neste período" texto="Troque o período ou o stand para conferir outros atendimentos." />
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               <Lista titulo="Como conheceu" nota={r.semMidia ? `${r.semMidia} sem marcação (retornos)` : undefined} itens={r.midias} nome={nomeMidia} total={r.total} />
@@ -185,42 +187,37 @@ function Relatorio() {
           )}
         </>
       )}
-      <Link href="/painel/" className="link-acao sem-impressao">
+      <Link href="/painel/" className="mb-botao mb-botao--discreto sem-impressao">
         Ver o painel da equipe
       </Link>
     </div>
   );
 }
 
-function Numero({ rotulo, n, destaque }: { rotulo: string; n: number; destaque?: boolean }) {
-  return (
-    <div className={clsx("card", destaque && "bar-brand")}>
-      <span className="eyebrow text-[12px] text-ink-soft">{rotulo}</span>
-      <span className={clsx("num mt-1 block font-display text-[30px] font-extrabold leading-none", !n && "text-ink-soft")}>{n}</span>
-    </div>
-  );
+function Numero({ rotulo, n }: { rotulo: string; n: number; destaque?: boolean }) {
+  return <section className="mb-indicador"><header className="mb-indicador__cabecalho"><h2 className="mb-indicador__rotulo">{rotulo}</h2></header><p className="mb-indicador__valor">{n}</p></section>;
 }
 
 function Lista({ titulo, itens, nome, total, nota }: { titulo: string; itens: Contagem; nome: (chave: string) => string; total: number; nota?: string }) {
   return (
-    <section className="card" aria-label={titulo}>
-      <h2 className="titulo-card">{titulo}</h2>
+    <section className="mb-cartao stand-cartao" aria-label={titulo}>
+      <h2 className="mb-cartao__titulo">{titulo}</h2>
       {itens.length ? (
-        <table className="mt-2 w-full text-[14px]">
+        <Tabela tipo="numeros"><thead><tr><th>{titulo}</th><th className="mb-tabela__num">Clientes</th><th className="mb-tabela__num">Participação</th></tr></thead>
           <tbody>
             {itens.map((x) => (
-              <tr key={x.chave} className="border-t border-line first:border-t-0">
-                <td className="py-[6px] pr-2">{nome(x.chave)}</td>
-                <td className="num w-12 py-[6px] text-right font-bold">{x.n}</td>
-                <td className="num w-14 py-[6px] text-right text-ink-soft">{Math.round((x.n / total) * 100)}%</td>
+              <tr key={x.chave} className="stand-divisor first:border-t-0">
+                <td className="pr-2">{nome(x.chave)}</td>
+                <td className="mb-tabela__num">{x.n}</td>
+                <td className="mb-tabela__num">{Math.round((x.n / total) * 100)}%</td>
               </tr>
             ))}
           </tbody>
-        </table>
+        </Tabela>
       ) : (
-        <p className="mt-2 text-[13px] text-ink-soft">–</p>
+        <p className="mt-2 stand-nota">–</p>
       )}
-      {nota && <p className="mt-2 text-[12px] text-concrete">{nota}</p>}
+      {nota && <p className="mt-2 stand-nota stand-ajuda">{nota}</p>}
     </section>
   );
 }

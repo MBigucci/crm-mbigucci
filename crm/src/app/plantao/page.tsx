@@ -1,10 +1,16 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import clsx from "clsx";
+import { Selo } from "@/components/alicerce/selo";
+import { EstadoDePagina } from "@/components/alicerce/estado-de-pagina";
+import { Tabela } from "@/components/alicerce/tabela";
+import { AreaStand, FalhaStand, useStandFiltros } from "@/components/recepcao/area-stand";
+import { CarregandoTabela } from "@/components/alicerce/carregando";
+import { Aviso } from "@/components/alicerce/aviso";
+import { EstadoVazio } from "@/components/alicerce/estado-vazio";
 import { Casca } from "@/components/casca";
 import { AvisoDesfazer } from "@/components/leads/partes";
-import { diaCurto, diaDaSemana, diaLongo, SeloStatus } from "@/components/programa/partes";
+import { diaCurto, diaDaSemana } from "@/components/programa/partes";
 import { usePerfil, useSessao } from "@/lib/sessao";
 import { diaIso } from "@/lib/vendas";
 import { useNomes } from "@/lib/vendas-dados";
@@ -18,8 +24,8 @@ import { lancar, mudarStatus, useCorretoresPlantao, useLancamentos, type Correto
  */
 export default function PlantaoPage() {
   return (
-    <Casca titulo="Plantão">
-      <Plantao />
+    <Casca migrada titulo="Períodos e roleta">
+      <AreaStand titulo="Períodos e roleta"><Plantao /></AreaStand>
     </Casca>
   );
 }
@@ -30,8 +36,12 @@ function Plantao() {
   const { pode } = useSessao();
   const eu = usePerfil();
   const hoje = diaIso(new Date());
-  const [dia, setDia] = useState(hoje);
-  const [busca, setBusca] = useState("");
+  const [filtros, alterarFiltros] = useStandFiltros({ d: hoje, busca: "" });
+  const candidato = new Date(filtros.d + "T12:00:00");
+  const dia = /^\d{4}-\d{2}-\d{2}$/.test(filtros.d) && Number.isFinite(candidato.getTime()) && diaIso(candidato) === filtros.d && filtros.d <= hoje ? filtros.d : hoje;
+  const busca = filtros.busca;
+  const setDia = (d: string) => alterarFiltros({ d });
+  const setBusca = (busca: string) => alterarFiltros({ busca });
   const [aviso, setAviso] = useState<Desfazer | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const segunda = segundaDaSemana(dia);
@@ -41,12 +51,10 @@ function Plantao() {
 
   if (!pode("plantao.registrar") && !pode("lancamentos.registrar"))
     return (
-      <div className="card max-w-[520px]">
-        <p>! Seu perfil não tem acesso a esta página.</p>
-      </div>
+      <EstadoDePagina tipo="sem-permissao" titulo="Esta página não está liberada para o seu perfil" texto="Peça o acesso ao gerente geral." />
     );
-  if (erroCorretores || erroLanc) return <p className="aviso-erro">! {erroCorretores ?? erroLanc}</p>;
-  if (!corretores || !lancamentos) return <p className="text-concrete">Carregando…</p>;
+  if (erroCorretores || erroLanc) return <FalhaStand texto={erroCorretores ?? erroLanc} />;
+  if (!corretores || !lancamentos) return <CarregandoTabela texto="Carregando…" />;
 
   const termo = busca.trim().toLowerCase();
   const lista = termo ? corretores.filter((c) => c.nome.toLowerCase().includes(termo)) : corretores;
@@ -76,42 +84,24 @@ function Plantao() {
 
   return (
     <div className="grid gap-6">
-      <div className="grid gap-3 md:flex md:items-end md:justify-between">
-        <div className="flex items-center gap-2">
-          <button type="button" className="btn btn-ghost focus-ring px-3 text-[15px]" aria-label="Dia anterior" onClick={() => setDia(somarDias(dia, -1))}>
-            ←
-          </button>
-          <p className="num min-w-0 flex-1 text-center font-display text-[17px] font-bold md:flex-none md:px-3">
-            {dia === hoje ? "Hoje" : diaDaSemana(dia)}, {diaLongo(dia)}
-          </p>
-          <button
-            type="button"
-            className="btn btn-ghost focus-ring px-3 text-[15px]"
-            aria-label="Dia seguinte"
-            disabled={dia >= hoje}
-            onClick={() => setDia(somarDias(dia, 1))}
-          >
-            →
-          </button>
-        </div>
-        <div className="md:w-[280px]">
-          <label className="field-label" htmlFor="busca-corretor">
-            Buscar corretor
-          </label>
-          <input id="busca-corretor" className="input" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Nome" />
-        </div>
+      <nav className="mb-periodo" aria-label="Dia dos períodos">
+        <button className="mb-botao mb-botao--secundario mb-botao--p" onClick={() => setDia(somarDias(dia, -1))}>← Anterior</button>
+        <span className="mb-periodo__rotulo" aria-live="polite">{diaDaSemana(dia).replace(/^./, c => c.toUpperCase())}, {dia.split('-').reverse().join('/')}</span>
+        <button className="mb-botao mb-botao--secundario mb-botao--p" disabled={dia >= hoje} onClick={() => setDia(somarDias(dia, 1))}>Seguinte →</button>
+        {dia !== hoje && <button className="mb-botao mb-botao--discreto mb-periodo__hoje" onClick={() => setDia(hoje)}>Voltar para hoje</button>}
+      </nav>
+      <div className="stand-pilha"><p className="mb-escopo">{pode("plantao.registrar") || pode("dados.ver_todos") ? "Todos os corretores autorizados" : "Sua equipe"}</p>
+        <form className="mb-filtros" role="search" onSubmit={e => e.preventDefault()}><label className="mb-campo mb-filtros__busca"><span className="mb-campo__rotulo">Buscar corretor</span><input className="mb-campo__entrada" placeholder="Nome do corretor" value={busca} onChange={e => setBusca(e.target.value)} /></label></form>
+        <div className="mb-filtros__ativos">{lista.length} {lista.length === 1 ? "corretor" : "corretores"}{busca.trim() && <button className="mb-botao mb-botao--discreto mb-botao--p" onClick={() => setBusca("")}>Limpar busca</button>}</div>
       </div>
-
-      {erro && <p className="aviso-erro">! {erro}</p>}
+      {erro && <Aviso tom="erro" titulo={erro} />}
 
       <section aria-labelledby="t-periodos" className="grid gap-3">
-        <h2 id="t-periodos" className="eyebrow">
+        <h2 id="t-periodos" className="mb-sobrelinha">
           Períodos do dia · manhã 9h–14h · tarde 14h–19h
         </h2>
         {!lista.length && (
-          <div className="card">
-            <p className="text-ink-soft">{corretores.length ? "Nenhum corretor com esse nome." : "Nenhum corretor ativo."}</p>
-          </div>
+          <EstadoVazio titulo={corretores.length ? "Nenhum corretor com esse nome" : "Nenhum corretor ativo"} texto={corretores.length ? "Troque a busca ou limpe os filtros." : "Os corretores ativos aparecem aqui."} />
         )}
         <ul className="grid gap-3 md:grid-cols-2">
           {lista.map((c) => (
@@ -167,67 +157,67 @@ function CartaoCorretor({
   }
 
   return (
-    <div className="card grid gap-3">
+    <div className="mb-cartao stand-cartao grid gap-3">
       <div>
-        <p className="titulo-card">{corretor.nome}</p>
-        {corretor.equipe && <p className="text-[13px] text-ink-soft">{corretor.equipe}</p>}
+        <p className="mb-cartao__titulo">{corretor.nome}</p>
+        {corretor.equipe && <p className="stand-nota">{corretor.equipe}</p>}
       </div>
       {TURNOS.map((t) => {
         const l = periodoDoDia(lancamentos, corretor.id, dia, t.slug);
         const vale = l && (l.status === "pendente" || l.status === "aprovado");
         return (
-          <div key={t.slug} className="grid gap-2 border-t border-line pt-3">
+          <div key={t.slug} className="grid gap-2 stand-divisor pt-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="font-semibold">
-                {t.nome} <span className="num font-normal text-ink-soft">{t.horario}</span>
+                {t.nome} <span className="stand-num font-normal stand-nota">{t.horario}</span>
               </p>
               {l && l.status !== "cancelado" && <SeloStatus status={l.status} />}
             </div>
             {l?.saida_visita && vale && (
-              <p className="text-[13px] text-ink-soft">
+              <p className="stand-nota">
                 Saída para visita ·{" "}
-                <a className="link-acao focus-ring" href={l.comprovante ?? "#"} target="_blank" rel="noreferrer">
+                <a className="mb-botao mb-botao--discreto" href={l.comprovante ?? "#"} target="_blank" rel="noreferrer">
                   Ver foto
                 </a>
               </p>
             )}
-            {l?.status === "recusado" && l.motivo_recusa && <p className="text-[13px] text-ink-soft">Motivo: {l.motivo_recusa}</p>}
+            {l?.status === "recusado" && l.motivo_recusa && <p className="stand-nota">Motivo: {l.motivo_recusa}</p>}
             {vale ? (
               l.status === "pendente" &&
               l.lancado_por === eu && (
-                <button type="button" className="link-acao focus-ring justify-self-start text-[13px]" onClick={() => onCancelar(l)}>
+                <button type="button" className="mb-botao mb-botao--discreto mb-botao--p" onClick={() => onCancelar(l)}>
                   Desmarcar
                 </button>
               )
             ) : saida === t.slug ? (
               <div className="grid gap-2">
-                <label className="field-label" htmlFor={`foto-${corretor.id}-${t.slug}`}>
+                <label className="mb-campo__rotulo" htmlFor={`foto-${corretor.id}-${t.slug}`}>
                   Link da foto da saída
                 </label>
                 <input
                   id={`foto-${corretor.id}-${t.slug}`}
-                  className="input"
+                  className="mb-campo__entrada"
                   inputMode="url"
                   placeholder="https://"
                   value={foto}
                   onChange={(e) => setFoto(e.target.value)}
                 />
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                  <button type="button" className="btn btn-ghost btn-lg focus-ring" onClick={registrarSaida}>
+                  <button type="button" className="mb-botao mb-botao--secundario" onClick={registrarSaida}>
                     Registrar saída
                   </button>
-                  <button type="button" className="link-acao focus-ring text-[13px]" onClick={() => (setSaida(null), setErro(null))}>
+                  <button type="button" className="mb-botao mb-botao--discreto" onClick={() => (setSaida(null), setErro(null))}>
                     Cancelar
                   </button>
                 </div>
-                {erro && <p className="aviso-erro">! {erro}</p>}
+                {erro && <Aviso tom="erro" titulo={erro} />}
               </div>
             ) : (
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                <button type="button" className="btn btn-ghost btn-lg focus-ring" onClick={() => onMarcar(t.slug)}>
+                <button type="button" className="mb-botao mb-botao--secundario" onClick={() => onMarcar(t.slug)}>
                   ✓ Cumpriu o período
                 </button>
-                <button type="button" className="link-acao focus-ring text-[13px]" onClick={() => setSaida(t.slug)}>
+                <button type="button" className="mb-botao mb-botao--discreto" onClick={() => setSaida(t.slug)}>
                   Saiu para visita
                 </button>
               </div>
@@ -252,25 +242,16 @@ function Roleta({ corretores, lancamentos, segunda }: { corretores: CorretorPlan
   const aptos = linhas.filter((l) => l.apto).length;
   return (
     <section aria-labelledby="t-roleta" className="grid gap-3">
-      <h2 id="t-roleta" className="eyebrow">
+      <h2 id="t-roleta" className="mb-sobrelinha">
         Roleta do fim de semana · semana de {diaCurto(segunda)} a {diaCurto(somarDias(segunda, ROLETA.dias - 1))}
       </h2>
-      <div className="card bar-brand grid gap-3">
+      <div className="mb-cartao stand-cartao grid gap-3">
         <p>
-          <span className="num font-display text-[22px] font-bold">{aptos}</span> de {linhas.length} aptos. Entra quem tem {ROLETA.periodos} períodos
+          <span className="stand-num stand-nota font-bold">{aptos}</span> de {linhas.length} aptos. Entra quem tem {ROLETA.periodos} períodos
           aprovados de segunda a sexta. Quem não tem pode ir ao plantão com visita agendada, fora da roleta.
         </p>
-        <ul className="grid gap-2">
-          {linhas.map((l) => (
-            <li key={l.corretor} className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2">
-              <span>{nome.get(l.corretor)}</span>
-              <span className={clsx("num text-[14px]", l.apto ? "font-semibold text-ok" : "text-ink-soft")}>
-                {l.apto ? "✓ Apto" : `– Faltam ${l.faltam}`} · {l.aprovados} de {ROLETA.periodos}
-                {l.pendentes > 0 && ` · ${l.pendentes} pendente${l.pendentes > 1 ? "s" : ""}`}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <Tabela tipo="numeros"><thead><tr><th>Corretor</th><th className="mb-tabela__num">Aprovados</th><th className="mb-tabela__num">Pendentes</th><th>Roleta</th></tr></thead><tbody>{linhas.map(l => <tr key={l.corretor}><td>{nome.get(l.corretor)}</td><td className="mb-tabela__num">{l.aprovados} de {ROLETA.periodos}</td><td className="mb-tabela__num">{l.pendentes}</td><td><Selo tom={l.apto ? "sucesso" : "alerta"}>{l.apto ? "Apto" : "Faltam " + l.faltam}</Selo></td></tr>)}</tbody></Tabela>
+
       </div>
     </section>
   );
@@ -313,64 +294,60 @@ function LancarVideo({ corretores, hoje }: { corretores: CorretorPlantao[]; hoje
 
   return (
     <section aria-labelledby="t-video" className="grid gap-3">
-      <h2 id="t-video" className="eyebrow">
+      <h2 id="t-video" className="mb-sobrelinha">
         Vídeos com a marca
       </h2>
-      <div className="card grid gap-3">
+      <div className="mb-cartao stand-cartao grid gap-3">
         <div className="grid gap-3 md:grid-cols-2">
-          <div>
-            <label className="field-label" htmlFor="video-corretor">
+          <div className="mb-campo"><label className="mb-campo__rotulo" htmlFor="video-corretor">
               Corretor
             </label>
-            <select id="video-corretor" className="input" value={corretor} onChange={(e) => setCorretor(e.target.value)}>
+            <div className="mb-campo__selecao"><select id="video-corretor" className="mb-campo__entrada" value={corretor} onChange={(e) => setCorretor(e.target.value)}>
               <option value="">Escolha</option>
               {corretores.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.nome}
                 </option>
               ))}
-            </select>
+            </select></div>
           </div>
           <div className="grid grid-cols-[1fr_88px] gap-3">
-            <div>
-              <label className="field-label" htmlFor="video-data">
+            <div className="mb-campo"><label className="mb-campo__rotulo" htmlFor="video-data">
                 Data
               </label>
-              <input id="video-data" type="date" className="input num" max={hoje} value={data} onChange={(e) => setData(e.target.value)} />
+              <input id="video-data" type="date" className="mb-campo__entrada stand-num" max={hoje} value={data} onChange={(e) => setData(e.target.value)} />
             </div>
-            <div>
-              <label className="field-label" htmlFor="video-qtd">
+            <div className="mb-campo"><label className="mb-campo__rotulo" htmlFor="video-qtd">
                 Vídeos
               </label>
-              <input id="video-qtd" className="input num" inputMode="numeric" value={qtd} onChange={(e) => setQtd(e.target.value)} />
+              <input id="video-qtd" className="mb-campo__entrada stand-num" inputMode="numeric" value={qtd} onChange={(e) => setQtd(e.target.value)} />
             </div>
           </div>
         </div>
-        <div>
-          <label className="field-label" htmlFor="video-link">
+        <div className="mb-campo"><label className="mb-campo__rotulo" htmlFor="video-link">
             Link do vídeo
           </label>
-          <input id="video-link" className="input" inputMode="url" placeholder="https://" value={link} onChange={(e) => setLink(e.target.value)} />
+          <input id="video-link" className="mb-campo__entrada" inputMode="url" placeholder="https://" value={link} onChange={(e) => setLink(e.target.value)} />
         </div>
-        <button type="button" className="btn btn-red btn-lg focus-ring justify-self-start" onClick={salvar}>
+        <button type="button" className="mb-botao mb-botao--primario justify-self-start" onClick={salvar}>
           Lançar vídeo
         </button>
-        {erro && <p className="aviso-erro">! {erro}</p>}
+        {erro && <Aviso tom="erro" titulo={erro} />}
       </div>
       {meus.length > 0 && (
-        <div className="card grid gap-2">
-          <p className="eyebrow">Lançados por você nos últimos 30 dias</p>
+        <div className="mb-cartao stand-cartao grid gap-2">
+          <p className="mb-sobrelinha">Lançados por você nos últimos 30 dias</p>
           <ul className="grid gap-2">
             {meus.map((l) => (
-              <li key={l.id} className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2 text-[14px]">
+              <li key={l.id} className="flex flex-wrap items-center justify-between gap-2 stand-divisor pt-2 stand-nota">
                 <span>
-                  {nomes.get(l.corretor_id) ?? "Corretor"} · <span className="num">{diaCurto(l.data)}</span> · <span className="num">{l.quantidade}</span>{" "}
+                  {nomes.get(l.corretor_id) ?? "Corretor"} · <span className="stand-num">{diaCurto(l.data)}</span> · <span className="stand-num">{l.quantidade}</span>{" "}
                   vídeo{l.quantidade > 1 ? "s" : ""}
                 </span>
                 <span className="flex items-center gap-3">
                   <SeloStatus status={l.status} />
                   {l.status === "pendente" && (
-                    <button type="button" className="link-acao focus-ring text-[13px]" onClick={() => mudar(l.id, "cancelado")}>
+                    <button type="button" className="mb-botao mb-botao--discreto" onClick={() => mudar(l.id, "cancelado")}>
                       Cancelar
                     </button>
                   )}
@@ -384,3 +361,5 @@ function LancarVideo({ corretores, hoje }: { corretores: CorretorPlantao[]; hoje
     </section>
   );
 }
+
+function SeloStatus({ status }: { status: string }) { return <Selo tom={status === "aprovado" ? "sucesso" : status === "recusado" ? "erro" : "alerta"}>{({ aprovado: "Aprovado", recusado: "Recusado", cancelado: "Cancelado", pendente: "Pendente" } as Record<string,string>)[status] ?? status}</Selo>; }

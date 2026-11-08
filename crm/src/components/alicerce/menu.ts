@@ -24,6 +24,17 @@ export type EntradaDoMenu = {
  */
 export const ehListaDoDia = (pode: (p: string) => boolean) => pode("leads.cadastrar") && !pode("leads.atribuir");
 
+/** Stand é uma área do Vendas. A ordem também define seu primeiro destino permitido. */
+export function destinosStand(pode: (permissao: string) => boolean): ItemMenu[] {
+  const destinos: ItemMenu[] = [];
+  if (pode("plantao.atendimentos")) destinos.push({ href: "/recepcao/", rotulo: "Atendimento", icone: "recepcao" });
+  if (pode("plantao.registrar") || pode("lancamentos.registrar")) destinos.push({ href: "/plantao/", rotulo: "Períodos e roleta", icone: "plantao" });
+  if (pode("plantao.atendimentos_ver")) destinos.push({ href: "/recepcao/relatorio/", rotulo: "Relatório", icone: "painel" });
+  if (pode("plantoes.gerenciar")) destinos.push({ href: "/recepcao/stands/", rotulo: "Cadastros", icone: "ajustes" });
+  return destinos;
+}
+const ROTAS_STAND = ["/recepcao", "/plantao", "/recepcao/relatorio", "/recepcao/stands"];
+
 /** Atalhos externos, iguais para todos os perfis. Abrem em outra aba para não perder o atendimento. */
 export const ATALHOS: ItemMenu[] = [
   { href: "https://mbigucci.com.br/ferramentas", rotulo: "Simulador", icone: "externo", externo: true },
@@ -50,7 +61,8 @@ export function montarMenu({ ehGG, pode, fila, modulo = "vendas" }: EntradaDoMen
   }
   // Distribuição automática: a Fila de leads para quem recebe (com a fila visível), para o gerente com equipe e para o gerente geral.
   if (fila.ligada && (fila.recebeComFila || fila.temEquipe || ehGG)) rotina.push({ href: "/fila/", rotulo: "Fila de leads", icone: "fila" });
-  if (pode("plantao.atendimentos")) rotina.push({ href: "/recepcao/", rotulo: "Recepção", icone: "recepcao" });
+  const stand = destinosStand(pode)[0];
+  if (stand) rotina.push({ href: stand.href, rotulo: "Stand", icone: "plantao" });
 
   const gestao: ItemMenu[] = [];
   if (vendeOuVeEquipe) {
@@ -60,8 +72,6 @@ export function montarMenu({ ehGG, pode, fila, modulo = "vendas" }: EntradaDoMen
   }
   // O catálogo é lido por todo usuário ativo.
   gestao.push({ href: "/empreendimentos/", rotulo: "Empreendimentos", icone: "empreendimento" });
-  // Plantão é do dia a dia do stand, não do programa de pontos: fica em Gestão para todos os perfis (07/11/2026).
-  if (pode("plantao.registrar") || pode("lancamentos.registrar")) gestao.push({ href: "/plantao/", rotulo: "Plantão", icone: "plantao" });
   // Quem não é gerente geral e gerencia usuários ou equipes continua vendo esses itens; o acesso das páginas não muda.
   if (pode("usuarios.gerenciar") && !ehGG) gestao.push({ href: "/usuarios/", rotulo: "Usuários", icone: "usuarios" });
   if (pode("equipes.gerenciar") && !ehGG) gestao.push({ href: "/equipes/", rotulo: "Equipes", icone: "equipes" });
@@ -138,6 +148,10 @@ const DENTRO_DE_CONFIGURACOES = ["/usuarios", "/equipes", "/faixas", "/distribui
  */
 export function itemAtual(hrefs: string[], pathname: string): string | null {
   const atual = semBarra(pathname);
+  if (ROTAS_STAND.includes(atual)) {
+    const stand = hrefs.find((h) => ROTAS_STAND.includes(semBarra(h)));
+    if (stand) return stand;
+  }
   let melhor: string | null = null;
   for (const href of hrefs) {
     const h = semBarra(href);

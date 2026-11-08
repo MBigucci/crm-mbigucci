@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { PainelLateral } from "@/components/alicerce/painel-lateral";
+import { Aviso } from "@/components/alicerce/aviso";
 import { db } from "@/lib/supabase";
 import { mensagemErro } from "@/lib/erros";
 import { lerPosicao } from "@/lib/distribuicao-dados";
@@ -24,17 +26,17 @@ export function LocalDosStands() {
   }, [carregar]);
   if (!stands) return null;
   return (
-    <section className="card lg:col-span-2" aria-labelledby="t-local">
-      <span className="eyebrow">Check-in da distribuição</span>
-      <h2 id="t-local" className="titulo-card mt-1">
+    <section className="mb-cartao stand-cartao lg:col-span-2" aria-labelledby="t-local">
+      <span className="mb-sobrelinha">Check-in da distribuição</span>
+      <h2 id="t-local" className="mb-cartao__titulo mt-1">
         Localização dos stands
       </h2>
-      <p className="mt-1 text-[13px] text-ink-soft">No stand, toque em Usar minha localização aqui e salve. O raio é a distância que conta como dentro.</p>
-      <ul className="mt-3 grid">
+      <p className="mt-1 stand-nota">No stand, toque em Usar minha localização aqui e salve. O raio é a distância que conta como dentro.</p>
+      <ul className="mb-lista">
         {stands.map((s) => (
           <LinhaLocal key={s.id} stand={s} onSalvo={carregar} />
         ))}
-        {!stands.length && <li className="text-ink-soft">Nenhum stand ativo.</li>}
+        {!stands.length && <li className="stand-nota">Nenhum stand ativo.</li>}
       </ul>
     </section>
   );
@@ -43,6 +45,7 @@ export function LocalDosStands() {
 const num = (s: string) => (s.trim() === "" ? null : Number(s.replace(",", ".")));
 
 function LinhaLocal({ stand, onSalvo }: { stand: LocalStand; onSalvo: () => void }) {
+  const [aberto, setAberto] = useState(false);
   const [lat, setLat] = useState(stand.lat?.toString() ?? "");
   const [lng, setLng] = useState(stand.lng?.toString() ?? "");
   const [raio, setRaio] = useState(String(stand.raio_m ?? 200));
@@ -56,7 +59,7 @@ function LinhaLocal({ stand, onSalvo }: { stand: LocalStand; onSalvo: () => void
     const p = await lerPosicao();
     setOcupado(false);
     if ("erro" in p)
-      return setAviso({ texto: p.erro === 1 ? "! Localização bloqueada. Libere no navegador." : "! Localização imprecisa. Tente num lugar aberto.", ok: false });
+      return setAviso({ texto: p.erro === 1 ? "! Localização bloqueada. Libere no navegador." : "! Localização imprecisa. Tente stand-num lugar aberto.", ok: false });
     setLat(p.lat.toFixed(6));
     setLng(p.lng.toFixed(6));
     setAviso({
@@ -84,46 +87,43 @@ function LinhaLocal({ stand, onSalvo }: { stand: LocalStand; onSalvo: () => void
   }
 
   return (
-    <li className="border-t border-line py-3 first:border-t-0">
-      <form onSubmit={salvar} className="grid gap-2">
+    <li className="mb-lista__item">
+      <div className="mb-lista__conteudo"><button className="mb-lista__titulo mb-lista__alvo" onClick={() => setAberto(true)}>{stand.nome}</button><span className="mb-lista__meta">{stand.lat != null ? "Com localização" : "Sem localização"}</span></div>
+      <PainelLateral aberto={aberto} onFechar={() => setAberto(false)} titulo="Editar localização" descricao={stand.nome}><form onSubmit={salvar} className="stand-painel-form"><div className="mb-lateral__corpo stand-pilha">
         <p className="font-semibold">
           {stand.nome}
-          <span className="ml-2 text-[13px] font-normal text-ink-soft">{stand.lat != null ? "✓ com localização" : "– sem localização"}</span>
+          <span className="ml-2 stand-nota font-normal">{stand.lat != null ? "✓ com localização" : "– sem localização"}</span>
         </p>
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-[1fr_1fr_110px]">
-          <div>
-            <label className="field-label" htmlFor={`${id}-lat`}>
+        <div className="stand-pilha">
+          <div className="mb-campo"><label className="mb-campo__rotulo" htmlFor={`${id}-lat`}>
               Latitude
             </label>
-            <input id={`${id}-lat`} inputMode="decimal" className="input md:py-[8px]" value={lat} onChange={(e) => setLat(e.target.value)} />
+            <input id={`${id}-lat`} inputMode="decimal" className="mb-campo__entrada" value={lat} onChange={(e) => setLat(e.target.value)} />
           </div>
-          <div>
-            <label className="field-label" htmlFor={`${id}-lng`}>
+          <div className="mb-campo"><label className="mb-campo__rotulo" htmlFor={`${id}-lng`}>
               Longitude
             </label>
-            <input id={`${id}-lng`} inputMode="decimal" className="input md:py-[8px]" value={lng} onChange={(e) => setLng(e.target.value)} />
+            <input id={`${id}-lng`} inputMode="decimal" className="mb-campo__entrada" value={lng} onChange={(e) => setLng(e.target.value)} />
           </div>
-          <div>
-            <label className="field-label" htmlFor={`${id}-raio`}>
+          <div className="mb-campo"><label className="mb-campo__rotulo" htmlFor={`${id}-raio`}>
               Raio (m)
             </label>
-            <input id={`${id}-raio`} inputMode="numeric" className="input md:py-[8px]" value={raio} onChange={(e) => setRaio(e.target.value)} />
+            <input id={`${id}-raio`} inputMode="numeric" className="mb-campo__entrada" value={raio} onChange={(e) => setRaio(e.target.value)} />
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button type="button" disabled={ocupado} className="btn btn-ghost focus-ring" onClick={usarAqui}>
+        {aviso && (
+          <Aviso tom={aviso.ok ? "sucesso" : "erro"} titulo={aviso.texto.replace(/^[!✓✕]\s*/, "")} />
+        )}
+        </div><div className="mb-lateral__rodape stand-local-acoes">
+          <button type="button" disabled={ocupado} className="mb-botao mb-botao--secundario" onClick={usarAqui}>
             Usar minha localização aqui
           </button>
-          <button type="submit" disabled={ocupado} className="btn btn-ghost focus-ring">
+          <button type="submit" disabled={ocupado} className="mb-botao mb-botao--primario">
             Salvar
           </button>
         </div>
-        {aviso && (
-          <p role="status" className={aviso.ok ? "aviso-ok" : "aviso-erro"}>
-            {aviso.texto}
-          </p>
-        )}
-      </form>
+
+      </form></PainelLateral>
     </li>
   );
 }

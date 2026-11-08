@@ -1,0 +1,42 @@
+// Fixtures do Stand. Somente na cópia gerada por visual-preview.mjs.
+const leiturasStand=leituras as Record<string,any>;
+tables.plantoes[0].lat=-23.70; tables.plantoes[0].lng=-46.55; tables.plantoes[0].raio_m=200;
+tables.plantoes.push({...stand,id:'stand-sem-especialista',nome:'Stand Sem Especialista Exemplo',tem_especialista:false,lat:null,lng:null,raio_m:200});
+pessoas.push({id:'corretor-2',papel:'corretor',nome:'Paulo Exemplo',apelido:'Paulinho',equipe:'Equipe Exemplo'} as any);
+const clienteStand={...cliente,final_telefone:'0002',antes_da_vez:false,acompanhante:null,anunciado:'Marina Exemplo',anunciado_papel:'corretor',parceiro:null,gerente:null,encontrado_na_carteira:false,observacao:'Atendimento fictício.',pode_corrigir_sem_motivo:false};
+leiturasStand.recepcao_clientes_hoje=[clienteStand,{...clienteStand,id:'at-2',cliente_nome:'Bruno Exemplo',tipo:'indicacao_corretor',pode_corrigir_sem_motivo:true},{...clienteStand,id:'at-3',cliente_nome:'Célia Exemplo',tipo:'indicacao_parceiro',parceiro:'Parceiro Exemplo',gerente:'Gerente Exemplo',gerente_id:'gerente',corretor_id:null},{...clienteStand,id:'at-4',cliente_nome:'Daniel Exemplo',tipo:'retorno',status:'cancelado'}];
+tables.plantao_atendimentos=leiturasStand.recepcao_clientes_hoje.map((x:any)=>({...x,cliente_nome:undefined}));
+const linhaBase=leiturasStand.recepcao_dia[0];
+leiturasStand.recepcao_dia=[...leiturasStand.recepcao_dia,{...linhaBase,presenca_id:'presenca-2',pessoa_id:'corretor-2',nome:'Paulo Exemplo',apelido:'Paulinho',ordem:2,rodadas:0,estado:'saiu',estado_em:at(0,9),da_vez:false}];
+const retornoStand={ref_tipo:'atendimento',ref_id:'at-1',primeiro_nome:'Ana',final_telefone:'0002',vinculo:'Corretora Marina Exemplo',ultimo_em:at(-1,10),ultimo_stand:'Stand Exemplo',ultimo_especialista:'Lia Exemplo'};
+const periodoStandBase={...tables.lancamentos_pontos[0],criterio:'periodo',corretor_id:'corretor-1',status:'aprovado',saida_visita:false,comprovante:null};
+tables.lancamentos_pontos=[...Array.from({length:6},(_,i)=>({...periodoStandBase,id:'stand-periodo-'+i,data:'2026-11-0'+(2+Math.floor(i/2)),periodo:i%2?'tarde':'manha'})),{...periodoStandBase,id:'stand-hoje',data:day,periodo:'manha',status:'pendente',lancado_por:'conta_gerente_geral'},{...periodoStandBase,id:'stand-falta',corretor_id:'corretor-2',data:'2026-11-05',periodo:'tarde',status:'pendente'}];
+const qaStand=()=>typeof location==='undefined'?'':new URLSearchParams(location.search).get('qa')??'';
+const rpcStandOriginal=client.rpc;
+(client as any).rpc=async(nome:string,args?:any)=>{
+  const q=qaStand();
+  if(q==='stand-erro'&&['recepcao_dia','recepcao_pessoas','recepcao_clientes_hoje','plantao_corretores'].includes(nome))return {data:null,error:{message:'Não foi possível carregar. Tente de novo.'}};
+  if(q==='stand-espera'&&['recepcao_dia','recepcao_pessoas','recepcao_clientes_hoje','plantao_corretores'].includes(nome))return new Promise(()=>{});
+  if(q==='stand-vazio'&&['recepcao_dia','recepcao_clientes_hoje','plantao_corretores'].includes(nome))return {data:[],error:null};
+  if(nome==='recepcao_fila_parceiros')return {data:[{posicao:1,gerente_id:'gerente',gerente_nome:'Gerente Exemplo'},{posicao:2,gerente_id:'gerente-2',gerente_nome:'Outro Gerente Exemplo'}],error:null};
+  if(nome==='plantao_corretores')return {data:profiles.slice(0,2).map(p=>({id:p.id,nome:p.nome,equipe:'Equipe Exemplo'})),error:null};
+  if(nome==='recepcao_procurar_retorno')return {data:[retornoStand],error:null};
+  if(nome==='recepcao_dia'&&args?.p_plantao==='stand-sem-especialista')return {data:[],error:null};
+  if(nome==='recepcao_parceiro_entrar')return q==='stand-gravar'?{data:{parceiro_id:'par-qa'},error:null}:{data:null,error:{message:'Não foi possível salvar. Tente de novo.'}};
+  if(nome==='recepcao_registrar_cliente'){
+    const p=args?.p??{};
+    if(p.nome?.startsWith('Confirmar')&&!p.confirmar?.includes('outra_carteira'))return {data:{status:'confirmar',aviso:'outra_carteira'},error:null};
+    if(p.nome?.startsWith('Vez mudou'))return {data:{status:'vez_mudou',corretor:'Paulo Exemplo'},error:null};
+    if(q!=='stand-gravar')return {data:null,error:{message:'Não foi possível salvar. O cadastro continua aqui.'}};
+    if(!leiturasStand.recepcao_clientes_hoje.some((c:any)=>c.id===p.id))leiturasStand.recepcao_clientes_hoje.unshift({...clienteStand,id:p.id,cliente_nome:p.nome,tipo:p.tipo,midias:p.midias,status:'ativo',pode_corrigir_sem_motivo:true});
+    return {data:{status:'ok',atendimento_id:p.id,tipo:p.tipo,anunciar:{papel:p.tipo==='indicacao_parceiro'?'gerente':'corretor',nome:p.tipo==='indicacao_parceiro'?'Gerente Exemplo':'Marina Exemplo'},especialista:'Lia Exemplo',lead_criado:true},error:null};
+  }
+  if(['recepcao_desfazer_cliente','recepcao_corrigir','recepcao_evento','recepcao_desfazer_evento','recepcao_por_na_vez'].includes(nome)){
+    if(q!=='stand-gravar')return {data:null,error:{message:'Não foi possível salvar. Tente de novo.'}};
+    if(nome==='recepcao_desfazer_cliente'){const c=leiturasStand.recepcao_clientes_hoje.find((c:any)=>c.id===args.p_atendimento);if(c)c.status='cancelado';}
+    if(nome==='recepcao_corrigir'){const c=leiturasStand.recepcao_clientes_hoje.find((c:any)=>c.id===args.p_atendimento);if(c)Object.assign(c,{cliente_nome:args.p.nome,observacao:args.p.observacao});}
+    if(nome==='recepcao_evento'){const l=leiturasStand.recepcao_dia.find((l:any)=>l.presenca_id===args.p_presenca);if(l){l.estado=args.p_tipo==='saida'?'saiu':args.p_tipo==='encerrou'?'encerrou':'presente';}}
+    return {data:{status:'ok'},error:null};
+  }
+  return rpcStandOriginal(nome,args);
+};

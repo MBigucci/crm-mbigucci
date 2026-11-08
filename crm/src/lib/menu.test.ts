@@ -2,7 +2,7 @@
 // Rode com: npm test
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { iniciais, itemAtual, moduloDoCaminho, modulosDaPessoa, montarMenu, nomeCurto, temOutroModulo, type EntradaDoMenu } from "../components/alicerce/menu.ts";
+import { destinosStand, iniciais, itemAtual, moduloDoCaminho, modulosDaPessoa, montarMenu, nomeCurto, temOutroModulo, type EntradaDoMenu } from "../components/alicerce/menu.ts";
 
 const SEM_FILA = { ligada: false, recebeComFila: false, temEquipe: false };
 const PERMISSOES = {
@@ -72,9 +72,9 @@ test("Fila de leads: só com a distribuição ligada e para quem recebe com fila
   assert.ok(!todosOsItens(entrada("gg", [], SEM_FILA)).includes("Fila de leads"));
 });
 
-test("Recepção, Parceiros e Plantão seguem as permissões de hoje", () => {
-  assert.ok(todosOsItens(entrada("recepcao")).includes("Recepção"));
-  assert.ok(!todosOsItens(entrada("corretor")).includes("Recepção"));
+test("Stand e Parceiros seguem as permissões de hoje", () => {
+  assert.ok(todosOsItens(entrada("recepcao")).includes("Stand"));
+  assert.ok(!todosOsItens(entrada("corretor")).includes("Stand"));
   for (const permissao of ["parceiros.cadastrar", "parceiros.ver_todos"]) {
     const e = entrada("corretor", [permissao]);
     assert.ok(!todosOsItens(e).includes("Parceiros"));
@@ -83,32 +83,41 @@ test("Recepção, Parceiros e Plantão seguem as permissões de hoje", () => {
   }
   assert.deepEqual(montarMenu({ ...entrada("corretor"), modulo: "parcerias" }), []);
   assert.ok(!todosOsItens(entrada("corretor")).includes("Parceiros"));
-  assert.ok(todosOsItens(entrada("corretor", ["plantao.registrar"])).includes("Plantão"));
-  assert.ok(todosOsItens(entrada("corretor", ["lancamentos.registrar"])).includes("Plantão"));
-  assert.ok(!todosOsItens(entrada("corretor")).includes("Plantão"));
+  assert.ok(todosOsItens(entrada("corretor", ["plantao.registrar"])).includes("Stand"));
+  assert.ok(todosOsItens(entrada("corretor", ["lancamentos.registrar"])).includes("Stand"));
+  assert.ok(!todosOsItens(entrada("corretor")).includes("Stand"));
 });
 
-test("Plantão fica em Gestão, para todos os perfis, e Programa só tem pontos e Ranking", () => {
-  for (const e of [entrada("corretor", ["plantao.registrar"]), entrada("gerente", ["lancamentos.registrar"]), entrada("gg")]) {
-    const grupos = montarMenu(e);
-    const gestao = grupos.find((g) => g.titulo === "Gestão")!;
-    const programa = grupos.find((g) => g.titulo === "Programa")!;
-    assert.ok(gestao.itens.some((i) => i.rotulo === "Plantão" && i.href === "/plantao/"));
-    assert.ok(!programa.itens.some((i) => i.rotulo === "Plantão"));
+test("Stand: primeiro destino permitido, uma entrada em Rotina e destaque nas quatro páginas", () => {
+  const permissoes = ["plantao.atendimentos", "plantao.registrar", "lancamentos.registrar", "plantao.atendimentos_ver", "plantoes.gerenciar"];
+  const rotas = ["/recepcao/", "/plantao/", "/recepcao/relatorio/", "/recepcao/stands/"];
+  for (let mascara = 0; mascara < 32; mascara++) {
+    const p = (slug: string) => !!(mascara & (1 << permissoes.indexOf(slug))) && permissoes.includes(slug);
+    const esperados = [p(permissoes[0]) && rotas[0], (p(permissoes[1]) || p(permissoes[2])) && rotas[1], p(permissoes[3]) && rotas[2], p(permissoes[4]) && rotas[3]].filter(Boolean);
+    assert.deepEqual(destinosStand(p).map(d => d.href), esperados);
+    const grupos = montarMenu({ ehGG: false, pode: p, fila: SEM_FILA });
+    const itens = grupos.flatMap(g => g.itens);
+    const stand = itens.filter(i => i.rotulo === "Stand");
+    assert.equal(stand.length, esperados.length ? 1 : 0);
+    assert.ok(!itens.some(i => ["Recepção", "Plantão"].includes(i.rotulo)));
+    if (stand.length) {
+      assert.equal(stand[0].href, esperados[0]);
+      assert.ok(grupos.find(g => g.titulo === "Rotina")!.itens.includes(stand[0]));
+      for (const rota of rotas) assert.equal(itemAtual(itens.map(i => i.href), rota), stand[0].href);
+    }
   }
-  const corretor = montarMenu(entrada("corretor", ["plantao.registrar"]));
-  assert.deepEqual(corretor.find((g) => g.titulo === "Programa")!.itens.map((i) => i.rotulo), ["Meus pontos", "Ranking"]);
+  assert.equal(destinosStand(p => p === "plantao.confirmar").length, 0);
+  assert.deepEqual(destinosStand(() => true).map(d => d.href), rotas);
 });
 
 test("cada tela de navegação tem o ícone próprio da biblioteca Icones", () => {
   const e = entrada("gg", ["usuarios.gerenciar", "equipes.gerenciar", "plantao.registrar", "plantao.atendimentos", "parceiros.cadastrar"], { ligada: true, recebeComFila: true, temEquipe: true });
   const icones = Object.fromEntries(montarMenu(e).flatMap((g) => g.itens.map((i) => [i.rotulo, i.icone])));
   assert.equal(icones["Fila de leads"], "fila");
-  assert.equal(icones["Recepção"], "recepcao");
+  assert.equal(icones["Stand"], "plantao");
   assert.equal(montarMenu({ ...e, modulo: "parcerias" })[0].itens[0].icone, "parceiros");
   assert.equal(icones["Vendas"], "vendas");
   assert.equal(icones["Pontos"], "pontos");
-  assert.equal(icones["Plantão"], "plantao");
   const doCorretor = Object.fromEntries(montarMenu(entrada("corretor", ["usuarios.gerenciar", "equipes.gerenciar"])).flatMap((g) => g.itens.map((i) => [i.rotulo, i.icone])));
   assert.equal(doCorretor["Meus pontos"], "pontos");
   assert.equal(doCorretor["Usuários"], "usuarios");

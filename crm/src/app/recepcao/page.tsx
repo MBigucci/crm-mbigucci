@@ -1,15 +1,17 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import clsx from "clsx";
+import { AreaStand, FalhaStand } from "@/components/recepcao/area-stand";
+import { CarregandoTabela } from "@/components/alicerce/carregando";
+import { Aviso } from "@/components/alicerce/aviso";
+import { EstadoVazio } from "@/components/alicerce/estado-vazio";
+import { Abas, PainelDeAba } from "@/components/alicerce/abas";
 import { Casca } from "@/components/casca";
 import { AvisoDesfazer } from "@/components/leads/partes";
 import { Anuncie } from "@/components/recepcao/anuncie";
 import { ClientesDeHoje } from "@/components/recepcao/clientes-hoje";
 import { RegistrarCliente, type FormularioCliente, type Registrado } from "@/components/recepcao/cliente";
 import { CartaoVez, type DesfazerVez } from "@/components/recepcao/vez";
-import { useSessao } from "@/lib/sessao";
 import { abaInicial, diaDaTela, gravarStandDoAparelho, hora, lerStandDoAparelho, TIPOS_CLIENTE, type Stand, type Turno } from "@/lib/recepcao";
 import { desfazerCliente, desfazerEvento, useClientesHoje, useMidias, usePessoas, useStands, useVez } from "@/lib/recepcao-dados";
 
@@ -20,8 +22,8 @@ import { desfazerCliente, desfazerEvento, useClientesHoje, useMidias, usePessoas
  */
 export default function RecepcaoPage() {
   return (
-    <Casca titulo="Recepção" exige="plantao.atendimentos">
-      <Recepcao />
+    <Casca migrada titulo="Atendimento" exige="plantao.atendimentos">
+      <AreaStand titulo="Atendimento"><Recepcao /></AreaStand>
     </Casca>
   );
 }
@@ -57,8 +59,8 @@ function Recepcao() {
     setLido(true);
   }, []);
 
-  if (erroStands) return <p className="aviso-erro">✕ {erroStands}</p>;
-  if (!stands || !lido) return <p className="text-concrete">Carregando…</p>;
+  if (erroStands) return <FalhaStand texto={erroStands} />;
+  if (!stands || !lido) return <CarregandoTabela texto="Carregando…" />;
   const stand = stands.find((s) => s.id === standId && s.ativo);
   if (!stand)
     return (
@@ -84,27 +86,26 @@ function Recepcao() {
 
 function EscolherStand({ stands, onEscolher }: { stands: Stand[]; onEscolher: (id: string) => void }) {
   return (
-    <section className="card max-w-[560px]">
-      <span className="eyebrow">Recepção</span>
-      <h2 className="titulo-card mt-1">Escolha o stand deste computador</h2>
+    <section className="mb-cartao stand-cartao max-w-[560px]">
+      <span className="mb-sobrelinha">Recepção</span>
+      <h2 className="mb-cartao__titulo mt-1">Escolha o stand deste computador</h2>
       {stands.length ? (
         <div className="mt-3 grid grid-cols-2 gap-2">
           {stands.map((s) => (
-            <button key={s.id} type="button" className="btn btn-ghost btn-lg focus-ring justify-start font-display text-[16px] font-bold" onClick={() => onEscolher(s.id)}>
+            <button key={s.id} type="button" className="mb-botao mb-botao--secundario justify-start stand-nota font-bold" onClick={() => onEscolher(s.id)}>
               {s.nome}
             </button>
           ))}
         </div>
       ) : (
-        <p className="mt-2 text-ink-soft">! Nenhum stand ativo. Peça ao gerente geral para cadastrar.</p>
+        <p className="mt-2 stand-nota">! Nenhum stand ativo. Peça ao gerente geral para cadastrar.</p>
       )}
-      <p className="mt-3 text-[12px] text-concrete">Este aparelho lembra a escolha. Dá para trocar no topo da tela.</p>
+      <p className="mt-3 stand-nota stand-ajuda">Este aparelho lembra a escolha. Dá para trocar no topo da tela.</p>
     </section>
   );
 }
 
 function TelaDoStand({ stand, onTrocar }: { stand: Stand; onTrocar: () => void }) {
-  const { pode } = useSessao();
   const pc = useTelaPc();
   const agora = useAgora();
   const { vez, erro: erroVez, recarregar: recarregarVez } = useVez(stand.id);
@@ -117,6 +118,8 @@ function TelaDoStand({ stand, onTrocar }: { stand: Stand; onTrocar: () => void }
   const [registrado, setRegistrado] = useState<Registrado | null>(null);
   const [aba, setAba] = useState<"stand" | "clientes">("stand");
   const [cadastrando, setCadastrando] = useState(false);
+  const [temRascunho, setTemRascunho] = useState(false);
+  useEffect(() => { if (temRascunho && !pc) setCadastrando(true); }, [temRascunho, pc]);
   const form = useRef<FormularioCliente>(null);
   const fimDesfazer = useCallback(() => setDesfazerVez(null), []);
 
@@ -148,8 +151,8 @@ function TelaDoStand({ stand, onTrocar }: { stand: Stand; onTrocar: () => void }
   }, [turno]);
 
   const falha = erroVez ?? erroPessoas ?? erroMidias;
-  if (falha) return <p className="aviso-erro">✕ {falha}</p>;
-  if (!vez || !pessoas || !midias) return <p className="text-concrete">Carregando…</p>;
+  if (falha) return <FalhaStand texto={falha} />;
+  if (!vez || !pessoas || !midias) return <CarregandoTabela texto="Carregando…" />;
 
   async function desfazerUltimaVez() {
     if (!desfazerVez) return;
@@ -206,6 +209,7 @@ function TelaDoStand({ stand, onTrocar }: { stand: Stand; onTrocar: () => void }
   const formulario = (
     <RegistrarCliente
       ref={form}
+      onRascunho={setTemRascunho}
       stand={stand}
       vez={vez}
       pessoas={pessoas}
@@ -220,7 +224,7 @@ function TelaDoStand({ stand, onTrocar }: { stand: Stand; onTrocar: () => void }
   const lista = clientes ? (
     <ClientesDeHoje clientes={clientes} midias={midias} standNome={stand.nome} tela={pc ? "pc" : "celular"} onMudou={recarregarClientes} />
   ) : (
-    <p className="text-concrete">{erroClientes ? `✕ ${erroClientes}` : "Carregando…"}</p>
+    <p className="stand-ajuda">{erroClientes ? `✕ ${erroClientes}` : "Carregando…"}</p>
   );
   const anuncie = registrado && <Anuncie registrado={registrado} onDesfazer={desfazerRegistro} />;
 
@@ -228,48 +232,36 @@ function TelaDoStand({ stand, onTrocar }: { stand: Stand; onTrocar: () => void }
     <div className="grid gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <span className="eyebrow">
-            Recepção · Stand {stand.nome}{" "}
-            <button type="button" className="focus-ring ml-1 normal-case tracking-normal text-brand-dark underline" onClick={onTrocar}>
+          <span className="mb-sobrelinha">
+            {stand.nome}{" "}
+            <button type="button" className="mb-botao mb-botao--discreto" onClick={onTrocar}>
               Trocar stand
             </button>
           </span>
-          <p className="mt-1 font-display text-[20px] font-extrabold md:text-[24px]">
-            Hoje, <span className="num">{diaDaTela(agora)}</span>
+          <p className="mt-1 stand-nota font-semibold md:text-[24px]">
+            Hoje, <span className="stand-num">{diaDaTela(agora)}</span>
           </p>
         </div>
         {pc && (
-          <div className="text-right text-[12px] text-concrete">
-            Agora <b className="num text-ink">{hora(agora)}</b>
+          <div className="text-right stand-nota stand-ajuda">
+            Agora <b className="stand-num">{hora(agora)}</b>
             <span className="block">Atalhos: Alt+N, C, P, R tipo · Alt+V Pôr na vez · Alt+K cliente</span>
-            {pode("plantao.atendimentos_ver") && (
-              <Link href="/recepcao/relatorio/" className="link-acao mt-1 mr-3 inline-block">
-                Relatório do stand
-              </Link>
-            )}
-            {pode("plantoes.gerenciar") && (
-              <Link href="/recepcao/stands/" className="link-acao mt-1 inline-block">
-                Stands e especialistas
-              </Link>
-            )}
           </div>
         )}
       </div>
 
       {erro && (
-        <p role="alert" className="aviso-erro">
-          ✕ {erro}
-        </p>
+        <Aviso tom="erro" titulo={erro} />
       )}
 
       {pc ? (
-        <div className="grid grid-cols-[minmax(0,500px)_minmax(0,1fr)] items-start gap-4">
+        <div className="stand-atendimento">
           <div className="grid gap-4">{cartoesVez}</div>
           <div className="grid gap-4">
             {anuncie}
-            <section className="card" aria-labelledby="t-registrar">
-              <span className="eyebrow">Clientes de hoje</span>
-              <h2 id="t-registrar" className="titulo-card mb-3 mt-1">
+            <section className="mb-cartao stand-cartao" aria-labelledby="t-registrar">
+              <span className="mb-sobrelinha">Clientes de hoje</span>
+              <h2 id="t-registrar" className="mb-cartao__titulo mb-3 mt-1">
                 Registrar cliente
               </h2>
               {formulario}
@@ -277,47 +269,27 @@ function TelaDoStand({ stand, onTrocar }: { stand: Stand; onTrocar: () => void }
             {lista}
           </div>
         </div>
-      ) : cadastrando ? (
-        <section className="card" aria-labelledby="t-registrar-cel">
-          <span className="eyebrow">Novo cliente</span>
-          <h2 id="t-registrar-cel" className="titulo-card mb-3 mt-1">
+      ) : (
+        <>
+        <div hidden={!cadastrando}>
+        <section className="mb-cartao stand-cartao" aria-labelledby="t-registrar-cel">
+          <span className="mb-sobrelinha">Novo cliente</span>
+          <h2 id="t-registrar-cel" className="mb-cartao__titulo mb-3 mt-1">
             Registrar cliente
           </h2>
           {formulario}
         </section>
-      ) : (
-        <>
-          <div className="grid grid-cols-2 overflow-hidden rounded-sm border border-control" role="tablist">
-            {(["stand", "clientes"] as const).map((a) => (
-              <button
-                key={a}
-                type="button"
-                role="tab"
-                aria-selected={aba === a}
-                className={clsx("focus-ring py-[10px] text-[14px] font-semibold", aba === a ? "bg-ink text-surface" : "bg-surface")}
-                onClick={() => setAba(a)}
-              >
-                {a === "stand" ? "No stand" : (
-                  <>
-                    Clientes · <span className="num">{clientes?.filter((c) => c.status === "ativo").length ?? 0}</span>
-                  </>
-                )}
-              </button>
-            ))}
-          </div>
-          {aba === "stand" ? (
-            <div className="grid gap-4">{cartoesVez}</div>
-          ) : (
-            <div className="grid gap-4">
-              {anuncie}
-              {lista}
-            </div>
-          )}
-          <div className="sticky bottom-0 -mx-5 border-t border-line bg-paper px-5 py-3">
-            <button type="button" className="btn btn-red btn-lg focus-ring w-full" onClick={() => setCadastrando(true)}>
-              + Cliente
+        </div>
+        <div hidden={cadastrando}>
+          <Abas base="stand-atendimento" rotulo="Atendimento no celular" ativa={aba} onChange={a => setAba(a as "stand" | "clientes")} abas={[{ id: "stand", rotulo: "No stand" }, { id: "clientes", rotulo: "Clientes ·", contagem: clientes?.filter(c => c.status === "ativo").length ?? 0 }]} />
+          <PainelDeAba base="stand-atendimento" id="stand" ativa={aba} className="stand-pilha">{cartoesVez}</PainelDeAba>
+          <PainelDeAba base="stand-atendimento" id="clientes" ativa={aba} className="stand-pilha">{anuncie}{lista}</PainelDeAba>
+          <div className="mb-barra-acoes mb-barra-acoes--unica">
+            <button type="button" className="mb-botao mb-botao--primario w-full" onClick={() => setCadastrando(true)}>
+              {temRascunho ? "Continuar cadastro" : "Registrar cliente"}
             </button>
           </div>
+        </div>
         </>
       )}
 

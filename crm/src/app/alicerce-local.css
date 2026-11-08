@@ -468,3 +468,45 @@ svg.mb-icone {
   .admin-pilha .mb-lista__alvo { min-height: var(--controle-toque); }
 }
 @media (max-width: 639px) { .admin-faixa__campos { grid-template-columns: minmax(0, 1fr); } }
+
+/* 11. Stand (fase 2, bloco 8): composição das quatro páginas, sem redesenhar peças.
+   Os destinos são links (Botao.md:7), não abas. O cadastro fica junto da vez no PC.
+   As listas/tabelas mantêm o comportamento móvel do Alicerce. */
+.stand-pilha { display: grid; gap: var(--esp-4); min-width: 0; align-content: start; }
+.stand-pilha > *, .stand-atendimento > *, .stand-pilha .mb-campo { min-width: 0; }
+.stand-destinos { display: flex; flex-wrap: wrap; gap: var(--esp-2); }
+.stand-destinos [aria-current="page"] { font-weight: 700; outline: var(--mb-borda) solid var(--texto); outline-offset: var(--mb-borda); }
+.stand-cartao { padding: var(--esp-5); min-width: 0; }
+.stand-atendimento { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: var(--esp-4); align-items: start; }
+.stand-nota { color: var(--texto-suave); font-size: var(--corpo-tamanho, 14px); line-height: var(--corpo-linha, 22px); }
+.stand-ajuda { color: var(--texto-sutil); font-size: var(--legenda-tamanho, 12px); line-height: var(--legenda-linha, 18px); }
+.stand-num { font-variant-numeric: tabular-nums; }
+.stand-divisor { border-top: var(--mb-borda) solid var(--linha); }
+.stand-linha { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--esp-3); min-width: 0; }
+.stand-linha .mb-campo { flex: 1; }
+.stand-catalogo-grupo + .stand-catalogo-grupo { border-top: var(--mb-borda) solid var(--linha); padding-top: var(--esp-3); }
+.stand-pilha .stand-opcao { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nome ativa"; }
+.stand-acompanhante { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--esp-3); }
+.stand-vez { border: 0; box-shadow: none; }
+.stand-vez__linha { align-items: start; grid-template-columns: var(--esp-8) minmax(0, 1fr); }
+.stand-vez__acoes { grid-column: 2 / -1; display: grid; justify-items: start; gap: var(--esp-2); min-width: 0; }
+.stand-vez__botoes { flex-wrap: wrap; justify-content: flex-start; }
+.stand-pilha .mb-tabela-envoltorio { max-width: 100%; }
+.stand-cartao .mb-tabela { box-shadow: none; }
+.stand-painel-form { display: contents; }
+.stand-pergunta { display: block; scroll-margin-bottom: calc(var(--controle-toque) * 4); }
+.stand-form-acoes { position: sticky; bottom: 0; background: var(--superficie); border-top: var(--mb-borda) solid var(--linha); padding: var(--esp-3) 0; z-index: 2; }
+/* O texto de localização não cabe em meia largura do painel: duas linhas de ações. */
+.stand-local-acoes { display: grid; grid-template-columns: minmax(0, 1fr); }
+.stand-local-acoes .mb-botao { width: 100%; white-space: normal; }
+.stand-pilha button.mb-lista__alvo { text-align: left; }
+.stand-retorno-opcao { display: grid; width: 100%; gap: var(--esp-2); text-align: left; padding: var(--esp-3); }
+@media (max-width: 767px) {
+  .stand-destinos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stand-destinos .mb-botao { white-space: normal; }
+  .stand-vez__botoes .mb-botao { white-space: normal; }
+  .stand-acompanhante { grid-template-columns: minmax(0, 1fr); }
+  .stand-pilha .mb-catalogo__nome { min-width: 0; }
+  .stand-pilha .mb-lista__alvo { min-height: var(--controle-toque); }
+}
+@media print { .stand-destinos, .stand-pilha > .mb-cabecalho { display: none; } }

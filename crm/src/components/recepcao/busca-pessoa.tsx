@@ -46,14 +46,14 @@ export function BuscaPessoa({
 
   if (escolhido)
     return (
-      <div className={className}>
-        <span className="field-label">{rotulo}</span>
-        <div className="flex items-center gap-2 rounded-sm border border-control bg-surface px-3 py-[9px]">
+      <div className={clsx("mb-campo", className)}>
+        <span className="mb-campo__rotulo">{rotulo}</span>
+        <div className="mb-campo__entrada flex items-center gap-2">
           <span className="min-w-0 flex-1 truncate font-semibold">
             {escolhido.apelido ?? escolhido.nome}
-            {escolhido.equipe && <span className="font-normal text-ink-soft"> · {escolhido.equipe}</span>}
+            {escolhido.equipe && <span className="font-normal stand-nota"> · {escolhido.equipe}</span>}
           </span>
-          <button type="button" className="focus-ring shrink-0 text-[13px] font-semibold text-brand-dark underline" onClick={() => onEscolher(null)}>
+          <button type="button" className="mb-botao mb-botao--discreto mb-botao--p" onClick={() => onEscolher(null)}>
             Trocar
           </button>
         </div>
@@ -61,16 +61,17 @@ export function BuscaPessoa({
     );
 
   return (
-    <div className={clsx("relative", className)}>
-      <label className="field-label" htmlFor={id}>
+    <div className={clsx("mb-campo mb-sugestoes-alvo", className)}>
+      <label className="mb-campo__rotulo" htmlFor={id}>
         {rotulo}
       </label>
       <input
         id={id}
-        className="input md:py-[9px] md:text-[14px]"
+        className="mb-campo__entrada"
         role="combobox"
         aria-expanded={aberto && sugestoes.length > 0}
         aria-controls={lista}
+        aria-activedescendant={aberto && sugestoes[marcado] ? `${lista}-${marcado}` : undefined}
         aria-autocomplete="list"
         autoComplete="off"
         placeholder={placeholder ?? "Apelido ou nome"}
@@ -97,28 +98,29 @@ export function BuscaPessoa({
         }}
       />
       {aberto && (
-        <ul id={lista} role="listbox" className="absolute inset-x-0 top-full z-10 rounded-b-sm border border-t-0 border-control bg-surface">
+        <ul id={lista} role="listbox" className="mb-sugestoes">
           {sugestoes.length ? (
             sugestoes.map((p, i) => (
               <li
                 key={p.id}
+                id={`${lista}-${i}`}
                 role="option"
                 aria-selected={i === marcado}
-                className={clsx("cursor-pointer border-t border-line px-3 py-2 text-[14px]", i === marcado && "border-l-[3px] border-l-ink bg-paper")}
+                className="mb-sugestoes__opcao"
                 onMouseDown={(e) => {
                   e.preventDefault();
                   escolher(p);
                 }}
               >
                 <b>{p.apelido ?? p.nome}</b>
-                <span className="text-ink-soft">
+                <span className="stand-nota">
                   {p.apelido ? ` · ${p.nome}` : ""}
                   {p.equipe ? ` · ${p.equipe}` : ""}
                 </span>
               </li>
             ))
           ) : (
-            <li className="border-t border-line px-3 py-2 text-[13px] text-ink-soft">Ninguém com esse apelido ou nome.</li>
+            <li className="mb-sugestoes__vazio">Ninguém com esse apelido ou nome.</li>
           )}
         </ul>
       )}

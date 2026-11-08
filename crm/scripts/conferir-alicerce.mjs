@@ -52,6 +52,25 @@ const soAdministracao = argumentos.includes("--administracao");
 const soEtapas = argumentos.includes("--etapas-parceiro");
 const soPainelMetasRanking = argumentos.includes("--painel-metas-ranking");
 
+// Bloco 8: apenas a cópia isolada; nunca usa credenciais nem serviços reais.
+if (argumentos.includes('--preparar-stand')) {
+  const fixture = '.visual-preview/src/lib/visual-fixtures.ts'; let f = readFileSync(fixture, 'utf8');
+  if (f.includes('// Fixtures do Stand.')) throw new Error('Gere a prévia novamente antes de repetir o preparo do Stand.');
+  const extra = readFileSync('scripts/stand-fixtures.txt', 'utf8');
+  f += '\n' + extra;
+  f = f.replace('this.erroLeitura=(', "this.erroLeitura=(qa==='stand-erro'&&['plantoes','plantao_atendimentos','lancamentos_pontos'].includes(name))||(");
+  f = f.replace('this.espera=(', "this.espera=(qa==='stand-espera'&&['plantoes','plantao_atendimentos','lancamentos_pontos'].includes(name))||(");
+  f = f.replace('this.rows=[...(tables[name]??[])];', "this.rows=[...(tables[name]??[])];if(qa==='stand-vazio'&&['plantao_atendimentos','lancamentos_pontos'].includes(name))this.rows=[];");
+  writeFileSync(fixture, f);
+  const arquivoSessao = '.visual-preview/src/lib/sessao.tsx'; let se = readFileSync(arquivoSessao, 'utf8');
+  const sessaoStand = readFileSync('scripts/stand-sessao.txt', 'utf8');
+  se = se.replace('const gerente=', sessaoStand + ' const gerente=');
+  writeFileSync(arquivoSessao, se);
+  console.log('Stand preparado na cópia: perfis e dados fictícios; gravações só em memória em qa=stand-gravar.'); process.exit(0);
+}
+// Conferência independente do Stand, com o mesmo Chrome headless da fase 2.
+if (argumentos.includes('--stand')) { await import('./conferir-stand.mjs'); process.exit(process.exitCode ?? 0); }
+
 // Bloco 6: após os preparos dos blocos anteriores. Só a cópia gerada e dados fictícios.
 if(argumentos.includes('--preparar-administracao')) {
   const arq='.visual-preview/src/lib/visual-fixtures.ts';let s=readFileSync(arq,'utf8');

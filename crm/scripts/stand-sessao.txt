@@ -1,0 +1,8 @@
+if (path.replace(/\/$/,'') === '/vendas/recepcao' || path.includes('/recepcao/') || path.replace(/\/$/,'') === '/vendas/plantao') {
+  const qStand = qa?.startsWith('stand-') ? qa : sessionStorage.getItem('qa-stand-perfil') ?? 'stand-recepcao';
+  if (['stand-recepcao','stand-gerente','stand-operacional','stand-geral','stand-relatorio','stand-cadastros','stand-periodos','stand-sem'].includes(qStand)) sessionStorage.setItem('qa-stand-perfil', qStand);
+  const todasStand = ['plantao.atendimentos','plantao.confirmar','plantao.registrar','lancamentos.registrar','plantao.atendimentos_ver','plantoes.gerenciar','dados.ver_todos'];
+  const permissoesStand = qStand === 'stand-sem' ? [] : qStand === 'stand-relatorio' ? ['plantao.atendimentos_ver'] : qStand === 'stand-cadastros' ? ['plantoes.gerenciar'] : qStand === 'stand-periodos' ? ['plantao.registrar'] : qStand === 'stand-gerente' ? ['lancamentos.registrar','dados.ver_equipe','plantao.atendimentos_ver'] : qStand === 'stand-recepcao' ? ['plantao.atendimentos','plantao.confirmar','plantao.registrar'] : todasStand;
+  const perfilStand = qStand === 'stand-gerente' ? 'gerente' : qStand === 'stand-geral' ? 'gerente_geral' : qStand === 'stand-recepcao' ? 'recepcao' : 'operacional';
+  setEstado({fase:'pronto',perfil:{...profiles[0],id:qStand==='stand-gerente'?'gerente':'conta-'+perfilStand,perfil:perfilStand,equipe_id:qStand==='stand-gerente'?'equipe-1':null},permissoes:permissoesStand}); return;
+}
