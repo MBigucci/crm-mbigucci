@@ -81,9 +81,9 @@ As combinações fora do padrão seguem as permissões, inclusive quem só puder
 **Para a recepção:** menos mudança de hábito, mas continua alternando entre duas áreas. **Para o gerente:** Plantão fica onde está, com caminho direto ao relatório. **Para o operacional:** dois pontos de entrada para a mesma rotina, com menos procura por links.
 **Riscos:** preserva a duplicidade de nomes/menu e facilita esquecer uma conferência; também precisa preservar digitação ao navegar. Como em A, os períodos não podem herdar filtro de stand nem gerar pontos pela presença. É a opção de menor mudança de navegação, com menor ganho de organização.
 
-## Pergunta para o Felipe
+## Decisão do Felipe
 
-**Como organizar essa rotina?** **A. Uma área “Stand”, com Atendimento e Períodos e roleta separados (recomendada)** · **B. Manter Recepção e Plantão no menu, com atalhos entre eles**.
+**Decidido pelo Felipe em 08/11/2026: proposta A, área única "Stand"**, com o nome "Stand" no menu. A alternativa B fica registrada abaixo só como histórico.
 Essa decisão é sobre navegação. Não reabre regras já aprovadas, não amplia permissões e não inclui integração automática de presença com pontos.
 
 ## Fontes e evidências
