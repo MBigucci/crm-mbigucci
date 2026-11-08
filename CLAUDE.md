@@ -35,6 +35,7 @@ O CRM de corretores da MBigucci (construtora em São Bernardo do Campo). O usuá
 - O `onError` de `<img>` pode disparar antes da hidratação. Confira `img.complete && naturalWidth === 0` num efeito.
 - Não rode `npm run build` com o `npm run dev` ligado no mesmo app, porque o `.next` corrompe ("Cannot find module './611.js'"). Para consertar, pare o servidor, apague o `.next` e suba de novo.
 - Alternar seleção múltipla usa `setState` funcional. A versão com closure perde cliques rápidos.
+- Edge Function que lê tabela direto com a chave de serviço precisa de `grant select ... to service_role` no `schema.sql`; sem ele o PostgREST devolve 403 (42501). Funções `security definer` não sofrem isso (07/11/2026, teste de aviso no iPhone).
 - O prefixo `mb-` é das classes do Alicerce e também das margens do Tailwind (`mb-4`). Classe nova do app nunca começa com `mb-` (06/11/2026).
 
 ## Restrições fixas
