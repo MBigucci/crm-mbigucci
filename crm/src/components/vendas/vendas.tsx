@@ -23,6 +23,10 @@ import { Aviso } from "@/components/alicerce/aviso";
 import { Pares } from "@/components/alicerce/pares";
 import { useToast } from "@/components/alicerce/toast";
 import { CorrigirAlicerce, MotivoAlicerce, PagarAlicerce, RegistrarVendaAlicerce, SeloDaVenda } from "./venda-alicerce";
+import { PainelLateral } from "@/components/alicerce/painel-lateral";
+import { CampoSelecao } from "@/components/alicerce/campo";
+import { CarregandoTabela } from "@/components/alicerce/carregando";
+import { EstadoVazio } from "@/components/alicerce/estado-vazio";
 
 /** Estado da venda sempre com sinal + palavra + cor. */
 export function SeloVenda({ venda }: { venda: Pick<Venda, "status" | "pagamento" | "pago_em"> }) {
@@ -65,12 +69,16 @@ export function RegistrarVenda({
   onRegistrada,
   onCancelar,
   alicerce = false,
+  painel = false,
+  antes,
 }: {
   lead: { id: string; nome?: string; empreendimento: string | null; valor: number | null };
   onRegistrada: () => void;
   onCancelar: () => void;
   /** O formulário no Alicerce (a ficha, passo f). Sem ele, o DS antigo da tela Vendas. */
   alicerce?: boolean;
+  painel?: boolean;
+  antes?: React.ReactNode;
 }) {
   const hoje = diaIso(new Date());
   const [f, setF] = useState({
@@ -145,6 +153,8 @@ export function RegistrarVenda({
   if (alicerce)
     return (
       <RegistrarVendaAlicerce
+        painel={painel}
+        antes={antes}
         nome={lead.nome}
         f={f}
         setF={setF}
@@ -689,7 +699,9 @@ export function ResumoVendas({ t }: { t: Totais }) {
  */
 type LeadParaVenda = { id: string; nome: string; empreendimento: string | null; valor: number | null };
 
-export function NovaVenda({ corretor, onRegistrada }: { corretor: string; onRegistrada: () => void }) {
+export function NovaVenda({ corretor, onRegistrada, alicerce = false }: { corretor: string; onRegistrada: () => void; alicerce?: boolean }) {
+  const origem = useRef<HTMLButtonElement>(null);
+  const toast = useToast();
   const [aberto, setAberto] = useState(false);
   const [leads, setLeads] = useState<LeadParaVenda[] | null>(null);
   const [escolhido, setEscolhido] = useState("");
@@ -725,6 +737,30 @@ export function NovaVenda({ corretor, onRegistrada }: { corretor: string; onRegi
       .then(({ data }) => setLeads((data ?? []) as LeadParaVenda[]));
   }, [aberto, leads, corretor]);
   const lead = leads?.find((l) => l.id === escolhido);
+
+  // Bloco 2: mesma seleção, consulta, rascunho e gravação; a tarefa longa abre em PainelLateral.
+  if (alicerce) {
+    const fechar = () => {
+      if (escolhido) limparRascunho(chaveRascunhoVenda(escolhido));
+      limparRascunho(chaveRascunhoNovaVenda(corretor));
+      setAberto(false);
+    };
+    const cliente = <CampoSelecao rotulo="Cliente" ajuda="Seus leads ativos que ainda não estão em Venda.">
+      <select id="nova-venda-lead" className="mb-campo__entrada" value={escolhido} onChange={(e) => setEscolhido(e.target.value)}>
+        <option value="">Escolha o lead</option>
+        {leads?.map((l) => <option key={l.id} value={l.id}>{l.nome}</option>)}
+      </select>
+    </CampoSelecao>;
+    return <>
+      <button ref={origem} type="button" className="mb-botao mb-botao--primario" aria-haspopup="dialog" onClick={() => setAberto(true)}>Registrar venda</button>
+      <PainelLateral aberto={aberto} onFechar={fechar} foco={() => origem.current} titulo="Registrar venda" descricao={lead?.nome}>
+        {aberto && (lead ? <RegistrarVenda key={lead.id} lead={lead} alicerce painel antes={cliente} onCancelar={fechar} onRegistrada={() => {
+          limparRascunho(chaveRascunhoNovaVenda(corretor)); setAberto(false); setEscolhido(""); setLeads(null);
+          toast.mostrar("Venda registrada.", { tipo: "sucesso" }); onRegistrada();
+        }} /> : <div className="mb-lateral__corpo">{!leads ? <CarregandoTabela texto="Carregando seus leads…" /> : !leads.length ? <EstadoVazio titulo="Nenhum lead para registrar a venda" texto="Seus leads ativos que ainda não estão em Venda aparecem aqui." /> : cliente}</div>)}
+      </PainelLateral>
+    </>;
+  }
 
   if (!aberto)
     return (

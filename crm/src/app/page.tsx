@@ -5,7 +5,10 @@ import { useEffect, useState } from "react";
 import { Casca, ehListaDoDia } from "@/components/casca";
 import { nomeCurto } from "@/components/alicerce/menu.ts";
 import { ListaDoDia } from "@/components/leads/lista-do-dia";
-import { ContatosDoDiaParceirosNoInicio } from "@/components/parceiros/contatos-do-dia";
+import { ContatosDeParceirosNoInicio } from "@/components/inicio/contatos-de-parceiros";
+import { Lista, ItemDaLista } from "@/components/alicerce/lista";
+import { Cartao } from "@/components/alicerce/cartao";
+import { EstadoDePagina } from "@/components/alicerce/estado-de-pagina";
 import { db } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
 import { nomePerfil, type Team } from "@/lib/tipos";
@@ -13,10 +16,10 @@ import { nomePerfil, type Team } from "@/lib/tipos";
 export default function InicioPage() {
   const { pode } = useSessao();
   const lista = ehListaDoDia(pode);
-  // `migrada` só quando a página mostra a Lista do dia (Alicerce, item 48 passo c). O Início dos outros perfis
-  // continua no DS antigo, dentro do .ds-antigo, até a fase 2.
+  // Lista do dia (fase 1) e Início dos demais perfis (fase 2, bloco 2) estão no Alicerce.
+
   return (
-    <Casca titulo={lista ? "Lista do dia" : "Início"} migrada={lista}>
+    <Casca titulo={lista ? "Lista do dia" : "Início"} migrada>
       {lista ? <ListaDoDia /> : <Inicio />}
     </Casca>
   );
@@ -29,42 +32,43 @@ function Inicio() {
   const verLeads = pode("leads.atribuir") || pode("dados.ver_equipe") || pode("dados.ver_todos");
 
   return (
-    <div className="grid gap-4">
-      <div>
-        <span className="eyebrow">{nomePerfil(perfil.perfil)}</span>
-        <p className="mt-1 text-[16px]">Olá, {nomeCurto(perfil)}.</p>
-      </div>
-
-      {pode("parceiros.cadastrar") && <ContatosDoDiaParceirosNoInicio />}
+    <div className="pagina-alicerce inicio-pilha">
+      <header className="mb-cabecalho">
+        <div className="mb-cabecalho__texto">
+          <h1 className="titulo-tela">Olá, {nomeCurto(perfil)}.</h1>
+          <p className="mb-cabecalho__subtitulo">{nomePerfil(perfil.perfil)}</p>
+        </div>
+      </header>
+      {pode("parceiros.cadastrar") && <ContatosDeParceirosNoInicio />}
 
       {ehGG || pode("usuarios.gerenciar") || pode("equipes.gerenciar") || verLeads ? (
-        <div className="grid gap-4 md:grid-cols-3">
+        <section aria-labelledby="areas-inicio"><h2 id="areas-inicio" className="mb-sobrelinha">Acesse as áreas</h2><Lista cartao rotulo="Áreas do Vendas">
           {verLeads && (
             <Atalho
               href="/leads/"
               titulo={ehGG ? "Leads" : "Leads da equipe"}
-              texto="Acompanhe os leads e atribua os leads da empresa aos corretores."
+              texto="Acompanhe os leads e distribua os da empresa."
             />
           )}
           {verLeads && (
             <Atalho
               href="/painel/"
               titulo="Painel da equipe"
-              texto="Recebidos, perdidos, descartes e funil por corretor, no dia, na semana ou no mês. Dá para imprimir."
+              texto="Recebidos, perdas e conversão por corretor."
             />
           )}
           {verLeads && (
             <Atalho
               href="/vendas/"
               titulo={ehGG ? "Vendas" : "Vendas da equipe"}
-              texto="VGV assinado e assinado e pago, por mês ou ano. Corrija ou cancele com o motivo."
+              texto="Assinadas, pagas e pendentes por período."
             />
           )}
           {verLeads && (
             <Atalho
               href="/metas/"
               titulo={ehGG ? "Metas" : "Metas da equipe"}
-              texto="Meta anual de VGV de cada corretor: acumulado, quanto falta, ritmo por mês e projeção."
+              texto="Acumulado e ritmo para atingir a meta anual."
             />
           )}
           {pode("usuarios.gerenciar") && (
@@ -76,34 +80,21 @@ function Inicio() {
           {ehGG && (
             <Atalho href="/configuracoes/" titulo="Configurações" texto="Horário de atendimento, mensagens prontas e permissões de cada perfil." />
           )}
-        </div>
+        </Lista></section>
       ) : null}
 
       {perfil.perfil === "gerente" && <MinhasEquipes gerenteId={perfil.id} />}
       {perfil.equipe_id && <MinhaEquipe equipeId={perfil.equipe_id} />}
 
-      {!ehGG && !verLeads && (
-        <div className="card">
-          <h2 className="titulo-card">Em construção</h2>
-          <p className="mt-2 text-ink-soft">
-            O Base360 Vendas está sendo montado por etapas. As próximas telas aparecem aqui nas próximas versões.
-          </p>
-        </div>
-      )}
+      {!ehGG && !verLeads && <EstadoDePagina tipo="em-construcao" titulo="Esta área está em construção" texto="O Base360 Vendas está sendo montado por etapas. As próximas telas aparecem aqui nas próximas versões." />}
     </div>
   );
 }
 
+/** Lista.md:5-14: os atalhos são uma lista de áreas; a linha inteira abre o destino. */
 function Atalho({ href, titulo, texto }: { href: string; titulo: string; texto: string }) {
-  return (
-    <Link href={href} className="card focus-ring block transition-colors hover:border-ink">
-      <h2 className="titulo-card">{titulo}</h2>
-      <p className="mt-2 text-ink-soft">{texto}</p>
-      <span className="link-acao mt-3 inline-block text-[13px]">Abrir</span>
-    </Link>
-  );
+  return <ItemDaLista titulo={<Link className="mb-lista__alvo" href={href}>{titulo}</Link>} meta={texto} />;
 }
-
 function MinhaEquipe({ equipeId }: { equipeId: string }) {
   const [nome, setNome] = useState<string | null>(null);
   useEffect(() => {
@@ -116,10 +107,10 @@ function MinhaEquipe({ equipeId }: { equipeId: string }) {
   }, [equipeId]);
   if (!nome) return null;
   return (
-    <div className="card">
-      <span className="eyebrow">Sua equipe</span>
-      <p className="titulo-card mt-1">{nome}</p>
-    </div>
+    <Cartao id="minha-equipe" titulo="Sua equipe">
+
+      <p>{nome}</p>
+    </Cartao>
   );
 }
 
@@ -143,13 +134,13 @@ function MinhasEquipes({ gerenteId }: { gerenteId: string }) {
   return (
     <>
       {equipes.map((e) => (
-        <div key={e.id} className="card">
-          <span className="eyebrow">Sua equipe</span>
-          <p className="titulo-card mt-1">{e.nome}</p>
-          <p className="mt-2 text-ink-soft">
+        <Cartao key={e.id} id={`equipe-${e.id}`} titulo={e.nome} descricao="Sua equipe">
+
+
+          <p>
             {e.membros.length ? e.membros.join(", ") : "Ainda sem corretores."}
           </p>
-        </div>
+        </Cartao>
       ))}
     </>
   );

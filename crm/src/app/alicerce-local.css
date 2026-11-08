@@ -349,3 +349,12 @@ svg.mb-icone {
 @media (min-width: 1024px) {
   .parcerias-ficha { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
+
+/* 6. Início e Vendas (fase 2, bloco 2): composição das peças, só com espaços e limites do guia.
+   O formulário não cria uma caixa extra entre o painel e seu corpo/rodapé flexíveis. */
+.inicio-pilha, .vendas-pilha { display: grid; gap: var(--esp-4); min-width: 0; }
+.vendas-filtros { display: flex; flex-wrap: wrap; align-items: end; gap: var(--esp-4); }
+.vendas-painel-form, .vendas-form-sem-caixa { display: contents; }
+.vendas-detalhe .mb-pares dd { min-width: 0; overflow-wrap: anywhere; }
+/* O botão de ordenar herda 16px de linha do cabeçalho no bundle; amplia-se só o alvo ao mínimo do guia. */
+.vendas-pilha .mb-tabela__ordenar { min-height: var(--alvo-minimo); }

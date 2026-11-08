@@ -1,7 +1,7 @@
 "use client";
 
 // A venda na ficha, no Alicerce (passo f do item 48). As mesmas regras, textos e gravações de `vendas.tsx`;
-// muda só o desenho: Cartao, .mb-pares, Selo e, dentro do cartão, sub-seções planas. A tela Vendas segue como está.
+// Formulários compartilhados: a ficha conserva Cartao/Pares/Selo; a opção painel atende a tela Vendas (fase 2, bloco 2).
 
 import { useState } from "react";
 import { diaIso, lerReais, seloVenda, type Venda } from "@/lib/vendas";
@@ -10,6 +10,7 @@ import { Aviso } from "@/components/alicerce/aviso";
 import { Campo } from "@/components/alicerce/campo";
 import { CampoEmpreendimento } from "@/components/alicerce/campo-empreendimento";
 import { Selo } from "@/components/alicerce/selo";
+import { FormularioDeVenda } from "./formulario-de-venda";
 
 export const reaisParaCampo = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
 
@@ -19,13 +20,13 @@ export function SeloDaVenda({ venda }: { venda: Pick<Venda, "status" | "pagament
   return <Selo tom={venda.status === "cancelada" ? "erro" : venda.pagamento === "pago" ? "sucesso" : "alerta"}>{s.texto}</Selo>;
 }
 
-function Botoes({ rotulo, onCancelar }: { rotulo: string; onCancelar: () => void }) {
+function Botoes({ rotulo, onCancelar, painel = false, ocupado = false }: { rotulo: string; onCancelar: () => void; painel?: boolean; ocupado?: boolean }) {
   return (
-    <div className="mb-grupo-botoes mb-grupo-botoes--fim">
+    <div className={painel ? "mb-lateral__rodape" : "mb-grupo-botoes mb-grupo-botoes--fim"}>
       <button className="mb-botao mb-botao--discreto" type="button" onClick={onCancelar}>
         Voltar
       </button>
-      <button className="mb-botao mb-botao--secundario" type="submit">
+      <button className={painel ? "mb-botao mb-botao--primario" : "mb-botao mb-botao--secundario"} type="submit" disabled={ocupado} aria-busy={ocupado || undefined}>
         {rotulo}
       </button>
     </div>
@@ -45,6 +46,8 @@ export type CamposDaVenda = {
 /** O formulário de Registrar venda: o estado e a gravação ficam em `RegistrarVenda`. */
 export function RegistrarVendaAlicerce({
   nome,
+  painel = false,
+  antes,
   f,
   setF,
   setEditado,
@@ -55,6 +58,8 @@ export function RegistrarVendaAlicerce({
   onCancelar,
 }: {
   nome?: string;
+  painel?: boolean;
+  antes?: React.ReactNode;
   f: CamposDaVenda;
   setF: React.Dispatch<React.SetStateAction<CamposDaVenda>>;
   setEditado: (v: boolean) => void;
@@ -72,8 +77,16 @@ export function RegistrarVendaAlicerce({
     },
   });
   return (
-    <section className="mb-cartao ficha__ancora" aria-label="Registrar venda">
-      <form onSubmit={onSubmit} className="mb-cartao__corpo ficha__corpo" noValidate>
+    <section className={painel ? "vendas-form-sem-caixa" : "mb-cartao ficha__ancora"} aria-label="Registrar venda">
+      <FormularioDeVenda painel={painel} classe="mb-cartao__corpo ficha__corpo" onSubmit={onSubmit} rodape={<div className={painel ? "mb-lateral__rodape" : "mb-grupo-botoes mb-grupo-botoes--fim"}>
+          <button className="mb-botao mb-botao--discreto" type="button" onClick={onCancelar}>
+            Cancelar
+          </button>
+          <button className={painel ? "mb-botao mb-botao--primario" : "mb-botao mb-botao--secundario mb-botao--bloco-celular"} type="submit" aria-busy={salvando || undefined} disabled={salvando}>
+            {salvando ? "Registrando…" : "Registrar venda"}
+          </button>
+        </div>}>
+        {antes}
         <h3 className="titulo-cartao">{nome ? `Parabéns pela venda para ${nome}.` : "Registrar venda"}</h3>
         <p className="ficha__texto">A venda conta no mês da assinatura. O VGV válido é o das vendas assinadas e pagas.</p>
         <div className="mb-form-grade">
@@ -125,27 +138,18 @@ export function RegistrarVendaAlicerce({
           <textarea className="mb-campo__entrada" {...muda("observacao")} />
         </Campo>
         {erro && <Aviso tom="erro" titulo={erro} />}
-        <div className="mb-grupo-botoes mb-grupo-botoes--fim">
-          <button className="mb-botao mb-botao--discreto" type="button" onClick={onCancelar}>
-            Cancelar
-          </button>
-          <button className="mb-botao mb-botao--secundario mb-botao--bloco-celular" type="submit" aria-busy={salvando || undefined} disabled={salvando}>
-            {salvando ? "Registrando…" : "Registrar venda"}
-          </button>
-        </div>
-      </form>
+
+      </FormularioDeVenda>
     </section>
   );
 }
 
-export function PagarAlicerce({ onCancelar, onSalvar }: { onCancelar: () => void; onSalvar: (data: string) => Promise<void> }) {
+export function PagarAlicerce({ onCancelar, onSalvar, falha, painel = false, ocupado = false }: { onCancelar: () => void; onSalvar: (data: string) => Promise<void>; painel?: boolean; ocupado?: boolean; falha?: string | null }) {
   const hoje = diaIso(new Date());
   const [data, setData] = useState(hoje);
   const [erro, setErro] = useState<string | null>(null);
   return (
-    <form
-      className="mb-subsecao ficha__corpo"
-      noValidate
+    <FormularioDeVenda painel={painel} classe="mb-subsecao ficha__corpo" rodape={<Botoes rotulo="✓ Confirmar pagamento" onCancelar={onCancelar} painel={painel} ocupado={ocupado} />}
       onSubmit={(e) => {
         e.preventDefault();
         if (!data || data > hoje) setErro("Confira a data do pagamento: até hoje.");
@@ -156,21 +160,26 @@ export function PagarAlicerce({ onCancelar, onSalvar }: { onCancelar: () => void
       <Campo rotulo="Data do pagamento">
         <input className="mb-campo__entrada" type="date" max={hoje} value={data} onChange={(e) => setData(e.target.value)} />
       </Campo>
-      {erro && <Aviso tom="erro" titulo={erro} />}
-      <Botoes rotulo="✓ Confirmar pagamento" onCancelar={onCancelar} />
-    </form>
+      {(erro || falha) && <Aviso tom="erro" titulo={erro || falha || ""} />}
+    </FormularioDeVenda>
   );
 }
 
 /** Pede o motivo (ele vai para o histórico do lead). */
 export function MotivoAlicerce({
   titulo,
+  painel = false,
+  falha,
+  ocupado = false,
   texto,
   botao,
   onCancelar,
   onSalvar,
 }: {
   titulo: string;
+  painel?: boolean;
+  falha?: string | null;
+  ocupado?: boolean;
   texto: string;
   botao: string;
   onCancelar: () => void;
@@ -179,9 +188,7 @@ export function MotivoAlicerce({
   const [motivo, setMotivo] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   return (
-    <form
-      className="mb-subsecao ficha__corpo"
-      noValidate
+    <FormularioDeVenda painel={painel} classe="mb-subsecao ficha__corpo" rodape={<Botoes rotulo={botao} onCancelar={onCancelar} painel={painel} ocupado={ocupado} />}
       onSubmit={(e) => {
         e.preventDefault();
         if (motivo.trim().length < 3) setErro("Escreva o motivo.");
@@ -193,19 +200,24 @@ export function MotivoAlicerce({
       <Campo rotulo="Motivo">
         <textarea className="mb-campo__entrada" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
       </Campo>
-      {erro && <Aviso tom="erro" titulo={erro} />}
-      <Botoes rotulo={botao} onCancelar={onCancelar} />
-    </form>
+      {(erro || falha) && <Aviso tom="erro" titulo={erro || falha || ""} />}
+    </FormularioDeVenda>
   );
 }
 
 /** Corrigir os dados da venda. Só o que mudou vai para o banco, com o motivo. */
 export function CorrigirAlicerce({
   venda: v,
+  painel = false,
+  falha,
+  ocupado = false,
   onCancelar,
   onSalvar,
 }: {
   venda: Venda;
+  painel?: boolean;
+  falha?: string | null;
+  ocupado?: boolean;
   onCancelar: () => void;
   onSalvar: (campos: Parameters<typeof corrigirVenda>[1], motivo: string) => Promise<void>;
 }) {
@@ -252,7 +264,7 @@ export function CorrigirAlicerce({
   }
 
   return (
-    <form onSubmit={salvar} className="mb-subsecao ficha__corpo" noValidate>
+    <FormularioDeVenda painel={painel} classe="mb-subsecao ficha__corpo" onSubmit={salvar} rodape={<Botoes rotulo="Salvar correção" onCancelar={onCancelar} painel={painel} ocupado={ocupado} />} >
       <h4 className="mb-subsecao__titulo">Corrigir a venda</h4>
       <div className="mb-form-grade">
         <CampoEmpreendimento valor={f.empreendimento} colunas={6} onChange={(emp) => setF((x) => ({ ...x, empreendimento: emp }))} />
@@ -281,8 +293,7 @@ export function CorrigirAlicerce({
       <Campo rotulo="Motivo da correção">
         <textarea className="mb-campo__entrada" placeholder="Ex.: Valor do contrato assinado" {...campo("motivo")} />
       </Campo>
-      {erro && <Aviso tom="erro" titulo={erro} />}
-      <Botoes rotulo="Salvar correção" onCancelar={onCancelar} />
-    </form>
+      {(erro || falha) && <Aviso tom="erro" titulo={erro || falha || ""} />}
+    </FormularioDeVenda>
   );
 }

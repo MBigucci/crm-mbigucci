@@ -45,6 +45,7 @@ const soFicha = argumentos.includes("--ficha");
 const soNovo = argumentos.includes("--novo");
 const soConta = argumentos.includes("--conta");
 const soParcerias = argumentos.includes("--parcerias");
+const soInicioVendas = argumentos.includes("--inicio-vendas");
 
 // Só altera a cópia gerada, nunca a sessão, os dados ou as credenciais do app.
 // Execute depois de visual-preview.mjs e antes do build: node scripts/conferir-alicerce.mjs --preparar-parcerias
@@ -63,6 +64,26 @@ if (argumentos.includes("--preparar-parcerias")) {
   s = s.replaceAll("whatsapp_norm:'551199999000", "whatsapp_norm:'1199999000");
   writeFileSync(fixture, s);
   console.log("Prévia de Parcerias preparada: dados fictícios, gravações bloqueadas.");
+  process.exit(0);
+}
+
+// Bloco 2: após visual-preview.mjs e --preparar-parcerias. Alterações só na cópia gerada.
+if (argumentos.includes("--preparar-inicio-vendas")) {
+  const caminhoSessao = ".visual-preview/src/lib/sessao.tsx";
+  let sessao = readFileSync(caminhoSessao, "utf8");
+  sessao = sessao.replace("'parceiros.cadastrar']", "'parceiros.cadastrar','vendas.corrigir_equipe']");
+  sessao = sessao.replace("perfil:'gerente_geral'", "perfil:'gerente_geral',equipe_id:null").replace("id:'gerente',perfil:'gerente'", "id:'gerente',perfil:'gerente',equipe_id:null");
+  sessao = sessao.replace(" const perfil=geral?", " if(qa==='apoio'){setEstado({fase:'pronto',perfil:{...profiles[0],id:'apoio',perfil:'operacional'},permissoes:[]});return;} const perfil=geral?");
+  writeFileSync(caminhoSessao, sessao);
+  const caminhoFixture = ".visual-preview/src/lib/visual-fixtures.ts";
+  let fixture = readFileSync(caminhoFixture, "utf8");
+  fixture = fixture.replace("const empreendimento =", "vendas.push({...vendas[1],id:'venda-3',corretor_id:'corretor-2',lead_id:leads[3].id,lead:leads[3],unidade:'303',vgv:890000}, {...vendas[1],id:'venda-cancelada',unidade:'404',vgv:460000,status:'cancelada',observacao:'Cliente desistiu antes do pagamento.',motivo_cancelamento:'Desistência do cliente.'} as any);\nconst empreendimento =");
+  fixture = fixture.replace("rows:Row[]; singleRow=false; blocked=false;", "rows:Row[]; singleRow=false; blocked=false; erroLeitura=false; espera=false;");
+  fixture = fixture.replace("constructor(name:string) { this.rows=[...(tables[name]??[])];", "constructor(name:string) { const qa=typeof location!=='undefined'?new URLSearchParams(location.search).get('qa'):''; this.erroLeitura=name==='vendas'&&qa==='vendas-erro'; this.espera=name==='vendas'&&qa==='vendas-espera'; this.rows=[...(tables[name]??[])]; if(name==='vendas'&&qa!=='gerente'&&qa!=='geral') this.rows=this.rows.filter(x=>x.corretor_id==='corretor-1');");
+  fixture = fixture.replace("return Promise.resolve({data:this.blocked?", "if(this.espera) return new Promise<never>(()=>{}); return Promise.resolve({data:this.blocked?");
+  fixture = fixture.replace("error:this.blocked?", "error:this.erroLeitura?{message:'Falha fictícia de leitura de vendas'}:this.blocked?");
+  writeFileSync(caminhoFixture, fixture);
+  console.log("Prévia de Início e Vendas preparada; leituras fictícias e gravações bloqueadas.");
   process.exit(0);
 }
 
@@ -113,7 +134,7 @@ async function print(nome) {
 const resultado = {};
 const confere = (nome, ok, detalhe) => { resultado[nome] = { ok: !!ok, detalhe }; console.log(`${ok ? "OK   " : "FALHA"} ${nome}${detalhe ? "  " + JSON.stringify(detalhe) : ""}`); };
 
-if (!soMoldura && !soLista && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta && !soParcerias) {
+if (!soMoldura && !soLista && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta && !soParcerias && !soInicioVendas) {
 // 1. Migração da escolha antiga (três casos de tema e a barra).
 await tela(1280, 800);
 await esquemaAparelho("light");
@@ -382,6 +403,77 @@ async function printDe(nome, seletor) {
   return true;
 }
 
+// Fase 2, bloco 2: Início e Vendas. Um Chrome e uma conferência por vez.
+if (soInicioVendas) {
+  const tocar = (seletor, texto) => avaliar(`(() => { const b=[...document.querySelectorAll(${JSON.stringify(seletor)})].find(e=>e.getClientRects().length && getComputedStyle(e).visibility!=='hidden' && (${texto === undefined ? 'true' : `e.textContent.trim()===${JSON.stringify(texto)}`}));if(!b)return false;b.focus();b.click();return true; })()`);
+  const selecionar = (seletor, valor) => avaliar(`(() => {const e=document.querySelector(${JSON.stringify(seletor)});if(!e)return false;Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(e,${JSON.stringify(valor)});e.dispatchEvent(new Event('change',{bubbles:true}));return true;})()`);
+  const preencherRotulo = (rotulo, valor) => avaliar(`(() => {const p=document.querySelector('.mb-lateral--aberto');const l=[...p.querySelectorAll('label.mb-campo')].find(l=>l.querySelector('.mb-campo__rotulo')?.textContent.startsWith(${JSON.stringify(rotulo)}));const e=l?.querySelector('input,textarea');if(!e)return false;Object.getOwnPropertyDescriptor(e.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(valor)});e.dispatchEvent(new Event('input',{bubbles:true}));return true;})()`);
+  const valorRotulo = rotulo => avaliar(`(() => {const p=document.querySelector('.mb-lateral--aberto');const l=[...p.querySelectorAll('label.mb-campo')].find(l=>l.querySelector('.mb-campo__rotulo')?.textContent.startsWith(${JSON.stringify(rotulo)}));return l?.querySelector('input,textarea')?.value;})()`);
+  const medir = () => avaliar(`(() => {
+    const vis=e=>e.getClientRects().length && getComputedStyle(e).visibility!=='hidden' && !e.closest('details:not([open])') && !(innerWidth<768 && e.closest('thead'));
+    const altura=e=>{const p=e.closest('.mb-item,.mb-lista__item,tr');return e.matches('.mb-item__alvo,.mb-lista__alvo,.mb-tabela__alvo')&&p?p.getBoundingClientRect().height:e.matches('input[type=checkbox]')?e.closest('label').getBoundingClientRect().height:e.getBoundingClientRect().height;};
+    const inter=[...document.querySelectorAll('main button,main input,main select,main textarea,.mb-lateral--aberto button,.mb-lateral--aberto input,.mb-lateral--aberto select,.mb-lateral--aberto textarea')].filter(vis).filter(e=>!e.disabled);
+    return {lateral:document.documentElement.scrollWidth>document.documentElement.clientWidth,pequenos:inter.filter(e=>altura(e)<43.5).map(e=>({nome:(e.textContent||e.getAttribute('aria-label')||e.id).trim().slice(0,40),altura:altura(e)})),legado:!!document.querySelector('main .ds-antigo,main .btn,main .input,main .card,main .selo-antigo,.mb-lateral--aberto .btn,.mb-lateral--aberto .input'),h1:document.querySelectorAll('main h1').length};
+  })()`);
+  const validar = async (id,w) => {const m=await medir();confere(id+' · Alicerce, h1 e sem rolagem lateral',!m.legado && !m.lateral && m.h1===1,m);if(w<768)confere(id+' · alvos 44px',!m.pequenos.length,m.pequenos);};
+  const rotas=[['inicio-gerente','/?qa=gerente'],['inicio-geral','/?qa=geral'],['inicio-apoio','/?qa=apoio'],['vendas-gerente','/vendas/?qa=gerente'],['vendas-geral','/vendas/?qa=geral'],['vendas-corretor','/vendas/?qa=corretor']];
+  for(const [w,h] of [[375,812],[1280,800]]) for(const tema of ['papel','grafite']) {
+    await tela(w,h);await comArmazenamento({mb_tema:tema,mb_movimento:'reduzido'},'/?qa=gerente');
+    for(const [nome,rota] of rotas) {
+      await avaliar('sessionStorage.clear()');await abrir(rota);
+      const id=`${nome}-${w}-${tema}`;await validar(id,w);
+      const foco=await focoVisivel(w<768?8:14);confere(id+' · foco visível',!foco.length,foco);
+      await avaliar('document.activeElement?.blur();window.scrollTo(0,0)');await print(id);await printInteiro(id+'-inteiro');
+      if(nome==='inicio-gerente') confere(id+' · rotina e áreas preservadas',await avaliar(`!!document.querySelector('#parceiros-hoje + .mb-itens .mb-item') && document.querySelector('main .mb-lista a[href="/vendas/vendas/"]')?.textContent==='Vendas da equipe' && !!document.querySelector('main .mb-cartao')`));
+      if(nome==='inicio-apoio') confere(id+' · Em construção',await avaliar(`document.querySelector('.mb-estado__sobrelinha')?.textContent==='Em construção'`));
+      if(nome.startsWith('vendas-')) {
+        confere(id+' · uma tabela ativa de registros e totais',await avaliar(`[...document.querySelectorAll('main table')].filter(t=>!t.closest('details')).length===1 && document.querySelectorAll('.mb-indicador').length===3 && !!document.querySelector('.mb-tabela--registros td[data-rotulo="VGV"]')`));
+      }
+      if(nome==='vendas-gerente') {
+        await tocar('button.mb-tabela__alvo');await espera(350);await print(id+'-detalhe');
+        await tocar('.mb-lateral--aberto button','Corrigir venda');await espera(250);await print(id+'-corrigir');
+        await preencherRotulo('Unidade','QA-52');await tocar('.mb-lateral--aberto button[type=submit]');await espera(150);
+        confere(id+' · correção exige motivo',await avaliar(`document.querySelector('.mb-lateral--aberto')?.textContent.includes('Escreva o motivo da correção.')`));
+        await print(id+'-corrigir-motivo');await teclar('Escape','Escape',27);await espera(200);
+        confere(id+' · Esc devolve foco à venda',await avaliar(`document.activeElement.matches('.mb-tabela__alvo')`));
+        await tocar('button.mb-tabela__alvo');await espera(300);await tocar('.mb-lateral--aberto button','Cancelar venda');await espera(250);
+        confere(id+' · diálogo do cancelamento e foco seguro',await avaliar(`!!document.querySelector('.mb-dialogo') && document.activeElement.textContent==='Manter venda' && !document.querySelector('.mb-lateral--aberto')`));
+        await print(id+'-cancelar');await tocar('.mb-dialogo button[type=submit]');await espera(150);
+        confere(id+' · cancelamento exige motivo',await avaliar(`document.querySelector('.mb-dialogo')?.textContent.includes('Escreva o motivo.')`));
+        await tocar('.mb-dialogo button','Manter venda');await espera(300);
+        confere(id+' · diálogo devolve foco à ação',await avaliar(`document.activeElement.textContent==='Cancelar venda' && !!document.querySelector('.mb-lateral--aberto')`));
+        await teclar('Escape','Escape',27);await espera(150);
+        await tocar('button.mb-tabela__alvo','Clara Exemplo');await espera(250);await tocar('.mb-lateral--aberto button','Marcar como paga');await espera(250);await print(id+'-pagar');await teclar('Escape','Escape',27);await espera(150);
+        await tocar('summary');await espera(150);await printInteiro(id+'-canceladas');await tocar('.mb-recolhivel button.mb-tabela__alvo');await espera(250);await tocar('.mb-lateral--aberto button','Reativar venda');await espera(200);await print(id+'-reativar');await teclar('Escape','Escape',27);
+        await selecionar('#corretor','corretor-2');await espera(500);
+        confere(id+' · filtro no endereço',await avaliar(`new URLSearchParams(location.search).get('c')==='corretor-2' && document.querySelectorAll('main tbody tr').length===1`));
+        await abrir(rota);await tocar('.mb-segmentado button','Ano');await espera(450);
+        confere(id+' · período no endereço',await avaliar(`new URLSearchParams(location.search).get('p')==='ano'`));
+        await tocar('.mb-periodo button','← Anterior');await espera(400);
+        confere(id+' · período vazio distingue-se de erro',await avaliar(`!!document.querySelector('main .mb-vazio') && !document.querySelector('main .mb-estado--erro')`));await print(id+'-vazio');
+      }
+      if(nome==='vendas-corretor') {
+        await tocar('button.mb-tabela__alvo');await espera(250);
+        confere(id+' · corretor não corrige nem cancela',await avaliar(`![...document.querySelectorAll('.mb-lateral--aberto button')].some(b=>/Corrigir venda|Cancelar venda/.test(b.textContent))`));
+        await teclar('Escape','Escape',27);await espera(150);await tocar('main button','Registrar venda');await espera(350);await selecionar('#nova-venda-lead','lead-1');await espera(350);
+        confere(id+' · registro reaproveita o lead',await avaliar(`!!document.querySelector('.mb-lateral--aberto form') && document.querySelector('.mb-lateral--aberto')?.textContent.includes('Parabéns pela venda para Ana Exemplo.')`));
+        await preencherRotulo('Unidade','QA-52');await print(id+'-registrar');await abrir(rota);await espera(350);
+        confere(id+' · rascunho restaurado',await valorRotulo('Unidade')==='QA-52');
+        await tocar('.mb-lateral--aberto button','Cancelar');await espera(200);await tocar('main button','Registrar venda');await espera(250);
+        confere(id+' · cancelar limpa o rascunho',await valorRotulo('Unidade')==='');
+        await teclar('Escape','Escape',27);await avaliar('sessionStorage.clear()');
+      }
+    }
+    await abrir('/vendas/?qa=apoio');confere(`sem-permissao-${w}-${tema}`,await avaliar(`document.querySelector('.mb-estado__sobrelinha')?.textContent==='Sem permissão'`));await print(`vendas-sem-permissao-${w}-${tema}`);
+    await abrir('/vendas/?qa=vendas-erro');confere(`erro-${w}-${tema}`,await avaliar(`!!document.querySelector('.mb-estado--erro') && document.querySelector('main')?.textContent.includes('Tentar de novo') && !document.querySelector('main')?.textContent.includes('Falha fictícia')`));await print(`vendas-erro-${w}-${tema}`);
+    await abrir('/vendas/?qa=vendas-espera');confere(`carregando-${w}-${tema}`,await avaliar(`!!document.querySelector('main [aria-busy="true"] .mb-esqueleto') && !document.querySelector('main .mb-vazio')`));await print(`vendas-carregando-${w}-${tema}`);
+  }
+  confere('Nenhum erro no console',erros.length===0,erros);
+  writeFileSync(join(saida,'resultado.json'),JSON.stringify(resultado,null,2));
+  const falhas=Object.values(resultado).filter(r=>!r.ok).length;console.log(`${Object.keys(resultado).length} conferências, ${falhas} falhas. Capturas em ${saida}`);
+  await tela(1280,800);await cdp('Page.close');ws.close();process.exit(falhas?1:0);
+}
+
 // Fase 2, bloco 1. Um navegador, uma aba e uma conferência por vez.
 if (soParcerias) {
   const clicar = (seletor, texto) => avaliar(`(() => { const e = [...document.querySelectorAll(${JSON.stringify(seletor)})].find(x => x.getClientRects().length && getComputedStyle(x).visibility !== 'hidden' && (${texto === undefined ? "true" : `x.textContent.trim() === ${JSON.stringify(texto)}`})); if(!e) return false; e.focus(); e.click(); return true; })()`);
@@ -475,7 +567,7 @@ if (soParcerias) {
   await cdp('Page.close'); ws.close(); process.exit(falhas ? 1 : 0);
 }
 
-if (!soMoldura && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta && !soParcerias) {
+if (!soMoldura && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta && !soParcerias && !soInicioVendas) {
   for (const [w, h] of [[375, 812], [1280, 800]]) {
     for (const tema of ["papel", "grafite"]) {
       await abrirListaDoDia(w, h, tema);

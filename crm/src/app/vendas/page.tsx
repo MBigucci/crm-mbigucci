@@ -1,10 +1,17 @@
-"use client";
+﻿"use client";
 
 import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import clsx from "clsx";
+
 import { Casca } from "@/components/casca";
-import { CardVenda, NovaVenda, ResumoVendas } from "@/components/vendas/vendas";
+import { NovaVenda } from "@/components/vendas/vendas";
+import { ResumoVendasAlicerce, TabelaDeVendas } from "@/components/vendas/lista-alicerce";
+import { NavegadorDePeriodo } from "@/components/alicerce/navegador-de-periodo";
+import { CampoSelecao } from "@/components/alicerce/campo";
+import { Recolhivel } from "@/components/alicerce/recolhivel";
+import { CarregandoTabela } from "@/components/alicerce/carregando";
+import { EstadoVazio } from "@/components/alicerce/estado-vazio";
+import { EstadoDePagina, CopiarDetalhes, LinkDoEstado } from "@/components/alicerce/estado-de-pagina";
 import { usePerfil, useSessao } from "@/lib/sessao";
 import { useCorretores } from "@/lib/leads-dados";
 import { somarVendas } from "@/lib/vendas";
@@ -14,8 +21,8 @@ export default function VendasPage() {
   const { pode } = useSessao();
   const veOutros = pode("dados.ver_equipe") || pode("dados.ver_todos");
   return (
-    <Casca titulo={veOutros ? "Vendas da equipe" : "Minhas vendas"}>
-      <Suspense fallback={<p className="text-concrete">Carregando…</p>}>
+    <Casca titulo={veOutros ? "Vendas da equipe" : "Minhas vendas"} migrada>
+      <Suspense fallback={<CarregandoTabela texto="Carregando vendas…" />}>
         <Vendas />
       </Suspense>
     </Casca>
@@ -70,121 +77,36 @@ function Vendas() {
   const hoje = new Date();
   const ehAtual = per.ano === hoje.getFullYear() && (per.tipo === "ano" || per.mes === hoje.getMonth());
 
-  if (!permitido) return <div className="card max-w-[520px]">! Seu perfil não tem acesso a esta página.</div>;
+  if (!permitido) return <EstadoDePagina tipo="sem-permissao" titulo="Esta página não está liberada para o seu perfil" texto="Peça o acesso ao gerente geral." acoes={<LinkDoEstado href="/">Voltar para o início</LinkDoEstado>} />;
 
   const ativas = (vendas ?? []).filter((v) => v.status === "ativa");
   const listaCanceladas = (vendas ?? []).filter((v) => v.status === "cancelada");
   const t = somarVendas(vendas ?? []);
 
-  return (
-    <div className="grid gap-5 pb-24 md:pb-0">
-      <section className="grid gap-3" aria-label="Período">
-        <div className="flex flex-wrap items-end gap-3">
-          <fieldset>
-            <legend className="field-label">Período, pela assinatura</legend>
-            <div className="flex">
-              {(["mes", "ano"] as const).map((x) => (
-                <button
-                  key={x}
-                  type="button"
-                  aria-pressed={per.tipo === x}
-                  onClick={() => ir({ p: x === "ano" ? "ano" : null, d: x === "ano" ? String(per.ano) : null })}
-                  className={clsx(
-                    "focus-ring -ml-px border px-4 py-[11px] text-[14px] font-semibold first:ml-0 first:rounded-l-sm last:rounded-r-sm",
-                    per.tipo === x ? "relative z-[1] border-ink bg-ink text-surface" : "border-line bg-surface text-ink hover:border-ink",
-                  )}
-                >
-                  {x === "mes" ? "Mês" : "Ano"}
-                </button>
-              ))}
-            </div>
-          </fieldset>
-          {veOutros && (
-            <div className="min-w-[200px] flex-1 md:flex-none">
-              <label className="field-label" htmlFor="corretor">
-                Corretor
-              </label>
-              <select id="corretor" className="input" value={corretor ?? ""} onChange={(e) => ir({ c: e.target.value || null })}>
-                <option value="">Todos</option>
-                {corretores.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nome}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <button type="button" className="btn btn-ghost focus-ring px-3 text-[15px]" aria-label="Período anterior" onClick={() => deslocar(-1)}>
-            ← Anterior
-          </button>
-          <p className="num min-w-0 flex-1 text-center font-display text-[17px] font-bold md:flex-none md:px-3">{per.rotulo}</p>
-          <button type="button" className="btn btn-ghost focus-ring px-3 text-[15px]" aria-label="Período seguinte" onClick={() => deslocar(1)}>
-            Seguinte →
-          </button>
-          {!ehAtual && (
-            <button type="button" className="link-acao focus-ring ml-2 text-[13px]" onClick={() => ir({ d: null })}>
-              Voltar para hoje
-            </button>
-          )}
-        </div>
-      </section>
-
-      {erro && <p className="aviso-erro">! {erro}</p>}
-      {!vendas && !erro && <p className="text-concrete">Carregando…</p>}
-      {vendas && (
-        <p className="num -mt-2 text-ink-soft">
-          {ativas.length} {ativas.length === 1 ? "venda assinada" : "vendas assinadas"} no período
-        </p>
-      )}
-      {vendas && <ResumoVendas t={t} />}
-      {pode("leads.cadastrar") && !veOutros && <NovaVenda corretor={eu.id} onRegistrada={recarregar} />}
-
-      {vendas && !ativas.length && (
-        <div className="card">
-          <p className="text-ink-soft">
-            Nenhuma venda no período.
-            {pode("leads.cadastrar") && !veOutros
-              ? " Quando um lead for para Venda, o registro aparece aqui."
-              : " Quando um corretor registrar uma venda, ela aparece aqui."}
-          </p>
-        </div>
-      )}
-      {ativas.length > 0 && (
-        <ul className="grid gap-3 md:grid-cols-2">
-          {ativas.map((v) => (
-            <CardVenda
-              key={v.id}
-              venda={v}
-              lead={v.lead}
-              corretor={veOutros ? (nomes.get(v.corretor_id) ?? "Corretor") : undefined}
-              onMudou={recarregar}
-            />
-          ))}
-        </ul>
-      )}
-      {listaCanceladas.length > 0 && (
-        <section className="grid gap-3">
-          <button type="button" className="link-acao focus-ring justify-self-start text-[13px]" aria-expanded={canceladas} onClick={() => setCanceladas((x) => !x)}>
-            {canceladas ? "Esconder as canceladas" : `Ver as canceladas (${listaCanceladas.length})`}
-          </button>
-          {canceladas && (
-            <ul className="grid gap-3 md:grid-cols-2">
-              {listaCanceladas.map((v) => (
-                <CardVenda
-                  key={v.id}
-                  venda={v}
-                  lead={v.lead}
-                  corretor={veOutros ? (nomes.get(v.corretor_id) ?? "Corretor") : undefined}
-                  onMudou={recarregar}
-                />
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
-    </div>
-  );
+  const chaveOrdem = sp.get("ordem");
+  const ordem = chaveOrdem === "cliente" || chaveOrdem === "vgv" ? chaveOrdem : "assinada";
+  const sentido = sp.get("sentido") === "asc" ? "asc" : "desc";
+  const ordenar = (chave: "cliente" | "vgv" | "assinada", direcao?: "asc" | "desc") => ir({ ordem: chave, sentido: direcao ?? (ordem === chave && sentido === "desc" ? "asc" : "desc") });
+  const tabela = (linhas: typeof ativas, canceladas = false) => <TabelaDeVendas vendas={linhas} veOutros={veOutros} nomes={nomes} recarregar={recarregar} ordem={ordem} sentido={sentido} onOrdenar={ordenar} canceladas={canceladas} />;
+  return <div className="pagina-alicerce vendas-pilha">
+    <header className="mb-cabecalho">
+      <div className="mb-cabecalho__texto"><h1 className="titulo-tela">{veOutros ? "Vendas da equipe" : "Minhas vendas"}</h1><p className="mb-cabecalho__subtitulo">Confira as vendas pelo mês da assinatura. O VGV válido é o assinado e pago.</p></div>
+      {pode("leads.cadastrar") && !veOutros && <div className="mb-grupo-botoes"><NovaVenda alicerce corretor={eu.id} onRegistrada={recarregar} /></div>}
+    </header>
+    <section className="vendas-pilha" aria-label="Período das vendas">
+      <div className="vendas-filtros">
+        <div className="mb-campo"><span id="periodo-vendas" className="mb-campo__rotulo">Período, pela assinatura</span><div className="mb-segmentado" role="group" aria-labelledby="periodo-vendas">
+          {(["mes", "ano"] as const).map((x) => <button key={x} type="button" aria-pressed={per.tipo === x} onClick={() => ir({ p: x === "ano" ? "ano" : null, d: x === "ano" ? String(per.ano) : null })}>{x === "mes" ? "Mês" : "Ano"}</button>)}
+        </div></div>
+        {veOutros && <CampoSelecao rotulo="Corretor"><select id="corretor" className="mb-campo__entrada" value={corretor ?? ""} onChange={(e) => ir({ c: e.target.value || null })}><option value="">Todos os corretores</option>{corretores.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}</select></CampoSelecao>}
+      </div>
+      <NavegadorDePeriodo nome="Período das vendas" rotulo={per.rotulo} aoAnterior={() => deslocar(-1)} aoSeguinte={() => deslocar(1)} aoVoltar={!ehAtual ? () => ir({ d: null }) : undefined} />
+    </section>
+    {erro ? <EstadoDePagina tipo="erro-de-carga" titulo="Não foi possível carregar as vendas" texto="Tente de novo. O que você já salvou continua salvo." detalhe={<CopiarDetalhes codigo={erro} />} acoes={<button type="button" className="mb-botao mb-botao--primario" onClick={recarregar}>Tentar de novo</button>} /> : !vendas ? <CarregandoTabela texto="Carregando vendas…" /> : <>
+      <p className="mb-campo__ajuda">{ativas.length} {ativas.length === 1 ? "venda assinada" : "vendas assinadas"} no período</p>
+      <ResumoVendasAlicerce t={t} />
+      {!ativas.length ? <EstadoVazio titulo="Nenhuma venda no período" texto={pode("leads.cadastrar") && !veOutros ? "Quando um lead for para Venda, o registro aparece aqui." : "Quando um corretor registrar uma venda, ela aparece aqui."} /> : tabela(ativas)}
+      {listaCanceladas.length > 0 && <Recolhivel titulo="Ver as canceladas" contagem={`· ${listaCanceladas.length}`} aberto={canceladas} onAlternar={setCanceladas}>{tabela(listaCanceladas, true)}</Recolhivel>}
+    </>}
+  </div>;
 }
-
