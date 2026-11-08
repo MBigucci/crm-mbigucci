@@ -109,7 +109,6 @@ export async function alterarLead(
   id: string,
   campos: Record<string, unknown>,
   seAinda?: Record<string, unknown>,
-  botaoDoRascunho?: string,
 ): Promise<string | null> {
   let q = db().from("leads").update(campos).eq("id", id);
   for (const [k, v] of Object.entries(seAinda ?? {})) q = v === null ? q.is(k, null) : q.eq(k, v);

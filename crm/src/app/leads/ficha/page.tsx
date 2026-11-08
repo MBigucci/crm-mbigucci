@@ -289,7 +289,7 @@ function Ficha({ id }: { id: string }) {
     const atual = leadCompleto as Record<string, unknown>;
     const mudou = Object.fromEntries(Object.entries(campos).filter(([k, v]) => (v ?? null) !== (atual[k] ?? null)));
     if (!Object.keys(mudou).length) return null;
-    const e = await alterarLead(id, mudou, undefined, "Salvar perfil");
+    const e = await alterarLead(id, mudou);
     if (e) return e;
     await Promise.all([carregar(), recarregarPerfil()]);
     return null;
