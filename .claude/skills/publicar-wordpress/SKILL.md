@@ -17,7 +17,7 @@ Os apps são exportação estática (`output: "export"`). O Felipe envia a pasta
 
 Se a pasta for outra, pergunte antes. Um `BASE_PATH` errado quebra todos os arquivos `/_next/`. O arquivo de ambiente local do `crm/` pode ter um `BASE_PATH` antigo: passe o valor na linha do comando, que vence o arquivo.
 
-Na troca de `/crm` para o Base360 (só depois do ok da diretoria e da busca no INPI): o TI cria na Locaweb o registro DNS de `base360`, que é **um site estático próprio** na Hostinger (fora do WordPress), com SSL. Na `public_html` dele vão o portal (`portal/index.html`, `portal/.htaccess` e `portal/repasse/`) e, na pasta `vendas/`, o build do `crm/` com o `mbigucci-logo.png`. O conteúdo de `crm-redirecionamento/` (com o `.htaccess`) substitui os arquivos antigos de `/crm/` no site institucional. A Hostinger não aceita dois níveis de subdomínio (`vendas.base360…`), e juntar o Repasse no mesmo app sai caro (Felipe, 05/11/2026).
+Na troca de `/crm` para o Base360 (só depois do ok da diretoria e da busca no INPI): o TI cria na Locaweb o registro DNS de `base360`, que é **um site estático próprio** na Hostinger (fora do WordPress), com SSL. Na `public_html` dele vão o portal (`portal/index.html`, `portal/.htaccess` e `portal/repasse/`) e, na pasta `vendas/`, o build do `crm/`. O conteúdo de `crm-redirecionamento/` (com o `.htaccess`) substitui os arquivos antigos de `/crm/` no site institucional. A Hostinger não aceita dois níveis de subdomínio (`vendas.base360…`), e juntar o Repasse no mesmo app sai caro (Felipe, 05/11/2026).
 
 ## 2. Conferir o ambiente sem expor segredos
 - Confirme que o `.env.local` do app existe e tem as variáveis do `.env.example`. Leia só os **nomes** das variáveis e nunca repita os valores no chat.
@@ -43,7 +43,7 @@ Antes de entregar, confira:
 Diga:
 - O caminho completo da pasta `out/`.
 - Que ele deve enviar **o conteúdo** de `out/` para dentro da pasta do site, substituindo os arquivos antigos.
-- Que o `mbigucci-logo.png` deve continuar na pasta. Ele não vem do build.
+- Que o `mbigucci-logo.png` antigo não é mais usado: o logo vem do build, em `alicerce/mbigucci-logotipo.png` (08/11/2026).
 
 No Base360, publicar raiz e Vendas juntos: enviar os arquivos gerados `portal/index.html`, `portal/.htaccess`, `portal/repasse/`, `portal/sw.js`, `portal/manifest.webmanifest`, `portal/icons/`, `portal/fonts/` e `portal/mbigucci-logotipo.png` para a raiz; o conteúdo de `crm/out/` para `vendas/`. Não enviar `*.fonte.*`, `gerar.mjs`, `conferir-mockup.mjs`, planos ou capturas. As fontes são ignoradas pelo Git, então executar o gerador antes de montar o pacote. O SW é só de push, sem cache de páginas/dados.
 
@@ -53,7 +53,7 @@ O Felipe é o único com instalação antiga por `/vendas/`: seguir `docs/notifi
 Quando ele avisar que publicou, confira:
 - O HTML do site referencia `/<BASE_PATH>/_next/static/...`.
 - Um arquivo CSS de `/_next/` responde 200.
-- `/<BASE_PATH>/mbigucci-logo.png` responde 200.
+- `/<BASE_PATH>/alicerce/mbigucci-logotipo.png` responde 200.
 - No Base360: `/sw.js` responde como JavaScript e `/manifest.webmanifest` como manifest, sem redirecionar para HTML. Conferir no navegador o escopo `/` controlando portal e Vendas, o antigo `/vendas/` removido, apenas um ícone e o aviso de teste no iPhone. A raiz no navegador normal mostra portal; no app instalado abre o último módulo; logo retorna ao portal com `?portal=1`.
 
 Use o `curl -s`. Relate o que conferiu e o que não deu para conferir.

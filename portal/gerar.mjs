@@ -82,7 +82,18 @@ RewriteRule ^repasse/?(.*)$ ${ENDERECO_REPASSE}$1 [R=302,L]
 </IfModule>
 `
   : "# Gerado por portal/gerar.mjs. Sem endereço do Repasse ainda.\n";
-writeFileSync(join(aqui, ".htaccess"), htaccess);
+// A Hostinger servia o manifest como text/plain (08/11/2026); o tipo certo evita aviso do Chrome.
+// O sw.js nunca vai do cache, para a versão nova do app chegar logo.
+const tipos = `
+# Tipo do manifest do app e o sw.js sempre novo.
+AddType application/manifest+json .webmanifest
+<IfModule mod_headers.c>
+<Files "sw.js">
+Header set Cache-Control "no-cache"
+</Files>
+</IfModule>
+`;
+writeFileSync(join(aqui, ".htaccess"), htaccess + tipos);
 fs_mkdir(join(aqui, "repasse"));
 const destino = ENDERECO_REPASSE || "/";
 writeFileSync(join(aqui, "repasse", "index.html"), `<!doctype html>
