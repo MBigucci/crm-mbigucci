@@ -4,7 +4,7 @@
 
 **Origem:**
 - artifact: `https://claude.ai/artifact/52QJiDD4fLNu14iE3hce37`;
-- versão: `1794117258-00e0` (08/11/2026: Etapas compacta no celular, `.mb-etapas-bloco`; os outros 7 arquivos são os mesmos da `1794084743-8903`);
+- versão: `1794126571-2f68` (08/11/2026: Etapas compacta no celular, `.mb-etapas-bloco`, e a grade do FormularioDenso com uma coluna abaixo de 640px; os outros 7 arquivos são os mesmos da `1794084743-8903`);
 - trazida em 06/11/2026 (item 48, passo a) e atualizada em 07/11/2026 (passo b: menu fixo, ícones novos e o logo MBigucci; depois, a camada do menu e o toque de 44px da faixa do celular, que eram ajustes locais; por fim, o aviso de conexão logo abaixo do topo, no passo d, e a largura dele no celular; no passo e, a linha que abre painel, a linha "Você", a largura dos filtros e a contagem com o ordenar; no passo f, o botão como alvo do item, o rótulo longo da faixa e o Envio desativado).
 
 **Guia de uso em `guia/`** (trazido em 07/11/2026 da versão `1794088464-2fe1`, que tem os mesmos `bundle.css`, `bundle.js` e `tokens.json` da tabela abaixo):
@@ -31,7 +31,7 @@ O `npm test` confere os hashes e o `tokens.css` (`scripts/alicerce.test.mjs`).
 | Arquivo (a partir de `crm/`) | Origem no artifact | sha256 |
 | --- | --- | --- |
 | `src/alicerce/tokens.json` | `project/tokens.json` | `061a7fd27b21294bd0180ee1ac02a129263fcecc90f1ee3fd0db65071dcf74d1` |
-| `src/alicerce/bundle.css` | `project/components/bundle.css` | `e2192f50e83387925dcc93f04f795ded5a30e3c30f3ba580a240b0509df5c7f8` |
+| `src/alicerce/bundle.css` | `project/components/bundle.css` | `36889c4fd4c14389c8ac233e509e5fa05a7f0e9ccb81fbfc06bd40c5c0949f7f` |
 | `src/alicerce/ferramentas/tokens-css.mjs` | `project/ferramentas/tokens-css.mjs` | `ac4887432f8f9834fb3633749fb0f4361a26490ab8403d15adcbe64d3486ef04` |
 | `src/alicerce/fonts/BricolageGrotesque-Variable.woff2` | `project/fonts/BricolageGrotesque-Variable.woff2` | `94d70a9a9bcd7134d4a291486c60e66ddb302f1f2ddf5268277ba11663b6c1b9` |
 | `src/alicerce/fonts/GeistMono-Variable.woff2` | `project/fonts/GeistMono-Variable.woff2` | `684ad5b531f81d43c1e8c7038262d5db7cdc1f68006e04d6c7769efa8d33c8cc` |

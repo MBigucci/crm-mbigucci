@@ -151,7 +151,7 @@ textarea.mb-campo__entrada { height: auto; min-height: 88px; padding: 10px var(-
 /* Grade de formulário: 12 colunas, campos ocupam --mb-colunas */
 .mb-form-grade { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--esp-4) var(--esp-4); }
 .mb-form-grade > * { grid-column: span var(--mb-colunas, 12); }
-@media (max-width: 640px) { .mb-form-grade > * { grid-column: span 12; } }
+@media (max-width: 639px) { .mb-form-grade > * { grid-column: span 12; } }
 
 /* ---------- Marcador (checkbox e radio) ---------- */
 .mb-marcador { display: inline-flex; gap: var(--esp-2); align-items: flex-start; cursor: pointer; font-size: 14px; line-height: 20px; color: var(--texto); }
@@ -1484,6 +1484,8 @@ a.mb-indicador, button.mb-indicador { text-align: left; font: inherit; color: in
 .mb-form-secao__titulo { margin: 0; font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--texto-sutil); }
 .mb-form-grade--3 > * { grid-column: span 4; }
 @media (max-width: 1023px) { .mb-form-grade--3 > * { grid-column: span 6; } }
+/* Uma coluna abaixo de 640px em toda variante de grade (--3 e as que vierem); vem depois dela para não ser sobrescrita */
+@media (max-width: 639px) { [class*="mb-form-grade"] > * { grid-column: 1 / -1; } }
 /* Calculado: o sistema escreve, ninguém digita (fundo plano e o "=" na frente) */
 .mb-campo--calculado .mb-campo__afixo:first-child { font-family: var(--font-mono); }
 /* Bloqueado pelo perfil: plano, com o cadeado e o motivo */
