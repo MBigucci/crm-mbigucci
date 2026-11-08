@@ -4,3 +4,11 @@
 RewriteEngine On
 RewriteRule ^repasse/?(.*)$ https://repasse.mbigucci.com.br/$1 [R=302,L]
 </IfModule>
+
+# Tipo do manifest do app e o sw.js sempre novo.
+AddType application/manifest+json .webmanifest
+<IfModule mod_headers.c>
+<Files "sw.js">
+Header set Cache-Control "no-cache"
+</Files>
+</IfModule>
