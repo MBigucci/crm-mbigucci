@@ -1,12 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import clsx from "clsx";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Cartao } from "@/components/alicerce/cartao";
+import { Aviso } from "@/components/alicerce/aviso";
+import { CarregandoTabela } from "@/components/alicerce/carregando";
+import { EstadoVazio } from "@/components/alicerce/estado-vazio";
+import { ConfirmarNaLinha } from "@/components/alicerce/confirmar-na-linha";
+import { useToast } from "@/components/alicerce/toast";
+import { MesPrograma } from "@/components/programa/pecas";
+import { CabecalhoAdmin, ErroAdmin, erroAdmin, moedaAdmin as formatarReais } from "@/components/administracao/partes";
 import { Casca } from "@/components/casca";
 import { db } from "@/lib/supabase";
 import { mensagemErro } from "@/lib/erros";
 import { COLUNAS_FAIXA, faixasDoMes, mesSeguinte, type Faixa } from "@/lib/faixas";
-import { formatarReais, lerReais } from "@/lib/vendas";
+import { lerReais } from "@/lib/vendas";
 import { useNomes, useVendas } from "@/lib/vendas-dados";
 
 /**
@@ -15,7 +22,7 @@ import { useNomes, useVendas } from "@/lib/vendas-dados";
  */
 export default function FaixasPage() {
   return (
-    <Casca titulo="Faixas de VGV" soGerenteGeral>
+    <Casca titulo="Faixas de VGV" soGerenteGeral migrada>
       <Faixas />
     </Casca>
   );
@@ -33,6 +40,7 @@ function Faixas() {
   const [mes, setMes] = useState({ ano: hoje.getFullYear(), mes: hoje.getMonth() });
 
   const carregar = useCallback(async () => {
+    setErro(null);
     const [t, f] = await Promise.all([
       db().from("app_settings").select("rotulo, descricao, valor").eq("chave", "faixas_vgv").maybeSingle(),
       db().from("faixas_vgv").select(COLUNAS_FAIXA).order("vgv_minimo"),
@@ -52,129 +60,59 @@ function Faixas() {
   const nomes = useNomes((linhas ?? []).map((l) => l.corretor));
   const ordenadas = (linhas ?? []).sort((a, b) => b.vgvValido - a.vgvValido || (nomes.get(a.corretor) ?? "").localeCompare(nomes.get(b.corretor) ?? "", "pt-BR"));
   const total = ordenadas.reduce((s, l) => s + Number(l.faixa?.valor ?? 0), 0);
-  const ir = (n: number) => {
-    const d = new Date(mes.ano, mes.mes + n, 1);
-    setMes({ ano: d.getFullYear(), mes: d.getMonth() });
-  };
-  const th = "px-2 py-2 text-right font-semibold align-bottom";
-
-  if (erro) return <p className="aviso-erro">! {erro}</p>;
-  if (!textos || !faixas) return <p className="text-concrete">Carregando…</p>;
-
-  return (
-    <div className="grid gap-5">
-      <section className="card bar-brand">
-        <h2 className="titulo-card text-[20px]">{textos.rotulo}</h2>
-        {textos.descricao && <p className="mt-2 text-ink-soft">{textos.descricao}</p>}
-      </section>
-
-      <div className="flex items-center gap-2">
-        <button type="button" className="btn btn-ghost focus-ring px-3 text-[15px]" aria-label="Mês anterior" onClick={() => ir(-1)}>
-          ← Anterior
-        </button>
-        <p className="num min-w-0 flex-1 text-center font-display text-[17px] font-bold md:flex-none md:px-3">
-          {MESES[mes.mes]} de {mes.ano}
-        </p>
-        <button type="button" className="btn btn-ghost focus-ring px-3 text-[15px]" aria-label="Mês seguinte" onClick={() => ir(1)}>
-          Seguinte →
-        </button>
-      </div>
-
-      {erroVendas && <p className="aviso-erro">! {erroVendas}</p>}
-      {!linhas && !erroVendas && <p className="text-concrete">Carregando…</p>}
-      {linhas && (
-        <section aria-labelledby="t-faixas" className="min-w-0">
-          <h2 id="t-faixas" className="eyebrow mb-2">
-            Por corretor · vendas assinadas no mês · liberação em {MESES[prox.mes].toLowerCase()} de {prox.ano}
-          </h2>
-          {ordenadas.length ? (
-            <div className="card tabela-painel overflow-x-auto p-0">
-              <table className="w-full text-left text-[14px]">
-                <thead>
-                  <tr className="border-b border-line text-concrete">
-                    <th className="px-4 py-2 font-semibold">Corretor</th>
-                    <th className={th}>Assinado e pago</th>
-                    <th className={th}>{textos.coluna}</th>
-                    <th className={th}>Faixa atingida</th>
-                    <th className={clsx(th, "pr-4")}>Assinado, com pendentes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ordenadas.map((l) => (
-                    <tr key={l.corretor} className="border-b border-line">
-                      <td className="px-4 py-2">{nomes.get(l.corretor) ?? "Corretor"}</td>
-                      <td className="num px-2 py-2 text-right">{formatarReais(l.vgvValido)}</td>
-                      <td className="num whitespace-nowrap px-2 py-2 text-right font-semibold">{l.faixa ? formatarReais(Number(l.faixa.valor)) : "–"}</td>
-                      <td className={clsx("num whitespace-nowrap px-2 py-2 text-right", !l.faixa && "text-concrete")}>
-                        {l.faixa ? `✓ A partir de ${formatarReais(Number(l.faixa.vgv_minimo))}` : "– Abaixo da primeira"}
-                      </td>
-                      <td className="num px-2 py-2 pr-4 text-right text-ink-soft">{formatarReais(l.vgvAssinado)}</td>
-                    </tr>
-                  ))}
-                  <tr className="font-semibold">
-                    <td className="px-4 py-2" colSpan={2}>
-                      Total
-                    </td>
-                    <td className="num whitespace-nowrap px-2 py-2 text-right">{formatarReais(total)}</td>
-                    <td colSpan={2} />
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="card">
-              <p className="text-ink-soft">Nenhuma venda assinada neste mês.</p>
-            </div>
-          )}
-        </section>
-      )}
-
-      <EditarFaixas faixas={faixas} coluna={textos.coluna} onMudou={carregar} />
-    </div>
-  );
+  if (erro) return <ErroAdmin tentar={() => void carregar()} />;
+  if (!textos || !faixas) return <CarregandoTabela texto="Carregando faixas…" />;
+  return <div className="admin-pilha">
+    <CabecalhoAdmin titulo={textos.rotulo} descricao={textos.descricao} />
+    <MesPrograma valor={mes} onMudar={setMes} permitirFuturo />
+    <Cartao id="t-faixas" titulo="Por corretor" descricao={`Vendas assinadas no mês · liberação em ${MESES[prox.mes]} de ${prox.ano}`}>{erroVendas ? <ErroAdmin tentar={() => location.reload()} /> : !linhas ? <CarregandoTabela texto="Carregando vendas…" /> : !ordenadas.length ? <EstadoVazio titulo="Nenhuma venda assinada neste mês" texto="As vendas aparecem pelo mês da assinatura." /> : <div className="mb-tabela-envoltorio" tabIndex={0} role="region" aria-label="Valores por corretor. Role para ver as colunas.">
+      <table className="mb-tabela mb-tabela--numeros mb-tabela--primeira-fixa">
+        <thead>
+          <tr>
+            <th scope="col">Corretor</th>
+            <th scope="col">Assinado e pago</th>
+            <th scope="col">{textos.coluna}</th>
+            <th scope="col">Faixa atingida</th>
+            <th scope="col">Assinado, com pendentes</th>
+          </tr>
+        </thead>
+        <tbody>{ordenadas.map(l =>
+          <tr key={l.corretor}>
+            <td>{nomes.get(l.corretor) ?? "Corretor"}</td>
+            <td className="mb-tabela__num">{formatarReais(l.vgvValido)}</td>
+            <td className="mb-tabela__num">{l.faixa ? formatarReais(Number(l.faixa.valor)) : "–"}</td>
+            <td className="mb-tabela__num">{l.faixa ? `A partir de ${formatarReais(Number(l.faixa.vgv_minimo))}` : "Abaixo da primeira"}</td>
+            <td className="mb-tabela__num">{formatarReais(l.vgvAssinado)}</td>
+          </tr>)}</tbody>
+        <tfoot>
+          <tr>
+            <th scope="row" colSpan={2}>Total</th>
+            <td className="mb-tabela__num">{formatarReais(total)}</td>
+            <td colSpan={2} />
+          </tr>
+        </tfoot>
+      </table>
+    </div>}</Cartao>
+    <EditarFaixas faixas={faixas} coluna={textos.coluna} onMudou={carregar} />
+  </div>;
 }
 
 /** A tabela de faixas: cada linha é "a partir de" e o valor. Vale a mais alta atingida. */
 function EditarFaixas({ faixas, coluna, onMudou }: { faixas: Faixa[]; coluna: string; onMudou: () => void }) {
   const [nova, setNova] = useState(false);
-  return (
-    <section className="card grid gap-4" aria-labelledby="editar-faixas">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="editar-faixas" className="titulo-card">
-          Faixas
-        </h2>
-        {!nova && (
-          <button type="button" className="btn btn-ghost focus-ring" onClick={() => setNova(true)}>
-            + Nova faixa
-          </button>
-        )}
-      </div>
-      {!faixas.length && !nova && <p className="text-ink-soft">Nenhuma faixa. Crie a primeira.</p>}
-      <ul className="grid gap-4">
-        {faixas.map((f) => (
-          <li key={f.id} className="border-b border-line pb-4 last:border-0 last:pb-0">
-            <LinhaFaixa faixa={f} coluna={coluna} onMudou={onMudou} />
-          </li>
-        ))}
-        {nova && (
-          <li>
-            <LinhaFaixa
-              coluna={coluna}
-              onMudou={() => {
-                setNova(false);
-                onMudou();
-              }}
-              onCancelar={() => setNova(false)}
-            />
-          </li>
-        )}
-      </ul>
-    </section>
-  );
+  return <Cartao id="editar-faixas" titulo="Faixas" descricao="Vale a mais alta atingida; os valores não se acumulam." acao={!nova && <button className="mb-botao mb-botao--secundario" onClick={() => setNova(true)}>Adicionar faixa</button>}>
+    {!faixas.length && !nova && <EstadoVazio titulo="Nenhuma faixa cadastrada" texto="Adicione a primeira faixa para começar." />}<ul className="mb-repetivel">{faixas.map(f =>
+      <li key={f.id}>
+        <LinhaFaixa faixa={f} coluna={coluna} onMudou={onMudou} />
+      </li>)}{nova && <li>
+        <LinhaFaixa coluna={coluna} onCancelar={() => setNova(false)} onMudou={() => { setNova(false); onMudou(); }} />
+      </li>}</ul>
+  </Cartao>;
 }
 
 function LinhaFaixa({ faixa, coluna, onMudou, onCancelar }: { faixa?: Faixa; coluna: string; onMudou: () => void; onCancelar?: () => void }) {
-  const fmt = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+  const toast = useToast(); const remover = useRef<HTMLButtonElement>(null); const [confirmando, setConfirmando] = useState(false); const [ocupado, setOcupado] = useState(false);
+  const fmt = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const [minimo, setMinimo] = useState(faixa ? fmt(Number(faixa.vgv_minimo)) : "");
   const [valor, setValor] = useState(faixa ? fmt(Number(faixa.valor)) : "");
   const [erro, setErro] = useState<string | null>(null);
@@ -187,7 +125,9 @@ function LinhaFaixa({ faixa, coluna, onMudou, onCancelar }: { faixa?: Faixa; col
     if (!m) return setErro("Confira o VGV mínimo: só números, como 1.000.000.");
     if (v === null) return setErro(`Confira o campo ${coluna}: só números, como 2.000.`);
     const campos = { vgv_minimo: m, valor: v };
+    setOcupado(true);
     const r = faixa ? await db().from("faixas_vgv").update(campos).eq("id", faixa.id) : await db().from("faixas_vgv").insert(campos);
+    setOcupado(false);
     if (r.error) return setErro(r.error.message.includes("vgv_minimo") ? "Já existe uma faixa com esse VGV mínimo." : mensagemErro(r.error));
     setErro(null);
     setOk(true);
@@ -195,44 +135,33 @@ function LinhaFaixa({ faixa, coluna, onMudou, onCancelar }: { faixa?: Faixa; col
   }
   async function excluir() {
     if (!faixa) return;
+    setOcupado(true);
     const { error } = await db().from("faixas_vgv").delete().eq("id", faixa.id);
+    setOcupado(false);
     if (error) return setErro(mensagemErro(error));
-    onMudou();
+    toast.mostrar("Faixa removida.", { tipo: "sucesso" }); onMudou();
   }
 
-  return (
-    <div className="grid gap-3">
-      <div className="grid gap-3 md:grid-cols-2">
-        <div>
-          <label className="field-label" htmlFor={`min-${id}`}>
-            VGV no mês a partir de (R$)
-          </label>
-          <input id={`min-${id}`} className="input num" inputMode="decimal" value={minimo} onChange={(e) => (setMinimo(e.target.value), setOk(false))} />
-        </div>
-        <div>
-          <label className="field-label" htmlFor={`val-${id}`}>
-            {coluna} (R$)
-          </label>
-          <input id={`val-${id}`} className="input num" inputMode="decimal" value={valor} onChange={(e) => (setValor(e.target.value), setOk(false))} />
-        </div>
-      </div>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <button type="button" className="btn btn-ghost focus-ring" onClick={salvar}>
-          {faixa ? "Salvar" : "Criar faixa"}
-        </button>
-        {faixa && (
-          <button type="button" className="link-acao focus-ring text-[13px]" onClick={excluir}>
-            Excluir faixa
-          </button>
-        )}
-        {onCancelar && (
-          <button type="button" className="link-acao focus-ring text-[13px]" onClick={onCancelar}>
-            Cancelar
-          </button>
-        )}
-        {ok && <span className="aviso-ok">✓ Salvo</span>}
-      </div>
-      {erro && <p className="aviso-erro">! {erro}</p>}
+  const mudou = !faixa || lerReais(minimo) !== Number(faixa.vgv_minimo) || (valor.trim() === "0" ? 0 : lerReais(valor)) !== Number(faixa.valor);
+  return <div className="admin-faixa">
+    <div className="mb-repetivel__linha admin-faixa__campos">
+      <label className="mb-campo">
+        <span className="mb-campo__rotulo">VGV no mês a partir de</span>
+        <span className="mb-campo__grupo">
+          <span className="mb-campo__afixo">R$</span>
+          <input id={`min-${id}`} className="mb-campo__entrada mb-campo__entrada--num" inputMode="decimal" value={minimo} onChange={e => { setMinimo(e.target.value); setOk(false); }} />
+        </span>
+      </label>
+      <label className="mb-campo">
+        <span className="mb-campo__rotulo">{coluna}</span>
+        <span className="mb-campo__grupo">
+          <span className="mb-campo__afixo">R$</span>
+          <input id={`val-${id}`} className="mb-campo__entrada mb-campo__entrada--num" inputMode="decimal" value={valor} onChange={e => { setValor(e.target.value); setOk(false); }} />
+        </span>
+      </label>
+      <div className="mb-grupo-botoes">{mudou && <button className="mb-botao mb-botao--primario" disabled={ocupado} onClick={() => void salvar()}>{ocupado ? "Salvando…" : faixa ? "Salvar faixa" : "Criar faixa"}</button>}{faixa && !confirmando && <button ref={remover} className="mb-botao mb-botao--discreto" onClick={() => setConfirmando(true)}>Remover faixa</button>}{onCancelar && <button className="mb-botao mb-botao--discreto" onClick={onCancelar}>Cancelar</button>}</div>
     </div>
-  );
+    {confirmando && <ConfirmarNaLinha pergunta="Remover esta faixa?" efeito="Ela deixa de participar do cálculo por VGV. A remoção não pode ser desfeita." verbo="Remover faixa" ocupado={ocupado} onConfirmar={() => void excluir()} onCancelar={() => { setConfirmando(false); requestAnimationFrame(() => remover.current?.focus()); }} />}
+    {ok && <span className="mb-salvo mb-salvo--ok" role="status">✓ Faixa salva</span>}{erro && <Aviso tom="erro" titulo={erroAdmin(erro)} />}
+  </div>;
 }

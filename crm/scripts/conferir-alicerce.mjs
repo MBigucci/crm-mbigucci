@@ -48,8 +48,52 @@ const soParcerias = argumentos.includes("--parcerias");
 const soInicioVendas = argumentos.includes("--inicio-vendas");
 const soQuadroEmpreendimentos = argumentos.includes("--quadro-empreendimentos");
 const soPontosEmpreendimentos = argumentos.includes("--pontos-empreendimentos");
+const soAdministracao = argumentos.includes("--administracao");
 const soEtapas = argumentos.includes("--etapas-parceiro");
 const soPainelMetasRanking = argumentos.includes("--painel-metas-ranking");
+
+// Bloco 6: após os preparos dos blocos anteriores. Só a cópia gerada e dados fictícios.
+if(argumentos.includes('--preparar-administracao')) {
+  const arq='.visual-preview/src/lib/visual-fixtures.ts';let s=readFileSync(arq,'utf8');
+  if(s.includes('// Fixtures de Administração.'))throw new Error('Gere a prévia novamente antes de repetir este preparo.');
+  const se='.visual-preview/src/lib/sessao.tsx';writeFileSync(se,readFileSync(se,'utf8').replace("['/vendas/configuracoes/'","['/vendas/equipes/corretor/','/vendas/configuracoes/'").replace("qa!=='corretor' && [","!['corretor','gerente','apoio'].includes(qa??'') && ["));
+  const extra=`
+// Fixtures de Administração. Escritas só em objetos locais na URL explícita admin-gravar.
+let adminPermWrites=0;
+tables.profiles=tables.profiles.map(p=>({...p,ativo:p.ativo??true,email:p.email??p.id+'@example.invalid',equipe_id:p.equipe_id??null,apelido:p.apelido??null,whatsapp:p.whatsapp??null,creci:null}));
+tables.profiles.push({id:'geral',nome:'Gerente Geral Exemplo',email:'geral@example.invalid',perfil:'gerente_geral',ativo:true,equipe_id:null},{id:'gerente-3',nome:'Gerente Reserva Exemplo',email:'reserva@example.invalid',perfil:'gerente',ativo:true,equipe_id:null},{id:'recepcao-1',nome:'Recepção Exemplo',email:'recepcao@example.invalid',perfil:'recepcao',ativo:true,equipe_id:null},{id:'inativo-1',nome:'Usuário Inativo Exemplo',email:'inativo@example.invalid',perfil:'corretor',ativo:false,equipe_id:'equipe-1',apelido:'Inativo'});
+tables.teams.push({id:'equipe-vazia',nome:'Equipe Reserva Exemplo',gerente_id:'gerente-3'});
+tables.permissions=[['leads.cadastrar','Cadastrar e trabalhar os próprios leads'],['leads.atribuir','Atribuir leads à equipe'],['dados.ver_equipe','Ver os dados da equipe'],['dados.ver_todos','Ver dados de todas as equipes'],['usuarios.gerenciar','Gerenciar usuários'],['equipes.gerenciar','Gerenciar equipes'],['empreendimentos.gerenciar','Gerenciar empreendimentos'],['distribuicao.receber','Receber leads da empresa'],['distribuicao.produtos','Marcar os produtos que cada corretor atende'],['acoes.registrar','Enviar vídeo ou blitz para aprovação'],['pontos_gerente.participar','Participar do programa dos gerentes']].map(([slug,descricao],ordem)=>({slug,descricao,ordem}));
+tables.role_permissions=[['corretor','leads.cadastrar'],['corretor','acoes.registrar'],['corretor','distribuicao.receber'],['gerente','dados.ver_equipe'],['gerente','distribuicao.produtos'],['gerente','pontos_gerente.participar']].map(([perfil,permissao])=>({perfil,permissao}));
+tables.mensagens_modelo=tables.mensagens_modelo.map((m,i)=>({...m,ordem:i+1,etapas:i===0?['novo']:['em_contato'],sem_contato:false}));tables.mensagens_modelo.push({slug:'retomar',titulo:'Retomar contato',texto:'Oi, {primeiro_nome}. Podemos retomar a conversa sobre o {empreendimento}?',ordem:3,etapas:['em_contato'],sem_contato:true,ativo:false});
+tables.faixas_vgv=[{id:'faixa-1',vgv_minimo:1000000,valor:2000},{id:'faixa-2',vgv_minimo:1500000,valor:3000},{id:'faixa-3',vgv_minimo:2000000,valor:5000},{id:'faixa-4',vgv_minimo:3000000,valor:10000}];
+tables.distribuicao_config[0].destino_manual_nome='DestinoSigilosoQA';
+tables.app_settings.push({chave:'faixas_vgv',rotulo:'Faixas de VGV',descricao:'Valores fictícios para a conferência.',valor:{coluna:'Valor'}});
+tables.vendas.push({...tables.vendas[1],id:'venda-faixa',corretor_id:'corretor-1',vgv:1200000,status:'ativa'});
+const qaAdmin=()=>typeof location!=='undefined'?new URLSearchParams(location.search).get('qa'):'';
+function adminRpc(nome:string,args?:Record<string,any>){
+  if(qaAdmin()==='admin-erro'&&['distribuicao_a_distribuir','distribuicao_equipes','distribuicao_produtos'].includes(nome))return {data:null,error:{message:'Falha fictícia'}};
+  if(nome==='distribuicao_config_salvar'){if(qaAdmin()!=='admin-gravar')return {data:null,error:{message:'Prévia visual: gravação desativada.'}};Object.assign(tables.distribuicao_config[0],args?.p??{});return {data:tables.distribuicao_config[0],error:null};}
+  if(['distribuicao_participa','distribuicao_produtos_salvar','distribuicao_atribuir','distribuicao_mandar_todos'].includes(nome))return {data:qaAdmin()==='admin-gravar'?(nome==='distribuicao_mandar_todos'?2:null):null,error:qaAdmin()==='admin-gravar'?null:{message:'Prévia visual: gravação desativada.'}};
+  return undefined;
+}
+`;
+  s=s.replace('// Adaptador só de leitura.',extra+'\n// Adaptador só de leitura.');
+  s=s.replace("this.erroLeitura=(", "this.erroLeitura=(qa==='admin-erro'&&['profiles','teams','permissions','mensagens_modelo','faixas_vgv','distribuicao_config','horario_atendimento'].includes(name))||(");
+  s=s.replace("this.espera=(", "this.espera=(qa==='admin-espera'&&['profiles','teams','permissions','mensagens_modelo','faixas_vgv','distribuicao_config'].includes(name))||(");
+  s=s.replace('this.tabela=name;',"this.tabela=name;if(qa==='admin-vazio'&&['profiles','teams','mensagens_modelo','faixas_vgv'].includes(name))this.rows=[];if(qa==='admin-produtos-desligados'&&name==='distribuicao_config')this.rows=this.rows.map(x=>({...x,produtos:false}));");
+  s=s.replace('singleRow=false; blocked=false;','singleRow=false; blocked=false; exclusao=false; inclusao:Row[]|null=null;');
+  s=s.replace("if(qa==='pontos-aprovar'", "if(qa==='admin-gravar'&&['profiles','teams','mensagens_modelo','faixas_vgv','horario_atendimento'].includes(this.tabela)&&campos){this.alteracao=campos;}else if(qa==='pontos-aprovar'");
+  s=s.replace('insert() {this.blocked=true;return this;}',"insert(d:Row|Row[]) {if(['admin-gravar','admin-gravar-parcial'].includes(qaAdmin()??'')&&['role_permissions','teams','faixas_vgv','mensagens_modelo'].includes(this.tabela)){this.inclusao=Array.isArray(d)?d:[d];}else this.blocked=true;return this;}");
+  s=s.replace('delete() {this.blocked=true;return this;}',"delete() {if(['admin-gravar','admin-gravar-parcial'].includes(qaAdmin()??'')&&['role_permissions','teams','faixas_vgv'].includes(this.tabela))this.exclusao=true;else this.blocked=true;return this;}");
+  s=s.replace('order() {return this;}',"order(k?:string) {if(k==='ordem'||k==='vgv_minimo')this.rows.sort((a,b)=>Number(a[k])-Number(b[k]));return this;}");
+  s=s.replace("this.tabela==='lancamentos_pontos'||", "qaAdmin()==='admin-gravar'||this.tabela==='lancamentos_pontos'||");
+  s=s.replace('  if(this.exclusao){',"  if(qaAdmin()==='admin-gravar-parcial'&&this.tabela==='role_permissions'&&(this.inclusao||this.exclusao||this.alteracao)&&++adminPermWrites===2)return Promise.resolve({data:null,error:{message:'Falha fictícia de gravação'}}).then(ok,err);if(this.exclusao){");
+  s=s.replace('  if(this.alteracao){',"  if(this.exclusao){tables[this.tabela]=tables[this.tabela].filter(x=>!this.rows.includes(x));}if(this.inclusao){this.rows=this.inclusao.map((x,i)=>({id:'novo-ficticio-'+i,...x}));tables[this.tabela].push(...this.rows);}if(this.alteracao){");
+  const ini=s.indexOf('rpc:async('),fim=s.indexOf('\n auth:',ini);const trecho=s.slice(ini,fim);s=s.slice(0,ini)+trecho.replace('=> ', '=> adminRpc(name,args) ?? (').replace(/,\s*$/, '),')+s.slice(fim);
+  s=s.replace('export const client = {','export const client = {functions:{invoke:async()=>({data:null,error:{message:"Prévia visual: gravação desativada."}})},');
+  writeFileSync(arq,s);console.log('Administração preparada apenas na cópia fictícia. Nenhum acesso ao Supabase real.');process.exit(0);
+}
 
 // Bloco 5: depois dos quatro preparos anteriores. Apenas a cópia isolada, sem credenciais.
 if (argumentos.includes('--preparar-pontos-empreendimentos')) {
@@ -216,7 +260,7 @@ async function print(nome) {
 const resultado = {};
 const confere = (nome, ok, detalhe) => { resultado[nome] = { ok: !!ok, detalhe }; console.log(`${ok ? "OK   " : "FALHA"} ${nome}${detalhe ? "  " + JSON.stringify(detalhe) : ""}`); };
 
-if (!soMoldura && !soLista && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta && !soParcerias && !soInicioVendas && !soEtapas && !soPainelMetasRanking && !soQuadroEmpreendimentos && !soPontosEmpreendimentos) {
+if (!soMoldura && !soLista && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta && !soParcerias && !soInicioVendas && !soEtapas && !soPainelMetasRanking && !soQuadroEmpreendimentos && !soPontosEmpreendimentos && !soAdministracao) {
 // 1. Migração da escolha antiga (três casos de tema e a barra).
 await tela(1280, 800);
 await esquemaAparelho("light");
@@ -515,6 +559,62 @@ if (soEtapas) {
   writeFileSync(join(saida,'resultado-etapas.json'),JSON.stringify(resultado,null,2));
   await cdp('Page.close');ws.close();process.exit(Object.values(resultado).some(r=>!r.ok)?1:0);
 }
+
+// Administração: uma conferência, um alvo e somente o adaptador fictício da prévia.
+if(soAdministracao){
+  const tocar=(sel,txt)=>avaliar(`(() => {const e=[...document.querySelectorAll(${JSON.stringify(sel)})].find(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden'&&(${txt===undefined?'true':`e.textContent.trim()===${JSON.stringify(txt)}`}));if(!e)return false;e.focus();e.click();return true;})()`);
+  const preencher=(sel,v)=>avaliar(`(() => {const e=document.querySelector(${JSON.stringify(sel)});if(!e)return false;const p=e.tagName==='SELECT'?HTMLSelectElement.prototype:e.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(p,'value').set.call(e,${JSON.stringify(v)});e.dispatchEvent(new Event(e.tagName==='SELECT'?'change':'input',{bubbles:true}));return true;})()`);
+  const checar=async(id,w,normal=true)=>{
+    const r=await avaliar(`(() => {const vis=e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden';const altura=e=>e.type==='checkbox'?(e.closest('label')??e).getBoundingClientRect().height:e.matches('.mb-tabela__alvo,.mb-lista__alvo')?(e.closest('tr,.mb-lista__item')??e).getBoundingClientRect().height:e.getBoundingClientRect().height;return {lateral:document.documentElement.scrollWidth>innerWidth,h1:document.querySelectorAll('main h1').length,legado:!!document.querySelector('main .ds-antigo,main .card,main .btn,main .input,main .field-label,main [class*="-antigo"],.mb-lateral--aberto .card'),excesso:[...document.querySelectorAll('main .admin-pilha > *, .mb-lateral--aberto')].filter(vis).filter(e=>e.getBoundingClientRect().right>innerWidth+1||e.getBoundingClientRect().left < -1).map(e=>e.className),pequenos:[...document.querySelectorAll('main button,main a[href],main input,main textarea,main select,.mb-lateral--aberto button,.mb-lateral--aberto input,.mb-lateral--aberto select,.mb-dialogo button')].filter(vis).filter(e=>!e.disabled&&altura(e)<43.5).map(e=>({nome:(e.getAttribute('aria-label')||e.textContent||e.id||e.type||'controle').trim().slice(0,55),h:altura(e)})),semRotulo:[...document.querySelectorAll('main input,main select,main textarea,.mb-lateral--aberto input,.mb-lateral--aberto textarea,.mb-lateral--aberto select')].filter(vis).filter(e=>!e.labels?.length&&!e.getAttribute('aria-label')).map(e=>e.id||e.type),fontes:[...document.querySelectorAll('main input:not([type=checkbox]),main textarea,main select,.mb-lateral--aberto input:not([type=checkbox]),.mb-lateral--aberto textarea,.mb-lateral--aberto select')].filter(vis).filter(e=>parseFloat(getComputedStyle(e).fontSize)<16).map(e=>e.id||e.getAttribute('aria-label')),sigilo:document.body.textContent.includes('DestinoSigilosoQA')};})()`);
+    confere(id+' · sem rolagem lateral',!r.lateral&&!r.excesso.length,r);confere(id+' · Alicerce e título',!r.legado&&(!normal||r.h1===1),r);confere(id+' · campos nomeados',!r.semRotulo.length,r.semRotulo);confere(id+' · destino sigiloso ausente',!r.sigilo);if(w<768){confere(id+' · alvos 44px',!r.pequenos.length,r.pequenos);confere(id+' · campos com 16px',!r.fontes.length,r.fontes);}
+  };
+  const rotas=[['configuracoes','/configuracoes/?qa=geral'],['usuarios','/usuarios/?qa=geral'],['equipes','/equipes/?qa=geral'],['faixas','/faixas/?qa=geral'],['distribuicao','/distribuicao/?qa=geral'],['corretor','/equipes/corretor/?qa=gerente&id=corretor-1']].filter(([nome])=>!argumentos.includes('--usuarios-revisao')||nome==='usuarios');
+  for(const [w,h] of [[375,812],[1280,800]])for(const tema of ['papel','grafite']){
+    await tela(w,h);await comArmazenamento({mb_tema:tema,mb_movimento:'reduzido'},rotas[0][1]);
+    for(const [nome,rota] of rotas){
+      await abrir(rota);const id=`${nome}-${w}-${tema}`;await checar(id,w);const foco=await focoVisivel(w<768?10:16);confere(id+' · foco visível',!foco.length,foco);await avaliar('document.activeElement?.blur();window.scrollTo(0,0)');await print(id);await printInteiro(id+'-inteiro');
+      if(nome==='configuracoes'){
+        confere(id+' · conteúdo completo sem ponte antiga',await avaliar(`!!document.querySelector('#horario')&&!!document.querySelector('#mensagens .mb-catalogo')&&!!document.querySelector('#permissoes .mb-matriz')&&!document.querySelector('.ds-antigo')`));await printDe(id+'-mensagens','#mensagens');await printDe(id+'-permissoes','#permissoes');
+        await tocar('button','Editar horário');await espera(450);await checar(id+'-horario',w);await print(id+'-horario');await preencher('#horario-fim','01:00');await tocar('.mb-lateral--aberto button','Salvar horário');await espera(150);confere(id+' · horário valida antes de gravar',await avaliar(`document.querySelector('.mb-lateral--aberto').textContent.includes('O fim precisa ser depois')`));await preencher('#horario-fim','21:00');await tocar('.mb-lateral--aberto button','Salvar horário');await espera(200);confere(id+' · erro do horário preserva campo',await avaliar(`document.querySelector('#horario-fim')?.value==='21:00'&&!!document.querySelector('.mb-lateral--aberto .mb-aviso--erro')`));await teclar('Escape','Escape',27);await espera(200);
+        await tocar('button','Editar texto');await espera(450);await checar(id+'-mensagem',w);await print(id+'-mensagem');confere(id+' · prévia de mensagem com variáveis resolvidas',await avaliar(`!!document.querySelector('.mb-lateral--aberto .mb-subsecao')&&!document.querySelector('.mb-lateral--aberto .mb-subsecao').textContent.includes('{primeiro_nome}')`));await teclar('Escape','Escape',27);await espera(150);
+        const controle=w<768?'.admin-matriz [data-perfil=corretor] [role=switch]':'.admin-matriz [data-perfil=corretor] input';await tocar(controle);await espera(150);confere(id+' · matriz acumula alterações',await avaliar(`document.querySelectorAll('.mb-matriz__mudou').length===1&&document.querySelector('.mb-lote')?.textContent.includes('1 alteração não salva')`));await printDe(id+'-matriz-alterada','#permissoes');await tocar('button','Salvar permissões…');await espera(200);confere(id+' · confirmação informa efeito e mantém foco seguro',await avaliar(`document.activeElement?.textContent==='Continuar conferindo'&&document.querySelector('.mb-dialogo').textContent.includes('próximo acesso')`));await print(id+'-permissoes-confirmar');await teclar('Escape','Escape',27);await espera(150);await tocar('button','Descartar alterações');confere(id+' · descartar restaura matriz',await avaliar(`!document.querySelector('.mb-lote')&&!document.querySelector('.mb-matriz__mudou')`));
+        if(w<768){await tocar('.admin-matriz button','Gerente geral');await espera(150);confere(id+' · um perfil e GG sempre',await avaliar(`document.querySelector('.admin-matriz [data-perfil-ativo=true]')?.dataset.perfil==='gerente_geral'&&![...document.querySelectorAll('.admin-matriz [data-perfil=gerente_geral] input')].length`));await printDe(id+'-gg-sempre','#permissoes');}
+      }
+      if(nome==='usuarios'){
+        await tocar('button','Novo usuário');await espera(450);await checar(id+'-novo',w);await print(id+'-novo');await preencher('#novo-nome','Conta de conferência');await preencher('#novo-email','nova@example.invalid');await preencher('#novo-senha','provisoria123');await preencher('#novo-perfil','gerente');await tocar('.mb-lateral--aberto button','Criar conta');await espera(200);confere(id+' · criação bloqueada conserva preenchimento',await avaliar(`document.querySelector('#novo-nome')?.value==='Conta de conferência'&&!!document.querySelector('.mb-lateral--aberto .mb-aviso--erro')`));await teclar('Escape','Escape',27);await espera(150);await tocar('button','Novo usuário');await espera(400);confere(id+' · nova tentativa de criação começa limpa após cancelar',await avaliar(`document.querySelector('#novo-nome')?.value===''&&document.querySelector('#novo-senha')?.value===''`));await teclar('Escape','Escape',27);await espera(150);
+        await tocar('.mb-tabela__alvo','Marina Exemplo');await espera(450);await checar(id+'-editar',w);await print(id+'-editar');await preencher('#nome-corretor-1','Marina Conferência');await tocar('.mb-lateral--aberto button','Salvar usuário');await espera(200);confere(id+' · erro de edição conserva formulário',await avaliar(`document.querySelector('#nome-corretor-1')?.value==='Marina Conferência'&&!!document.querySelector('.mb-lateral--aberto .mb-aviso--erro')`));await teclar('Escape','Escape',27);await espera(150);
+        await tocar('.mb-tabela__alvo','Gerente Geral Exemplo');await espera(400);confere(id+' · não desativa a própria conta',await avaliar(`document.querySelector('.mb-lateral--aberto input[type=checkbox]')?.disabled===true`));await teclar('Escape','Escape',27);await espera(150);
+        await preencher('main input[type=search]','zzzzz');await espera(150);confere(id+' · filtro na URL e vazio',await avaliar(`!!document.querySelector('.mb-vazio')&&new URLSearchParams(location.search).get('busca')==='zzzzz'`));await print(id+'-busca-vazia');
+      }
+      if(nome==='equipes'){
+        await tocar('button','Nova equipe');await espera(150);await checar(id+'-nova',w);await print(id+'-nova');await tocar('button','Cancelar');await espera(100);
+        await tocar('section[aria-labelledby=equipe-equipe-vazia] button','Editar equipe');await espera(150);await tocar('button','Remover equipe');await espera(150);confere(id+' · remoção confirma na linha com foco seguro',await avaliar(`!!document.querySelector('.mb-confirmar')&&document.activeElement?.textContent==='Cancelar'`));await print(id+'-remover');await teclar('Escape','Escape',27);await espera(100);confere(id+' · Esc cancela remoção',await avaliar(`!document.querySelector('.mb-confirmar')`));await tocar('button','Cancelar');
+      }
+      if(nome==='faixas'){
+        confere(id+' · regra fixa e tabela numérica única',await avaliar(`!!document.querySelector('.mb-tabela--numeros.mb-tabela--primeira-fixa tfoot')&&document.querySelectorAll('.admin-faixa').length===4`));await preencher('#val-faixa-1','2.500');await espera(100);confere(id+' · Salvar só aparece com alteração',await avaliar(`[...document.querySelectorAll('main button')].filter(b=>b.textContent==='Salvar faixa').length===1`));await print(id+'-editar');await tocar('button','Salvar faixa');await espera(150);confere(id+' · erro mantém faixa editada',await avaliar(`document.querySelector('#val-faixa-1')?.value==='2.500'&&!!document.querySelector('.admin-faixa .mb-aviso--erro')`));await tocar('button','Remover faixa');await espera(100);await print(id+'-remover');await teclar('Escape','Escape',27);await espera(100);
+        await tocar('button','Adicionar faixa');await espera(100);await print(id+'-nova');await tocar('button','Cancelar');await tocar('.mb-periodo button','← Anterior');await espera(200);confere(id+' · período na URL',await avaliar(`!!new URLSearchParams(location.search).get('mes')&&!!document.querySelector('.mb-periodo__hoje')`));
+      }
+      if(nome==='distribuicao'){
+        await tocar('[aria-label="Distribuição automática"]');await espera(200);confere(id+' · desligar exige Dialogo',await avaliar(`document.activeElement?.textContent==='Manter distribuição ligada'&&document.querySelector('.mb-dialogo')?.textContent.includes('redistribuição para')`));await print(id+'-desligar');await teclar('Escape','Escape',27);await espera(100);confere(id+' · cancelar mantém ligada',await avaliar(`document.querySelector('[aria-label="Distribuição automática"]')?.getAttribute('aria-checked')==='true'`));
+        await tocar('summary');await espera(150);await checar(id+'-avancadas',w);await printInteiro(id+'-avancadas');await tocar('summary');await tocar('section[aria-labelledby=t-adistribuir] .mb-lista__alvo');await espera(150);await print(id+'-atribuir');await tocar('button','Cancelar');
+      }
+      if(nome==='corretor'){
+        confere(id+' · produtos são marcadores e participação é imediata',await avaliar(`document.querySelectorAll('#t-produtos').length===1&&document.querySelectorAll('main input[type=checkbox]').length===3&&!!document.querySelector('[aria-label="Participação deste corretor na distribuição"]')`));await tocar('main input[type=checkbox]');await tocar('button','Salvar produtos');await espera(150);confere(id+' · erro conserva seleção de produtos',await avaliar(`document.querySelector('main input[type=checkbox]')?.checked===false&&!!document.querySelector('main .mb-aviso--erro')`));await print(id+'-erro');
+      }
+    }
+    for(const [nome,rota] of rotas){await abrir(rota.replace(/qa=[^&]+/,'qa=corretor'));confere(`${nome}-${w}-${tema} · acesso preservado`,await avaliar(`document.querySelector('.mb-estado__sobrelinha')?.textContent==='Sem permissão'&&!document.querySelector('main form,main table')`));}
+    for(const [nome,rota] of rotas){await abrir(rota.replace(/qa=[^&]+/,'qa=admin-erro'));await checar(`${nome}-erro-${w}-${tema}`,w,false);confere(`${nome}-erro-${w}-${tema} · erro de carga com tentar de novo`,await avaliar(`!!document.querySelector('main .mb-estado')&&[...document.querySelectorAll('main button')].some(b=>b.textContent==='Tentar de novo')`));await print(`${nome}-erro-${w}-${tema}`);}
+    await abrir('/equipes/corretor/?qa=admin-produtos-desligados&id=corretor-1');confere(`produtos-desligados-${w}-${tema} · seção ausente`,await avaliar(`!document.querySelector('#t-produtos')&&!!document.querySelector('#t-participa')`));await print(`corretor-produtos-desligados-${w}-${tema}`);
+  }
+  // Gravações em memória: a URL é explícita e o adaptador não tem rede nem credenciais.
+  await tela(1280,800);await abrir('/configuracoes/?qa=admin-gravar');await tocar('.admin-matriz [data-perfil=corretor] input');await tocar('button','Salvar permissões…');await espera(150);await tocar('.mb-dialogo button','Salvar permissões');await espera(250);confere('Permissões: salvar aplica o lote em memória',await avaliar(`!document.querySelector('.mb-dialogo')&&!document.querySelector('.mb-matriz__mudou')&&!!document.querySelector('.mb-toast')`));
+  await tocar('.mb-catalogo__nome input');await preencher('.mb-catalogo__nome input','Mensagem renomeada');await espera(100);await avaliar(`document.querySelector('.mb-catalogo__nome input').blur()`);await espera(200);confere('Mensagem: renomear salva ao sair',await avaliar(`document.querySelector('.mb-catalogo__nome input')?.value==='Mensagem renomeada'&&document.querySelector('#t-mensagens')?.closest('section').textContent.includes('Salvo às')`));await tocar('[aria-label="Descer Mensagem renomeada"]');await espera(250);confere('Mensagem: ordem pelo teclado é anunciada',await avaliar(`document.querySelector('[aria-live=polite]')?.textContent.includes('posição')||[...document.querySelectorAll('[aria-live=polite]')].some(e=>e.textContent.includes('posição'))`));
+  await abrir('/distribuicao/?qa=admin-gravar');await tocar('[aria-label="Distribuição automática"]');await espera(100);await tocar('.mb-dialogo button','Desligar distribuição');await espera(200);confere('Distribuição: confirmação desliga em memória',await avaliar(`!document.querySelector('.mb-dialogo')&&document.querySelector('[aria-label="Distribuição automática"]')?.getAttribute('aria-checked')==='false'`));
+  await abrir('/equipes/?qa=admin-gravar');await tocar('section[aria-labelledby=equipe-equipe-vazia] button','Editar equipe');await tocar('button','Remover equipe');await espera(100);await tocar('.mb-confirmar button','Remover equipe');await espera(200);confere('Equipe vazia: remoção confirmada em memória',await avaliar(`!document.querySelector('#equipe-equipe-vazia')&&document.querySelector('.mb-toast')?.textContent.includes('Equipe removida')`));
+  await abrir('/configuracoes/?qa=admin-gravar-parcial');await avaliar(`(() => {const c=[...document.querySelectorAll('.admin-matriz [data-perfil=corretor] input')];c[0].click();c[1].click();})()`);await espera(100);await tocar('button','Salvar permissões…');await espera(100);await tocar('.mb-dialogo button','Salvar permissões');await espera(200);confere('Permissões: falha parcial informa o que foi salvo e mantém o restante',await avaliar(`document.querySelector('.mb-dialogo')?.textContent.includes('1 alteração foi salva')&&document.querySelectorAll('.mb-matriz__mudou').length===1`));await print('permissoes-falha-parcial');
+  confere('Nenhum erro no console',erros.length===0,erros);writeFileSync(join(saida,argumentos.includes('--usuarios-revisao')?'resultado-usuarios-revisao.json':'resultado.json'),JSON.stringify(resultado,null,2));const falhas=Object.values(resultado).filter(r=>!r.ok).length;console.log(`${Object.keys(resultado).length} conferências, ${falhas} falhas. Capturas em ${saida}`);await cdp('Page.close');ws.close();process.exit(falhas?1:0);
+}
+
 
 // Bloco 5: Pontos, Aprovação e Empreendimentos (editar/importar), só com fixtures.
 if (soPontosEmpreendimentos && argumentos.includes('--pontos-revisao')) {
@@ -936,7 +1036,7 @@ if (soParcerias) {
   await cdp('Page.close'); ws.close(); process.exit(falhas ? 1 : 0);
 }
 
-if (!soMoldura && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta && !soParcerias && !soInicioVendas && !soEtapas && !soPainelMetasRanking && !soQuadroEmpreendimentos && !soPontosEmpreendimentos) {
+if (!soMoldura && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta && !soParcerias && !soInicioVendas && !soEtapas && !soPainelMetasRanking && !soQuadroEmpreendimentos && !soPontosEmpreendimentos && !soAdministracao) {
   for (const [w, h] of [[375, 812], [1280, 800]]) {
     for (const tema of ["papel", "grafite"]) {
       await abrirListaDoDia(w, h, tema);

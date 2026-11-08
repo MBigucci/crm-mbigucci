@@ -1,9 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import clsx from "clsx";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Cartao } from "@/components/alicerce/cartao";
+import { Aviso } from "@/components/alicerce/aviso";
+import { CarregandoTabela } from "@/components/alicerce/carregando";
+import { EstadoVazio } from "@/components/alicerce/estado-vazio";
+import { EstadoDePagina } from "@/components/alicerce/estado-de-pagina";
+import { Interruptor } from "@/components/alicerce/interruptor";
+import { Recolhivel } from "@/components/alicerce/recolhivel";
+import { Seletor } from "@/components/alicerce/seletor";
+import { CampoSelecao } from "@/components/alicerce/campo";
+import { useToast } from "@/components/alicerce/toast";
+import { CabecalhoAdmin, ConfirmacaoAdmin, ErroAdmin, erroAdmin } from "@/components/administracao/partes";
 import { Casca } from "@/components/casca";
-import { EscolherCorretor, Escopo, chamar } from "@/components/distribuicao/partes";
+import { chamar } from "@/components/distribuicao/partes";
 import { db } from "@/lib/supabase";
 import { mensagemErro } from "@/lib/erros";
 import { carregarConfig } from "@/lib/distribuicao-dados";
@@ -29,13 +39,14 @@ import {
 /** Distribuição automática: as chaves do gerente geral (regra fixa no banco, is_gerente_geral()). */
 export default function DistribuicaoPage() {
   return (
-    <Casca titulo="Distribuição automática" soGerenteGeral>
+    <Casca titulo="Distribuição automática" soGerenteGeral migrada>
       <Distribuicao />
     </Casca>
   );
 }
 
 function Distribuicao() {
+  const toast = useToast(); const [carregado, setCarregado] = useState(false);
   const [cfg, setCfg] = useState<ConfigDistribuicao | null>(null);
   const [historico, setHistorico] = useState<MudancaConfig[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -43,11 +54,13 @@ function Distribuicao() {
   const [confirmarDesligar, setConfirmarDesligar] = useState(false);
 
   const carregar = useCallback(async () => {
+    setErro(null);
     const { data, error } = await db().from("distribuicao_config").select("*").maybeSingle<ConfigDistribuicao>();
     if (error) return setErro(mensagemErro(error));
-    setCfg(data);
+    setCarregado(true); setCfg(data);
     const h = await chamar<MudancaConfig[]>("distribuicao_config_historico");
     setHistorico(h.data ?? []);
+    return null;
   }, []);
   useEffect(() => {
     void carregar();
@@ -59,204 +72,74 @@ function Distribuicao() {
     setErro(null);
     const r = await chamar<ConfigDistribuicao>("distribuicao_config_salvar", { p });
     setSalvando(null);
-    if (r.erro) return setErro(r.erro);
+    if (r.erro) { if (!(chave === "ligada" && p.ligada === false)) toast.mostrar(erroAdmin(r.erro), { tipo: "erro" }); return r.erro; }
     if (r.data) setCfg(r.data);
     void carregarConfig();
     const h = await chamar<MudancaConfig[]>("distribuicao_config_historico");
     setHistorico(h.data ?? []);
+    return null;
   }
 
-  if (erro && !cfg) return <p className="aviso-erro">✕ {erro}</p>;
-  if (!cfg) return <p className="text-concrete">Carregando…</p>;
-
-  const ligouEm = historico?.find((h) => h.chave === "ligada" && h.para === "true")?.quando ?? null;
-  const desde = ligouEm ? (diaMes(ligouEm) === diaMes(new Date().toISOString()) ? ` desde ${hora(ligouEm)}` : ` desde ${diaMes(ligouEm)}`) : "";
-
-  return (
-    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-      <div className="grid gap-4">
-        {erro && (
-          <p role="alert" className="aviso-erro">
-            ✕ {erro}
-          </p>
-        )}
-        <section className={clsx("card grid gap-3", cfg.ligada ? "" : "bar-brand")} aria-labelledby="t-geral">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <h2 id="t-geral" className="titulo-card">
-                {cfg.ligada ? `✓ Ligada${desde}` : "– Desligada"}
-              </h2>
-              <p className="mt-1 text-[13px] text-ink-soft">{cfg.ligada ? "A roleta escolhe quem recebe o lead da empresa." : "Todo lead da entrada vai para A distribuir."}</p>
-            </div>
-            <Interruptor
-              ligado={cfg.ligada}
-              rotulo="Distribuição automática"
-              ocupado={salvando === "ligada"}
-              onTrocar={() => (cfg.ligada ? setConfirmarDesligar(true) : salvar({ ligada: true }))}
-            />
+  if (erro && !cfg) return <ErroAdmin tentar={() => void carregar()} />;
+  if (!cfg) return carregado ? <EstadoDePagina tipo="erro-de-carga" titulo="Distribuição não configurada" texto="Conclua a configuração da distribuição antes de continuar." acoes={<button className="mb-botao mb-botao--primario" onClick={() => void carregar()}>Tentar de novo</button>} /> : <CarregandoTabela texto="Carregando distribuição…" />;
+  const ligouEm = historico?.find(h => h.chave === "ligada" && h.para === "true")?.quando;
+  return <div className="admin-pilha">
+    <CabecalhoAdmin titulo="Distribuição automática" />
+    <span className="mb-escopo">Empresa toda</span>
+    <div className="admin-distribuicao">
+      <div className="admin-pilha">
+        {erro && <Aviso tom="erro" titulo={erroAdmin(erro)} />}
+        <Cartao id="t-geral" titulo="Distribuição automática" descricao={cfg.ligada ? `A roleta escolhe quem recebe${ligouEm ? ` · ligada em ${diaMes(ligouEm)}, ${hora(ligouEm)}` : ""}` : "Todo lead da entrada vai para A distribuir."} acao={<Interruptor ligado={cfg.ligada} rotulo="Distribuição automática" desativado={!!salvando} onAlternar={v => v ? void salvar({ ligada: true }) : setConfirmarDesligar(true)} />}>
+          <div className="admin-pilha">
+            <span id="distribuicao-modo" className="mb-campo__rotulo">Modo</span>
+            <Seletor idRotulo="distribuicao-modo" valor={cfg.modo} onChange={modo => { if (!salvando && modo !== cfg.modo) void salvar({ modo }); }} grade="linha" opcoes={(Object.keys(ROTULO_MODO) as Modo[]).map(valor => ({ valor, rotulo: ROTULO_MODO[valor] }))} />
           </div>
-          {confirmarDesligar && (
-            <div className="grid gap-2 rounded-sm border border-line bg-paper p-3">
-              <p className="text-[14px]">Desligar? Todo lead da entrada vai para A distribuir e é atribuído à mão.</p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className="btn btn-red focus-ring"
-                  onClick={() => {
-                    setConfirmarDesligar(false);
-                    void salvar({ ligada: false });
-                  }}
-                >
-                  Desligar
-                </button>
-                <button type="button" className="btn btn-ghost focus-ring" onClick={() => setConfirmarDesligar(false)}>
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          )}
-          <div>
-            <span className="field-label">Modo</span>
-            <div role="radiogroup" aria-label="Modo" className="inline-flex flex-wrap overflow-hidden rounded-sm border border-control">
-              {(Object.keys(ROTULO_MODO) as Modo[]).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  role="radio"
-                  aria-checked={cfg.modo === m}
-                  disabled={!!salvando}
-                  className={clsx(
-                    "focus-ring min-h-[36px] border-l border-line px-3 text-[13px] font-semibold first:border-l-0",
-                    cfg.modo === m ? "bg-ink text-surface" : "bg-surface text-ink",
-                  )}
-                  onClick={() => cfg.modo !== m && salvar({ modo: m })}
-                >
-                  {ROTULO_MODO[m]}
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="card" aria-labelledby="t-principais">
-          <h2 id="t-principais" className="titulo-card">
-            Principais
-          </h2>
-          <ul className="mt-2 grid">
-            {CHAVES_PRINCIPAIS.map((k) => (
-              <LinhaChave key={k} chave={k} cfg={cfg} ocupado={salvando === k} onSalvar={salvar} />
-            ))}
-          </ul>
-          <details className="group mt-2 border-t border-line pt-2">
-            <summary className="focus-ring cursor-pointer list-none py-2 text-[14px] font-semibold [&::-webkit-details-marker]:hidden">
-              <span className="text-ink-soft group-open:hidden">+ </span>
-              <span className="hidden text-ink-soft group-open:inline">– </span>
-              Avançadas ({CHAVES_AVANCADAS.length + 1})
-            </summary>
-            <ul className="grid">
-              {CHAVES_AVANCADAS.map((k) => (
-                <LinhaChave key={k} chave={k} cfg={cfg} ocupado={salvando === k} onSalvar={salvar} />
-              ))}
-              <Historico historico={historico} />
-            </ul>
-          </details>
-          <p className="mt-2 text-[12px] text-concrete">Toque no nome de uma chave para ver o que acontece ligada e desligada.</p>
-        </section>
+        </Cartao>
+        <Cartao id="t-principais" titulo="Principais" descricao="Abra o nome da regra para conferir o efeito.">
+          <ul>{CHAVES_PRINCIPAIS.map(k =>
+            <LinhaChave key={k} chave={k} cfg={cfg} ocupado={!!salvando} onSalvar={salvar} />)}</ul>
+          <Recolhivel titulo="Avançadas" contagem={String(CHAVES_AVANCADAS.length)}>
+            <ul>{CHAVES_AVANCADAS.map(k =>
+              <LinhaChave key={k} chave={k} cfg={cfg} ocupado={!!salvando} onSalvar={salvar} />)}</ul>
+            <Historico historico={historico} />
+          </Recolhivel>
+        </Cartao>
       </div>
-
-      <div className="grid gap-4">
+      <div className="admin-pilha">
         <ADistribuirCard ligada={cfg.ligada} />
         <EquipesCard />
       </div>
     </div>
-  );
+    <ConfirmacaoAdmin aberto={confirmarDesligar} titulo="Desligar a distribuição automática?" verbo="Desligar distribuição" seguro="Manter distribuição ligada" onFechar={() => setConfirmarDesligar(false)} confirmar={() => salvar({ ligada: false })}>
+      <p>Os novos leads da entrada vão para A distribuir, para atribuição à mão. A redistribuição para. Os leads já atribuídos continuam com seus donos; créditos e presenças ficam guardados.</p>
+    </ConfirmacaoAdmin>
+  </div>;
 }
-
-function Interruptor({ ligado, rotulo, ocupado, inativo, onTrocar }: { ligado: boolean; rotulo: string; ocupado?: boolean; inativo?: boolean; onTrocar: () => void }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={ligado}
-      aria-label={rotulo}
-      disabled={ocupado}
-      onClick={onTrocar}
-      className={clsx("focus-ring inline-flex min-h-[36px] shrink-0 items-center gap-2 text-[12px] font-semibold", inativo ? "text-concrete" : "text-ink")}
-    >
-      <span
-        aria-hidden
-        className={clsx(
-          "relative block h-5 w-[34px] rounded-[10px] transition-colors",
-          ligado ? (inativo ? "bg-control" : "bg-ink") : "border border-control bg-surface-disabled",
-        )}
-      >
-        <span
-          className={clsx(
-            "absolute top-[3px] block h-[14px] w-[14px] rounded-full transition-[left]",
-            ligado ? "left-[17px] bg-surface" : "left-[2px] top-[2px] bg-control",
-          )}
-        />
-      </span>
-      <span className="w-[66px] text-left">{ocupado ? "Salvando…" : ligado ? "Ligada" : "Desligada"}</span>
-    </button>
-  );
-}
-
 function LinhaChave({ chave, cfg, ocupado, onSalvar }: { chave: ChaveConfig; cfg: ConfigDistribuicao; ocupado: boolean; onSalvar: (p: Partial<ConfigDistribuicao>) => void }) {
-  const [aberta, setAberta] = useState(false);
-  const sobre = SOBRE_CHAVE[chave];
-  const inativa = chaveInativa(cfg, chave);
-  return (
-    <li className="border-t border-line py-2 first:border-t-0">
-      <div className="flex items-center justify-between gap-3">
-        <button type="button" aria-expanded={aberta} className="focus-ring min-w-0 text-left" onClick={() => setAberta(!aberta)}>
-          <span className={clsx("block text-[14px] font-semibold", inativa && "text-concrete")}>{sobre.nome}</span>
-          {inativa && <span className="block text-[12px] text-ink-soft">{inativa}</span>}
-        </button>
-        <Interruptor ligado={cfg[chave]} rotulo={sobre.nome} ocupado={ocupado} inativo={!!inativa} onTrocar={() => onSalvar({ [chave]: !cfg[chave] })} />
-      </div>
-      {aberta && (
-        <dl className="mt-2 grid gap-1 text-[13px]">
-          <div>
-            <dt className="inline font-semibold">Ligada: </dt>
-            <dd className="inline text-ink-soft">{sobre.ligada}</dd>
-          </div>
-          <div>
-            <dt className="inline font-semibold">Desligada: </dt>
-            <dd className="inline text-ink-soft">{sobre.desligada}</dd>
-          </div>
-        </dl>
-      )}
-    </li>
-  );
+  const [aberta, setAberta] = useState(false); const sobre = SOBRE_CHAVE[chave]; const inativa = chaveInativa(cfg, chave);
+  return <li className="admin-chave">
+    <div className="admin-chave__topo">
+      <button className="mb-botao mb-botao--discreto admin-chave__nome" aria-expanded={aberta} aria-controls={`chave-${chave}`} onClick={() => setAberta(!aberta)}>{sobre.nome}</button>
+      <Interruptor ligado={cfg[chave]} rotulo={sobre.nome} desativado={ocupado} onAlternar={v => onSalvar({ [chave]: v })} />
+    </div>{inativa && <p className="mb-campo__ajuda">{inativa}</p>}<div id={`chave-${chave}`} hidden={!aberta}>
+      <dl className="mb-pares">
+        <dt>Ligada</dt>
+        <dd>{sobre.ligada}</dd>
+        <dt>Desligada</dt>
+        <dd>{sobre.desligada}</dd>
+      </dl>
+    </div>
+  </li>;
 }
-
 function Historico({ historico }: { historico: MudancaConfig[] | null }) {
-  const [aberto, setAberto] = useState(false);
-  return (
-    <li className="border-t border-line py-2">
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-[14px] font-semibold">Histórico das mudanças</span>
-        <button type="button" aria-expanded={aberto} className="btn btn-ghost focus-ring px-3 py-[5px] text-[12px]" onClick={() => setAberto(!aberto)}>
-          {aberto ? "Fechar" : "Ver"}
-        </button>
-      </div>
-      {aberto && (
-        <ul className="mt-2 grid gap-1 text-[13px]">
-          {!historico?.length && <li className="text-ink-soft">Nenhuma mudança ainda.</li>}
-          {historico?.map((h, i) => (
-            <li key={i}>
-              <span className="num text-ink-soft">
-                {diaMes(h.quando)} {hora(h.quando)}
-              </span>{" "}
-              {textoMudanca(h)}
-              {h.quem && <span className="text-ink-soft"> · {h.quem}</span>}
-            </li>
-          ))}
-        </ul>
-      )}
-    </li>
-  );
+return <div className="admin-pilha">
+    <h3 className="titulo-cartao">Histórico das mudanças</h3>{!historico ? <CarregandoTabela /> : !historico.length ? <p className="mb-campo__ajuda">Nenhuma mudança registrada.</p> : <ul className="mb-lista">{historico.map((h, i) =>
+      <li className="mb-lista__item" key={i}>
+        <span className="mb-lista__conteudo">
+          <span className="mb-lista__titulo">{textoMudanca(h)}</span>
+          <span className="mb-lista__meta">{diaMes(h.quando)} {hora(h.quando)}{h.quem ? ` · ${h.quem}` : ""}</span>
+        </span>
+      </li>)}</ul>}</div>;
 }
 
 function ADistribuirCard({ ligada }: { ligada: boolean }) {
@@ -266,6 +149,7 @@ function ADistribuirCard({ ligada }: { ligada: boolean }) {
   const [todos, setTodos] = useState(false);
   const [atribuir, setAtribuir] = useState<ADistribuir | null>(null);
   const [mandando, setMandando] = useState(false);
+  const [confirmando, setConfirmando] = useState(false);
 
   const carregar = useCallback(async () => {
     const r = await chamar<ADistribuir[]>("distribuicao_a_distribuir");
@@ -278,101 +162,69 @@ function ADistribuirCard({ ligada }: { ligada: boolean }) {
     const t = setInterval(() => document.visibilityState === "visible" && void carregar(), 60_000);
     return () => clearInterval(t);
   }, [carregar]);
-
-  const daEntrada = (itens ?? []).filter((i) => i.estado === "a_distribuir").length;
+  const daEntrada = (itens ?? []).filter(i => i.estado === "a_distribuir").length;
   const visiveis = todos ? (itens ?? []) : (itens ?? []).slice(0, 5);
-
-  return (
-    <section className="card" aria-labelledby="t-adistribuir">
-      <div className="flex items-center justify-between gap-3">
-        <h2 id="t-adistribuir" className="titulo-card">
-          A distribuir{itens ? ` · ${itens.length}` : ""}
-        </h2>
-        {itens && itens.length > 5 && (
-          <button type="button" className="focus-ring text-[13px] font-semibold text-brand underline underline-offset-2" onClick={() => setTodos(!todos)}>
-            {todos ? "Menos" : "Abrir"}
-          </button>
-        )}
-      </div>
-      {erro && <p className="aviso-erro mt-2">✕ {erro}</p>}
-      {aviso && (
-        <p role="status" className="aviso-ok mt-2">
-          {aviso}
-        </p>
-      )}
-      {itens && !itens.length && <p className="mt-2 text-ink-soft">Nenhum lead esperando.</p>}
-      <ul className="mt-2 grid">
-        {visiveis.map((l) => (
-          <li key={l.lead_id} className="flex items-center justify-between gap-2 border-t border-line py-[6px] text-[14px] first:border-t-0">
-            <span className="min-w-0">
-              <span className="font-semibold">{l.nome}</span>
-              <span className="text-ink-soft"> · {l.estado === "represado" ? "represado, " : ""}{motivoADistribuir(l.motivo)}</span>
-            </span>
-            <button type="button" className="btn btn-ghost focus-ring px-3 py-[5px] text-[12px]" onClick={() => setAtribuir(l)}>
-              Atribuir
-            </button>
-          </li>
-        ))}
-      </ul>
-      {ligada && daEntrada > 0 && (
-        <button
-          type="button"
-          disabled={mandando}
-          className="btn btn-red focus-ring mt-3 w-full"
-          onClick={async () => {
-            setMandando(true);
-            setAviso(null);
-            const r = await chamar<number>("distribuicao_mandar_todos");
-            setMandando(false);
-            if (r.erro) return setErro(r.erro);
-            setAviso(`✓ ${r.data ?? 0} ${r.data === 1 ? "lead distribuído" : "leads distribuídos"}.`);
-            await carregar();
-          }}
-        >
-          {mandando ? "Distribuindo…" : "Mandar todos à distribuição"}
-        </button>
-      )}
-      {atribuir && (
-        <EscolherCorretor
-          titulo={`Atribuir ${atribuir.nome}`}
-          onFechar={() => setAtribuir(null)}
-          onEscolher={async (id) => {
-            const r = await chamar("distribuicao_atribuir", { p_lead: atribuir.lead_id, p_corretor: id });
-            if (r.erro) return r.erro;
-            setAtribuir(null);
-            await carregar();
-            return null;
-          }}
-        />
-      )}
-    </section>
-  );
+  async function mandar() { setMandando(true); setAviso(null); const r = await chamar<number>("distribuicao_mandar_todos"); setMandando(false); if (r.erro) { setErro(erroAdmin(r.erro)); return r.erro; } setAviso(`${r.data ?? 0} ${r.data === 1 ? "lead distribuído" : "leads distribuídos"}.`); await carregar(); return null; }
+  return <Cartao id="t-adistribuir" titulo={`A distribuir${itens ? ` · ${itens.length}` : ""}`} descricao="Distribuição manual" acao={itens && itens.length > 5 && <button className="mb-botao mb-botao--discreto mb-botao--p" aria-expanded={todos} onClick={() => setTodos(!todos)}>{todos ? "Ver menos" : `Ver os ${itens.length} leads`}</button>}>
+    {erro && itens && <Aviso tom="erro" titulo={erroAdmin(erro)} />} {aviso && <Aviso tom="sucesso" titulo={aviso} />}
+    {!itens && (erro ? <ErroAdmin tentar={() => void carregar()} /> : <CarregandoTabela texto="Carregando os leads…" />)}{itens && !itens.length && <EstadoVazio titulo="Nenhum lead esperando" texto="Os leads aguardando atribuição aparecem aqui." />}
+    <ul className="mb-lista">{visiveis.map(l =>
+      <li className="mb-lista__item" key={l.lead_id}>
+        <span className="mb-lista__conteudo">
+          <button className="mb-lista__titulo mb-lista__alvo" onClick={() => setAtribuir(l)}>{l.nome}</button>
+          <span className="mb-lista__meta">{l.estado === "represado" ? "Represado · " : ""}{motivoADistribuir(l.motivo)}</span>
+        </span>
+        <span aria-hidden="true">→</span>
+      </li>)}</ul>
+    {atribuir && <EscolherCorretorAdmin titulo={`Atribuir ${atribuir.nome}`} onFechar={() => setAtribuir(null)} onEscolher={async id => { const r = await chamar("distribuicao_atribuir", { p_lead: atribuir.lead_id, p_corretor: id }); if (r.erro) return erroAdmin(r.erro); setAtribuir(null); await carregar(); return null; }} />}
+    {ligada && daEntrada > 0 && !atribuir && <button className="mb-botao mb-botao--primario" disabled={mandando} onClick={() => setConfirmando(true)}>Mandar todos à distribuição</button>}
+    <ConfirmacaoAdmin aberto={confirmando} titulo="Mandar os leads à distribuição?" verbo="Mandar à distribuição" onFechar={() => setConfirmando(false)} confirmar={mandar}>
+      <p>Os leads da entrada em A distribuir seguem para a roleta. A atribuição aos corretores passa a valer na hora.</p>
+    </ConfirmacaoAdmin>
+  </Cartao>;
 }
 
 function EquipesCard() {
   const [itens, setItens] = useState<VezEquipe[] | null>(null);
+  const [erro, setErro] = useState(false);
   useEffect(() => {
-    chamar<VezEquipe[]>("distribuicao_equipes").then((r) => setItens(r.data ?? []));
+    chamar<VezEquipe[]>("distribuicao_equipes").then((r) => r.erro ? setErro(true) : setItens(r.data ?? []));
   }, []);
-  if (!itens) return null;
-  return (
-    <section className="card" aria-labelledby="t-vez-equipes">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="t-vez-equipes" className="titulo-card">
-          Equipes
-        </h2>
-        <Escopo texto="Empresa toda" />
-      </div>
-      {!itens.length && <p className="mt-2 text-ink-soft">Nenhuma equipe.</p>}
-      <ul className="mt-2 grid">
-        {itens.map((e) => (
-          <li key={e.equipe_id} className="flex items-center gap-2 border-t border-line py-[6px] text-[14px] first:border-t-0">
-            <span className="num w-8 font-bold text-ink-soft">{ordinal(e.posicao)}</span>
-            <span className="flex-1 font-semibold">{e.nome}</span>
-            <span className="num text-[13px] text-ink-soft">{e.ultimo ? `último ${hora(e.ultimo)}` : "–"}</span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
+  return <Cartao id="t-vez-equipes" titulo="Vez das equipes">{erro ? <ErroAdmin tentar={() => location.reload()} /> : !itens ? <CarregandoTabela texto="Carregando equipes…" /> : !itens.length ? <EstadoVazio titulo="Nenhuma equipe na fila" texto="As equipes aptas aparecem na ordem da distribuição." /> : <div className="mb-tabela-envoltorio">
+    <table className="mb-tabela mb-tabela--registros">
+      <thead>
+        <tr>
+          <th scope="col">Equipe</th>
+          <th scope="col">Posição</th>
+          <th scope="col">Último lead</th>
+        </tr>
+      </thead>
+      <tbody>{itens.map(e =>
+        <tr key={e.equipe_id}>
+          <td>{e.nome}</td>
+          <td data-rotulo="Posição">
+            <span>{ordinal(e.posicao)}</span>
+          </td>
+          <td data-rotulo="Último lead">
+            <span>{e.ultimo ? hora(e.ultimo) : "–"}</span>
+          </td>
+        </tr>)}</tbody>
+    </table>
+  </div>}</Cartao>;
+}
+function EscolherCorretorAdmin({ titulo, onFechar, onEscolher }: { titulo: string; onFechar: () => void; onEscolher: (id: string) => Promise<string | null> }) {
+  const [pessoas, setPessoas] = useState<{ id: string; nome: string }[] | null>(null), [id, setId] = useState(""), [erro, setErro] = useState<string | null>(null), [ocupado, setOcupado] = useState(false); const campo = useRef<HTMLSelectElement>(null);
+  useEffect(() => { campo.current?.focus(); db().from("profiles").select("id, nome, perfil, equipe_id").eq("ativo", true).eq("perfil", "corretor").order("nome").then(({ data, error }) => error ? setErro(erroAdmin(error)) : setPessoas(data ?? [])); }, []);
+  async function atribuir() { if (!id) return setErro("Escolha o corretor."); setOcupado(true); setErro(await onEscolher(id)); setOcupado(false); }
+  return <div className="mb-subsecao admin-pilha">
+    <h3 className="mb-subsecao__titulo">{titulo}</h3>
+    <CampoSelecao rotulo="Corretor">
+      <select ref={campo} className="mb-campo__entrada" value={id} onChange={e => setId(e.target.value)}>
+        <option value="">Escolha o corretor</option>{pessoas?.map(p =>
+          <option key={p.id} value={p.id}>{p.nome}</option>)}</select>
+    </CampoSelecao>{erro && <Aviso tom="erro" titulo={erro} />}<div className="mb-grupo-botoes">
+      <button className="mb-botao mb-botao--discreto" disabled={ocupado} onClick={onFechar}>Cancelar</button>
+      <button className="mb-botao mb-botao--primario" disabled={ocupado} onClick={() => void atribuir()}>{ocupado ? "Atribuindo…" : "Atribuir lead"}</button>
+    </div>
+  </div>;
 }

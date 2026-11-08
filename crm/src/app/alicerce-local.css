@@ -440,3 +440,39 @@ svg.mb-icone {
   .importacao-acoes .mb-grupo-botoes { flex-direction: column; width: 100%; }
   .importacao-acoes .mb-botao { width: 100%; white-space: normal; }
 }
+
+/* 10. Administração (fase 2, bloco 6): apenas composição e limites de largura.
+   A matriz mantém uma tabela só e mostra um perfil por vez no celular (MatrizDePermissoes:15).
+   Formulários em PainelLateral precisam que corpo e rodapé sejam filhos de layout do painel. */
+.admin-pilha { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--esp-4); min-width: 0; align-content: start; }
+.admin-pilha > *, .admin-pilha .mb-campo { min-width: 0; }
+.admin-painel-form { display: contents; }
+.admin-ancora { scroll-margin-top: calc(var(--topo-altura) + var(--esp-4)); }
+.admin-distribuicao { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--esp-4); align-items: start; }
+.admin-chave { padding-block: var(--esp-3); border-bottom: var(--mb-borda) solid var(--linha); }
+.admin-chave__topo { display: flex; align-items: center; justify-content: space-between; gap: var(--esp-3); }
+.admin-chave__nome { white-space: normal; height: auto; text-align: left; justify-content: flex-start; padding-left: 0; }
+.admin-faixa { padding-block: var(--esp-3); }
+.admin-faixa__campos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.admin-faixa__campos > .mb-grupo-botoes { grid-column: 1 / -1; }
+.admin-pilha .mb-cartao__cabecalho { flex-wrap: wrap; }
+.admin-pilha .mb-pares dd { min-width: 0; overflow-wrap: anywhere; }
+.admin-pilha .mb-catalogo__nome { min-width: 0; }
+.admin-pilha .mb-catalogo__uso { white-space: normal; }
+.admin-pilha .mb-salvo { white-space: normal; }
+/* O alvo da Lista também abre a tarefa curta de atribuir. O botão mantém
+   o alinhamento à esquerda dos links da mesma peça (Lista.md:5). */
+.admin-pilha button.mb-lista__alvo { text-align: left; }
+@media (min-width: 1024px) { .admin-distribuicao { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); } }
+@media (max-width: 767px) {
+  .admin-matriz [data-perfil]:not([data-perfil-ativo="true"]) { display: none; }
+  .admin-matriz .mb-matriz { table-layout: fixed; }
+  .admin-matriz .mb-matriz td:first-child { min-width: 0; }
+  .admin-matriz .mb-matriz th:first-child, .admin-matriz .mb-matriz td:first-child { width: 58%; }
+  .admin-pilha .mb-catalogo__nome { flex-direction: column; align-items: flex-start; }
+  /* O campo editável do catálogo vem depois da regra móvel no bundle. Mantém
+     os 44px e 16px do guia também aqui, evitando o zoom ao editar no iPhone. */
+  .admin-pilha .mb-catalogo__nome .mb-campo__entrada { min-height: var(--controle-toque); font-size: var(--texto-campo-toque); }
+  .admin-pilha .mb-lista__alvo { min-height: var(--controle-toque); }
+}
+@media (max-width: 639px) { .admin-faixa__campos { grid-template-columns: minmax(0, 1fr); } }
