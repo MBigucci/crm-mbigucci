@@ -243,7 +243,7 @@ function Agenda() {
           <h2 id="sem-baixa" className="titulo-secao">
             Aguardando baixa · <span className="mb-num">{semBaixa.length}</span>
           </h2>
-          <ListaVisitas visitas={semBaixa} agora={hoje} nomeDe={nomeDe} comDia onMudou={carregar} alicerce destaquePrimeiro={destaque === "baixa"} />
+          <ListaVisitas visitas={semBaixa} agora={hoje} nomeDe={nomeDe} comDia onMudou={carregar} destaquePrimeiro={destaque === "baixa"} />
         </section>
       )}
 
@@ -278,7 +278,7 @@ function Agenda() {
             <h3 className="mb-sobrelinha">
               Visitas · <span className="mb-num">{escolhido.visitas.length}</span>
             </h3>
-            <ListaVisitas visitas={escolhido.visitas} agora={hoje} nomeDe={nomeDe} onMudou={carregar} alicerce destaquePrimeiro={destaque === "dia"} />
+            <ListaVisitas visitas={escolhido.visitas} agora={hoje} nomeDe={nomeDe} onMudou={carregar} destaquePrimeiro={destaque === "dia"} />
           </div>
         )}
         {retornosDoDia.length > 0 && (

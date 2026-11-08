@@ -1,24 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import clsx from "clsx";
+
 import { useEffect, useRef, useState } from "react";
 import { db, novoId } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
-import { ConferirNoCatalogo, ListaEmpreendimentos } from "@/components/empreendimentos/partes";
+
 import { chaveRascunhoNovaVenda, chaveRascunhoVenda, lerRascunho, limparRascunho, salvarRascunho } from "@/lib/rascunho";
-import {
-  diaIso,
-  formatarDia,
-  formatarReais,
-  imovelDaVenda,
-  lerReais,
-  seloVenda,
-  type Totais,
-  type Venda,
-} from "@/lib/vendas";
+import { diaIso, formatarDia, formatarReais, imovelDaVenda, lerReais, type Venda } from "@/lib/vendas";
 import { corrigirVenda, marcarPaga, registrarVenda } from "@/lib/vendas-dados";
-import { RodapeAcao } from "@/components/leads/partes";
+
 import { Aviso } from "@/components/alicerce/aviso";
 import { Pares } from "@/components/alicerce/pares";
 import { useToast } from "@/components/alicerce/toast";
@@ -27,36 +18,6 @@ import { PainelLateral } from "@/components/alicerce/painel-lateral";
 import { CampoSelecao } from "@/components/alicerce/campo";
 import { CarregandoTabela } from "@/components/alicerce/carregando";
 import { EstadoVazio } from "@/components/alicerce/estado-vazio";
-
-/** Estado da venda sempre com sinal + palavra + cor. */
-export function SeloVenda({ venda }: { venda: Pick<Venda, "status" | "pagamento" | "pago_em"> }) {
-  const s = seloVenda(venda);
-  return (
-    <span className={clsx("selo-antigo shrink-0", s.cor === "text-wa" ? "border-wa text-ink-soft" : `border-current ${s.cor}`)}>
-      <span aria-hidden>{s.sinal}</span> {s.texto}
-    </span>
-  );
-}
-
-/** Campo de dinheiro com "R$" à esquerda; aceita "480.000" ou "480.000,50". */
-function CampoReais({ id, valor, onChange }: { id: string; valor: string; onChange: (v: string) => void }) {
-  return (
-    <div className="relative">
-      <span aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft">
-        R$
-      </span>
-      <input
-        id={id}
-        className="input num pl-10"
-        inputMode="decimal"
-        autoComplete="off"
-        placeholder="480.000"
-        value={valor}
-        onChange={(e) => onChange(e.target.value)}
-      />
-    </div>
-  );
-}
 
 const reaisParaCampo = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
 
@@ -68,15 +29,13 @@ export function RegistrarVenda({
   lead,
   onRegistrada,
   onCancelar,
-  alicerce = false,
+
   painel = false,
   antes,
 }: {
   lead: { id: string; nome?: string; empreendimento: string | null; valor: number | null };
   onRegistrada: () => void;
   onCancelar: () => void;
-  /** O formulário no Alicerce (a ficha, passo f). Sem ele, o DS antigo da tela Vendas. */
-  alicerce?: boolean;
   painel?: boolean;
   antes?: React.ReactNode;
 }) {
@@ -111,13 +70,6 @@ export function RegistrarVenda({
 
   // Um id por formulário aberto: o reenvio (resposta perdida) não registra a venda duas vezes.
   const [idVenda] = useState(novoId);
-  const campo = (k: "empreendimento" | "unidade" | "assinada_em" | "pago_em" | "observacao") => ({
-    value: f[k],
-    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      setEditado(true);
-      setF((x) => ({ ...x, [k]: e.target.value }));
-    },
-  });
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
@@ -150,8 +102,7 @@ export function RegistrarVenda({
     limparRascunho(chaveRascunhoVenda(lead.id));
     onCancelar();
   };
-  if (alicerce)
-    return (
+  return (
       <RegistrarVendaAlicerce
         painel={painel}
         antes={antes}
@@ -166,95 +117,6 @@ export function RegistrarVenda({
         onCancelar={cancelar}
       />
     );
-
-  return (
-    <form onSubmit={salvar} className="grid gap-4 border-t border-line pt-4" noValidate>
-      <div>
-        <p className="titulo-card">{lead.nome ? `Parabéns pela venda para ${lead.nome}.` : "Registrar venda"}</p>
-        <p className="mt-1 text-[13px] text-ink-soft">
-          A venda conta no mês da assinatura. O VGV válido é o das vendas assinadas e pagas.
-        </p>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <div>
-          <label className="field-label" htmlFor="v-emp">
-            Empreendimento
-          </label>
-          <input id="v-emp" className="input" list="v-emps" autoComplete="off" {...campo("empreendimento")} />
-          <ListaEmpreendimentos id="v-emps" />
-          <ConferirNoCatalogo nome={f.empreendimento} />
-        </div>
-        <div>
-          <label className="field-label" htmlFor="v-uni">
-            Unidade (opcional)
-          </label>
-          <input id="v-uni" className="input" placeholder="Apto 52, torre B" autoComplete="off" {...campo("unidade")} />
-        </div>
-        <div>
-          <label className="field-label" htmlFor="v-vgv">
-            VGV
-          </label>
-          <CampoReais
-            id="v-vgv"
-            valor={f.vgv}
-            onChange={(vgv) => {
-              setEditado(true);
-              setF((x) => ({ ...x, vgv }));
-            }}
-          />
-        </div>
-        <div>
-          <label className="field-label" htmlFor="v-ass">
-            Data da assinatura
-          </label>
-          <input id="v-ass" className="input num" type="date" max={hoje} {...campo("assinada_em")} />
-        </div>
-      </div>
-      <label className="flex items-center gap-3 text-[15px]">
-        <input
-          type="checkbox"
-          className="checkbox"
-          checked={f.paga}
-          onChange={(e) => {
-            setEditado(true);
-            setF((x) => ({ ...x, paga: e.target.checked }));
-          }}
-        />
-        Já está paga
-      </label>
-      {f.paga && (
-        <div className="max-w-[260px]">
-          <label className="field-label" htmlFor="v-pag">
-            Data do pagamento
-          </label>
-          <input id="v-pag" className="input num" type="date" max={hoje} {...campo("pago_em")} />
-        </div>
-      )}
-      <div>
-        <label className="field-label" htmlFor="v-obs">
-          Observação (opcional)
-        </label>
-        <textarea id="v-obs" className="input min-h-[72px]" {...campo("observacao")} />
-      </div>
-      {erro && <p className="aviso-erro">! {erro}</p>}
-      <div className="flex flex-wrap gap-2">
-        <button type="submit" className="btn btn-red btn-lg focus-ring flex-1 md:flex-none" disabled={salvando}>
-          {salvando ? "Registrando…" : "Registrar venda"}
-        </button>
-        <button
-          type="button"
-          className="btn btn-ghost btn-lg focus-ring flex-1 md:flex-none"
-          onClick={() => {
-            // Cancelar descarta o rascunho: senão a ficha reabriria o formulário na próxima visita.
-            limparRascunho(chaveRascunhoVenda(lead.id));
-            onCancelar();
-          }}
-        >
-          Cancelar
-        </button>
-      </div>
-    </form>
-  );
 }
 
 type Painel = null | "pagar" | "corrigir" | "cancelar";
@@ -269,21 +131,17 @@ export function CardVenda({
   lead,
   corretor,
   onMudou,
-  alicerce = false,
 }: {
   venda: Venda;
   /** Fora da ficha, o nome do cliente com o link. */
   lead?: { id: string; nome: string } | null;
   corretor?: string;
   onMudou: () => void;
-  /** O card no Alicerce (a ficha, passo f): Cartao, Pares e Selo. Sem ele, o DS antigo da tela Vendas. */
-  alicerce?: boolean;
 }) {
   const eu = usePerfil();
   const { pode } = useSessao();
   const toast = useToast();
   const [painel, setPainel] = useState<Painel>(null);
-  const [ok, setOk] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   useEffect(() => setPainel(null), [v]);
 
@@ -296,14 +154,12 @@ export function CardVenda({
     setErro(e);
     if (e) return;
     // No Alicerce o que deu certo sai em Toast.
-    if (alicerce) toast.mostrar(aviso, { tipo: "sucesso" });
-    else setOk(aviso);
+    toast.mostrar(aviso, { tipo: "sucesso" });
     setPainel(null);
     onMudou();
   }
 
-  if (alicerce)
-    return (
+  return (
       <li className="mb-cartao">
         <div className="mb-cartao__corpo ficha__corpo">
           <div className="mb-lead__cabeca">
@@ -378,318 +234,6 @@ export function CardVenda({
         )}
       </li>
     );
-
-  return (
-    <li className="card">
-      <div>
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-            <p className="num font-display text-[20px] font-bold leading-tight">{formatarReais(Number(v.vgv))}</p>
-            <SeloVenda venda={v} />
-          </div>
-          {lead && (
-            <Link href={`/leads/ficha/?id=${lead.id}`} className="focus-ring titulo-card mt-1 block truncate">
-              {lead.nome}
-            </Link>
-          )}
-          <p className="mt-1 text-[13px] text-ink-soft">{imovelDaVenda(v)}</p>
-          <p className="num mt-1 text-[13px] text-ink-soft">Assinada em {formatarDia(v.assinada_em)}</p>
-          {corretor && <p className="mt-1 truncate text-[12px] text-ink-soft">{corretor}</p>}
-        </div>
-      </div>
-      {v.observacao && <p className="mt-2 whitespace-pre-line break-words text-[13px]">{v.observacao}</p>}
-      {v.status === "cancelada" && v.motivo_cancelamento && (
-        <p className="mt-2 text-[13px] text-ink-soft">Motivo do cancelamento: {v.motivo_cancelamento}</p>
-      )}
-
-      {ok && (
-        <p className="aviso-ok mt-2" role="status">
-          ✓ {ok}
-        </p>
-      )}
-      {erro && <p className="aviso-erro mt-2">! {erro}</p>}
-
-      {(paga || corrige) && !painel && (
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
-          {ativa && v.pagamento === "pendente" && paga && (
-            <button
-              type="button"
-              className="btn btn-ghost focus-ring flex-1 md:flex-none"
-              aria-label={`Marcar como paga: ${quem}`}
-              onClick={() => setPainel("pagar")}
-            >
-              ✓ Marcar como paga
-            </button>
-          )}
-          {corrige && ativa && (
-            <button type="button" className="link-acao focus-ring text-[13px]" onClick={() => setPainel("corrigir")}>
-              Corrigir
-            </button>
-          )}
-          {corrige && (
-            <button type="button" className="link-acao focus-ring text-[13px]" onClick={() => setPainel("cancelar")}>
-              {ativa ? "Cancelar venda" : "Reativar venda"}
-            </button>
-          )}
-        </div>
-      )}
-
-      {painel === "pagar" && (
-        <Pagar
-          onCancelar={() => setPainel(null)}
-          onSalvar={async (data) => depois(await marcarPaga(v.id, data), `Venda paga em ${formatarDia(data)}.`)}
-        />
-      )}
-      {painel === "corrigir" && (
-        <Corrigir
-          venda={v}
-          onCancelar={() => setPainel(null)}
-          onSalvar={async (campos, motivo) => depois(await corrigirVenda(v.id, campos, motivo), "Venda corrigida.")}
-        />
-      )}
-      {painel === "cancelar" && (
-        <Motivo
-          titulo={ativa ? "Cancelar a venda" : "Reativar a venda"}
-          texto={
-            ativa
-              ? "A venda fica guardada como cancelada e sai das contas. Se for a única do lead, ele volta para Proposta."
-              : "A venda volta a contar e o lead vai para Venda."
-          }
-          botao={ativa ? "✕ Cancelar venda" : "Reativar venda"}
-          onCancelar={() => setPainel(null)}
-          onSalvar={async (motivo) =>
-            depois(
-              await corrigirVenda(v.id, { status: ativa ? "cancelada" : "ativa" }, motivo),
-              ativa ? "Venda cancelada." : "Venda reativada.",
-            )
-          }
-        />
-      )}
-    </li>
-  );
-}
-
-function Pagar({ onCancelar, onSalvar }: { onCancelar: () => void; onSalvar: (data: string) => Promise<void> }) {
-  const hoje = diaIso(new Date());
-  const [data, setData] = useState(hoje);
-  const [erro, setErro] = useState<string | null>(null);
-  return (
-    <div className="mt-3 grid gap-3 border-t border-line pt-3">
-      <div className="max-w-[260px]">
-        <label className="field-label" htmlFor="pagar-data">
-          Data do pagamento
-        </label>
-        <input id="pagar-data" type="date" className="input num" max={hoje} value={data} onChange={(e) => setData(e.target.value)} />
-      </div>
-      {erro && <p className="aviso-erro">! {erro}</p>}
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          className="btn btn-red focus-ring"
-          onClick={() => (!data || data > hoje ? setErro("Confira a data do pagamento: até hoje.") : onSalvar(data))}
-        >
-          ✓ Confirmar pagamento
-        </button>
-        <button type="button" className="btn btn-ghost focus-ring" onClick={onCancelar}>
-          Voltar
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/** Pede o motivo (ele vai para o histórico do lead). */
-function Motivo({
-  titulo,
-  texto,
-  botao,
-  onCancelar,
-  onSalvar,
-}: {
-  titulo: string;
-  texto: string;
-  botao: string;
-  onCancelar: () => void;
-  onSalvar: (motivo: string) => Promise<void>;
-}) {
-  const [motivo, setMotivo] = useState("");
-  const [erro, setErro] = useState<string | null>(null);
-  return (
-    <div className="mt-3 grid gap-3 border-t border-line pt-3">
-      <p className="font-semibold">{titulo}</p>
-      <p className="text-[13px] text-ink-soft">{texto}</p>
-      <div>
-        <label className="field-label" htmlFor="venda-motivo">
-          Motivo
-        </label>
-        <textarea id="venda-motivo" className="input min-h-[72px]" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
-      </div>
-      {erro && <p className="aviso-erro">! {erro}</p>}
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          className="btn btn-red focus-ring"
-          onClick={() => (motivo.trim().length < 3 ? setErro("Escreva o motivo.") : onSalvar(motivo.trim()))}
-        >
-          {botao}
-        </button>
-        <button type="button" className="btn btn-ghost focus-ring" onClick={onCancelar}>
-          Voltar
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/** Corrigir os dados da venda. Só o que mudou vai para o banco, com o motivo. */
-function Corrigir({
-  venda: v,
-  onCancelar,
-  onSalvar,
-}: {
-  venda: Venda;
-  onCancelar: () => void;
-  onSalvar: (campos: Parameters<typeof corrigirVenda>[1], motivo: string) => Promise<void>;
-}) {
-  const hoje = diaIso(new Date());
-  const [f, setF] = useState({
-    empreendimento: v.empreendimento,
-    unidade: v.unidade ?? "",
-    vgv: reaisParaCampo(Number(v.vgv)),
-    assinada_em: v.assinada_em,
-    paga: v.pagamento === "pago",
-    pago_em: v.pago_em ?? hoje,
-    observacao: v.observacao ?? "",
-    motivo: "",
-  });
-  const [erro, setErro] = useState<string | null>(null);
-  const campo = (k: "empreendimento" | "unidade" | "assinada_em" | "pago_em" | "observacao" | "motivo") => ({
-    value: f[k],
-    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setF((x) => ({ ...x, [k]: e.target.value })),
-  });
-
-  function salvar(e: React.FormEvent) {
-    e.preventDefault();
-    const vgv = lerReais(f.vgv);
-    if (!f.empreendimento.trim()) return setErro("Escolha o empreendimento.");
-    if (!vgv) return setErro("Confira o VGV: só números, como 480.000.");
-    if (!f.assinada_em || f.assinada_em > hoje) return setErro("Confira a data da assinatura: até hoje.");
-    if (f.paga && (!f.pago_em || f.pago_em > hoje)) return setErro("Confira a data do pagamento: até hoje.");
-    const novo = {
-      empreendimento: f.empreendimento.trim(),
-      unidade: f.unidade.trim() || null,
-      vgv,
-      assinada_em: f.assinada_em,
-      pagamento: f.paga ? ("pago" as const) : ("pendente" as const),
-      pago_em: f.paga ? f.pago_em : null,
-      observacao: f.observacao.trim() || null,
-    };
-    const campos = Object.fromEntries(
-      Object.entries(novo).filter(([k, x]) => (k === "vgv" ? Number(v.vgv) !== x : (v[k as keyof Venda] ?? null) !== x)),
-    );
-    if (!Object.keys(campos).length) return setErro("Nada mudou.");
-    if (f.motivo.trim().length < 3) return setErro("Escreva o motivo da correção.");
-    setErro(null);
-    onSalvar(campos, f.motivo.trim());
-  }
-
-  return (
-    <form onSubmit={salvar} className="mt-3 grid gap-3 border-t border-line pt-3" noValidate>
-      <p className="font-semibold">Corrigir a venda</p>
-      <div className="grid gap-3 md:grid-cols-2">
-        <div>
-          <label className="field-label" htmlFor={`c-emp-${v.id}`}>
-            Empreendimento
-          </label>
-          <input id={`c-emp-${v.id}`} className="input" list={`c-emps-${v.id}`} {...campo("empreendimento")} />
-          <ListaEmpreendimentos id={`c-emps-${v.id}`} />
-          <ConferirNoCatalogo nome={f.empreendimento} />
-        </div>
-        <div>
-          <label className="field-label" htmlFor={`c-uni-${v.id}`}>
-            Unidade
-          </label>
-          <input id={`c-uni-${v.id}`} className="input" {...campo("unidade")} />
-        </div>
-        <div>
-          <label className="field-label" htmlFor={`c-vgv-${v.id}`}>
-            VGV
-          </label>
-          <CampoReais id={`c-vgv-${v.id}`} valor={f.vgv} onChange={(vgv) => setF((x) => ({ ...x, vgv }))} />
-        </div>
-        <div>
-          <label className="field-label" htmlFor={`c-ass-${v.id}`}>
-            Data da assinatura
-          </label>
-          <input id={`c-ass-${v.id}`} className="input num" type="date" max={hoje} {...campo("assinada_em")} />
-        </div>
-      </div>
-      <label className="flex items-center gap-3 text-[15px]">
-        <input type="checkbox" className="checkbox" checked={f.paga} onChange={(e) => setF((x) => ({ ...x, paga: e.target.checked }))} />
-        Paga
-      </label>
-      {f.paga && (
-        <div className="max-w-[260px]">
-          <label className="field-label" htmlFor={`c-pag-${v.id}`}>
-            Data do pagamento
-          </label>
-          <input id={`c-pag-${v.id}`} className="input num" type="date" max={hoje} {...campo("pago_em")} />
-        </div>
-      )}
-      <div>
-        <label className="field-label" htmlFor={`c-obs-${v.id}`}>
-          Observação
-        </label>
-        <textarea id={`c-obs-${v.id}`} className="input min-h-[64px]" {...campo("observacao")} />
-      </div>
-      <div>
-        <label className="field-label" htmlFor={`c-mot-${v.id}`}>
-          Motivo da correção
-        </label>
-        <textarea id={`c-mot-${v.id}`} className="input min-h-[64px]" placeholder="Ex.: Valor do contrato assinado" {...campo("motivo")} />
-      </div>
-      {erro && <p className="aviso-erro">! {erro}</p>}
-      <div className="flex flex-wrap gap-2">
-        <button type="submit" className="btn btn-red focus-ring">
-          Salvar correção
-        </button>
-        <button type="button" className="btn btn-ghost focus-ring" onClick={onCancelar}>
-          Voltar
-        </button>
-      </div>
-    </form>
-  );
-}
-
-/**
- * As duas visões do VGV: assinado e assinado e pago (o válido). Como os tiles da
- * Bruna, o pendente traz o filete do quanto já foi pago.
- */
-export function ResumoVendas({ t }: { t: Totais }) {
-  const blocos = [
-    { rotulo: "Assinado e pago", n: t.pagas, vgv: t.vgvValido, destaque: true },
-    { rotulo: "Assinado, com pendentes", n: t.assinadas, vgv: t.vgvAssinado },
-    { rotulo: "Pagamento pendente", n: t.assinadas - t.pagas, vgv: t.vgvAssinado - t.vgvValido, pago: true },
-  ];
-  return (
-    <section aria-label="Totais do período" className="grid gap-3 md:grid-cols-3">
-      {blocos.map((b) => (
-        <div key={b.rotulo} className={b.destaque ? "veredito" : "min-w-0 border-b border-line p-4"}>
-          <span className={clsx("block text-[13px] font-semibold", b.destaque ? "text-on-dark-soft" : "text-ink-soft")}>{b.rotulo}</span>
-          <span className={clsx("num mt-2 block font-extrabold leading-none", b.destaque ? "text-[32px]" : "text-[24px]")}>{formatarReais(b.vgv)}</span>
-          {b.pago && t.vgvAssinado > 0 && (
-            <div aria-hidden className="mt-2 h-[4px] overflow-hidden rounded-sm bg-line">
-              <div className="h-full bg-ink" style={{ width: `${Math.round((t.vgvValido / t.vgvAssinado) * 100)}%` }} />
-            </div>
-          )}
-          <span className={clsx("num mt-2 block text-[13px]", b.destaque ? "text-on-dark-soft" : "text-ink-soft")}>
-            {b.n} {b.n === 1 ? "venda" : "vendas"}
-            {b.pago && t.vgvAssinado > 0 && ` · ${formatarReais(t.vgvValido)} já pago`}
-          </span>
-        </div>
-      ))}
-    </section>
-  );
 }
 
 /**
@@ -699,7 +243,7 @@ export function ResumoVendas({ t }: { t: Totais }) {
  */
 type LeadParaVenda = { id: string; nome: string; empreendimento: string | null; valor: number | null };
 
-export function NovaVenda({ corretor, onRegistrada, alicerce = false }: { corretor: string; onRegistrada: () => void; alicerce?: boolean }) {
+export function NovaVenda({ corretor, onRegistrada }: { corretor: string; onRegistrada: () => void; }) {
   const origem = useRef<HTMLButtonElement>(null);
   const toast = useToast();
   const [aberto, setAberto] = useState(false);
@@ -739,81 +283,25 @@ export function NovaVenda({ corretor, onRegistrada, alicerce = false }: { corret
   const lead = leads?.find((l) => l.id === escolhido);
 
   // Bloco 2: mesma seleção, consulta, rascunho e gravação; a tarefa longa abre em PainelLateral.
-  if (alicerce) {
-    const fechar = () => {
-      if (escolhido) limparRascunho(chaveRascunhoVenda(escolhido));
-      limparRascunho(chaveRascunhoNovaVenda(corretor));
-      setAberto(false);
-    };
-    const cliente = <CampoSelecao rotulo="Cliente" ajuda="Seus leads ativos que ainda não estão em Venda.">
-      <select id="nova-venda-lead" className="mb-campo__entrada" value={escolhido} onChange={(e) => setEscolhido(e.target.value)}>
-        <option value="">Escolha o lead</option>
-        {leads?.map((l) => <option key={l.id} value={l.id}>{l.nome}</option>)}
-      </select>
-    </CampoSelecao>;
-    return <>
-      <button ref={origem} type="button" className="mb-botao mb-botao--primario" aria-haspopup="dialog" onClick={() => setAberto(true)}>Registrar venda</button>
-      <PainelLateral aberto={aberto} onFechar={fechar} foco={() => origem.current} titulo="Registrar venda" descricao={lead?.nome}>
-        {aberto && (lead ? <RegistrarVenda key={lead.id} lead={lead} alicerce painel antes={cliente} onCancelar={fechar} onRegistrada={() => {
-          limparRascunho(chaveRascunhoNovaVenda(corretor)); setAberto(false); setEscolhido(""); setLeads(null);
-          toast.mostrar("Venda registrada.", { tipo: "sucesso" }); onRegistrada();
-        }} /> : <div className="mb-lateral__corpo">{!leads ? <CarregandoTabela texto="Carregando seus leads…" /> : !leads.length ? <EstadoVazio titulo="Nenhum lead para registrar a venda" texto="Seus leads ativos que ainda não estão em Venda aparecem aqui." /> : cliente}</div>)}
-      </PainelLateral>
-    </>;
-  }
 
-  if (!aberto)
-    return (
-      <RodapeAcao>
-        <button type="button" className="btn btn-red btn-lg focus-ring" onClick={() => setAberto(true)}>
-          + Registrar venda
-        </button>
-      </RodapeAcao>
-    );
-  return (
-    <section className="card grid gap-4" aria-label="Registrar venda">
-      <div>
-        <label className="field-label" htmlFor="nova-venda-lead">
-          Cliente
-        </label>
-        <select id="nova-venda-lead" className="input" value={escolhido} onChange={(e) => setEscolhido(e.target.value)}>
-          <option value="">{leads ? "Escolha o lead" : "Carregando…"}</option>
-          {leads?.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.nome}
-            </option>
-          ))}
-        </select>
-        <p className="mt-1 text-[13px] text-ink-soft">Seus leads ativos que ainda não estão em Venda.</p>
-      </div>
-      {lead ? (
-        <RegistrarVenda
-          key={lead.id}
-          lead={lead}
-          onCancelar={() => {
-            limparRascunho(chaveRascunhoNovaVenda(corretor));
-            setAberto(false);
-          }}
-          onRegistrada={() => {
-            limparRascunho(chaveRascunhoNovaVenda(corretor));
-            setAberto(false);
-            setEscolhido("");
-            setLeads(null);
-            onRegistrada();
-          }}
-        />
-      ) : (
-        <button
-          type="button"
-          className="btn btn-ghost focus-ring justify-self-start"
-          onClick={() => {
-            limparRascunho(chaveRascunhoNovaVenda(corretor));
-            setAberto(false);
-          }}
-        >
-          Cancelar
-        </button>
-      )}
-    </section>
-  );
+  const fechar = () => {
+    if (escolhido) limparRascunho(chaveRascunhoVenda(escolhido));
+    limparRascunho(chaveRascunhoNovaVenda(corretor));
+    setAberto(false);
+  };
+  const cliente = <CampoSelecao rotulo="Cliente" ajuda="Seus leads ativos que ainda não estão em Venda.">
+    <select id="nova-venda-lead" className="mb-campo__entrada" value={escolhido} onChange={(e) => setEscolhido(e.target.value)}>
+      <option value="">Escolha o lead</option>
+      {leads?.map((l) => <option key={l.id} value={l.id}>{l.nome}</option>)}
+    </select>
+  </CampoSelecao>;
+  return <>
+    <button ref={origem} type="button" className="mb-botao mb-botao--primario" aria-haspopup="dialog" onClick={() => setAberto(true)}>Registrar venda</button>
+    <PainelLateral aberto={aberto} onFechar={fechar} foco={() => origem.current} titulo="Registrar venda" descricao={lead?.nome}>
+      {aberto && (lead ? <RegistrarVenda key={lead.id} lead={lead} painel antes={cliente} onCancelar={fechar} onRegistrada={() => {
+        limparRascunho(chaveRascunhoNovaVenda(corretor)); setAberto(false); setEscolhido(""); setLeads(null);
+        toast.mostrar("Venda registrada.", { tipo: "sucesso" }); onRegistrada();
+      }} /> : <div className="mb-lateral__corpo">{!leads ? <CarregandoTabela texto="Carregando seus leads…" /> : !leads.length ? <EstadoVazio titulo="Nenhum lead para registrar a venda" texto="Seus leads ativos que ainda não estão em Venda aparecem aqui." /> : cliente}</div>)}
+    </PainelLateral>
+  </>;
 }

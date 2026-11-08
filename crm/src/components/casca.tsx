@@ -23,21 +23,19 @@ export { ehListaDoDia };
  * Página interna: exige login, monta o menu pelo perfil, checa a permissão da tela e põe a moldura do
  * Alicerce (MenuLateral, BarraSuperior e, no celular, MenuCelular).
  *
- * `migrada`: a página já está no Alicerce (item 48). Sem ela, o conteúdo fica dentro da ponte .ds-antigo e
- * leva o título antigo (h1); com ela, a Casca só entrega a moldura e a página cuida do próprio cabeçalho.
- * Cada tela que migra passa `migrada` (veja crm/src/app/alicerce-local.css e docs/design-system.md).
+ * Todas as páginas usam o Alicerce e cuidam do próprio cabeçalho. A prop `migrada` fica como marcador
+ * nas chamadas existentes; não há mais moldura nem título do DS anterior.
  */
 export function Casca({
   titulo,
   exige,
   soGerenteGeral,
-  migrada = false,
   children,
 }: {
   titulo: string;
   exige?: string;
   soGerenteGeral?: boolean;
-  migrada?: boolean;
+  migrada?: true;
   children: React.ReactNode;
 }) {
   const { estado, pode, sair, recarregar } = useSessao();
@@ -140,14 +138,9 @@ export function Casca({
             status={status}
             conta={{ nome: estado.perfil.nome, onSair: sair }}
           />
-          <main className={migrada ? "mb-app__conteudo" : "mb-app__conteudo pb-16 pt-6"}>
-            {!migrada && liberado && <h1 className="titulo-pagina mb-5">{titulo}</h1>}
+          <main className="mb-app__conteudo">
             {liberado ? (
-              migrada ? (
-                children
-              ) : (
-                <div className="ds-antigo">{children}</div>
-              )
+              children
             ) : (
               <EstadoDePagina
                 tipo="sem-permissao"

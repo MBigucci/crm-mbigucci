@@ -251,7 +251,6 @@ export function ListaDoDia() {
                 visitas={lista}
                 agora={agora}
                 comDia={comDia}
-                alicerce
                 destaquePrimeiro={comDestaque === `visitas-${chave}`}
                 indiceInicial={reservar(lista.length)}
               />

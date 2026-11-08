@@ -381,9 +381,7 @@ function NovoLead() {
             corretorNome={nomeDoCorretor(repasse.dono_id) ?? "Corretor"}
             lead={repasse}
             horario={horario}
-            destaque
-            alicerce
-          />
+            />
         </Cartao>
         <div className="mb-grupo-botoes">
           <button type="button" className="mb-botao mb-botao--secundario" onClick={novoCadastro}>

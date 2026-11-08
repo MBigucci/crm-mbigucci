@@ -38,20 +38,7 @@ import {
   type ProgressoMeta,
 } from "@/lib/metas";
 import { formatarReais, lerReais, type Venda } from "@/lib/vendas";
-import { excluirMeta, salvarMeta, useDadosMetas, useMetas, useMetasVgv, useVendasDoAno, type CamposMeta } from "@/lib/vendas-dados";
-
-/** Barra de progresso, como a ProgressBar da Bruna: o número ao lado diz o quanto (nunca só a cor). */
-export function Barra({ razao, batida, rotulo }: { razao: number; batida?: boolean; rotulo?: string }) {
-  const pct = Math.round(Math.min(1, Math.max(0, Number.isFinite(razao) ? razao : 0)) * 100);
-  return (
-    <div
-      className="h-[6px] w-full overflow-hidden rounded-sm bg-line"
-      {...(rotulo ? { role: "progressbar", "aria-label": rotulo, "aria-valuemin": 0, "aria-valuemax": 100, "aria-valuenow": pct } : { "aria-hidden": true })}
-    >
-      <div className={clsx("h-full", batida ? "bg-ok" : "bg-ink")} style={{ width: `${Math.min(100, Math.max(0, razao * 100))}%` }} />
-    </div>
-  );
-}
+import { excluirMeta, salvarMeta, useDadosMetas, useMetas, useMetasVgv, useVendasDoAno } from "@/lib/vendas-dados";
 
 const ORIGEM_META = {
   corretor: "Meta definida para você pelo gerente geral",
@@ -69,7 +56,6 @@ export function CartaoMetaAnual({
   linhas,
   vendas,
   proprio,
-
 }: {
   corretor: string;
   ano: number;

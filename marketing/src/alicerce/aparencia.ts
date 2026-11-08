@@ -9,9 +9,7 @@
  *    A chave antiga é apagada depois, para "Voltar ao padrão" não trazer a escolha antiga de volta.
  * 2. Chama MB.preferencias.restaurar(): aplica a escolha da pessoa por cima do padrão do módulo
  *    (data-theme="auto", data-menu="claro", data-acao="grafite" no <html>).
- * 3. Ponte para as telas ainda não migradas (sai no fim da fase 2): data-tema (claro|escuro) acompanha
- *    o data-theme resolvido. A meta theme-color acompanha o --fundo do tema.
- *    (O data-barra, que a lateral antiga usava, saiu no passo b: o menu novo lê o data-menu-recolhido.)
+ * 3. A meta theme-color acompanha o --fundo do Alicerce. O tema tem uma só fonte: data-theme.
  *
  * Autossuficiente para serialização inline: não use nada de fora da função.
  */
@@ -36,15 +34,13 @@ function iniciarAlicerce() {
   const mb = (window as unknown as { MB?: { preferencias?: { restaurar: () => void } } }).MB;
   mb?.preferencias?.restaurar();
 
-  const ponte = () => {
-    const escuro = raiz.getAttribute("data-theme") === "grafite";
-    if (raiz.dataset.tema !== (escuro ? "escuro" : "claro")) raiz.dataset.tema = escuro ? "escuro" : "claro";
+  const atualizarCorDoNavegador = () => {
     const fundo = getComputedStyle(raiz).getPropertyValue("--fundo").trim();
     if (fundo) document.querySelector('meta[name="theme-color"]')?.setAttribute("content", fundo);
   };
-  ponte();
-  new MutationObserver(ponte).observe(raiz, { attributes: true, attributeFilter: ["data-theme"] });
-  document.addEventListener("DOMContentLoaded", ponte);
+  atualizarCorDoNavegador();
+  new MutationObserver(atualizarCorDoNavegador).observe(raiz, { attributes: true, attributeFilter: ["data-theme"] });
+  document.addEventListener("DOMContentLoaded", atualizarCorDoNavegador);
 }
 
 export const scriptAlicerce = `(${iniciarAlicerce.toString()})();`;

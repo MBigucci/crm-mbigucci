@@ -557,7 +557,6 @@ function Ficha({ id }: { id: string }) {
                   lead={lead}
                   comDia
                   onMudou={carregar}
-                  alicerce
                   naFicha
                 />
               )}
@@ -575,7 +574,7 @@ function Ficha({ id }: { id: string }) {
               {vendas && vendas.length > 0 && (
                 <ul className="mb-itens">
                   {vendas.map((x) => (
-                    <CardVenda key={x.id} venda={x} onMudou={carregar} alicerce />
+                    <CardVenda key={x.id} venda={x} onMudou={carregar} />
                   ))}
                 </ul>
               )}
@@ -588,7 +587,6 @@ function Ficha({ id }: { id: string }) {
                 vendas &&
                 (registrando ? (
                   <RegistrarVenda
-                    alicerce
                     lead={{ ...lead, nome: lead.nome }}
                     onCancelar={() => setRegistrando(false)}
                     onRegistrada={() => {
@@ -713,7 +711,6 @@ function Ficha({ id }: { id: string }) {
 
           {ehDono && ativo && (
             <RadarDoLead
-              alicerce
               lead={leadCompleto}
               onMandar={(empreendimento) => mensagem.abrir({ ...leadCompleto, empreendimento }, undefined, { modelo: "apresentar_empreendimento" })}
             />
@@ -881,7 +878,6 @@ function Atribuir({
               corretorNome={corretores.find((c) => c.id === atribuido.id)?.nome ?? nomeDe(atribuido.id) ?? "Corretor"}
               lead={lead}
               horario={horario}
-              alicerce
             />
           </>
         )}

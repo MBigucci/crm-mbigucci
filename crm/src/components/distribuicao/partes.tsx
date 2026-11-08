@@ -5,16 +5,6 @@ import { Folha } from "@/components/folha";
 import { db } from "@/lib/supabase";
 import { mensagemErro } from "@/lib/erros";
 
-/** O escopo sempre visível: "Sua equipe · Equipe Norte" ou "Empresa toda". */
-export function Escopo({ texto, extra }: { texto: string; extra?: string }) {
-  return (
-    <span className="inline-flex max-w-full flex-wrap items-center gap-x-[6px] rounded-sm border border-ink bg-surface px-2 py-[3px] text-[12px] font-semibold">
-      {texto}
-      {extra && <span className="font-medium text-ink-soft">{extra}</span>}
-    </span>
-  );
-}
-
 /** Chama uma função do banco e devolve a mensagem de erro já traduzida. */
 export async function chamar<T = unknown>(nome: string, args?: Record<string, unknown>): Promise<{ data: T | null; erro: string | null }> {
   const { data, error } = await db().rpc(nome, args);

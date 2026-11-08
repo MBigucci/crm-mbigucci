@@ -287,7 +287,7 @@ for (const [antigo, esperado] of [["automatico", "auto"], ["claro", "papel"], ["
   await comArmazenamento({ "mbigucci-crm-aparencia": antigo, "mbigucci-crm-barra": "recolhida" });
   const h = await html();
   const tema = esperado === "auto" ? "papel" : esperado;
-  confere(`migra ${antigo}`, h.ls.mb_tema === esperado && h.escolha === esperado && h.theme === tema && h.tema === (tema === "grafite" ? "escuro" : "claro") && !("mbigucci-crm-aparencia" in h.ls), h);
+  confere(`migra ${antigo} sem recriar data-tema`, h.ls.mb_tema === esperado && h.escolha === esperado && h.theme === tema && h.tema === undefined && !("mbigucci-crm-aparencia" in h.ls), h);
   confere(`migra barra recolhida (${antigo})`, h.ls.mb_menu_recolhido === "sim" && h.recolhido === "sim" && !("mbigucci-crm-barra" in h.ls), { recolhido: h.recolhido });
 }
 await comArmazenamento({});
@@ -301,7 +301,7 @@ await esquemaAparelho("dark");
 await espera(400);
 {
   const h = await html();
-  confere("automático: aparelho escuro vira grafite sem recarregar", h.theme === "grafite" && h.tema === "escuro", h);
+  confere("automático: aparelho escuro vira grafite sem recarregar, sem data-tema", h.theme === "grafite" && h.tema === undefined, h);
 }
 await esquemaAparelho("light");
 await espera(400);
@@ -1157,6 +1157,7 @@ if (soLista) {
   writeFileSync(join(saida, "resultado.json"), JSON.stringify(resultado, null, 2));
   const falhasLista = Object.values(resultado).filter((r) => !r.ok).length;
   console.log(`\n${Object.keys(resultado).length} conferências, ${falhasLista} falhas. Prints em ${saida}`);
+  await cdp("Page.close");
   ws.close();
   process.exit(falhasLista ? 1 : 0);
 }
@@ -1328,6 +1329,7 @@ if (soLeads) {
     await comArmazenamento({ mb_tema: "papel" }, "/leads/");
     await espera(900);
     const todos = await contagemDeLeads();
+    const quantidadeInicial = await avaliar("document.querySelectorAll('main .mb-item__titulo').length");
     if (celular) { await clicarTexto("button", "Filtros"); await espera(500); }
     await escolher("Origem", "empresa");
     await espera(300);
@@ -1338,11 +1340,13 @@ if (soLeads) {
     await clicarTexto(".mb-filtros__ativos button", "Limpar filtros");
     await espera(300);
     const depoisDeLimpar = await contagemDeLeads();
-    await escolher("Buscar", "ana");
+    // Os preparos da fase 2 acrescentam Helena (com o e-mail da Ana). Bruno continua sendo inequívoco.
+    await escolher("Buscar", "bruno");
     await espera(300);
     const porBusca = await contagemDeLeads();
+    const nomesPorBusca = await avaliar("[...document.querySelectorAll('main .mb-item__titulo')].map(e => e.textContent.trim())");
     await escolher("Buscar", "");
-    confere(`Leads ${w}: filtrar por origem muda a contagem e a tabela Por corretor some, o chip tira o filtro, Limpar filtros volta tudo e a busca filtra`, todos === "10 leads" && porOrigem !== todos && /^\d+ leads?$/.test(porOrigem) && chip.length === 1 && chip[0] === "Origem: Empresa|Tirar o filtro Origem: Empresa" && tabelaSumiu && depoisDeLimpar === todos && porBusca === "1 lead", { todos, porOrigem, chip, tabelaSumiu, depoisDeLimpar, porBusca, erros: [...erros] });
+    confere(`Leads ${w}: filtrar por origem muda a contagem e a tabela Por corretor some, o chip tira o filtro, Limpar filtros volta tudo e a busca filtra`, quantidadeInicial > 2 && todos === `${quantidadeInicial} leads` && parseInt(porOrigem) > 0 && parseInt(porOrigem) < quantidadeInicial && chip.length === 1 && chip[0] === "Origem: Empresa|Tirar o filtro Origem: Empresa" && tabelaSumiu && depoisDeLimpar === todos && porBusca === "1 lead" && nomesPorBusca.join() === "Bruno Exemplo", { todos, quantidadeInicial, porOrigem, chip, tabelaSumiu, depoisDeLimpar, porBusca, nomesPorBusca, erros: [...erros] });
     if (celular) {
       await comArmazenamento({ mb_tema: "papel" }, "/leads/");
       await espera(700);
@@ -1444,6 +1448,7 @@ if (soLeads) {
   const falhasLeads = Object.values(resultado).filter((r) => !r.ok).length;
   console.log(`\n${Object.keys(resultado).length} conferências, ${falhasLeads} falhas. Prints em ${saida}`);
   await tela(1280, 800);
+  await cdp("Page.close");
   ws.close();
   process.exit(falhasLeads ? 1 : 0);
 }
@@ -1651,6 +1656,7 @@ if (soFicha) {
   const falhasFicha = Object.values(resultado).filter((r) => !r.ok).length;
   console.log(`\n${Object.keys(resultado).length} conferências, ${falhasFicha} falhas. Prints em ${saida}`);
   await tela(1280, 800);
+  await cdp("Page.close");
   ws.close();
   process.exit(falhasFicha ? 1 : 0);
 }
@@ -1933,6 +1939,7 @@ if (soNovo) {
   const falhasNovo = Object.values(resultado).filter((r) => !r.ok).length;
   console.log(`
 ${Object.keys(resultado).length} conferências, ${falhasNovo} falhas. Prints em ${saida}`);
+  await cdp("Page.close");
   ws.close();
   process.exit(falhasNovo ? 1 : 0);
 }
@@ -2166,6 +2173,7 @@ if (soConta) {
   writeFileSync(join(saida, "resultado.json"), JSON.stringify(resultado, null, 2));
   const falhasConta = Object.values(resultado).filter((r) => !r.ok).length;
   console.log(`\n${Object.keys(resultado).length} conferências, ${falhasConta} falhas. Prints em ${saida}`);
+  await cdp("Page.close");
   ws.close();
   process.exit(falhasConta ? 1 : 0);
 }
@@ -2182,7 +2190,7 @@ if (soMensagens) {
   const ESTADOS = [
     ["desativado", "/?qa=desativado", { classes: "mb-estado", sobrelinha: "Acesso desativado", titulo: "Seu acesso ao Base360 foi desativado", texto: "Se acha que é um engano, fale com o gerente geral.", acoes: "mb-botao--discreto:Sair", detalhe: "" }],
     ["erro-da-conta", "/?qa=erro", { classes: "mb-estado mb-estado--erro", sobrelinha: "Erro de carga", titulo: "Não foi possível carregar a sua conta", acoes: "mb-botao--primario:Tentar de novo", detalhe: "mb-botao--discreto mb-botao--p:Copiar detalhes para o suporte" }],
-    ["sem-permissao", "/recepcao/", { classes: "mb-estado", sobrelinha: "Sem permissão", titulo: "Esta página não está liberada para o seu perfil", texto: "Peça o acesso ao gerente geral.", acoes: "mb-botao--secundario:Voltar para o início@/vendas/", detalhe: "" }],
+    ["sem-permissao", "/recepcao/?qa=stand-sem", { classes: "mb-estado", sobrelinha: "Sem permissão", titulo: "Esta página não está liberada para o seu perfil", texto: "Peça o acesso ao gerente geral.", acoes: "mb-botao--secundario:Voltar para o início@/vendas/", detalhe: "" }],
     ["404", "/404.html", { classes: "mb-estado", sobrelinha: "Não encontrado", titulo: "Esta página não existe ou mudou de endereço", acoes: "mb-botao--secundario:Ir para o início@/vendas/", detalhe: "" }],
     ["erro-de-pagina", "/qa-quebrar/", { classes: "mb-estado mb-estado--erro", sobrelinha: "Erro de carga", titulo: "Não foi possível carregar esta página", acoes: "mb-botao--primario:Tentar de novo", detalhe: "mb-botao--discreto mb-botao--p:Copiar detalhes para o suporte" }],
   ];
@@ -2339,6 +2347,7 @@ if (soMensagens) {
   writeFileSync(join(saida, "resultado.json"), JSON.stringify(resultado, null, 2));
   const falhasMsg = Object.values(resultado).filter((r) => !r.ok).length;
   console.log(`\n${Object.keys(resultado).length} conferências, ${falhasMsg} falhas. Prints em ${saida}`);
+  await cdp("Page.close");
   ws.close();
   process.exit(falhasMsg ? 1 : 0);
 }
@@ -2385,13 +2394,13 @@ for (const [perfil, caminho] of PERFIS_MOLDURA) {
         await teclar("Escape", "Escape", 27);
         await espera(300);
         const depois = await avaliar(`({ aberto: !document.querySelector('.mb-popup--lado').hidden, expandido: document.querySelector('.mb-menu__modulos').getAttribute('aria-expanded'), foco: document.activeElement === document.querySelector('.mb-menu__modulos') })`);
-        confere(`Módulos ${perfil} ${tema}: abre ao lado com Vendas ✓ e Marketing, Esc fecha`, mo.aberto && mo.posicaoFixa && mo.porCima && mo.faltam.length === 0 && mo.ariaControlsBate && mo.focoNoPrimeiro && mo.itens.join() === "Vendas (atual),Marketing" && !depois.aberto && depois.expandido === "false" && depois.foco, { mo, depois });
+        confere(`Módulos ${perfil} ${tema}: abre ao lado com Vendas, Parcerias e Marketing, Esc fecha`, mo.aberto && mo.posicaoFixa && mo.porCima && mo.faltam.length === 0 && mo.ariaControlsBate && mo.focoNoPrimeiro && mo.itens.join() === "Vendas (atual),Parcerias,Marketing" && !depois.aberto && depois.expandido === "false" && depois.foco, { mo, depois });
       }
     }
   }
 }
 
-// Configurações (só do gerente geral): o índice .mb-ajustes, os quatro links sempre à vista e as seções antigas na ponte.
+// Configurações (bloco 6): índice, quatro links e seções migradas, sem a ponte anterior.
 for (const [w, h] of [[1280, 800], [375, 812]]) {
   for (const tema of ["papel", "grafite"]) {
     erros.length = 0;
@@ -2408,14 +2417,14 @@ for (const [w, h] of [[1280, 800], [375, 812]]) {
         indiceVisivel: vis(q('.mb-ajustes__indice')), indice: qs('.mb-ajustes__indice a').map((a) => a.textContent.trim()), indiceAtual: q('.mb-ajustes__indice a[aria-current="true"]')?.textContent.trim() ?? null,
         links, itemAtual: q('.mb-menu__item[aria-current="page"] .mb-menu__rotulo')?.textContent.trim() ?? null,
         h1: qs('main h1').filter(vis).map((e) => e.textContent.trim()),
-        secoesAntigasNaPonte: ['horario', 'mensagens', 'permissoes'].every((id) => q('#' + id + ' > .ds-antigo')),
+        secoesMigradas: !!q('#horario') && !!q('#mensagens .mb-catalogo') && !!q('#permissoes .mb-matriz') && !q('main .ds-antigo'),
         indiceForaDaPonte: !q('.ds-antigo .mb-ajustes') && !q('.ds-antigo .mb-menu') && !q('.ds-antigo .mb-topo'),
         pequenos: ${w < 768} ? qs('.mb-ajustes a, .mb-celular-topo a, .mb-celular-topo button').filter(vis).filter((e) => altura(e) < 43.5).map((e) => e.textContent.trim().slice(0, 30)) : [],
       };
     })()`);
     await print(`moldura-configuracoes-${w}-${tema}`);
     const esperados = ["/usuarios/", "/equipes/", "/faixas/", "/distribuicao/"];
-    confere(`Configurações ${w} ${tema}`, !c.rolagemLateral && c.indiceVisivel === (w >= 1024) && c.indice.length === 4 && esperados.every((e, i) => c.links[i] === e) && c.secoesAntigasNaPonte && c.indiceForaDaPonte && c.h1.length === 1 && c.h1[0] === "Configurações" && (w < 768 || c.itemAtual === "Configurações") && c.pequenos.length === 0 && erros.length === 0, { ...c, erros: [...erros] });
+    confere(`Configurações ${w} ${tema}`, !c.rolagemLateral && c.indiceVisivel === (w >= 1024) && c.indice.length === 4 && esperados.every((e, i) => c.links[i] === e) && c.secoesMigradas && c.indiceForaDaPonte && c.h1.length === 1 && c.h1[0] === "Configurações" && (w < 768 || c.itemAtual === "Configurações") && c.pequenos.length === 0 && erros.length === 0, { ...c, erros: [...erros] });
   }
 }
 
@@ -2454,18 +2463,15 @@ await comArmazenamento({ mb_tema: "papel", mb_menu_recolhido: "sim" }, "/?qa=ger
   confere("Recolher menu grava mb_menu_recolhido nas duas direções", r1.largura === 248 && r1.rotulo === "Recolher menu" && r1.expandido === "true" && r1.atributo === "nao" && r1.chave === "nao" && r2.largura === 64 && r2.rotulo === "Expandir menu" && r2.atributo === "sim" && r2.chave === "sim", { r1, r2 });
 }
 
-// Barras fixas das telas antigas começam depois do menu (alicerce-local.css, regra 3).
-const sondaFixa = `(() => { const d = document.createElement('div'); d.className = 'fixed inset-x-0 bottom-0'; document.querySelector('.mb-app__conteudo').appendChild(d); const l = Math.round(d.getBoundingClientRect().left); d.remove(); return l; })()`;
-for (const [recolhido, esperado] of [["nao", 248], ["sim", 64]]) {
+// A última barra antiga saiu: não inserir uma sonda de uma interface que já não existe.
+for (const recolhido of ["nao", "sim"]) {
   await comArmazenamento({ mb_tema: "papel", mb_menu_recolhido: recolhido }, "/?qa=geral");
-  const left = await avaliar(sondaFixa);
-  confere(`barra fixa antiga começa depois do menu (${esperado}px)`, left === esperado, { left });
+  confere(`menu ${recolhido}: sem barra fixa antiga`, await avaliar("!document.querySelector('main .fixed.inset-x-0')"));
 }
 await tela(375, 812);
 {
   await comArmazenamento({ mb_tema: "papel" }, "/?qa=geral");
-  const left = await avaliar(sondaFixa);
-  confere("barra fixa antiga no celular ocupa a largura toda", left === 0, { left });
+  confere("celular: sem barra fixa antiga nem sua compensação", await avaliar("!document.querySelector('main .fixed.inset-x-0')") && !readFileSync('src/app/alicerce-local.css', 'utf8').includes('.mb-app .fixed.inset-x-0'));
 }
 
 // Impressão: a moldura não sai no papel. O painel e o relatório do corretor são impressos em A4, onde a página
@@ -2485,5 +2491,6 @@ for (const [perfil, caminho] of PERFIS_MOLDURA) {
 writeFileSync(join(saida, "resultado.json"), JSON.stringify(resultado, null, 2));
 const falhas = Object.values(resultado).filter((r) => !r.ok).length;
 console.log(`\n${Object.keys(resultado).length} conferências, ${falhas} falhas. Prints em ${saida}`);
+await cdp("Page.close");
 ws.close();
 process.exitCode = falhas ? 1 : 0;

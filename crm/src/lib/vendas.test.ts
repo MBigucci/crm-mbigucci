@@ -96,7 +96,7 @@ test("vendas: formatos de dinheiro, data e selo", () => {
   assert.equal(lerReais("abc"), null);
   assert.equal(formatarDia("2026-10-29"), "29/10/2026");
   assert.equal(formatarDia(null), "–");
-  assert.deepEqual(seloVenda(venda("2026-10-01", 1)), { sinal: "!", texto: "Pagamento pendente", cor: "text-wa" });
+  assert.deepEqual(seloVenda(venda("2026-10-01", 1)), { sinal: "!", texto: "Pagamento pendente" });
   assert.equal(seloVenda(paga("2026-10-01", 1)).texto, "Paga em 01/10/2026");
   assert.equal(seloVenda(paga("2026-10-01", 1, { status: "cancelada" })).texto, "Cancelada");
 });

@@ -40,7 +40,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  // O --fundo do tema papel do Alicerce. A ponte de src/lib/aparencia.ts troca pelo do tema em uso.
+  // O --fundo do tema papel do Alicerce. src/lib/aparencia.ts acompanha o tema em uso.
   themeColor: "#f6f5f1",
 };
 

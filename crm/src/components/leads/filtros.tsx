@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { db } from "@/lib/supabase";
 import { usePerfil, useSessao } from "@/lib/sessao";
 import { mensagemErro } from "@/lib/erros";
-import { COLUNAS_LEAD, type Lead, type Origem, type StatusLead } from "@/lib/leads";
-import { useCorretores, type Corretor } from "@/lib/leads-dados";
+import { COLUNAS_LEAD, type Lead, type StatusLead } from "@/lib/leads";
+import { useCorretores } from "@/lib/leads-dados";
 import { noEmpreendimento, opcoesEmpreendimento, SEM_EMPREENDIMENTO } from "@/lib/busca";
 
 /**
@@ -78,103 +78,4 @@ export function useLeadsVisiveis() {
     nomeDono,
     recarregar,
   };
-}
-
-export function Filtros({
-  veOutros,
-  corretores,
-  corretor,
-  setCorretor,
-  status,
-  setStatus,
-  origens,
-  origem,
-  setOrigem,
-  empreendimentos,
-  empreendimento,
-  setEmpreendimento,
-  children,
-}: {
-  veOutros: boolean;
-  corretores: Corretor[];
-  corretor: string;
-  setCorretor: (v: string) => void;
-  status?: StatusLead;
-  setStatus?: (v: StatusLead) => void;
-  origens: Origem[];
-  origem: string;
-  setOrigem: (v: string) => void;
-  empreendimentos: { chave: string; nome: string; total: number }[];
-  empreendimento: string;
-  setEmpreendimento: (v: string) => void;
-  children?: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-wrap items-end gap-3">
-      {children}
-      {veOutros && (
-        <div className="min-w-[140px] flex-1 md:flex-none">
-          <label className="field-label" htmlFor="filtro-corretor">
-            Corretor
-          </label>
-          <select id="filtro-corretor" className="input" value={corretor} onChange={(e) => setCorretor(e.target.value)}>
-            <option value="">Todos</option>
-            {corretores.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nome}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-      <div className="min-w-[140px] flex-1 md:flex-none">
-        <label className="field-label" htmlFor="filtro-origem">
-          Origem
-        </label>
-        <select id="filtro-origem" className="input" value={origem} onChange={(e) => setOrigem(e.target.value)}>
-          <option value="">Todas</option>
-          {origens.map((o) => (
-            <option key={o.slug} value={o.slug}>
-              {o.nome}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="min-w-[140px] flex-1 md:flex-none">
-        <label className="field-label" htmlFor="filtro-empreendimento">
-          Empreendimento
-        </label>
-        <select
-          id="filtro-empreendimento"
-          className="input md:max-w-[220px]"
-          value={empreendimento}
-          onChange={(e) => setEmpreendimento(e.target.value)}
-        >
-          <option value="">Todos</option>
-          {empreendimentos.map((e) => (
-            <option key={e.chave} value={e.chave}>
-              {e.nome} ({e.total})
-            </option>
-          ))}
-          <option value={SEM_EMPREENDIMENTO}>Sem empreendimento</option>
-        </select>
-      </div>
-      {status && setStatus && (
-        <div className="min-w-[140px] flex-1 md:flex-none">
-          <label className="field-label" htmlFor="filtro-status">
-            Situação
-          </label>
-          <select
-            id="filtro-status"
-            className="input"
-            value={status}
-            onChange={(e) => setStatus(e.target.value as StatusLead)}
-          >
-            <option value="ativo">Ativos</option>
-            <option value="descartado">Descartados</option>
-          </select>
-        </div>
-      )}
-    </div>
-  );
 }

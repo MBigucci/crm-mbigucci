@@ -1,13 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { usePerfil } from "@/lib/sessao";
+
 import { contatosDoDia, type ParceiroComSituacao } from "@/lib/parceiros";
-import { useCarteira } from "@/lib/parceiros-dados";
+
 import { ProximoContatoParceiro } from "./partes";
 import { Lista, ItemDaLista } from "../alicerce/lista";
-import { subtituloParceiro } from "./card";
 
 /**
  * Parceiros com próximo contato hoje ou vencido, do próprio gerente: é a parte
@@ -17,45 +15,15 @@ export function ContatosDoDiaParceiros({
   lista,
   eu,
   agora,
-  alicerce = false,
 }: {
-  alicerce?: boolean;
   lista: ParceiroComSituacao[];
   eu: string;
   agora: Date;
 }) {
   const itens = contatosDoDia(lista, eu, agora);
   if (!itens.length) return null;
-  if (alicerce) return <section aria-labelledby="parceiros-hoje">
+  return <section aria-labelledby="parceiros-hoje">
     <h2 className="mb-sobrelinha" id="parceiros-hoje">Parceiros para contatar hoje · {itens.length}</h2>
     <Lista cartao>{itens.map((p) => <ItemDaLista key={p.id} titulo={<Link className="mb-lista__alvo" href={"/parceiros/ficha/?id=" + p.id + "#registrar"}>{p.nome}</Link>} meta={<ProximoContatoParceiro dia={p.proximo_contato} agora={agora} />} />)}</Lista>
   </section>;
-  return (
-    <section aria-labelledby="parceiros-hoje" className="card">
-      <h2 id="parceiros-hoje" className="titulo-secao-antigo">
-        Parceiros para contatar hoje · <span className="num">{itens.length}</span>
-      </h2>
-      <ul className="mt-2 divide-y divide-line">
-        {itens.map((p) => (
-          <li key={p.id} className="py-2">
-            <Link href={`/parceiros/ficha/?id=${p.id}#registrar`} className="focus-ring block">
-              <span className="font-semibold">{p.nome}</span>
-              <span className="block text-[13px] text-ink-soft">
-                {subtituloParceiro(p)} · <ProximoContatoParceiro dia={p.proximo_contato} agora={agora} />
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-/** Versão que carrega sozinha, para montar no início do gerente (app/page.tsx), se a sessão master liberar. */
-export function ContatosDoDiaParceirosNoInicio() {
-  const eu = usePerfil();
-  const { lista } = useCarteira();
-  const [agora] = useState(() => new Date());
-  if (!lista) return null;
-  return <ContatosDoDiaParceiros lista={lista} eu={eu.id} agora={agora} />;
 }

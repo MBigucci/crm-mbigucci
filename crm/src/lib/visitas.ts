@@ -49,14 +49,14 @@ export const podeDarBaixa = (v: VisitaDoEstado, agora: Date) => estadoDaVisita(v
 /** Remarcar, confirmar e cancelar: só a visita aberta. */
 export const podeRemarcar = (v: Pick<Visita, "status">) => estaAberta(v);
 
-/** Sinal + palavra + cor: o estado nunca depende só da cor. */
-export const SELOS_VISITA: Record<EstadoVisita, { sinal: string; texto: string; cor: string }> = {
-  agendada: { sinal: "→", texto: "Agendada", cor: "text-ink" },
-  confirmada: { sinal: "✓", texto: "Confirmada", cor: "text-ink" },
-  aguardando_baixa: { sinal: "!", texto: "Aguardando baixa", cor: "text-wa" },
-  realizada: { sinal: "✓", texto: "Realizada", cor: "text-ok" },
-  nao_compareceu: { sinal: "✕", texto: "Não compareceu", cor: "text-brand" },
-  cancelada: { sinal: "✕", texto: "Cancelada", cor: "text-ink-soft" },
+/** Sinal e palavra; o tom visual pertence ao Selo do Alicerce. */
+export const SELOS_VISITA: Record<EstadoVisita, { sinal: string; texto: string }> = {
+  agendada: { sinal: "→", texto: "Agendada" },
+  confirmada: { sinal: "✓", texto: "Confirmada" },
+  aguardando_baixa: { sinal: "!", texto: "Aguardando baixa" },
+  realizada: { sinal: "✓", texto: "Realizada" },
+  nao_compareceu: { sinal: "✕", texto: "Não compareceu" },
+  cancelada: { sinal: "✕", texto: "Cancelada" },
 };
 export const NOMES_STATUS: Record<StatusVisita, string> = {
   agendada: "Agendada",

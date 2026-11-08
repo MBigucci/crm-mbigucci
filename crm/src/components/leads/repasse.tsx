@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import clsx from "clsx";
+
 import { db } from "@/lib/supabase";
 import type { Lead } from "@/lib/leads";
 import { enderecoDoCrm } from "@/lib/leads-dados";
@@ -25,17 +25,11 @@ export function AvisarCorretor({
   corretorNome,
   lead,
   horario,
-  destaque,
-  alicerce = false,
 }: {
   corretorId: string;
   corretorNome: string;
   lead: LeadDoRepasse;
   horario: HorarioAtendimento;
-  /** Ação principal da tela: botão vermelho. */
-  destaque?: boolean;
-  /** O botão e o aviso no Alicerce (a ficha, passo f): WhatsApp verde. Sem ele, o DS antigo (Novo lead, até o passo g). */
-  alicerce?: boolean;
 }) {
   const [numero, setNumero] = useState<string | null | undefined>(undefined);
 
@@ -50,14 +44,8 @@ export function AvisarCorretor({
 
   if (numero === undefined) return null;
   const nome = primeiroNome(corretorNome);
-  if (!numero && alicerce)
-    return <Aviso tom="alerta" titulo={`${corretorNome} não tem WhatsApp no Base360 Vendas`} texto="Peça para preencher em Minha conta." />;
   if (!numero)
-    return (
-      <p className="text-[13px] text-ink-soft">
-        ! {corretorNome} não tem WhatsApp no Base360 Vendas. Peça para preencher em Minha conta.
-      </p>
-    );
+    return <Aviso tom="alerta" titulo={`${corretorNome} não tem WhatsApp no Base360 Vendas`} texto="Peça para preencher em Minha conta." />;
 
   const agora = new Date();
   const p = prazoDoLead(lead, agora, horario);
@@ -70,22 +58,11 @@ export function AvisarCorretor({
     prazo: prazo && prazo.charAt(0).toLowerCase() + prazo.slice(1),
     link: `${enderecoDoCrm()}/leads/ficha/?id=${lead.id}`,
   });
-  if (alicerce)
-    return (
+  return (
       <div className="mb-grupo-botoes">
         <a href={linkWhatsappComTexto(numero, texto)} target="_blank" rel="noopener noreferrer" className="mb-botao mb-botao--whatsapp">
           Avisar {nome} no WhatsApp →
         </a>
       </div>
     );
-  return (
-    <a
-      href={linkWhatsappComTexto(numero, texto)}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={clsx("btn btn-lg focus-ring", destaque ? "btn-red" : "btn-ghost")}
-    >
-      Avisar {nome} no WhatsApp →
-    </a>
-  );
 }

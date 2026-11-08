@@ -5,7 +5,7 @@ import clsx from "clsx";
 import { usePerfil } from "@/lib/sessao";
 import { formatarWhatsapp, type Lead } from "@/lib/leads";
 import { useModelosMensagem } from "@/lib/leads-dados";
-import { linkLigar, linkWhatsappComTexto, preencherModelo, sugerirModelo } from "@/lib/mensagens";
+import { linkWhatsappComTexto, preencherModelo, sugerirModelo } from "@/lib/mensagens";
 import { acharNoCatalogo, variaveisDoEmpreendimento } from "@/lib/catalogo";
 import { useCatalogo } from "@/lib/catalogo-dados";
 
@@ -13,74 +13,6 @@ type LeadDaMensagem = Pick<
   Lead,
   "nome" | "whatsapp" | "empreendimento" | "etapa" | "status" | "ultima_interacao_em" | "created_at" | "tentativas"
 >;
-
-/**
- * Botão WhatsApp das listas e da ficha: abre o diálogo com a mensagem pronta
- * sugerida pela etapa do lead. O texto pode ser editado antes de abrir o WhatsApp.
- */
-export function BotaoMensagem({
-  lead,
-  className,
-  rotulo = "WhatsApp →",
-  rotuloAcessivel,
-  modelo,
-  visita,
-  destaque = false,
-  onAbrirWhatsapp,
-}: {
-  lead: LeadDaMensagem;
-  className?: string;
-  rotulo?: string;
-  rotuloAcessivel?: string;
-  /** Slug do modelo que já vem marcado (ex.: "confirmar_visita"); sem ele, vale a sugestão pela etapa. */
-  modelo?: string;
-  /** O texto de {visita} (textoDaVisita), na confirmação de uma visita. */
-  visita?: string;
-  /** Uma ação principal por grupo; as demais continuam secundárias. */
-  destaque?: boolean;
-  /** Chamado ao tocar em Abrir no WhatsApp (o registro automático do toque). Abrir a caixa ou Copiar não chama. */
-  onAbrirWhatsapp?: () => void;
-}) {
-  const [aberto, setAberto] = useState(false);
-  // Lead sem telefone (04/11/2026): sem botão de WhatsApp.
-  if (!lead.whatsapp) return null;
-  return (
-    <>
-      <button
-        type="button"
-        className={clsx("btn focus-ring", destaque ? "btn-red" : "btn-ghost", className)}
-        aria-label={rotuloAcessivel ?? `WhatsApp de ${lead.nome}, ${lead.whatsapp ? formatarWhatsapp(lead.whatsapp) : "sem telefone"}`}
-        onClick={() => setAberto(true)}
-      >
-        {rotulo}
-      </button>
-      {aberto && (
-        <DialogoMensagem
-          lead={lead}
-          modelo={modelo}
-          visita={visita}
-          onFechar={() => setAberto(false)}
-          onAbrirWhatsapp={onAbrirWhatsapp}
-        />
-      )}
-    </>
-  );
-}
-
-/** Ligar: com `onLigar`, o toque grava o registro automático "Ligou" sem segurar o discador. */
-export function BotaoLigar({ numero, className, onLigar }: { numero: string | null; className?: string; onLigar?: () => void }) {
-  if (!numero) return null;
-  return (
-    <a
-      href={linkLigar(numero)}
-      className={clsx("btn btn-ghost focus-ring", className)}
-      aria-label={`Ligar para ${formatarWhatsapp(numero)}`}
-      onClick={onLigar}
-    >
-      Ligar
-    </a>
-  );
-}
 
 /**
  * Diálogo de mensagem: escolhe o modelo em 1 toque, edita o texto, copia ou abre o WhatsApp.

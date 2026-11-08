@@ -29,20 +29,6 @@ svg.mb-icone {
    migraram (a prop "migrada" tira o invólucro). A moldura (menu, topo, folha) e as peças do Alicerce ficam
    fora dele, senão os links delas herdariam a cor do texto e perderiam o estilo do Alicerce. */
 
-/* 3. Barras fixas das telas antigas (passo b, 07/11/2026; sai com a última tela antiga).
-   Algumas telas ainda no DS antigo (Aprovar lançamentos, os lotes de Leads) prendem uma barra de ações com
-   "fixed inset-x-0", que cobre a largura toda. A lateral antiga empurrava essa barra (.area-principal); a
-   nova coluna do menu não. A barra começa depois do menu, que tem 248px e 64px recolhido (os mesmos tokens
-   do .mb-app), a partir de 768px, onde o menu aparece. */
-@media (min-width: 768px) {
-  .mb-app .fixed.inset-x-0 {
-    left: var(--menu-largura);
-  }
-  :root[data-menu-recolhido="sim"] .mb-app .fixed.inset-x-0 {
-    left: var(--menu-recolhido);
-  }
-}
-
 /* A camada do menu fixo e o toque de 44px da faixa do celular foram ajustes locais no passo b e voltaram
    para o Alicerce na versão 1794027179-3a37 (07/11/2026). O ::after do .mb-status e dos links e botões da
    faixa do celular é a área de toque do Alicerce: não use para outra coisa. */

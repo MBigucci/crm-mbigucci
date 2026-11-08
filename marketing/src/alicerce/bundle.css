@@ -2099,3 +2099,19 @@ button.mb-folha__item { width: 100%; border: 0; background: none; font-family: v
   .mb-catalogo__nome .mb-campo__entrada, .mb-catalogo__item--nova .mb-campo__entrada, .mb-busca .mb-campo__entrada, .mb-tabela__editar .mb-campo__grupo { height: var(--controle-toque); font-size: var(--texto-campo-toque); }
   .mb-tabela__editar .mb-campo__grupo .mb-campo__entrada { height: auto; font-size: var(--texto-campo-toque); }
 }
+
+/* ---------- Lacunas do Marketing (08/11/2026) ---------- */
+/* Lista com texto que quebra: destinos, passos de simulação. A linha cresce; o resto continua no topo. */
+.mb-lista--quebra .mb-lista__item { align-items: flex-start; }
+.mb-lista--quebra :is(.mb-lista__titulo, .mb-lista__meta) { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+/* Grupo de menu sem item não aparece (título "Atalhos" sozinho) */
+.mb-menu__grupo:has(+ :is(.mb-menu__grupo, .mb-menu__rodape, .mb-menu__mbigucci)), .mb-menu__grupo:last-child { display: none; }
+.mb-folha__grupo:empty, .mb-folha__grupo:has(> .mb-folha__rotulo-grupo:only-child) { display: none; }
+/* Condição com valor em pílulas (escolha múltipla): o valor desce para a segunda linha, sob campo e comparação */
+.mb-condicao__valor { min-width: 0; }
+.mb-condicao--lista { grid-template-columns: 40px minmax(0, 1.2fr) minmax(0, 1fr) auto; }
+.mb-condicao--lista > .mb-condicao__valor { grid-column: 2 / -1; grid-row: 2; }
+@media (max-width: 767px) {
+  .mb-condicao--lista { grid-template-columns: minmax(0, 1fr) auto; }
+  .mb-condicao--lista > .mb-condicao__valor { grid-row: auto; }
+}

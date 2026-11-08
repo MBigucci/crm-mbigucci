@@ -1,9 +1,9 @@
 import type { Config } from "tailwindcss";
 
 /**
- * MBigucci Design System (tokens.json do artifact "MBigucci").
- * Papel quente no fundo, cards brancos com barra à esquerda, vermelho só na ação
- * principal e no destaque. Bordas finas, nunca sombra. Raios de 2 a 4px.
+ * Tailwind para estrutura. As cores restantes são compatibilidade das folhas de
+ * distribuição, mensagens e escolha de cliente da Agenda: ainda têm uso ativo.
+ * Não ampliar a paleta; as páginas usam os tokens e as peças do Alicerce.
  */
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
@@ -16,15 +16,11 @@ const config: Config = {
         paper: "rgb(var(--paper) / <alpha-value>)",
         line: "rgb(var(--line) / <alpha-value>)",
         control: "rgb(var(--control) / <alpha-value>)",
-        surface: { DEFAULT: "rgb(var(--surface) / <alpha-value>)", disabled: "rgb(var(--surface-disabled) / <alpha-value>)" },
-        "tint-brand": "rgb(var(--tint-brand) / <alpha-value>)",
+        surface: "rgb(var(--surface) / <alpha-value>)",
         ok: "rgb(var(--ok) / <alpha-value>)",
         wa: "rgb(var(--wa) / <alpha-value>)",
-        "neutral-mark": "rgb(var(--neutral-mark) / <alpha-value>)",
-        band: "rgb(var(--band) / <alpha-value>)",
         overlay: "rgb(var(--overlay) / <alpha-value>)",
         "on-brand": "rgb(var(--on-brand) / <alpha-value>)",
-        "on-dark": { DEFAULT: "rgb(var(--on-dark) / <alpha-value>)", soft: "rgb(var(--on-dark-soft) / <alpha-value>)", muted: "rgb(var(--on-dark-muted) / <alpha-value>)" },
       },
       fontFamily: {
         display: ['"Bricolage Grotesque"', "Inter", "system-ui", "Arial", "sans-serif"],
@@ -32,9 +28,7 @@ const config: Config = {
       },
       borderRadius: { sm: "2px", DEFAULT: "2px", md: "3px", lg: "4px" },
       borderWidth: { bar: "4px" },
-      maxWidth: { content: "1180px" },
-      height: { logo: "24px" },
-      letterSpacing: { eyebrow: "0.1em", cabecalho: "0.08em" },
+      letterSpacing: { eyebrow: "0.1em" },
     },
   },
   plugins: [],

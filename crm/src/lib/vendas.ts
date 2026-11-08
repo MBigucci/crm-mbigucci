@@ -129,11 +129,11 @@ export function formatarDia(iso: string | null | undefined): string {
 export const imovelDaVenda = (v: Pick<Venda, "empreendimento" | "unidade">) =>
   v.unidade ? `${v.empreendimento}, ${v.unidade}` : v.empreendimento;
 
-/** Sinal + palavra + cor: o estado nunca depende só da cor. */
-export function seloVenda(v: Pick<Venda, "status" | "pagamento" | "pago_em">): { sinal: string; texto: string; cor: string } {
-  if (v.status === "cancelada") return { sinal: "✕", texto: "Cancelada", cor: "text-ink-soft" };
-  if (v.pagamento === "pago") return { sinal: "✓", texto: `Paga em ${formatarDia(v.pago_em)}`, cor: "text-ok" };
-  return { sinal: "!", texto: "Pagamento pendente", cor: "text-wa" };
+/** Sinal e palavra; o tom visual pertence ao Selo do Alicerce. */
+export function seloVenda(v: Pick<Venda, "status" | "pagamento" | "pago_em">): { sinal: string; texto: string } {
+  if (v.status === "cancelada") return { sinal: "✕", texto: "Cancelada" };
+  if (v.pagamento === "pago") return { sinal: "✓", texto: `Paga em ${formatarDia(v.pago_em)}` };
+  return { sinal: "!", texto: "Pagamento pendente" };
 }
 
 // ---------- Histórico ----------

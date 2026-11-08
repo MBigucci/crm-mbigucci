@@ -91,7 +91,7 @@ function Vendas() {
   return <div className="pagina-alicerce vendas-pilha">
     <header className="mb-cabecalho">
       <div className="mb-cabecalho__texto"><h1 className="titulo-tela">{veOutros ? "Vendas da equipe" : "Minhas vendas"}</h1><p className="mb-cabecalho__subtitulo">Confira as vendas pelo mês da assinatura. O VGV válido é o assinado e pago.</p></div>
-      {pode("leads.cadastrar") && !veOutros && <div className="mb-grupo-botoes"><NovaVenda alicerce corretor={eu.id} onRegistrada={recarregar} /></div>}
+      {pode("leads.cadastrar") && !veOutros && <div className="mb-grupo-botoes"><NovaVenda corretor={eu.id} onRegistrada={recarregar} /></div>}
     </header>
     <section className="vendas-pilha" aria-label="Período das vendas">
       <div className="vendas-filtros">

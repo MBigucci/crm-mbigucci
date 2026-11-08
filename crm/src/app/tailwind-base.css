@@ -1,7 +1,6 @@
 /* Base do Tailwind (preflight), carregada antes do Alicerce: assim o tokens.css e o bundle.css vêm
    depois e mandam no body e nos elementos. Ordem em layout.tsx.
-   As regras de base do visual antigo ficam aqui até a fase 2 do item 48; o body do Alicerce vem
-   depois e vale por cima (fundo, cor, fonte e altura de linha). */
+   O body pertence ao Alicerce. A tipografia de títulos herdada pelas telas permanece igual. */
 @tailwind base;
 
 @layer base {
@@ -9,14 +8,12 @@
     -webkit-text-size-adjust: 100%;
   }
   body {
-    @apply bg-paper font-sans text-ink antialiased;
-    font-size: 14px;
-    line-height: 1.45;
+    -moz-osx-font-smoothing: grayscale;
   }
   h1,
   h2,
   h3 {
-    @apply font-display;
+    font-family: var(--font-display);
     letter-spacing: -0.01em;
   }
 }
