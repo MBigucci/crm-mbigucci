@@ -29,3 +29,23 @@ Preenchido, preenchido com halo e tracejado continuam distintos em preto e branc
 - Pintar etapas concluídas de verde ou de vermelho: concluído é tinta (`texto`), também com o modificador `data-acao="marca"`; o verde fica para o status final em `Selo`.
 
 **Etapa que ainda não existe não aparece.** Um estágio previsto mas sem funcionar (“em breve”) fica fora da peça até existir; não há estado apagado para isso. Quando o estágio passar a valer, ele entra na lista.
+
+## No celular
+
+Abaixo de 768px a linha completa não cabe e rolaria de lado. Envolva o `<ol>` em `.mb-etapas-bloco`: nessa largura ele vira uma linha compacta, no mesmo padrão do `AssistenteEmPassos` (`.mb-assistente__passo` e `.mb-assistente__trilho`).
+
+```html
+<div class="mb-etapas-bloco">
+  <p class="mb-etapas-bloco__passo" aria-hidden="true">Etapa 2 de 4 · <strong>Contatado</strong></p>
+  <div class="mb-etapas-bloco__trilho" aria-hidden="true"><span style="width: 50%"></span></div>
+  <ol class="mb-etapas" aria-label="Andamento do parceiro"> … as mesmas etapas … </ol>
+</div>
+```
+
+- **O consumidor escreve** o “Etapa N de M · Nome” e a largura da barra (N ÷ M). No desktop os dois ficam ocultos e o `<ol>` aparece como sempre.
+- **No celular** o `<ol>` continua no HTML, só sai da vista: a etapa atual mostra o `__detalhe` (quem age) e as outras ficam só para leitor de tela, que ouve a lista inteira, com `aria-current="step"` na atual. O texto “Etapa N de M” e a barra são `aria-hidden` para não repetir.
+- **Bloqueada:** o “!” e o motivo continuam visíveis, abaixo da barra. A barra segue em `texto` sobre `trilho`; o sinal é o “!”, não a cor.
+- **Todas concluídas:** escreva “Etapa 4 de 4 · Concluída” e barra cheia.
+- Sem o `.mb-etapas-bloco`, o `<ol>` solto continua como era (rola de lado). `.mb-etapas--faixa` perde a faixa no celular.
+- `.mb-etapas-bloco--celular` força a forma compacta em qualquer largura; é para exemplo e teste, não para telas.
+- Não confundir com `.mb-etapas--compacta`, que só encurta os nomes no desktop.

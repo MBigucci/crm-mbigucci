@@ -314,6 +314,33 @@ textarea.mb-campo__entrada { height: auto; min-height: 88px; padding: 10px var(-
 /* Faixa: as etapas dentro de uma barra sutil sob o cabeçalho de um registro */
 .mb-etapas--faixa { padding: var(--esp-3) var(--esp-4); background: var(--superficie-sutil); border: var(--mb-borda) solid var(--linha); border-radius: var(--raio-sm); }
 
+/* Etapas no celular: abaixo de 768px a linha vira “Etapa 2 de 4 · Contatado” + barra fina + detalhe da etapa atual.
+   .mb-etapas-bloco--celular força a forma compacta em qualquer largura (preview e testes). */
+.mb-etapas-bloco__passo { display: none; margin: 0; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--texto-suave); }
+.mb-etapas-bloco__passo strong { color: var(--texto); }
+.mb-etapas-bloco__trilho { display: none; height: 4px; border-radius: var(--raio-total); background: var(--trilho); overflow: hidden; }
+.mb-etapas-bloco__trilho > span { display: block; height: 100%; background: var(--texto); }
+@media screen and (max-width: 767px) {
+  .mb-etapas-bloco { position: relative; display: grid; gap: 6px; }
+  .mb-etapas-bloco .mb-etapas-bloco__passo { display: block; }
+  .mb-etapas-bloco .mb-etapas-bloco__trilho { display: block; }
+  .mb-etapas-bloco > .mb-etapas { display: block; overflow: visible; }
+  .mb-etapas-bloco > .mb-etapas--faixa { padding: 0; background: none; border: 0; border-radius: 0; }
+  .mb-etapas-bloco > .mb-etapas > .mb-etapa + .mb-etapa::before { display: none; }
+  .mb-etapas-bloco > .mb-etapas > .mb-etapa:not(.mb-etapa--atual):not(.mb-etapa--bloqueada), .mb-etapas-bloco > .mb-etapas > .mb-etapa--atual :is(.mb-etapa__marcador, .mb-etapa__nome), .mb-etapas-bloco > .mb-etapas > .mb-etapa--bloqueada .mb-etapa__nome { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .mb-etapas-bloco > .mb-etapas > .mb-etapa--atual, .mb-etapas-bloco > .mb-etapas > .mb-etapa--bloqueada { gap: var(--esp-2); }
+  .mb-etapas-bloco > .mb-etapas .mb-etapa__detalhe { font-size: 12px; line-height: 16px; white-space: normal; }
+}
+.mb-etapas-bloco.mb-etapas-bloco--celular { position: relative; display: grid; gap: 6px; }
+.mb-etapas-bloco.mb-etapas-bloco--celular .mb-etapas-bloco__passo { display: block; }
+.mb-etapas-bloco.mb-etapas-bloco--celular .mb-etapas-bloco__trilho { display: block; }
+.mb-etapas-bloco.mb-etapas-bloco--celular > .mb-etapas { display: block; overflow: visible; }
+.mb-etapas-bloco.mb-etapas-bloco--celular > .mb-etapas--faixa { padding: 0; background: none; border: 0; border-radius: 0; }
+.mb-etapas-bloco.mb-etapas-bloco--celular > .mb-etapas > .mb-etapa + .mb-etapa::before { display: none; }
+.mb-etapas-bloco.mb-etapas-bloco--celular > .mb-etapas > .mb-etapa:not(.mb-etapa--atual):not(.mb-etapa--bloqueada), .mb-etapas-bloco.mb-etapas-bloco--celular > .mb-etapas > .mb-etapa--atual :is(.mb-etapa__marcador, .mb-etapa__nome), .mb-etapas-bloco.mb-etapas-bloco--celular > .mb-etapas > .mb-etapa--bloqueada .mb-etapa__nome { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.mb-etapas-bloco.mb-etapas-bloco--celular > .mb-etapas > .mb-etapa--atual, .mb-etapas-bloco.mb-etapas-bloco--celular > .mb-etapas > .mb-etapa--bloqueada { gap: var(--esp-2); }
+.mb-etapas-bloco.mb-etapas-bloco--celular > .mb-etapas .mb-etapa__detalhe { font-size: 12px; line-height: 16px; white-space: normal; }
+
 /* ---------- Esteira (etapas em miniatura, para linhas de tabela) ---------- */
 .mb-esteira { display: inline-flex; align-items: center; gap: var(--esp-2); white-space: nowrap; }
 .mb-esteira__trilho { display: inline-flex; gap: 2px; flex: none; }
