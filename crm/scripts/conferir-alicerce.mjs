@@ -33,7 +33,7 @@
 //   Como corretor (/leads/novo/) e como gerente (?qa=gerente, o lead da empresa), em 375 e 1280, papel e grafite; o erro
 //   de validação, o aviso de duplicado (WhatsApp de um lead visível e o de outra carteira, dos fixtures) e o Cadastro Mágico.
 // Os prints vão para crm/local/ (fora do Git).
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const argumentos = process.argv.slice(2);
@@ -44,6 +44,27 @@ const soLeads = argumentos.includes("--leads");
 const soFicha = argumentos.includes("--ficha");
 const soNovo = argumentos.includes("--novo");
 const soConta = argumentos.includes("--conta");
+const soParcerias = argumentos.includes("--parcerias");
+
+// Só altera a cópia gerada, nunca a sessão, os dados ou as credenciais do app.
+// Execute depois de visual-preview.mjs e antes do build: node scripts/conferir-alicerce.mjs --preparar-parcerias
+if (argumentos.includes("--preparar-parcerias")) {
+  const sessao = ".visual-preview/src/lib/sessao.tsx";
+  writeFileSync(sessao, readFileSync(sessao, "utf8").replace("'distribuicao.produtos']", "'distribuicao.produtos','parceiros.cadastrar']"));
+  const fixture = ".visual-preview/src/lib/visual-fixtures.ts";
+  let s = readFileSync(fixture, "utf8");
+  s = s.replace("parceiros:[parceiro],parceiros_situacao:[{", "parceiros:[parceiro, {...parceiro,id:'par-2',nome:'Bruno Exemplo',empresa:null,creci:'23456-F',whatsapp_norm:'5511999990003',ultima_interacao_em:at(-45)}, {...parceiro,id:'par-3',nome:'Célia Exemplo',empresa:'Horizonte Exemplo',creci:'34567-F',whatsapp_norm:'5511999990004',ultima_interacao_em:null,atribuido_em:at(-10)}, {...parceiro,id:'par-outro',nome:'Daniel Exemplo',gerente_id:'gerente-2',whatsapp_norm:null}],parceiros_situacao:[{parceiro_id:'par-2',ativo:true,estagio:'apresentado',dias_prazo:45,dias_restantes:45,faixa:'atencao',proximo_contato:null},{parceiro_id:'par-3',ativo:true,estagio:'novo',dias_prazo:10,dias_restantes:80,faixa:'ok',proximo_contato:null},{parceiro_id:'par-outro',ativo:true,estagio:'contatado',dias_prazo:20,dias_restantes:70,faixa:'ok',proximo_contato:null},{");
+  s = s.replace(" profiles, leads, visitas, vendas,", " profiles:[...profiles,{id:'gerente',nome:'Gerente Exemplo',perfil:'gerente'},{id:'gerente-2',nome:'Outro Gerente Exemplo',perfil:'gerente'}], leads, visitas, vendas,");
+  s = s.replace("parceiro_regioes:[", "parceiro_eventos:[{parceiro_id:'par-1',tipo:'reentrada_aviso',criado_em:at(0)}],parceiro_regioes:[");
+  // Simula a RLS só na fixture: gerente vê os próprios; GG vê a carteira completa.
+  s = s.replace("this.rows=[...(tables[name]??[])];", "this.rows=[...(tables[name]??[])]; if(name==='parceiros' && typeof location!=='undefined' && !location.search.includes('qa=geral')) this.rows=this.rows.filter(x=>x.gerente_id==='gerente');");
+  // Respostas de duplicado apenas na cópia; nenhuma escrita habilitada.
+  s = s.replace('rpc:async(name:string,args?:Record<string,any>)=>', `rpc:async(name:string,args?:Record<string,any>)=> name==='parceiro_cadastrar' && args?.p_whatsapp==='11999990002' ? {data:{status:'seu',parceiro_id:'par-1'},error:null} : name==='parceiro_cadastrar' && args?.p_creci==='99999-F' ? {data:{status:'ja_cadastrado',dono_nome:'Outro Gerente Exemplo'},error:null} :`);
+  s = s.replaceAll("whatsapp_norm:'551199999000", "whatsapp_norm:'1199999000");
+  writeFileSync(fixture, s);
+  console.log("Prévia de Parcerias preparada: dados fictícios, gravações bloqueadas.");
+  process.exit(0);
+}
 
 const saida = argumentos.find((a) => !a.startsWith("--")) ?? "local/alicerce";
 const base = "http://127.0.0.1:4173/vendas";
@@ -92,7 +113,7 @@ async function print(nome) {
 const resultado = {};
 const confere = (nome, ok, detalhe) => { resultado[nome] = { ok: !!ok, detalhe }; console.log(`${ok ? "OK   " : "FALHA"} ${nome}${detalhe ? "  " + JSON.stringify(detalhe) : ""}`); };
 
-if (!soMoldura && !soLista && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta) {
+if (!soMoldura && !soLista && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta && !soParcerias) {
 // 1. Migração da escolha antiga (três casos de tema e a barra).
 await tela(1280, 800);
 await esquemaAparelho("light");
@@ -361,7 +382,100 @@ async function printDe(nome, seletor) {
   return true;
 }
 
-if (!soMoldura && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta) {
+// Fase 2, bloco 1. Um navegador, uma aba e uma conferência por vez.
+if (soParcerias) {
+  const clicar = (seletor, texto) => avaliar(`(() => { const e = [...document.querySelectorAll(${JSON.stringify(seletor)})].find(x => x.getClientRects().length && getComputedStyle(x).visibility !== 'hidden' && (${texto === undefined ? "true" : `x.textContent.trim() === ${JSON.stringify(texto)}`})); if(!e) return false; e.focus(); e.click(); return true; })()`);
+  const preencher = (seletor, valor) => avaliar(`(() => { const e=document.querySelector(${JSON.stringify(seletor)}); if(!e) return false; const proto=e.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype; Object.getOwnPropertyDescriptor(proto,'value').set.call(e,${JSON.stringify(valor)}); e.dispatchEvent(new Event('input',{bubbles:true})); return true; })()`);
+  const medir = () => avaliar(`(() => {
+    const q=s=>document.querySelector(s), vis=e=>e.getClientRects().length && getComputedStyle(e).visibility!=='hidden';
+    const pequenos=[...document.querySelectorAll('main button, main input, main textarea, main select, .mb-lateral--aberto button, .mb-lateral--aberto input, .mb-lateral--aberto textarea, .mb-celular-topo button, .mb-celular-topo a')].filter(vis).filter(e=>!e.disabled && !['checkbox','radio'].includes(e.type) && e.getBoundingClientRect().height<43.5).map(e=>({nome:(e.textContent||e.getAttribute('aria-label')||e.id).trim().slice(0,45),altura:e.getBoundingClientRect().height}));
+    const marcas=[...document.querySelectorAll('.mb-marca')].filter(vis).map(e=>e.getAttribute('aria-label'));
+    return {lateral:document.documentElement.scrollWidth>document.documentElement.clientWidth, pequenos, marcas, h1:document.querySelectorAll('main h1').length, legado:!!q('main .ds-antigo,main .card,main .btn,main .input,main .selo-antigo'), emBreve:document.querySelector('main')?.textContent.includes('em breve'), status:!!q('.mb-celular-status'), largura:innerWidth};
+  })()`);
+  const checar = async (id, w) => {
+    const m = await medir();
+    confere(id + ' · sem rolagem lateral', !m.lateral, m);
+    confere(id + ' · Alicerce e marca Parcerias', !m.legado && m.h1 === 1 && m.marcas.includes('Base360 · Parcerias') && !m.emBreve && !m.status);
+    if (w < 768) confere(id + ' · alvos 44px', !m.pequenos.length, m.pequenos);
+  };
+  const rotas = [['lista','/parceiros/?qa=gerente'],['ficha','/parceiros/ficha/?qa=gerente&id=par-1'],['novo','/parceiros/novo/?qa=gerente'],['evento','/parceiros/evento/?qa=gerente']];
+  for (const [w,h] of [[375,812],[1280,800]]) for (const tema of ['papel','grafite']) {
+    await tela(w,h);
+    await comArmazenamento({mb_tema:tema,mb_movimento:'reduzido'},rotas[0][1]);
+    for (const [nome,rota] of rotas) {
+      await avaliar('sessionStorage.clear()');
+      await abrir(rota);
+      const id = `${nome}-${w}-${tema}`;
+      await checar(id,w);
+      const foco = await focoVisivel(w < 768 ? 9 : 16);
+      confere(id + ' · foco de teclado', !foco.length, foco);
+      await avaliar('document.activeElement?.blur(); window.scrollTo(0,0)');
+      await print(id);
+      await printInteiro(id + '-inteiro');
+      if (nome === 'lista') {
+        confere(id + ' · aprovação: sem trilha repetida e aviso da roleta', await avaliar(`!document.querySelector('main .mb-trilha') && document.querySelector('.mb-aviso--info .mb-aviso__titulo')?.textContent==='Você é o próximo da roleta de parceiros' && ![...document.querySelectorAll('.mb-escopo')].some(e=>e.textContent.includes('próximo da roleta'))`));
+        await clicar('summary'); await espera(150); await printInteiro(id + '-fila');
+        await clicar('button','Registrar interação'); await espera(450);
+        confere(id + ' · painel no body e foco preso', await avaliar(`(() => {const p=document.querySelector('.mb-lateral--aberto');return p?.parentElement===document.body && p.contains(document.activeElement);})()`));
+        await print(id + '-registrar'); await teclar('Escape','Escape',27); await espera(300);
+        confere(id + ' · Esc devolve foco', await avaliar(`document.activeElement?.textContent.trim()==='Registrar interação'`));
+        await preencher('.mb-filtros input','zzzzz'); await espera(200);
+        confere(id + ' · vazio da busca', await avaliar(`!!document.querySelector('.mb-vazio')`));
+        await clicar('button','Limpar filtros'); await espera(150);
+      }
+      if (nome === 'ficha') {
+        await clicar('button','Editar cadastro'); await espera(450); await print(id + '-editar');
+        await teclar('Escape','Escape',27); await espera(250);
+        await clicar('button','Registrar interação'); await espera(450); await print(id + '-registrar');
+        await teclar('Escape','Escape',27); await espera(250);
+      }
+      if (nome === 'novo') {
+        await preencher('#novo-nome','Teste Exemplo'); await preencher('#novo-whatsapp','11999990002');
+        await clicar('button[type=submit]'); await espera(250);
+        confere(id + ' · duplicado próprio', await avaliar(`document.querySelector('main')?.textContent.includes('Já é seu parceiro')`));
+        await printInteiro(id + '-duplicado-proprio');
+        await preencher('#novo-whatsapp',''); await preencher('#novo-creci','99999-F'); await clicar('button[type=submit]'); await espera(250);
+        confere(id + ' · duplicado de outro gerente sem acesso à ficha', await avaliar(`document.querySelector('.mb-aviso__titulo')?.textContent==='Já é parceiro de Outro Gerente Exemplo' && !document.querySelector('.mb-aviso a')`));
+        await printInteiro(id + '-duplicado-outro');
+        await avaliar('sessionStorage.clear()');
+      }
+      if (nome === 'evento') {
+        await clicar('.mb-varios__lista input'); await preencher('.mb-varios input[type=search]','Bruno'); await espera(150);
+        await clicar('.mb-varios__todos input'); await preencher('.mb-varios input[type=search]',''); await espera(150);
+        confere(id + ' · seleção preservada fora da busca', await avaliar(`document.querySelectorAll('.mb-varios__lista input:checked').length===2 && document.querySelector('.mb-varios__contagem').textContent.includes('2 marcados') && document.querySelector('.mb-varios__todos input').indeterminate`));
+        await print(id + '-selecionado');
+        await abrir(rota);
+        confere(id + ' · rascunho do evento restaurado', await avaliar(`document.querySelectorAll('.mb-varios__lista input:checked').length===2`));
+        await avaliar('sessionStorage.clear()');
+      }
+    }
+    await abrir('/parceiros/?qa=geral'); await print(`lista-geral-${w}-${tema}`);
+    confere(`GG-${w}-${tema} · lê todos e não registra pelo outro`, await avaliar(`document.querySelectorAll('.mb-item').length===4 && ![...document.querySelectorAll('.mb-item button')].some(e=>e.textContent==='Registrar interação')`));
+    await abrir('/parceiros/ficha/?qa=geral&id=par-1');
+    confere(`GG-${w}-${tema} · ficha de outro só leitura`, await avaliar(`!document.querySelector('#registrar') && ![...document.querySelectorAll('main button')].some(e=>e.textContent==='Editar cadastro')`));
+    await print(`ficha-geral-${w}-${tema}`);
+  }
+  for (const tema of ['papel','grafite']) {
+    await tela(320,812); await comArmazenamento({mb_tema:tema},'/parceiros/?qa=gerente');
+    const m = await medir(); confere(`lockup 320 ${tema}`, !m.lateral && m.marcas.includes('Base360 · Parcerias'), m); await print(`lockup-320-${tema}`);
+    await clicar('.mb-menu-icone'); await espera(250); await print(`menu-320-${tema}`);
+    confere(`menu celular ${tema} · volta ao Vendas no basePath`, await avaliar(`document.querySelector('.mb-folha a[href="/vendas/"]')?.textContent==='Vendas'`));
+  }
+  await tela(1280,800); await abrir('/parceiros/?qa=gerente'); await clicar('.mb-menu__modulos'); await espera(200);
+  confere('Módulos: Parcerias atual e Vendas na mesma aba', await avaliar(`document.querySelector('.mb-popup [aria-current="true"]')?.textContent.trim()==='Parcerias' && [...document.querySelectorAll('.mb-popup a')].every(a=>!a.target)`));
+  await print('modulos-desktop');
+  await abrir('/?qa=gerente');
+  confere('Vendas: Parceiros sai do menu; contatos continuam no Início', await avaliar(`![...document.querySelectorAll('.mb-menu__item')].some(a=>a.textContent.trim()==='Parceiros') && !!document.querySelector('#parceiros-hoje')`));
+  await abrir('/parceiros/?qa=corretor');
+  confere('Sem permissão: corretor continua bloqueado', await avaliar(`document.querySelector('.mb-estado__sobrelinha')?.textContent==='Sem permissão'`));
+  confere('Nenhum erro no console', erros.length === 0, erros);
+  writeFileSync(join(saida,'resultado.json'),JSON.stringify(resultado,null,2));
+  const falhas = Object.values(resultado).filter(r=>!r.ok).length;
+  console.log(`${Object.keys(resultado).length} conferências, ${falhas} falhas. Capturas em ${saida}`);
+  await cdp('Page.close'); ws.close(); process.exit(falhas ? 1 : 0);
+}
+
+if (!soMoldura && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta && !soParcerias) {
   for (const [w, h] of [[375, 812], [1280, 800]]) {
     for (const tema of ["papel", "grafite"]) {
       await abrirListaDoDia(w, h, tema);

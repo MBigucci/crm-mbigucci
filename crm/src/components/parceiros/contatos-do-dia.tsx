@@ -6,6 +6,7 @@ import { usePerfil } from "@/lib/sessao";
 import { contatosDoDia, type ParceiroComSituacao } from "@/lib/parceiros";
 import { useCarteira } from "@/lib/parceiros-dados";
 import { ProximoContatoParceiro } from "./partes";
+import { Lista, ItemDaLista } from "../alicerce/lista";
 import { subtituloParceiro } from "./card";
 
 /**
@@ -16,13 +17,19 @@ export function ContatosDoDiaParceiros({
   lista,
   eu,
   agora,
+  alicerce = false,
 }: {
+  alicerce?: boolean;
   lista: ParceiroComSituacao[];
   eu: string;
   agora: Date;
 }) {
   const itens = contatosDoDia(lista, eu, agora);
   if (!itens.length) return null;
+  if (alicerce) return <section aria-labelledby="parceiros-hoje">
+    <h2 className="mb-sobrelinha" id="parceiros-hoje">Parceiros para contatar hoje · {itens.length}</h2>
+    <Lista cartao>{itens.map((p) => <ItemDaLista key={p.id} titulo={<Link className="mb-lista__alvo" href={"/parceiros/ficha/?id=" + p.id + "#registrar"}>{p.nome}</Link>} meta={<ProximoContatoParceiro dia={p.proximo_contato} agora={agora} />} />)}</Lista>
+  </section>;
   return (
     <section aria-labelledby="parceiros-hoje" className="card">
       <h2 id="parceiros-hoje" className="titulo-secao-antigo">

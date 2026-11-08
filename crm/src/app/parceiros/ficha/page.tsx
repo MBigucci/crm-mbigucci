@@ -1,44 +1,27 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
-import clsx from "clsx";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Casca } from "@/components/casca";
 import { subtituloParceiro } from "@/components/parceiros/card";
-import { CamposCadastro, ComPermissao, ProximoContatoParceiro, TextoPrazo, TrilhaEstagio } from "@/components/parceiros/partes";
+import { CabecalhoParceiros, CamposCadastro, ComPermissao, ProximoContatoParceiro, TextoPrazo, TrilhaEstagio } from "@/components/parceiros/partes";
 import { RegistrarInteracao } from "@/components/parceiros/registrar-interacao";
+import { Cartao } from "@/components/alicerce/cartao";
+import { Pares } from "@/components/alicerce/pares";
+import { Aviso } from "@/components/alicerce/aviso";
+import { PainelLateral } from "@/components/alicerce/painel-lateral";
+import { Historico } from "@/components/alicerce/historico";
+import { CarregandoLeads } from "@/components/alicerce/carregando";
+import { EstadoDePagina, CopiarDetalhes } from "@/components/alicerce/estado-de-pagina";
+import { EstadoVazio } from "@/components/alicerce/estado-vazio";
+import { useToast } from "@/components/alicerce/toast";
 import { usePerfil, useSessao } from "@/lib/sessao";
-import {
-  camposDoParceiro,
-  formatarDia,
-  formatarDataHora,
-  formatarWhatsapp,
-  linkWhatsapp,
-  textoRegioes,
-  validarParceiro,
-  type CamposParceiro,
-  type ParceiroComSituacao,
-} from "@/lib/parceiros";
-import {
-  editarParceiro,
-  lerLinhaDoTempo,
-  useCarteira,
-  useGerentes,
-  useRegioes,
-  type ItemLinhaDoTempo,
-} from "@/lib/parceiros-dados";
+import { camposDoParceiro, formatarDia, formatarDataHora, formatarWhatsapp, linkWhatsapp, textoRegioes, validarParceiro, type CamposParceiro, type ParceiroComSituacao } from "@/lib/parceiros";
+import { editarParceiro, lerLinhaDoTempo, useCarteira, useGerentes, useRegioes, type ItemLinhaDoTempo } from "@/lib/parceiros-dados";
 
 export default function FichaParceiroPage() {
-  return (
-    <Casca titulo="Parceiro">
-      <ComPermissao>
-        <Suspense fallback={<p className="text-concrete">Carregando…</p>}>
-          <Ficha />
-        </Suspense>
-      </ComPermissao>
-    </Casca>
-  );
+  return <Casca titulo="Parceiro" migrada><ComPermissao><Suspense fallback={<CarregandoLeads />}><Ficha /></Suspense></ComPermissao></Casca>;
 }
 
 function Ficha() {
@@ -46,358 +29,102 @@ function Ficha() {
   const eu = usePerfil();
   const { pode } = useSessao();
   const veTodos = pode("parceiros.ver_todos");
-  // A ficha lê a carteira toda (a RLS já filtra): é a mesma junção da lista, com a situação.
   const { lista, erro, recarregar } = useCarteira();
   const regioes = useRegioes();
   const gerentes = useGerentes(veTodos);
   const [linha, setLinha] = useState<ItemLinhaDoTempo[] | null>(null);
   const [erroLinha, setErroLinha] = useState<string | null>(null);
   const [editando, setEditando] = useState(false);
+  const [registrando, setRegistrando] = useState(false);
   const [agora, setAgora] = useState(() => new Date());
-  const [aviso, setAviso] = useState<string | null>(null);
-
+  const botaoRegistrar = useRef<HTMLButtonElement>(null);
+  const botaoEditar = useRef<HTMLButtonElement>(null);
+  const toast = useToast();
   const carregarLinha = useCallback(async () => {
     if (!id) return;
     const r = await lerLinhaDoTempo(id);
     setLinha(r.itens);
     setErroLinha(r.erro);
   }, [id]);
-
-  useEffect(() => {
-    carregarLinha();
-  }, [carregarLinha]);
-
+  useEffect(() => { void carregarLinha(); }, [carregarLinha]);
   const p = lista?.find((x) => x.id === id) ?? null;
-
-  // Os contatos do dia abrem a ficha em Registrar interação (o formulário só existe depois de carregar).
+  // Preserva os links dos contatos do dia (#registrar), agora abrindo a tarefa no painel.
   const temParceiro = !!p;
   useEffect(() => {
-    if (temParceiro && window.location.hash === "#registrar")
-      document.getElementById("registrar")?.scrollIntoView({ block: "start" });
-  }, [temParceiro]);
-
-  if (!id) return <p className="text-ink-soft">Parceiro não informado. Volte para a lista.</p>;
-  if (erro) return <p className="aviso-erro">✕ {erro}</p>;
-  if (!lista) return <p className="text-concrete">Carregando…</p>;
-  if (!p)
-    return (
-      <div className="card max-w-[560px]">
-        <p className="titulo-card">Parceiro não encontrado</p>
-        <p className="mt-1 text-ink-soft">
-          O parceiro pode ter passado para outro gerente pela regra dos 90 dias, ou o link está errado.
-        </p>
-        <Link href="/parceiros/" className="link-acao mt-3 inline-block text-[14px]">
-          Voltar para Parceiros
-        </Link>
-      </div>
-    );
-
+    if (temParceiro && p?.gerente_id === eu.id && window.location.hash === "#registrar") setRegistrando(true);
+  }, [temParceiro, p?.gerente_id, eu.id]);
+  const voltar = <Link className="mb-botao mb-botao--secundario" href="/parceiros/">Voltar para Parceiros</Link>;
+  if (erro) return <EstadoDePagina tipo="erro-de-carga" titulo="Não foi possível carregar o parceiro" texto="Tente de novo. O que você já salvou continua salvo." detalhe={<CopiarDetalhes codigo={erro} />} acoes={<button type="button" className="mb-botao mb-botao--primario" onClick={() => void recarregar()}>Tentar de novo</button>} />;
+  if (!lista) return <CarregandoLeads />;
+  if (!id || !p) return <EstadoDePagina tipo="nao-encontrado" titulo="Este parceiro não está mais aqui" texto="Pode ter passado a outro gerente pela regra dos 90 dias, ou o link está errado." acoes={voltar} />;
   const meu = p.gerente_id === eu.id;
   const nomeDono = p.gerente_id ? gerentes.find((g) => g.id === p.gerente_id)?.nome : null;
   const wa = linkWhatsapp(p.whatsapp_norm);
-  const depoisDeSalvar = async () => {
-    setAgora(new Date());
-    await Promise.all([recarregar(), carregarLinha()]);
-  };
-
-  return (
-    <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:items-start md:pb-0">
-      <div className="grid gap-4">
-        <div>
-          <Link href="/parceiros/" className="focus-ring text-[13px] font-semibold text-ink-soft">
-            ← Parceiros
-          </Link>
-          <span className="eyebrow mt-3">{p.empresa ? "Parceiro · Imobiliária" : "Parceiro · Autônomo"}</span>
-          <h2 className="titulo-pagina mt-1">{p.nome}</h2>
-          <p className="mt-1 text-[14px] text-ink-soft">{subtituloParceiro(p)}</p>
-          {veTodos && (
-            <p className="mt-1 text-[13px] text-ink-soft">
-              Gerente: {meu ? "você" : (nomeDono ?? (p.gerente_id ? "outro gerente" : "sem gerente"))}
-            </p>
-          )}
-          <TrilhaEstagio estagio={p.estagio} />
-        </div>
-
-        {p.reentrada_em && (
-          <div className="card bar-brand">
-            <span className="eyebrow">Atenção</span>
-            <p className="mt-1">
-              <span className="font-semibold text-wa">!</span> {primeiroNome(p.nome)} procurou a MBigucci de novo em{" "}
-              <span className="num">{formatarDataHora(p.reentrada_em)}</span>.{" "}
-              {meu
-                ? "Continua com você. Registre uma interação para reiniciar os 90 dias."
-                : "Continua com o gerente atual, que recebeu o aviso."}
-            </p>
-          </div>
-        )}
-
-        <Prazo p={p} />
-
-        {aviso && <p className="aviso-ok">✓ {aviso}</p>}
-
-        {editando ? (
-          <Editar
-            p={p}
-            regioes={regioes}
-            onCancelar={() => setEditando(false)}
-            onSalvo={async () => {
-              setEditando(false);
-              setAviso("Cadastro salvo. O prazo dos 90 dias não mudou.");
-              await depoisDeSalvar();
-            }}
-          />
-        ) : (
-          <section className="card" aria-labelledby="contato">
-            <h3 id="contato" className="eyebrow">
-              Contato
-            </h3>
-            <dl className="mt-2 grid gap-1 text-[14px]">
-              <Item rotulo="WhatsApp">
-                {p.whatsapp_norm ? <span className="num">{formatarWhatsapp(p.whatsapp_norm)}</span> : "Não informado"}
-              </Item>
-              <Item rotulo="CRECI">{p.creci || "Não informado"}</Item>
-              <Item rotulo="E-mail">
-                {p.email ? (
-                  <a className="focus-ring underline decoration-line underline-offset-2" href={`mailto:${p.email}`}>
-                    {p.email}
-                  </a>
-                ) : (
-                  "Não informado"
-                )}
-              </Item>
-              <Item rotulo="Empresa">{p.empresa || "Autônomo"}</Item>
-              <Item rotulo="Região">{textoRegioes(p.regioes, regioes, p.regiao_outra) || "Não informada"}</Item>
-            </dl>
-            <div className="mt-3 flex flex-wrap gap-2 [&>*]:flex-1 md:[&>*]:flex-none">
-              {wa && (
-                <a href={wa} target="_blank" rel="noopener noreferrer" className="btn btn-ghost focus-ring">
-                  Abrir WhatsApp
-                </a>
-              )}
-              {meu && (
-                <button
-                  type="button"
-                  className="btn btn-ghost focus-ring"
-                  onClick={() => {
-                    setAviso(null);
-                    setEditando(true);
-                  }}
-                >
-                  Editar
-                </button>
-              )}
-            </div>
-          </section>
-        )}
+  const depoisDeSalvar = async () => { setAgora(new Date()); await Promise.all([recarregar(), carregarLinha()]); };
+  return <div className="pagina-alicerce parcerias-pilha">
+    <CabecalhoParceiros titulo={p.nome} subtitulo={<>{subtituloParceiro(p)}{veTodos && <> · Gerente: {meu ? "você" : (nomeDono ?? (p.gerente_id ? "outro gerente" : "sem gerente"))}</>}</>} acoes={meu && <button ref={botaoRegistrar} id="registrar" type="button" className="mb-botao mb-botao--primario" aria-haspopup="dialog" onClick={() => setRegistrando(true)}>Registrar interação</button>} />
+    <TrilhaEstagio estagio={p.estagio} />
+    {p.reentrada_em && <Aviso tom="alerta" titulo="O parceiro procurou a MBigucci de novo" texto={`${p.nome} procurou em ${formatarDataHora(p.reentrada_em)}. ${meu ? "Continua com você. Registre uma interação para reiniciar os 90 dias." : "Continua com o gerente atual, que recebeu o aviso."}`} />}
+    <div className="parcerias-ficha">
+      <div className="parcerias-pilha">
+        <Cartao id="prazo-parceiro" titulo="Prazo de 90 dias">
+          <p><TextoPrazo faixa={p.faixa} dias={p.dias_prazo} comecou={!!p.ultima_interacao_em} /></p>
+          <p>{p.dias_restantes > 0 ? `Faltam ${p.dias_restantes} ${p.dias_restantes === 1 ? "dia" : "dias"} para o parceiro passar a outro gerente.` : "Passou dos 90 dias: o parceiro vai para outro gerente na próxima rotina."}</p>
+          <p className="mb-campo__ajuda">Editar o cadastro não reinicia o prazo. Só registrar interação.</p>
+        </Cartao>
+        <Cartao id="contato-parceiro" titulo="Contato" rodape={<>{meu && <button ref={botaoEditar} type="button" className="mb-botao mb-botao--discreto" aria-haspopup="dialog" onClick={() => setEditando(true)}>Editar cadastro</button>}{wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="mb-botao mb-botao--whatsapp">WhatsApp →</a>}</>}>
+          <Pares itens={[
+            { rotulo: "WhatsApp", valor: p.whatsapp_norm ? formatarWhatsapp(p.whatsapp_norm) : "Não informado" },
+            { rotulo: "CRECI", valor: p.creci || "Não informado" },
+            { rotulo: "E-mail", valor: p.email ? <a href={`mailto:${p.email}`}>{p.email}</a> : "Não informado" },
+            { rotulo: "Empresa", valor: p.empresa || "Autônomo" },
+            { rotulo: "Região", valor: textoRegioes(p.regioes, regioes, p.regiao_outra) || "Não informada" },
+            { rotulo: "Próximo contato", valor: <ProximoContatoParceiro dia={p.proximo_contato} agora={agora} /> },
+          ]} />
+        </Cartao>
       </div>
-
-      <div className="grid gap-4">
-        {meu && !editando && (
-          <section id="registrar" className="card scroll-mt-[72px]" aria-labelledby="titulo-registrar">
-            <h3 id="titulo-registrar" className="titulo-secao-antigo mb-3">
-              Registrar interação
-            </h3>
-            <RegistrarInteracao
-              parceiroId={p.id}
-              idBase="ficha"
-              onSalvo={async () => {
-                setAviso("Interação registrada. O prazo dos 90 dias recomeçou.");
-                await depoisDeSalvar();
-              }}
-            />
-          </section>
-        )}
-
-        <section className="card" aria-labelledby="linha-do-tempo">
-          <div className="flex items-baseline justify-between gap-2">
-            <h3 id="linha-do-tempo" className="eyebrow">
-              Linha do tempo
-            </h3>
-            {linha && (
-              <span className="text-[12px] text-concrete">
-                <span className="num">{linha.length}</span> {linha.length === 1 ? "registro" : "registros"}
-              </span>
-            )}
-          </div>
-          {erroLinha && <p className="aviso-erro mt-2">✕ {erroLinha}</p>}
-          {!linha && !erroLinha && <p className="mt-2 text-concrete">Carregando…</p>}
-          <LinhaDoTempo itens={linha ?? []} proximo={p.proximo_contato} agora={agora} eu={eu.nome} />
-        </section>
-
-        <p className="text-[12px] text-concrete">
-          Indicações e clientes indicados aparecem aqui quando o lead tiver a origem Parceiro.
-        </p>
-      </div>
+      <Cartao id="linha-do-tempo" titulo="Linha do tempo" descricao={linha ? `${linha.length} ${linha.length === 1 ? "registro" : "registros"}` : undefined}>
+        {erroLinha ? <EstadoDePagina compacto tipo="erro-de-carga" titulo="Não foi possível carregar o histórico" texto="Tente de novo. Os dados do parceiro continuam disponíveis." acoes={<button className="mb-botao mb-botao--secundario" type="button" onClick={() => void carregarLinha()}>Tentar de novo</button>} detalhe={<CopiarDetalhes codigo={erroLinha} />} /> : !linha ? <CarregandoLeads /> : !linha.length && !p.proximo_contato ? <EstadoVazio titulo="Nenhum registro ainda" texto="As interações e as mudanças do parceiro aparecerão aqui." /> : <LinhaDoTempo itens={linha} proximo={p.proximo_contato} agora={agora} eu={eu.nome} />}
+      </Cartao>
     </div>
-  );
+    <PainelLateral aberto={registrando && meu} onFechar={() => setRegistrando(false)} titulo="Registrar interação" descricao={p.nome} foco={() => botaoRegistrar.current}>
+      <RegistrarInteracao parceiroId={p.id} idBase="ficha-interacao" onCancelar={() => setRegistrando(false)} onSalvo={async () => { setRegistrando(false); toast.mostrar("Interação registrada. O prazo dos 90 dias recomeçou.", { tipo: "sucesso" }); await depoisDeSalvar(); }} />
+    </PainelLateral>
+    <PainelLateral aberto={editando && meu} onFechar={() => setEditando(false)} titulo="Editar cadastro" descricao={p.nome} foco={() => botaoEditar.current}>
+      {editando && <Editar p={p} regioes={regioes} onCancelar={() => setEditando(false)} onSalvo={async () => { setEditando(false); toast.mostrar("Cadastro salvo. O prazo dos 90 dias não mudou.", { tipo: "sucesso" }); await depoisDeSalvar(); }} />}
+    </PainelLateral>
+  </div>;
 }
 
-const primeiroNome = (nome: string) => nome.trim().split(/\s+/)[0] ?? nome;
-
-function Item({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
-  return (
-    <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-2">
-      <dt className="text-ink-soft">{rotulo}</dt>
-      <dd className="min-w-0 break-words text-ink">{children}</dd>
-    </div>
-  );
+function LinhaDoTempo({ itens, proximo, agora, eu }: { itens: ItemLinhaDoTempo[]; proximo: string | null; agora: Date; eu: string }) {
+  return <div className="parcerias-pilha">
+    {proximo && <p>Próximo contato: <ProximoContatoParceiro dia={proximo} agora={agora} /></p>}
+    <Historico itens={itens.map((i, n) => ({
+      chave: `${i.quando}-${n}`, tipo: i.titulo, quando: formatarDataHora(i.quando), automatico: i.fonte === "historico" && !i.autor_nome,
+      quem: i.autor_nome || (i.fonte === "historico" ? "automático" : eu),
+      texto: <>{i.resumo && <span className="ficha__quebra">{i.resumo}</span>}{i.data_evento && <span className="ficha__apoio">Dia do evento: {formatarDia(i.data_evento)}</span>}{i.fonte === "historico" && (i.de_gerente_nome || i.para_gerente_nome) && <span className="ficha__apoio">{i.de_gerente_nome && `De ${i.de_gerente_nome} `}{i.para_gerente_nome && `${i.de_gerente_nome ? "para" : "Para"} ${i.para_gerente_nome === eu ? "você" : i.para_gerente_nome}`}</span>}</>,
+      depois: i.proximo_contato ? `→ Próximo contato marcado: ${formatarDia(i.proximo_contato)}` : undefined,
+    }))} />
+  </div>;
 }
 
-function Prazo({ p }: { p: ParceiroComSituacao }) {
-  return (
-    <section className="card" aria-labelledby="prazo">
-      <h3 id="prazo" className="eyebrow">
-        Prazo
-      </h3>
-      <p className="mt-1 text-[16px]">
-        <TextoPrazo faixa={p.faixa} dias={p.dias_prazo} comecou={!!p.ultima_interacao_em} />
-      </p>
-      <div className="mt-2 h-[6px] w-full rounded-sm bg-line" aria-hidden>
-        <div
-          className={clsx(
-            "h-full rounded-sm",
-            p.faixa === "ok" ? "bg-ok" : p.faixa === "atencao" ? "bg-wa" : "bg-brand",
-          )}
-          style={{ width: `${Math.min(100, Math.round((p.dias_prazo / 90) * 100))}%` }}
-        />
-      </div>
-      <p className="mt-2 text-[13px] text-ink-soft">
-        {p.dias_restantes > 0 ? (
-          <>
-            Faltam <span className="num">{p.dias_restantes}</span> {p.dias_restantes === 1 ? "dia" : "dias"} para o
-            parceiro passar a outro gerente.
-          </>
-        ) : (
-          "Passou dos 90 dias: o parceiro vai para outro gerente na próxima rotina."
-        )}
-      </p>
-      <p className="mt-1 text-[12px] text-concrete">Editar o cadastro não reinicia o prazo. Só registrar interação.</p>
-    </section>
-  );
-}
-
-function LinhaDoTempo({
-  itens,
-  proximo,
-  agora,
-  eu,
-}: {
-  itens: ItemLinhaDoTempo[];
-  proximo: string | null;
-  agora: Date;
-  eu: string;
-}) {
-  if (!itens.length && !proximo) return null;
-  return (
-    <ol className="mt-3 grid">
-      {proximo && (
-        <ItemTempo marca="brand" titulo="Próximo contato" data={<ProximoContatoParceiro dia={proximo} agora={agora} />} />
-      )}
-      {itens.map((i, n) => (
-        <ItemTempo
-          key={`${i.quando}-${n}`}
-          marca={i.fonte === "interacao" ? "ink" : "neutra"}
-          titulo={i.titulo}
-          data={<span className="num">{formatarDataHora(i.quando)}</span>}
-        >
-          {i.resumo && <span className="block">{i.resumo}</span>}
-          {i.data_evento && (
-            <span className="block">
-              Dia do evento: <span className="num">{formatarDia(i.data_evento)}</span>
-            </span>
-          )}
-          {i.proximo_contato && (
-            <span className="block">
-              Próximo contato marcado: <span className="num">{formatarDia(i.proximo_contato)}</span>
-            </span>
-          )}
-          {i.fonte === "historico" && (i.de_gerente_nome || i.para_gerente_nome) && (
-            <span className="block">
-              {i.de_gerente_nome && <>De {i.de_gerente_nome}</>}
-              {i.de_gerente_nome && i.para_gerente_nome && " "}
-              {i.para_gerente_nome && <>{i.de_gerente_nome ? "para" : "Para"} {i.para_gerente_nome === eu ? "você" : i.para_gerente_nome}</>}
-            </span>
-          )}
-          {i.fonte === "interacao" && i.autor_nome && i.autor_nome !== eu && (
-            <span className="block text-concrete">Por {i.autor_nome}</span>
-          )}
-        </ItemTempo>
-      ))}
-    </ol>
-  );
-}
-
-function ItemTempo({
-  marca,
-  titulo,
-  data,
-  children,
-}: {
-  marca: "brand" | "ink" | "neutra";
-  titulo: string;
-  data: React.ReactNode;
-  children?: React.ReactNode;
-}) {
-  return (
-    <li className="relative ml-1 border-l border-control pb-3 pl-3 last:pb-0">
-      <span
-        aria-hidden
-        className={clsx(
-          "absolute -left-[4px] top-[6px] h-[7px] w-[7px]",
-          marca === "brand" ? "bg-brand" : marca === "ink" ? "bg-ink" : "bg-neutral-mark",
-        )}
-      />
-      <p className="text-[14px]">
-        <span className="font-semibold">{titulo}</span> · {data}
-      </p>
-      {children && <p className="text-[13px] text-ink-soft">{children}</p>}
-    </li>
-  );
-}
-
-function Editar({
-  p,
-  regioes,
-  onCancelar,
-  onSalvo,
-}: {
-  p: ParceiroComSituacao;
-  regioes: ReturnType<typeof useRegioes>;
-  onCancelar: () => void;
-  onSalvo: () => Promise<void>;
-}) {
+function Editar({ p, regioes, onCancelar, onSalvo }: { p: ParceiroComSituacao; regioes: ReturnType<typeof useRegioes>; onCancelar: () => void; onSalvo: () => Promise<void> }) {
   const [campos, setCampos] = useState<CamposParceiro>(() => camposDoParceiro(p));
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
-
   async function salvar(e: React.FormEvent) {
-    e.preventDefault();
-    setErro(null);
-    const invalido = validarParceiro(campos);
-    if (invalido) return setErro(invalido);
-    setSalvando(true);
-    const falha = await editarParceiro(p.id, campos);
-    setSalvando(false);
+    e.preventDefault(); setErro(null);
+    const invalido = validarParceiro(campos); if (invalido) return setErro(invalido);
+    setSalvando(true); const falha = await editarParceiro(p.id, campos); setSalvando(false);
     if (falha) return setErro(falha);
     await onSalvo();
   }
-
-  return (
-    <form onSubmit={salvar} className="card grid gap-3" noValidate aria-labelledby="titulo-editar">
-      <h3 id="titulo-editar" className="titulo-secao-antigo">
-        Editar cadastro
-      </h3>
-      <p className="text-[13px] text-ink-soft">Editar não reinicia os 90 dias.</p>
-      <CamposCadastro campos={campos} setCampos={setCampos} regioes={regioes} idBase="editar" />
-      {erro && <p className="aviso-erro">✕ {erro}</p>}
-      <div className="flex flex-wrap gap-2 [&>*]:flex-1">
-        <button type="button" className="btn btn-ghost btn-lg focus-ring" onClick={onCancelar}>
-          Cancelar
-        </button>
-        <button type="submit" className="btn btn-red btn-lg focus-ring" disabled={salvando}>
-          {salvando ? "Salvando…" : "Salvar"}
-        </button>
-      </div>
-    </form>
-  );
+  return <form onSubmit={salvar} className="parcerias-painel-form" noValidate>
+    <div className="mb-lateral__corpo">
+    <p className="mb-campo__ajuda">Editar não reinicia os 90 dias.</p>
+    <CamposCadastro campos={campos} setCampos={setCampos} regioes={regioes} idBase="editar" />
+    {erro && <Aviso tom="erro" titulo="Não foi possível salvar o cadastro" texto={erro} />}
+    </div>
+    <div className="mb-lateral__rodape"><button type="button" className="mb-botao mb-botao--discreto" onClick={onCancelar}>Cancelar</button><button type="submit" className="mb-botao mb-botao--primario" disabled={salvando} aria-busy={salvando}>{salvando ? "Salvando…" : "Salvar cadastro"}</button></div>
+  </form>;
 }

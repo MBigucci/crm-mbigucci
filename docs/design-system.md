@@ -1,4 +1,4 @@
-# Design system do Base360 Vendas
+﻿# Design system do Base360 Vendas
 
 > **Desde 06/11/2026 o padrão do `crm/` é o Alicerce MBigucci**, o design system dos sistemas da empresa:
 > - endereço: `https://claude.ai/artifact/52QJiDD4fLNu14iE3hce37`, lido pela ação `read` do Artifact;
@@ -50,6 +50,7 @@ Cada passo do item 48 acrescenta aqui uma linha: tela, passo, commit e o que fic
 | Ficha do lead (`/leads/ficha/`, `migrada`) | f | o commit "passo f: Ficha do lead" | 8. estrutura da ficha (`.ficha__*`, as medidas do preview FichaDoLead); 9. o Selo da etapa quebra linha na coluna estreita; 10. o valor em destaque e os motivos do Radar. Saíram com o Alicerce `1794072878-3e8e`: o botão como alvo do item, o rótulo longo da faixa e o Envio desativado |
 | Novo lead e Cadastro Mágico (`/leads/novo/`, `migrada`) | g | o commit "passo g: Novo lead" | 11. Nenhum novo: a regra local do Cadastro Mágico (`.novo-lead__*`) foi apagada (decisão do Felipe, 07/11/2026: sem selo no lido sem dúvida). O Alicerce segue em `1794079529-4459` (os 8 arquivos do Vendas são iguais) |
 | Entrar e Minha conta (`/entrar/`, sem Casca; `/conta/`, `migrada`) | h | o commit "passo h: Entrar e Minha conta" | 12. a numeração dos passos de Instalar no celular (`.mb-passos-instalar`), porque a base do Tailwind zera o `list-style`; 13. o corpo do cartão Avisos (`.avisos-corpo`), que dá a folga de 16px entre a nota do iPhone, o estado e as linhas |
+| Parcerias: separação pela Casca e lista, ficha, novo e evento (`/parceiros/…`, `migrada`) | Fase 2, bloco 1 — aprovado com ajustes (08/11/2026) | Sem commit; testes e capturas conferidos | Composição `.parcerias-*` com espaços e largura de leitura do guia; ficha em duas colunas no desktop e dados longos com quebra. Sem edição no Alicerce. Capturas e entrega em `crm/local/alicerce-fase2/parcerias/`. Conferência: `conferir-alicerce.mjs --preparar-parcerias` na cópia gerada, build da prévia e `--parcerias` |
 
 **Como a Lista do dia ficou (passo c, 07/11/2026):**
 - **Peças** em `components/alicerce/`: `CardDeItem`, `Compromisso` (e `EdicaoNoCard`), `Chip`, `Selo`, `Prazo`, `ResumoDePendencias`, `PainelLateral`, `Meta`, `EstadoVazio`, `Toast` (provider e `useToast`), `Seletor`, `Campo`, `DataHora`, `Aviso`, `CarregandoLeads`, `BotaoWhatsapp` e `mapas.ts` (do dado ao tom: temperatura, etapa, estado da visita, nível do prazo). Os passos d, e e f completam `Aviso` e `Carregando`.
@@ -314,4 +315,5 @@ Aprovado pelo Felipe em 06/11/2026, a partir do [estudo](estudo-conforto-uso.md)
 | Mantidos | Lateral em 180px (nenhum dos 19 rótulos corta); "Linktree ↗" (o Felipe não quis trocar) | — |
 
 Fora desta revisão, no roadmap: o toque em WhatsApp sem internet (hoje se perde sem aviso) e o painel no celular (as tabelas pedem rolagem lateral).
+
 

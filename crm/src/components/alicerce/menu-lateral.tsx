@@ -77,7 +77,7 @@ function ModulosDoMenu({ modulos, moduloAtual }: { modulos: Modulo[]; moduloAtua
         {modulos.map((m) => {
           const atual = m.id === moduloAtual;
           const props = { className: "mb-popup__item", role: "menuitem", "aria-current": atual ? ("true" as const) : undefined };
-          return m.id === "vendas" ? (
+          return m.id === "vendas" || m.id === "parcerias" ? (
             <Link key={m.id} href={m.href} {...props}>
               {m.nome}
             </Link>
@@ -125,7 +125,7 @@ export function MenuLateral({
 
   return (
     <nav ref={menu} className="mb-menu" aria-label="Menu principal">
-      <Link className="mb-menu__marca" href="/" aria-label={`Base360 ${modulo}, início`}>
+      <Link className="mb-menu__marca" href={moduloAtual === "parcerias" ? "/parceiros/" : "/"} aria-label={`Base360 ${modulo}, início`}>
         <MarcaBase360 modulo={modulo} />
       </Link>
       {grupos.map((g) => (

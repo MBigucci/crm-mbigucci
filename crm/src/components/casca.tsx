@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSessao } from "@/lib/sessao";
 import { nomePerfil } from "@/lib/tipos";
 import { useDistribuicao, useDistribuicaoStore } from "@/lib/distribuicao-dados";
@@ -14,7 +14,7 @@ import { MenuCelular } from "./alicerce/menu-celular";
 import { MenuDaConta } from "./alicerce/menu-da-conta";
 import { MenuLateral } from "./alicerce/menu-lateral";
 import { ToastProvider } from "./alicerce/toast";
-import { ATALHOS, ehListaDoDia, modulosDaPessoa, montarMenu } from "./alicerce/menu.ts";
+import { ATALHOS, ehListaDoDia, moduloDoCaminho, modulosDaPessoa, montarMenu } from "./alicerce/menu.ts";
 import { BotaoRecebimento, FolhasDistribuicao } from "./distribuicao/recebimento";
 
 export { ehListaDoDia };
@@ -42,6 +42,8 @@ export function Casca({
 }) {
   const { estado, pode, sair, recarregar } = useSessao();
   const router = useRouter();
+  const moduloAtual = moduloDoCaminho(usePathname() ?? "/");
+  const modulo = moduloAtual === "parcerias" ? "Parcerias" : "Vendas";
   // A distribuição automática: um estado só para o app (lib/distribuicao-dados.ts).
   useDistribuicao(estado.fase === "pronto" ? estado.perfil.id : null);
   const dist = useDistribuicaoStore();
@@ -55,7 +57,7 @@ export function Casca({
   if (estado.fase !== "pronto") {
     return (
       <main className="grid min-h-screen content-center justify-items-center gap-6 px-4 py-10">
-        <MarcaBase360 modulo="Vendas" />
+        <MarcaBase360 modulo={modulo} />
         {estado.fase === "sem-config" && <SemConfiguracao />}
         {estado.fase === "desativado" && (
           <EstadoDePagina
@@ -95,6 +97,7 @@ export function Casca({
   const ehGG = estado.perfil.perfil === "gerente_geral";
   const cfg = dist.config;
   const grupos = montarMenu({
+    modulo: moduloAtual,
     ehGG,
     pode,
     fila: {
@@ -103,11 +106,13 @@ export function Casca({
       temEquipe: dist.temEquipe,
     },
   });
-  const modulos = modulosDaPessoa(ehGG);
+  const modulos = modulosDaPessoa(ehGG, undefined, pode);
   // O + Novo lead é de quem pode abrir /leads/novo/ (cadastrar o próprio lead ou atribuir o da empresa).
-  const novo = pode("leads.cadastrar") || pode("leads.atribuir") ? { href: "/leads/novo/", rotulo: "+ Novo lead" } : undefined;
+  const novo = moduloAtual === "parcerias"
+    ? pode("parceiros.cadastrar") ? { href: "/parceiros/novo/", rotulo: "+ Novo parceiro" } : undefined
+    : pode("leads.cadastrar") || pode("leads.atribuir") ? { href: "/leads/novo/", rotulo: "+ Novo lead" } : undefined;
   // O status do módulo: o recebimento de leads de hoje (some quando a pessoa não recebe).
-  const temStatus = mostraBotao(dist.estado);
+  const temStatus = moduloAtual === "vendas" && mostraBotao(dist.estado);
   const status = temStatus ? <BotaoRecebimento /> : undefined;
   const perfil = nomePerfil(estado.perfil.perfil);
   const equipe = dist.estado?.equipe_nome ?? null;
@@ -117,7 +122,7 @@ export function Casca({
   return (
     <ToastProvider>
       <div className="mb-app">
-        <MenuLateral modulo="Vendas" grupos={grupos} atalhos={ATALHOS} modulos={modulos} moduloAtual="vendas" />
+        <MenuLateral modulo={modulo} grupos={grupos} atalhos={ATALHOS} modulos={modulos} moduloAtual={moduloAtual} />
         <div className="mb-app__principal">
           <BarraSuperior
             titulo={titulo}
@@ -126,11 +131,11 @@ export function Casca({
             conta={<MenuDaConta nome={estado.perfil.nome} apelido={estado.perfil.apelido} perfil={perfil} equipe={equipe} onSair={sair} />}
           />
           <MenuCelular
-            modulo="Vendas"
+            modulo={modulo}
             grupos={grupos}
             atalhos={ATALHOS}
             modulos={modulos}
-            moduloAtual="vendas"
+            moduloAtual={moduloAtual}
             novo={novo}
             status={status}
             conta={{ nome: estado.perfil.nome, onSair: sair }}

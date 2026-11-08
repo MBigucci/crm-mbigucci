@@ -10,7 +10,10 @@ import {
   type TipoInteracaoParceiro,
 } from "@/lib/parceiros";
 import { gravarInteracao } from "@/lib/parceiros-dados";
-import { CampoDiaContato, Opcao } from "./partes";
+import { CampoDiaContato } from "./partes";
+import { Campo, CampoEmGrupo } from "../alicerce/campo";
+import { Seletor } from "../alicerce/seletor";
+import { Aviso } from "../alicerce/aviso";
 
 type Rascunho = { tipo?: TipoInteracaoParceiro; resumo?: string; proximo?: string };
 const TIPO_PADRAO: TipoInteracaoParceiro = "ligacao";
@@ -25,13 +28,11 @@ export function RegistrarInteracao({
   idBase,
   onSalvo,
   onCancelar,
-  destaque = true,
 }: {
   parceiroId: string;
   idBase: string;
   onSalvo: () => void | Promise<void>;
   onCancelar?: () => void;
-  destaque?: boolean;
 }) {
   const [tipo, setTipo] = useState<TipoInteracaoParceiro>(TIPO_PADRAO);
   const [resumo, setResumo] = useState("");
@@ -83,51 +84,22 @@ export function RegistrarInteracao({
   }
 
   return (
-    <form onSubmit={salvar} className="grid gap-3" noValidate>
-      <fieldset>
-        <legend className="field-label">Tipo</legend>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {TIPOS_INTERACAO_PARCEIRO.map((t) => (
-            <Opcao key={t.slug} marcado={tipo === t.slug} onClick={() => setTipo(t.slug)} className="px-1">
-              {t.nome}
-            </Opcao>
-          ))}
-        </div>
-      </fieldset>
-      <div>
-        <label className="field-label" htmlFor={`${idBase}-resumo`}>
-          Resumo
-        </label>
-        <textarea
-          id={`${idBase}-resumo`}
-          className="input min-h-[88px]"
-          placeholder="O que foi combinado"
-          maxLength={2000}
-          value={resumo}
-          onChange={(e) => setResumo(e.target.value)}
-        />
+    <form id={idBase} onSubmit={salvar} className="parcerias-painel-form" noValidate>
+      <div className="mb-lateral__corpo">
+      <CampoEmGrupo id={idBase + "-tipo"} rotulo="Tipo">
+        <Seletor idRotulo={idBase + "-tipo"} valor={tipo} onChange={setTipo} opcoes={TIPOS_INTERACAO_PARCEIRO.map((t) => ({ valor: t.slug, rotulo: t.nome }))} />
+      </CampoEmGrupo>
+      <Campo rotulo="Resumo" obrigatorio>
+        <textarea id={idBase + "-resumo"} className="mb-campo__entrada" rows={3} placeholder="O que foi combinado" required maxLength={2000} value={resumo} onChange={(e) => setResumo(e.target.value)} />
+      </Campo>
+      <CampoDiaContato id={idBase + "-proximo"} valor={proximo} onChange={setProximo} />
+      <p className="mb-campo__ajuda">O próximo contato entra na sua lista do dia. Registrar reinicia os 90 dias. O rascunho fica neste aparelho.</p>
+      {erro && <Aviso tom="erro" titulo="Não foi possível registrar a interação" texto={erro} />}
       </div>
-      <div>
-        <span className="field-label">Próximo contato</span>
-        <CampoDiaContato id={`${idBase}-proximo`} valor={proximo} onChange={setProximo} />
-        <p className="mt-1 text-[12px] text-concrete">O próximo contato entra na sua lista do dia.</p>
+      <div className="mb-lateral__rodape">
+        {onCancelar && <button type="button" className="mb-botao mb-botao--discreto" onClick={onCancelar}>Cancelar</button>}
+        <button type="submit" className="mb-botao mb-botao--primario" disabled={salvando} aria-busy={salvando}>{salvando ? "Registrando…" : "Registrar interação"}</button>
       </div>
-      {erro && <p className="aviso-erro">✕ {erro}</p>}
-      <div className="flex flex-wrap gap-2 [&>*]:flex-1">
-        {onCancelar && (
-          <button type="button" className="btn btn-ghost btn-lg focus-ring" onClick={onCancelar}>
-            Cancelar
-          </button>
-        )}
-        <button
-          type="submit"
-          className={destaque ? "btn btn-red btn-lg focus-ring" : "btn btn-ghost btn-lg focus-ring"}
-          disabled={salvando}
-        >
-          {salvando ? "Salvando…" : "Registrar"}
-        </button>
-      </div>
-      <p className="text-[12px] text-concrete">Registrar reinicia os 90 dias. O rascunho fica salvo se a página recarregar.</p>
     </form>
   );
 }

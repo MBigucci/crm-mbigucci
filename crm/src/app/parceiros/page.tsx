@@ -1,19 +1,23 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
-import clsx from "clsx";
+
 import { useMemo, useState } from "react";
 import { Casca } from "@/components/casca";
-import { RodapeAcao } from "@/components/leads/partes";
+import { BarraDeFiltros, type FiltroDaBarra } from "@/components/alicerce/barra-de-filtros";
+import { Seletor } from "@/components/alicerce/seletor";
+import { CarregandoLeads } from "@/components/alicerce/carregando";
+import { EstadoVazio } from "@/components/alicerce/estado-vazio";
+import { EstadoDePagina, CopiarDetalhes } from "@/components/alicerce/estado-de-pagina";
 import { CardParceiro } from "@/components/parceiros/card";
 import { ContatosDoDiaParceiros } from "@/components/parceiros/contatos-do-dia";
 import { LinhaProximoDaVez, VerFila } from "@/components/parceiros/fila";
-import { ComPermissao, Opcao } from "@/components/parceiros/partes";
+import { CabecalhoParceiros, ComPermissao } from "@/components/parceiros/partes";
 import { usePerfil, useSessao } from "@/lib/sessao";
 import {
   contarPorEstagio,
   ESTAGIOS,
-  FAIXAS,
+
   filtrarParceiros,
   maisUrgente,
   ordenarParceiros,
@@ -25,7 +29,7 @@ import { useCarteira, useFila, useGerentes } from "@/lib/parceiros-dados";
 
 export default function ParceirosPage() {
   return (
-    <Casca titulo="Parceiros">
+    <Casca titulo="Parceiros" migrada>
       <ComPermissao>
         <Parceiros />
       </ComPermissao>
@@ -64,162 +68,25 @@ function Parceiros() {
   const destaque = useMemo(() => maisUrgente(visiveis, agora), [visiveis, agora]);
   const filtrando = !!(busca.trim() || faixa || estagio);
 
-  return (
-    <div className="grid gap-5 pb-24 md:pb-0">
-      <div className="grid gap-3">
-        <span className="eyebrow">{veTodos ? "Parceiros de todos os gerentes" : "Seus parceiros"}</span>
-
-        {lista && lista.length > 0 && (
-          <>
-            <div className="grid grid-cols-3 gap-2" role="group" aria-label="Filtrar pelo prazo de 90 dias">
-              {ORDEM_FAIXAS.map((f) => {
-                const info = FAIXAS[f];
-                const marcado = faixa === f;
-                return (
-                  <button
-                    key={f}
-                    type="button"
-                    aria-pressed={marcado}
-                    onClick={() => setFaixa(marcado ? null : f)}
-                    className={clsx(
-                      "focus-ring rounded-md border px-3 py-2 text-left transition-colors",
-                      marcado ? "border-ink bg-ink text-surface" : "border-line bg-surface hover:border-ink",
-                    )}
-                  >
-                    <span className={clsx("num block text-[22px] font-bold leading-tight", !marcado && info.classe)}>
-                      {info.sinal} {resumo[f]}
-                    </span>
-                    <span className={clsx("block text-[12px]", marcado ? "text-surface" : "text-ink-soft")}>
-                      {info.texto}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            <p className="text-[13px] text-ink-soft">
-              <span className="num">{resumo.novos}</span> {resumo.novos === 1 ? "novo" : "novos"} sem a primeira interação ·{" "}
-              <span className="num">{resumo.vencidos}</span> com contato vencido
-              {resumo.reentradas > 0 && (
-                <>
-                  {" "}
-                  · <span className="font-semibold text-wa">! {resumo.reentradas} procurou de novo</span>
-                </>
-              )}
-            </p>
-          </>
-        )}
-
-        <LinhaProximoDaVez fila={fila} eu={eu.id} />
-      </div>
-
-      {lista && cadastra && <ContatosDoDiaParceiros lista={lista} eu={eu.id} agora={agora} />}
-
-      <div className="grid gap-3 md:grid-cols-[2fr_1fr]">
-        <div>
-          <label className="field-label" htmlFor="busca-parceiro">
-            Buscar
-          </label>
-          <input
-            id="busca-parceiro"
-            className="input"
-            type="search"
-            placeholder="Nome, empresa, WhatsApp ou CRECI"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-          />
-        </div>
-        {veTodos && (
-          <div>
-            <label className="field-label" htmlFor="filtro-gerente">
-              Gerente
-            </label>
-            <select
-              id="filtro-gerente"
-              className="input"
-              value={gerente ?? ""}
-              onChange={(e) => setGerente(e.target.value || null)}
-            >
-              <option value="">Todos</option>
-              {gerentes.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.id === eu.id ? `${g.nome} (você)` : g.nome}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar por estágio">
-        <Opcao marcado={!estagio} onClick={() => setEstagio(null)}>
-          Todos <span className="num">{resumo.total}</span>
-        </Opcao>
-        {ESTAGIOS.map((e) =>
-          e.ativo ? (
-            <Opcao key={e.slug} marcado={estagio === e.slug} onClick={() => setEstagio(estagio === e.slug ? null : e.slug)}>
-              {e.nome} <span className="num">{porEstagio[e.slug]}</span>
-            </Opcao>
-          ) : (
-            <span
-              key={e.slug}
-              className="rounded-sm border border-dashed border-line px-3 py-2 text-[13px] font-semibold text-concrete"
-              title="Depende da origem Parceiro no lead"
-            >
-              {e.nome} · em breve
-            </span>
-          ),
-        )}
-      </div>
-
-      {erro && <p className="aviso-erro">✕ {erro}</p>}
-      {!lista && !erro && <p className="text-concrete">Carregando…</p>}
-      {lista && !lista.length && (
-        <div className="card">
-          <p className="titulo-card">Nenhum parceiro ainda</p>
-          <p className="mt-1 text-ink-soft">
-            {cadastra
-              ? "Cadastre o primeiro em + Novo parceiro. Os que chegarem pela roleta também aparecem aqui."
-              : "Os parceiros aparecem aqui quando os gerentes cadastrarem ou a roleta distribuir."}
-          </p>
-        </div>
-      )}
-      {lista && lista.length > 0 && !visiveis.length && (
-        <p className="text-ink-soft">{filtrando ? "Nenhum parceiro com essa busca ou filtro." : "Nenhum parceiro deste gerente."}</p>
-      )}
-
-      {visiveis.length > 0 && (
-        <section aria-labelledby="lista-parceiros">
-          <h2 id="lista-parceiros" className="eyebrow mb-2">
-            {filtrando ? "Encontrados" : "Parceiros"} · <span className="num">{visiveis.length}</span>
-          </h2>
-          <ul className="grid gap-3 md:grid-cols-2">
-            {visiveis.map((p) => (
-              <CardParceiro
-                key={p.id}
-                p={p}
-                agora={agora}
-                eu={eu.id}
-                dono={veTodos ? (p.gerente_id ? (nomeGerente.get(p.gerente_id) ?? "Gerente") : "Sem gerente") : undefined}
-                destaque={p.id === destaque}
-                onSalvo={recarregar}
-              />
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <VerFila fila={fila} eu={eu.id} />
-
-      {cadastra && (
-        <RodapeAcao>
-          <Link href="/parceiros/evento/" className="btn btn-ghost btn-lg focus-ring">
-            Registrar evento
-          </Link>
-          <Link href="/parceiros/novo/" className="btn btn-red btn-lg focus-ring">
-            + Novo parceiro
-          </Link>
-        </RodapeAcao>
-      )}
-    </div>
-  );
+  const limpar = () => { setBusca(""); setFaixa(null); setEstagio(null); setGerente(null); };
+  const filtros: FiltroDaBarra[] = [
+    { rotulo: "Estágio", valor: estagio ?? "", onChange: (v) => setEstagio(v as Estagio || null), opcoes: [{ valor: "", rotulo: "Todos os estágios" }, ...ESTAGIOS.filter((e) => e.ativo).map((e) => ({ valor: e.slug, rotulo: e.nome + " · " + porEstagio[e.slug] }))] },
+    ...(veTodos ? [{ rotulo: "Gerente", valor: gerente ?? "", onChange: (v: string) => setGerente(v || null), opcoes: [{ valor: "", rotulo: "Todos os gerentes" }, ...gerentes.map((g) => ({ valor: g.id, rotulo: g.id === eu.id ? g.nome + " (você)" : g.nome }))] }] : []),
+  ];
+  return <div className="pagina-alicerce parcerias-pilha">
+    <CabecalhoParceiros titulo="Parceiros" voltar={false} subtitulo="Cuide dos contatos e acompanhe o prazo de 90 dias." acoes={cadastra && <Link href="/parceiros/evento/" className="mb-botao mb-botao--secundario">Registrar evento</Link>} />
+    <BarraDeFiltros escopo={veTodos ? "Parceiros de todos os gerentes" : "Seus parceiros"} busca={{ valor: busca, onChange: setBusca, placeholder: "Nome, empresa, WhatsApp ou CRECI" }} filtros={filtros} contagem={lista ? visiveis.length + (visiveis.length === 1 ? " parceiro" : " parceiros") : undefined} />
+    {lista && lista.length > 0 && <div className="parcerias-pilha">
+      <span className="mb-sobrelinha" id="faixas-prazo">Dias sem interação</span>
+      <Seletor idRotulo="faixas-prazo" grade="linha" pequeno valor={faixa} onChange={(f) => setFaixa(faixa === f ? null : f)} opcoes={ORDEM_FAIXAS.map((f) => ({ valor: f, rotulo: <>{f === "ok" ? "Até 30 dias" : f === "atencao" ? "31 a 60 dias" : "61 a 90 dias"} <span className="mb-opcao__contagem">{resumo[f]}</span></> }))} />
+      <p className="mb-campo__ajuda">{resumo.novos} sem a primeira interação · {resumo.vencidos} com contato vencido{resumo.reentradas > 0 && " · " + resumo.reentradas + " procuraram de novo"}</p>
+    </div>}
+    <LinhaProximoDaVez fila={fila} eu={eu.id} />
+    {lista && cadastra && <ContatosDoDiaParceiros lista={lista} eu={eu.id} agora={agora} alicerce />}
+    {erro ? <EstadoDePagina tipo="erro-de-carga" titulo="Não foi possível carregar os parceiros" texto="Tente de novo. O que você já salvou continua salvo." detalhe={<CopiarDetalhes codigo={erro} />} acoes={<button type="button" className="mb-botao mb-botao--primario" onClick={() => void recarregar()}>Tentar de novo</button>} /> : !lista ? <CarregandoLeads /> : !lista.length ? <EstadoVazio titulo="Nenhum parceiro ainda" texto={cadastra ? "Cadastre o primeiro em + Novo parceiro. Os que chegarem pela roleta também aparecem aqui." : "Os parceiros aparecem quando os gerentes cadastrarem ou a roleta distribuir."} /> : !visiveis.length ? <EstadoVazio titulo="Nenhum parceiro com esses filtros" texto="Limpe os filtros para ver a carteira." acao={<button type="button" className="mb-botao mb-botao--secundario" onClick={limpar}>Limpar filtros</button>} /> : <section aria-labelledby="lista-parceiros">
+      <h2 id="lista-parceiros" className="mb-sobrelinha">{filtrando ? "Encontrados" : "Parceiros"} · {visiveis.length}</h2>
+      <ul className="mb-itens mb-itens--duas">{visiveis.map((p) => <CardParceiro key={p.id} p={p} agora={agora} eu={eu.id} dono={veTodos ? (p.gerente_id ? (nomeGerente.get(p.gerente_id) ?? "Gerente") : "Sem gerente") : undefined} destaque={p.id === destaque} onSalvo={recarregar} />)}</ul>
+    </section>}
+    <VerFila fila={fila} eu={eu.id} />
+  </div>;
 }

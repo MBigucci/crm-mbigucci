@@ -79,7 +79,7 @@ export function MenuCelular({
   return (
     <>
       <header className="mb-celular-topo">
-        <Link href="/" aria-label={`Base360 ${modulo}, início`}>
+        <Link href={moduloAtual === "parcerias" ? "/parceiros/" : "/"} aria-label={`Base360 ${modulo}, início`}>
           <MarcaBase360 modulo={modulo} />
         </Link>
         {novo && (
@@ -131,7 +131,7 @@ export function MenuCelular({
           <div className="mb-folha__grupo">
             <span className="mb-folha__rotulo-grupo">Módulos</span>
             {outros.map((m) => (
-              <a key={m.id} className="mb-folha__item" href={m.href}>
+              <a key={m.id} className="mb-folha__item" href={m.id === "vendas" || m.id === "parcerias" ? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}${m.href}` : m.href}>
                 {m.nome}
               </a>
             ))}

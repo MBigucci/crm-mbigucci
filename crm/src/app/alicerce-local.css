@@ -335,3 +335,17 @@ svg.mb-icone {
   display: grid;
   gap: var(--esp-4);
 }
+
+/* 5. Parcerias (fase 2, bloco 1): só composição de página, com os espaços e a largura de leitura do guia.
+   Os componentes continuam com as classes originais; os dados longos da ficha podem quebrar. */
+.parcerias-pilha { display: grid; gap: var(--esp-4); min-width: 0; }
+.parcerias-formulario { display: grid; gap: var(--esp-8); max-width: var(--leitura-max); }
+.parcerias-formulario .mb-cartao__corpo { display: grid; gap: var(--esp-6); }
+.parcerias-formulario .mb-form-secao { display: grid; gap: var(--esp-4); }
+.parcerias-ficha { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: var(--esp-4); }
+.parcerias-ficha .mb-pares dd { min-width: 0; overflow-wrap: anywhere; }
+/* O form preserva o envio nativo sem criar uma caixa entre o PainelLateral e seu corpo/rodapé flexíveis. */
+.parcerias-painel-form { display: contents; }
+@media (min-width: 1024px) {
+  .parcerias-ficha { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}

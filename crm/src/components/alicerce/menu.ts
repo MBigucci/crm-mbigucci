@@ -11,6 +11,7 @@ export type GrupoMenu = { titulo: string; itens: ItemMenu[] };
 
 /** O que a pessoa tem na sessão: só o que o menu consulta. */
 export type EntradaDoMenu = {
+  modulo?: "vendas" | "parcerias";
   ehGG: boolean;
   pode: (permissao: string) => boolean;
   /** A distribuição automática (lib/distribuicao-dados.ts): a Fila de leads depende dela. */
@@ -35,7 +36,10 @@ export const ATALHOS: ItemMenu[] = [
  * aparece. As condições são as de hoje; o que mudou é só onde cada item fica.
  * Os ícones são os da biblioteca Icones (cada tela de navegação tem o seu, desde o Alicerce 1794023680-e181).
  */
-export function montarMenu({ ehGG, pode, fila }: EntradaDoMenu): GrupoMenu[] {
+export function montarMenu({ ehGG, pode, fila, modulo = "vendas" }: EntradaDoMenu): GrupoMenu[] {
+  if (modulo === "parcerias") return pode("parceiros.cadastrar") || pode("parceiros.ver_todos")
+    ? [{ titulo: "Parcerias", itens: [{ href: "/parceiros/", rotulo: "Parceiros", icone: "parceiros" }] }]
+    : [];
   const vendeOuVeEquipe = pode("leads.cadastrar") || pode("dados.ver_equipe") || pode("dados.ver_todos");
 
   const rotina: ItemMenu[] = [{ href: "/", rotulo: ehListaDoDia(pode) ? "Lista do dia" : "Início", icone: "lista-do-dia" }];
@@ -47,8 +51,6 @@ export function montarMenu({ ehGG, pode, fila }: EntradaDoMenu): GrupoMenu[] {
   // Distribuição automática: a Fila de leads para quem recebe (com a fila visível), para o gerente com equipe e para o gerente geral.
   if (fila.ligada && (fila.recebeComFila || fila.temEquipe || ehGG)) rotina.push({ href: "/fila/", rotulo: "Fila de leads", icone: "fila" });
   if (pode("plantao.atendimentos")) rotina.push({ href: "/recepcao/", rotulo: "Recepção", icone: "recepcao" });
-  // Parcerias: pelas permissões do catálogo (o banco filtra quais parceiros cada um vê).
-  if (pode("parceiros.cadastrar") || pode("parceiros.ver_todos")) rotina.push({ href: "/parceiros/", rotulo: "Parceiros", icone: "parceiros" });
 
   const gestao: ItemMenu[] = [];
   if (vendeOuVeEquipe) {
@@ -81,7 +83,7 @@ export function montarMenu({ ehGG, pode, fila }: EntradaDoMenu): GrupoMenu[] {
 }
 
 /** Um módulo do Base360 que a pessoa pode abrir pelo item Módulos. */
-export type Modulo = { id: "vendas" | "marketing" | "repasse"; nome: string; href: string };
+export type Modulo = { id: "vendas" | "parcerias" | "marketing" | "repasse"; nome: string; href: string };
 
 /**
  * Regra do Repasse no item Módulos (Felipe, 06/11/2026): ninguém o vê por enquanto, porque o Vendas não tem
@@ -96,8 +98,13 @@ export const ENDERECO_REPASSE = "https://repasse.mbigucci.com.br/";
  * regra do app do Marketing, ehGerenteGeral). Quem só tem um módulo não vê o item Módulos.
  * Marketing é link comum fora do basePath do Vendas (/marketing/), por isso o href vai inteiro.
  */
-export function modulosDaPessoa(ehGG: boolean, repasseLiberado: boolean = REPASSE_LIBERADO): Modulo[] {
+/** A Casca separa o módulo pelo caminho, sem criar rotas novas. */
+export const moduloDoCaminho = (pathname: string): "vendas" | "parcerias" =>
+  pathname === "/parceiros" || pathname.startsWith("/parceiros/") ? "parcerias" : "vendas";
+
+export function modulosDaPessoa(ehGG: boolean, repasseLiberado: boolean = REPASSE_LIBERADO, pode: (permissao: string) => boolean = () => false): Modulo[] {
   const modulos: Modulo[] = [{ id: "vendas", nome: "Vendas", href: "/" }];
+  if (pode("parceiros.cadastrar") || pode("parceiros.ver_todos")) modulos.push({ id: "parcerias", nome: "Parcerias", href: "/parceiros/" });
   if (ehGG) modulos.push({ id: "marketing", nome: "Marketing", href: "/marketing/" });
   if (repasseLiberado) modulos.push({ id: "repasse", nome: "Repasse", href: ENDERECO_REPASSE });
   return modulos;

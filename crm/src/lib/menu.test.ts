@@ -2,7 +2,7 @@
 // Rode com: npm test
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { iniciais, itemAtual, modulosDaPessoa, montarMenu, nomeCurto, temOutroModulo, type EntradaDoMenu } from "../components/alicerce/menu.ts";
+import { iniciais, itemAtual, moduloDoCaminho, modulosDaPessoa, montarMenu, nomeCurto, temOutroModulo, type EntradaDoMenu } from "../components/alicerce/menu.ts";
 
 const SEM_FILA = { ligada: false, recebeComFila: false, temEquipe: false };
 const PERMISSOES = {
@@ -75,8 +75,13 @@ test("Fila de leads: só com a distribuição ligada e para quem recebe com fila
 test("Recepção, Parceiros e Plantão seguem as permissões de hoje", () => {
   assert.ok(todosOsItens(entrada("recepcao")).includes("Recepção"));
   assert.ok(!todosOsItens(entrada("corretor")).includes("Recepção"));
-  assert.ok(todosOsItens(entrada("corretor", ["parceiros.cadastrar"])).includes("Parceiros"));
-  assert.ok(todosOsItens(entrada("corretor", ["parceiros.ver_todos"])).includes("Parceiros"));
+  for (const permissao of ["parceiros.cadastrar", "parceiros.ver_todos"]) {
+    const e = entrada("corretor", [permissao]);
+    assert.ok(!todosOsItens(e).includes("Parceiros"));
+    assert.deepEqual(montarMenu({ ...e, modulo: "parcerias" }).flatMap(g => g.itens.map(i => i.rotulo)), ["Parceiros"]);
+    assert.ok(modulosDaPessoa(e.ehGG, undefined, e.pode).some(m => m.id === "parcerias" && m.href === "/parceiros/"));
+  }
+  assert.deepEqual(montarMenu({ ...entrada("corretor"), modulo: "parcerias" }), []);
   assert.ok(!todosOsItens(entrada("corretor")).includes("Parceiros"));
   assert.ok(todosOsItens(entrada("corretor", ["plantao.registrar"])).includes("Plantão"));
   assert.ok(todosOsItens(entrada("corretor", ["lancamentos.registrar"])).includes("Plantão"));
@@ -100,7 +105,7 @@ test("cada tela de navegação tem o ícone próprio da biblioteca Icones", () =
   const icones = Object.fromEntries(montarMenu(e).flatMap((g) => g.itens.map((i) => [i.rotulo, i.icone])));
   assert.equal(icones["Fila de leads"], "fila");
   assert.equal(icones["Recepção"], "recepcao");
-  assert.equal(icones["Parceiros"], "parceiros");
+  assert.equal(montarMenu({ ...e, modulo: "parcerias" })[0].itens[0].icone, "parceiros");
   assert.equal(icones["Vendas"], "vendas");
   assert.equal(icones["Pontos"], "pontos");
   assert.equal(icones["Plantão"], "plantao");
@@ -161,4 +166,12 @@ test("nome curto e iniciais do avatar", () => {
   assert.equal(iniciais("Ana Paula de Souza"), "AS");
   assert.equal(iniciais("Marina"), "MA");
   assert.equal(iniciais("  "), "?");
+});
+
+test("Parcerias só nas quatro rotas do módulo, e a ficha mantém o item Parceiros ativo", () => {
+  for (const p of ["/parceiros", "/parceiros/", "/parceiros/ficha/", "/parceiros/novo/", "/parceiros/evento/"]) {
+    assert.equal(moduloDoCaminho(p), "parcerias");
+    assert.equal(itemAtual(["/parceiros/"], p), "/parceiros/");
+  }
+  for (const p of ["/", "/parceiro/", "/parceiros-extra/", "/leads/"]) assert.equal(moduloDoCaminho(p), "vendas");
 });

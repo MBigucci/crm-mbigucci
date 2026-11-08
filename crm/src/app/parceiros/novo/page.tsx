@@ -1,10 +1,12 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Casca } from "@/components/casca";
-import { RodapeAcao } from "@/components/leads/partes";
-import { CamposCadastro, ComPermissao } from "@/components/parceiros/partes";
+import { Cartao } from "@/components/alicerce/cartao";
+import { BarraDeAcoes } from "@/components/alicerce/barra-de-acoes";
+import { Aviso } from "@/components/alicerce/aviso";
+import { CabecalhoParceiros, CamposCadastro, ComPermissao } from "@/components/parceiros/partes";
 import { usePerfil, useSessao } from "@/lib/sessao";
 import { novoId } from "@/lib/supabase";
 import { lerRascunho, limparRascunho, salvarRascunho } from "@/lib/rascunho";
@@ -19,7 +21,7 @@ import { cadastrarParceiro, useGerentes, useRegioes } from "@/lib/parceiros-dado
 
 export default function NovoParceiroPage() {
   return (
-    <Casca titulo="Cadastrar parceiro">
+    <Casca titulo="Cadastrar parceiro" migrada>
       <ComPermissao>
         <Novo />
       </ComPermissao>
@@ -65,9 +67,7 @@ function Novo() {
 
   if (!pode("parceiros.cadastrar"))
     return (
-      <div className="card max-w-[520px]">
-        <p>! Seu perfil vê os parceiros, mas não cadastra.</p>
-      </div>
+      <Aviso titulo="Seu perfil vê os parceiros, mas não cadastra" texto="Peça o acesso ao gerente geral." />
     );
 
   async function salvar(e: React.FormEvent) {
@@ -92,90 +92,24 @@ function Novo() {
 
   const nomeGerente = (id?: string | null) => (id ? gerentes.find((g) => g.id === id)?.nome : null);
 
-  return (
-    <form onSubmit={salvar} className="grid max-w-[640px] gap-4 pb-24 md:pb-0" noValidate>
-      <Link href="/parceiros/" className="focus-ring text-[13px] font-semibold text-ink-soft">
-        ← Parceiros
-      </Link>
-      <span ref={topo} className="eyebrow scroll-mt-[72px]">
-        Novo parceiro
-      </span>
-
+  const botaoSalvar = <button type="submit" className="mb-botao mb-botao--primario" disabled={salvando} aria-busy={salvando}>{salvando ? "Cadastrando…" : "Cadastrar parceiro"}</button>;
+  return <form onSubmit={salvar} className="parcerias-formulario" noValidate>
+    <CabecalhoParceiros titulo="Novo parceiro" subtitulo="Cadastre um corretor autônomo ou uma imobiliária." />
+    <Cartao id="cadastro-parceiro" titulo="Cadastro do parceiro" rodape={<><Link href="/parceiros/" className="mb-botao mb-botao--discreto">Cancelar</Link>{botaoSalvar}</>} rodapeClasse="mb-so-computador">
+      <CamposCadastro campos={campos} setCampos={setCampos} regioes={regioes} idBase="novo" />
+      <p className="mb-campo__ajuda">Informe WhatsApp ou CRECI para conferir se o parceiro já existe. O rascunho fica neste aparelho.</p>
+      <span ref={topo} className="ficha__ancora" />
       {resposta && <Resultado r={resposta} eu={eu.id} nomeGerente={nomeGerente} />}
-
-      <div className="card">
-        <CamposCadastro campos={campos} setCampos={setCampos} regioes={regioes} idBase="novo" />
-      </div>
-      <p className="text-[12px] text-concrete">
-        Compara WhatsApp ou CRECI com os parceiros de todos os gerentes. Se faltar um, vale o outro. O rascunho fica
-        salvo se a página recarregar.
-      </p>
-      {erro && <p className="aviso-erro">✕ {erro}</p>}
-
-      <RodapeAcao>
-        <Link href="/parceiros/" className="btn btn-ghost btn-lg focus-ring">
-          Cancelar
-        </Link>
-        <button type="submit" className="btn btn-red btn-lg focus-ring" disabled={salvando}>
-          {salvando ? "Salvando…" : "Cadastrar"}
-        </button>
-      </RodapeAcao>
-    </form>
-  );
+      {erro && <Aviso tom="erro" titulo="Não foi possível cadastrar o parceiro" texto={erro} />}
+    </Cartao>
+    <BarraDeAcoes>{botaoSalvar}</BarraDeAcoes>
+  </form>;
 }
 
-function Resultado({
-  r,
-  eu,
-  nomeGerente,
-}: {
-  r: RespostaCadastro;
-  eu: string;
-  nomeGerente: (id?: string | null) => string | null | undefined;
-}) {
+/** Duplicado.md:8-12: a regra proíbe repetir e só o próprio parceiro pode ser aberto. */
+function Resultado({ r, eu, nomeGerente }: { r: RespostaCadastro; eu: string; nomeGerente: (id?: string | null) => string | null | undefined }) {
   const ficha = `/parceiros/ficha/?id=${r.parceiro_id}`;
-  if (r.status === "ja_cadastrado")
-    return (
-      <div className="card bar-brand" role="status">
-        <p className="titulo-card">
-          <span className="text-brand">✕</span> Já é parceiro de {r.dono_nome || "outro gerente"}
-        </p>
-        <p className="mt-1 text-ink-soft">
-          Não foi cadastrado. {r.dono_nome ? r.dono_nome.split(" ")[0] : "O gerente atual"} recebeu um aviso de que o
-          parceiro procurou a MBigucci de novo.
-        </p>
-      </div>
-    );
-  if (r.status === "seu")
-    return (
-      <div className="card" role="status">
-        <p className="titulo-card">
-          <span className="text-wa">!</span> Já é seu parceiro
-        </p>
-        <p className="mt-1 text-ink-soft">Nada foi cadastrado de novo.</p>
-        <Link href={ficha} className="link-acao mt-2 inline-block text-[14px]">
-          Abrir a ficha
-        </Link>
-      </div>
-    );
-  // gerente_id ausente: era o reenvio do mesmo cadastro (o banco só confirma que já gravou).
-  return (
-    <div className="card" role="status">
-      <p className="titulo-card">
-        <span className="text-ok">✓</span> Parceiro cadastrado
-      </p>
-      <p className="mt-1 text-ink-soft">
-        {r.gerente_id === undefined
-          ? "Abra a ficha para registrar a primeira interação."
-          : r.gerente_id === eu
-          ? "Fica com você. Registre a primeira interação."
-          : r.gerente_id
-            ? `Foi para a roleta e ficou com ${nomeGerente(r.gerente_id) ?? "o próximo gerente da vez"}.`
-            : "Nenhum gerente ativo para receber agora: a rotina diária distribui."}
-      </p>
-      <Link href={ficha} className="link-acao mt-2 inline-block text-[14px]">
-        Abrir a ficha
-      </Link>
-    </div>
-  );
+  if (r.status === "ja_cadastrado") return <Aviso tom="info" titulo={`Já é parceiro de ${r.dono_nome || "outro gerente"}`} texto={`Não foi cadastrado. ${r.dono_nome ? r.dono_nome.split(" ")[0] : "O gerente atual"} recebeu um aviso de que o parceiro procurou a MBigucci de novo.`} />;
+  if (r.status === "seu") return <Aviso tom="erro" titulo="Já é seu parceiro" texto="Nada foi cadastrado de novo." acoes={<Link href={ficha} className="mb-botao mb-botao--secundario">Abrir o existente</Link>} />;
+  return <Aviso tom="sucesso" titulo="Parceiro cadastrado" texto={r.gerente_id === undefined ? "Abra a ficha para registrar a primeira interação." : r.gerente_id === eu ? "Fica com você. Registre a primeira interação." : r.gerente_id ? `Foi para a roleta e ficou com ${nomeGerente(r.gerente_id) ?? "o próximo gerente da vez"}.` : "Nenhum gerente ativo para receber agora: a rotina diária distribui."} acoes={<Link href={ficha} className="mb-botao mb-botao--secundario">Abrir a ficha</Link>} />;
 }
