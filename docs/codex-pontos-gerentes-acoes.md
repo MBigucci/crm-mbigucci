@@ -4,6 +4,7 @@
 - `CLAUDE.md` (raiz) e `docs/pontuacao-verba.md` inteiro: o programa de hoje, o banco, as telas e quem vê o quê.
 - `docs/acessos-perfis.md`: permissões configuráveis (nunca `if (role === ...)`).
 - `docs/design-system.md` e a skill `.claude/skills/tela-ds-mbigucci`: as telas novas usam o Alicerce (`.mb-*`, `Icones`).
+- **`crm/src/alicerce/guia/README.md` e o guia de cada peça que usar em `crm/src/alicerce/guia/componentes/`** (Selo, Chip, Meta, Prazo, Cartao, Envio, Campo, PainelLateral, Vocabulario). Selo é só status ou etapa, com o vocabulário fixo; número não vai em selo; o mínimo de pontos usa a marca de mínimo da `Meta`.
 - `docs/distribuicao-automatica.md` e `crm/src/components/distribuicao/local-stands.tsx`: o check-in do corretor no stand pela localização, que o check-in do gerente reaproveita.
 - `crm/supabase/parcerias.sql` e `crm/src/app/parceiros/`: o cadastro de parceiros do gerente.
 - `crm/supabase/storage-documentos.sql`: o modelo para o bucket de comprovantes.

@@ -7,6 +7,13 @@
 - versão: `1794084743-8903` (os 8 arquivos abaixo são os mesmos da `1794072878-3e8e`);
 - trazida em 06/11/2026 (item 48, passo a) e atualizada em 07/11/2026 (passo b: menu fixo, ícones novos e o logo MBigucci; depois, a camada do menu e o toque de 44px da faixa do celular, que eram ajustes locais; por fim, o aviso de conexão logo abaixo do topo, no passo d, e a largura dele no celular; no passo e, a linha que abre painel, a linha "Você", a largura dos filtros e a contagem com o ordenar; no passo f, o botão como alvo do item, o rótulo longo da faixa e o Envio desativado).
 
+**Guia de uso em `guia/`** (trazido em 07/11/2026 da versão `1794088464-2fe1`, que tem os mesmos `bundle.css`, `bundle.js` e `tokens.json` da tabela abaixo):
+- `guia/README.md` é o livro da marca: voz, sinais, cores, quando usar cada peça;
+- `guia/componentes/<Peca>.md` traz um guia por componente (Selo, Chip, Meta, Prazo…);
+- `guia/assets/` traz os logos.
+
+Leia o guia da peça antes de usá-la. Ao atualizar o Alicerce, copie o guia de novo junto (`project/README.md`, `project/components/*/README.md` e `project/assets/*/README.md`).
+
 **O `tokens.css` é gerado.** Para refazer, rode em `crm/`:
 
 ```bash
