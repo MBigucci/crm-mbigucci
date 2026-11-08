@@ -39,6 +39,7 @@ A biblioteca de ícones da **interface** do Base360 (não é a identidade da mar
 | `usuarios` | Navegação | Usuários e acessos |
 | `equipes` | Navegação | Equipes |
 | `oportunidade` | Navegação | Oportunidades |
+| `direcionador` | Navegação | Direcionador de leads (roteador: uma entrada, vários destinos) |
 | `busca` | Ações | Buscar |
 | `novo` | Ações | Criar, adicionar |
 | `editar` | Ações | Editar, corrigir |

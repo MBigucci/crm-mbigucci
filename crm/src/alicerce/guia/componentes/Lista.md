@@ -13,6 +13,8 @@ A lista densa de itens de trabalho, uma linha por item: pendências do Repasse, 
 - **CardDeItem:** itens que pedem ação ali mesmo (WhatsApp, Registrar, Remarcar), principalmente no celular.
 - **Tabela:** comparar números e colunas, ordenar, editar na linha.
 
+**Texto que quebra:** por padrão título e meta ficam numa linha, cortados com “…”. Quando o texto inteiro precisa estar à vista (destino de uma regra, passo de uma simulação), acrescente `mb-lista--quebra` na lista: título e meta quebram em quantas linhas precisarem e o resto da linha (código, hora, prazo) fica alinhado ao topo.
+
 **Apelidos:** `.mb-agenda` e `.mb-agenda__item` continuam funcionando; para novas telas, use a Lista com `.mb-lista__hora`.
 
 **O consumidor fornece:** os itens já ordenados (o mais urgente primeiro), o texto da meta e o prazo calculado.
@@ -25,4 +27,4 @@ A lista densa de itens de trabalho, uma linha por item: pendências do Repasse, 
 
 **Não faça**
 - Botões em cada linha (vire `CardDeItem` ou `Tabela` com ações).
-- Linhas de mais de duas linhas de texto.
+- Linhas de mais de duas linhas de texto (a exceção é `mb-lista--quebra`, só onde cortar esconderia a informação).

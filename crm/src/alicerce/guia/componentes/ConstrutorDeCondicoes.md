@@ -13,6 +13,8 @@ Montar uma regra sem fórmula: os relatórios salvos do Repasse (“contratos pa
 
 **Simular (Direcionador):** testar um lead que não existe contra as regras, sem gravar nada. Monte com peças que já existem: um `Cartao` “Simular um lead”, os campos das condições (`Campo`, `Seletor`, `DataHora` para dia e hora) e, embaixo, o resultado em `Lista` — qual regra pegaria o lead e para quem ele iria, ou “Nenhuma regra pega este lead; ele vai para a distribuição padrão.”
 
+**Valor em pílulas (escolha múltipla):** quando o valor é um conjunto (vários produtos, várias fontes), a linha ganha `.mb-condicao--lista` e o valor vai num `.mb-condicao__valor` que contém um `.mb-opcoes.mb-opcoes--linha.mb-opcoes--multipla`. O valor desce para uma segunda linha, sob o campo e a comparação, e as pílulas quebram em quantas linhas precisarem; o ✕ continua na primeira. `MB.condicoes` só lê valor de `select` e `input`: com pílulas, quem monta a frase e o estado é o app do consumidor.
+
 **Celular:** cada condição vira uma subseção (fundo `superficie-sutil`, sem borda) com os campos empilhados e o ✕ no canto.
 
 **Código:** `MB.condicoes.ligar(raiz)` adiciona e remove linhas (de `<template data-mb-condicao>`), troca os conectores e reescreve a frase; dispara `mb-condicoes` com as regras.

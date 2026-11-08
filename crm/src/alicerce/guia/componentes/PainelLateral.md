@@ -10,6 +10,8 @@ Onde abre toda tarefa com **mais de dois campos**: registrar interação, mensag
 
 **Larguras:** `painel-largura` (440px) para tarefas; `--larga` com `painel-largura-larga` (880px) para o relatório de um número (busca, resumo, tabela e Exportar). No celular, até 92% da altura da tela.
 
+**Variante larga em código:** o aside leva as duas classes, `class="mb-lateral mb-lateral--larga"`, e o resto é igual (véu, topo, corpo, rodapé). Use para o editor de uma regra, que tem condições, destinos e prévia; tarefa de formulário curto fica na largura normal.
+
 **Comportamento:** `MB.painel.ligar(botao)` (botão com `aria-controls` = id do painel). Abre em `mov-entrada`, leva o foco ao primeiro campo, prende o Tab dentro dele, fecha com `Esc`, com o véu, com o X ou com “Cancelar”, e devolve o foco a quem abriu. Abrir outro painel fecha o anterior. Camada `camada-painel`.
 
 **O consumidor fornece:** o título da tarefa, a descrição do registro, os campos e a ação final; o rascunho guardado no aparelho enquanto o painel está aberto.
