@@ -21,3 +21,5 @@ Alterna entre recortes do mesmo conteúdo — status de uma lista, partes de um 
 - Abas para etapas de um processo em sequência — para isso existe `Etapas`.
 - Abas numa lista de rotina que precisa ser vista inteira, como a Lista do dia: ali, seções com contagem.
 - Sublinhado vermelho: a aba ativa é tinta, inclusive com o modificador `data-acao="marca"`.
+
+**Páginas irmãs de uma área** (Stand → Atendimento, Relatório…), cada uma com endereço próprio, não são abas: use `NavegacaoDaArea`.

@@ -395,6 +395,22 @@ textarea.mb-campo__entrada { height: auto; min-height: 88px; padding: 10px var(-
 .mb-cartao > .mb-abas { gap: var(--esp-5); padding: 0 var(--esp-5); }
 /* Painel de aba escondido some mesmo quando o contêiner tem display próprio */
 [role="tabpanel"][hidden] { display: none !important; }
+/* ---------- Navegação da área: páginas irmãs de uma área, cada uma no seu endereço ---------- */
+.mb-navarea { display: flex; gap: var(--esp-6); border-bottom: var(--mb-borda) solid var(--linha); overflow-x: auto; }
+.mb-navarea__item {
+  display: inline-flex; align-items: center; gap: var(--esp-2); height: 40px; margin-bottom: -1px;
+  font-family: var(--font-sans); font-size: 14px; line-height: 20px; font-weight: 600; color: var(--texto-sutil);
+  text-decoration: none; border-bottom: 2px solid transparent; white-space: nowrap;
+}
+.mb-navarea__item:hover { color: var(--texto); }
+.mb-navarea__item[aria-current="page"] { color: var(--texto); border-bottom-color: var(--texto); }
+@media (max-width: 767px) {
+  /* No celular a faixa rola dentro dela mesma, com 44px de toque; a página não rola na horizontal */
+  .mb-navarea { gap: var(--esp-5); scrollbar-width: none; }
+  .mb-navarea::-webkit-scrollbar { display: none; }
+  .mb-navarea__item { height: auto; min-height: var(--controle-toque); }
+}
+@media print { .mb-navarea { display: none !important; } }
 @media (max-width: 767px) {
   /* No celular as abas rolam dentro da própria faixa; a página não rola na horizontal */
   .mb-abas { gap: var(--esp-5); scrollbar-width: none; }
