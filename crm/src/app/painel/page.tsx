@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment as ReactFragment, Suspense, useId, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import clsx from "clsx";
 import { Casca } from "@/components/casca";
@@ -31,8 +31,15 @@ import { formatarReais, somarVendas, ticketECiclo, totaisPorCorretor, totaisZera
 import { useMetasVgv, useVendas, useVendasDoAno, type VendaComLead } from "@/lib/vendas-dados";
 import type { MetaVgv } from "@/lib/metas";
 import { CartaoMetaAnual, MetasDoCorretor, TabelaMetaAnual } from "@/components/metas/metas";
-import { ResumoVendas } from "@/components/vendas/vendas";
-import { StandDoCorretor, TabelaStand } from "@/components/recepcao/painel-stand";
+import { ResumoVendasAlicerce } from "@/components/vendas/lista-alicerce";
+import { StandDoCorretor, TabelaStand, Indicadores, ErroPainel, Exportar } from "@/components/painel/partes";
+import { PainelDoNumero } from "@/components/painel/painel-do-numero";
+import { Tabela } from "@/components/alicerce/tabela";
+import { CampoSelecao, Campo } from "@/components/alicerce/campo";
+import { NavegadorDePeriodo } from "@/components/alicerce/navegador-de-periodo";
+import { EstadoDePagina } from "@/components/alicerce/estado-de-pagina";
+import { EstadoVazio } from "@/components/alicerce/estado-vazio";
+import { CarregandoTabela } from "@/components/alicerce/carregando";
 import { useStandPainel } from "@/lib/recepcao-dados";
 import { standZerado } from "@/lib/recepcao";
 
@@ -40,8 +47,9 @@ export default function PainelPage() {
   const { pode } = useSessao();
   const veOutros = pode("dados.ver_equipe") || pode("dados.ver_todos");
   return (
-    <Casca titulo={veOutros ? "Painel da equipe" : "Meu painel"}>
-      <Suspense fallback={<p className="text-ink-soft">Carregando…</p>}>
+    <Casca migrada titulo={veOutros ? "Painel da equipe" : "Meu painel"}>
+      <header className="mb-cabecalho sem-impressao"><div className="mb-cabecalho__texto"><h1 className="titulo-tela">{veOutros ? "Painel da equipe" : "Meu painel"}</h1></div></header>
+      <Suspense fallback={<CarregandoTabela texto="Carregando painel…" />}>
         <Painel />
       </Suspense>
     </Casca>
@@ -90,7 +98,7 @@ function Painel() {
   const [sel, setSel] = useState<Selecao | null>(null);
   useEffect(() => setSel(null), [per, corretorId, equipe]);
 
-  if (!permitido) return <div className="card max-w-[520px]">! Seu perfil não tem acesso a esta página.</div>;
+  if (!permitido) return <EstadoDePagina tipo="sem-permissao" titulo="Esta página não está liberada para o seu perfil" texto="Peça o acesso ao gerente geral." />;
 
   const controles = (
     <ControlesPeriodo
@@ -100,19 +108,14 @@ function Painel() {
       onHoje={() => ir({ d: null })}
     >
       {veOutros && !corretorId && equipes.length > 1 && (
-        <div className="min-w-[180px]">
-          <label className="field-label" htmlFor="equipe">
-            Equipe
-          </label>
-          <select id="equipe" className="input" value={equipe} onChange={(e) => ir({ e: e.target.value || null })}>
-            <option value="">Todas</option>
+        <CampoSelecao rotulo="Equipe"><select id="equipe" className="mb-campo__entrada" value={equipe} onChange={(e) => ir({ e: e.target.value || null })}>
+            <option value="">Todas as equipes</option>
             {equipes.map((x) => (
               <option key={x.id} value={x.id}>
                 {x.nome}
               </option>
             ))}
-          </select>
-        </div>
+          </select></CampoSelecao>
       )}
     </ControlesPeriodo>
   );
@@ -120,11 +123,11 @@ function Painel() {
   if (corretorId) {
     const nome = nomes.get(corretorId) ?? (corretorId === eu.id ? eu.nome : "Corretor");
     return (
-      <div className="grid gap-5">
+      <div className="pmr-pilha">
         {controles}
         <TituloImpressao titulo={`Relatório de ${nome}`} per={per} />
-        {erro && <p className="aviso-erro">! {erro}</p>}
-        {!dados && !erro && <p className="text-ink-soft">Carregando…</p>}
+        {erro && <ErroPainel erro={erro} />}
+        {!dados && !erro && <CarregandoTabela texto="Carregando painel…" />}
         {dados && (
           <RelatorioCorretor
             nome={nome}
@@ -157,12 +160,12 @@ function Painel() {
     .sort((a, b) => (nomes.get(a.corretor) ?? "").localeCompare(nomes.get(b.corretor) ?? "", "pt-BR"));
 
   return (
-    <div className="grid gap-5">
+    <div className="pmr-pilha">
       {controles}
       <TituloImpressao titulo="Painel da equipe" per={per} />
-      {erro && <p className="aviso-erro">! {erro}</p>}
-      {!dados && !erro && <p className="text-ink-soft">Carregando…</p>}
-      {dados && !linhas.length && <p className="text-ink-soft">Nenhum corretor na equipe ainda.</p>}
+      {erro && <ErroPainel erro={erro} />}
+      {!dados && !erro && <CarregandoTabela texto="Carregando painel…" />}
+      {dados && !linhas.length && <EstadoVazio titulo="Nenhum corretor na equipe" texto="Os números aparecem quando houver corretores na equipe." />}
       {dados && linhas.length > 0 && (
         <TabelaEquipe
           linhas={linhas}
@@ -194,7 +197,7 @@ function Painel() {
           abrir={(id) => ir({ c: id })}
         />
       )}
-      {dados && sel && <ListaLeads sel={sel} dados={dados} nomes={nomes} onFechar={() => setSel(null)} rolar />}
+      {dados && sel && <ListaLeads recorte={rotuloPeriodo(per)} sel={sel} dados={dados} nomes={nomes} onFechar={() => setSel(null)} />}
     </div>
   );
 }
@@ -239,78 +242,18 @@ function useNomes(dados: DadosPainel | null, corretores: Corretor[]) {
 
 // ---------- Período ----------
 
-function ControlesPeriodo({
-  per,
-  onTipo,
-  onIr,
-  onHoje,
-  children,
-}: {
-  per: Periodo;
-  onTipo: (t: TipoPeriodo) => void;
-  onIr: (p: Periodo) => void;
-  onHoje: () => void;
-  children?: React.ReactNode;
-}) {
+function ControlesPeriodo({ per, onTipo, onIr, onHoje, children }: { per: Periodo; onTipo: (t: TipoPeriodo) => void; onIr: (p: Periodo) => void; onHoje: () => void; children?: React.ReactNode }) {
   const ehAtual = periodo(per.tipo, new Date()).ini.getTime() === per.ini.getTime();
-  return (
-    <section className="sem-impressao grid gap-3" aria-label="Período">
-      <div className="flex flex-wrap items-end gap-3">
-        <fieldset>
-          <legend className="field-label">Período</legend>
-          <div className="flex">
-            {TIPOS_PERIODO.map((t) => {
-              const marcado = t.slug === per.tipo;
-              return (
-                <button
-                  key={t.slug}
-                  type="button"
-                  aria-pressed={marcado}
-                  onClick={() => onTipo(t.slug)}
-                  className={clsx(
-                    "focus-ring -ml-px border px-4 py-[11px] text-[14px] font-semibold first:ml-0 first:rounded-l-sm last:rounded-r-sm",
-                    marcado ? "relative z-[1] border-ink bg-ink text-surface" : "border-line bg-surface text-ink hover:border-ink",
-                  )}
-                >
-                  {t.nome}
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
-        {children}
-        <button type="button" className="btn btn-ghost btn-lg focus-ring ml-auto" onClick={() => window.print()}>
-          Imprimir
-        </button>
+  return <section className="pmr-pilha sem-impressao" aria-label="Período">
+    <div className="pmr-filtros">
+      <div className="mb-campo"><span className="mb-campo__rotulo" id="painel-periodo">Período</span>
+        <div className="mb-segmentado" role="group" aria-labelledby="painel-periodo">{TIPOS_PERIODO.map((t) => <button key={t.slug} type="button" aria-pressed={t.slug === per.tipo} onClick={() => onTipo(t.slug)}>{t.nome}</button>)}</div>
       </div>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          className="btn btn-ghost focus-ring px-3 text-[15px]"
-          aria-label="Período anterior"
-          onClick={() => onIr(deslocar(per, -1))}
-        >
-          ← Anterior
-        </button>
-        <p className="num min-w-0 flex-1 text-center font-display text-[17px] font-bold md:flex-none md:px-3">
-          {rotuloPeriodo(per)}
-        </p>
-        <button
-          type="button"
-          className="btn btn-ghost focus-ring px-3 text-[15px]"
-          aria-label="Período seguinte"
-          onClick={() => onIr(deslocar(per, 1))}
-        >
-          Seguinte →
-        </button>
-        {!ehAtual && (
-          <button type="button" className="link-acao focus-ring ml-2 text-[13px]" onClick={onHoje}>
-            Voltar para hoje
-          </button>
-        )}
-      </div>
-    </section>
-  );
+      {children}
+      <button type="button" className="mb-botao mb-botao--secundario" onClick={() => window.print()}>Imprimir</button>
+    </div>
+    <NavegadorDePeriodo rotulo={rotuloPeriodo(per)} aoAnterior={() => onIr(deslocar(per, -1))} aoSeguinte={() => onIr(deslocar(per, 1))} aoVoltar={ehAtual ? undefined : onHoje} />
+  </section>;
 }
 
 /** Só no papel: o que é, o período e quando foi impresso. */
@@ -319,9 +262,9 @@ function TituloImpressao({ titulo, per }: { titulo: string; per: Periodo }) {
   useEffect(() => setAgora(new Date().toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })), []);
   return (
     <div className="so-impressao">
-      <p className="eyebrow text-[12px] text-ink-soft">MBigucci · Base360 Vendas</p>
+      <p className="mb-grafico__nota pmr-nota">MBigucci · Base360 Vendas</p>
       <h2 className="titulo-impressao">{titulo}</h2>
-      <p className="num">
+      <p className="pmr-tabular">
         {TIPOS_PERIODO.find((t) => t.slug === per.tipo)?.nome}: {rotuloPeriodo(per)} · impresso em {agora}
       </p>
     </div>
@@ -331,35 +274,9 @@ function TituloImpressao({ titulo, per }: { titulo: string; per: Periodo }) {
 // ---------- Números ----------
 
 /** Um número que abre a lista de leads. Zero não abre. */
-function Numero({
-  ids,
-  titulo,
-  abrir,
-  destaque,
-  className,
-}: {
-  ids: string[];
-  titulo: string;
-  abrir: (s: Selecao) => void;
-  destaque?: boolean;
-  className?: string;
-}) {
-  if (!ids.length) return <span className={clsx("num text-ink-soft", className)}>0</span>;
-  return (
-    <button
-      type="button"
-      className={clsx(
-        // No celular, área de toque de 44px em volta do número, sem mudar a tabela (06/11/2026).
-        "num focus-ring relative font-semibold underline decoration-line underline-offset-4 hover:decoration-ink after:content-[''] max-md:after:absolute max-md:after:-inset-x-[18px] max-md:after:-inset-y-3",
-        destaque && "text-brand",
-        className,
-      )}
-      aria-label={`${titulo}: ${ids.length}. Ver os leads`}
-      onClick={() => abrir({ titulo, ids })}
-    >
-      {destaque ? `! ${ids.length}` : ids.length}
-    </button>
-  );
+function Numero({ ids, titulo, abrir, className }: { ids: string[]; titulo: string; abrir: (s: Selecao) => void; destaque?: boolean; className?: string }) {
+  if (!ids.length) return <span className={clsx("pmr-zero", className)} aria-disabled="true">0</span>;
+  return <button type="button" className={clsx("mb-link pmr-numero", className)} aria-label={titulo + ": " + ids.length + ". Ver os leads"} onClick={() => abrir({ titulo, ids })}>{ids.length}</button>;
 }
 
 function TabelaEquipe({
@@ -377,67 +294,58 @@ function TabelaEquipe({
   const nome = (x: NumerosCorretor) => nomes.get(x.corretor) ?? "Corretor";
   const { catalogos } = useCatalogos();
   const nomeEtapa = (s: string) => catalogos?.etapas.find((e) => e.slug === s)?.nome ?? s;
-  const th = "px-2 py-2 text-right font-semibold align-bottom";
+  const th = "mb-tabela__num";
 
   const corpo = (render: (x: NumerosCorretor, rotulo: string) => React.ReactNode) => (
+    <>
     <tbody>
       {linhas.map((x) => (
-        <tr key={x.corretor} className="border-b border-line">
-          <td className="px-4 py-2">
-            <button type="button" className="focus-ring text-left font-semibold text-ink underline decoration-line underline-offset-4 hover:decoration-ink" onClick={() => relatorio(x.corretor)}>
+        <tr key={x.corretor} >
+          <td>
+            <button type="button" className="mb-link pmr-corretor" onClick={() => relatorio(x.corretor)}>
               {nome(x)}
             </button>
           </td>
           {render(x, nome(x))}
         </tr>
       ))}
-      <tr className="font-semibold">
-        <td className="px-4 py-2">Equipe</td>
+    </tbody><tfoot>
+      <tr >
+        <td>Equipe</td>
         {render(total, "Equipe")}
       </tr>
-    </tbody>
+    </tfoot></>
   );
   const td = (ids: string[], titulo: string, destaque = false) => (
-    <td className="px-2 py-2 text-right">
+    <td className="mb-tabela__num">
       <Numero ids={ids} titulo={titulo} abrir={abrir} destaque={destaque} />
     </td>
   );
 
   return (
     <>
-      <section className="veredito" aria-label="Síntese do período">
-        <h2 className="font-display text-[18px] font-bold">Leads do período</h2>
-        <div className="mt-3 grid gap-4 sm:grid-cols-3">
-          {[
-            { titulo: "Recebidos da empresa", ids: total.recebidosEmpresa },
-            { titulo: "Perdidos", ids: total.perdidos },
-            { titulo: "Venda no funil", ids: total.vendas },
-          ].map((item) => (
-            <button key={item.titulo} type="button" disabled={!item.ids.length}
-              className="focus-ring text-left disabled:cursor-default"
-              onClick={() => abrir({ titulo: `Equipe · ${item.titulo}`, ids: item.ids })}>
-              <span className="block text-[14px] text-on-dark-soft">{item.titulo}{item.ids.length > 0 ? " →" : ""}</span>
-              <span className="num mt-1 block text-[32px] font-extrabold leading-none">
-                {item.titulo === "Perdidos" && item.ids.length > 0 ? "! " : ""}{item.ids.length}
-              </span>
-            </button>
-          ))}
-        </div>
+      <section className="pmr-pilha" aria-label="Síntese do período">
+        <h2 className="mb-grafico__titulo">Leads do período</h2>
+        <div className="mb-indicadores">{[
+          { titulo: "Recebidos da empresa", ids: total.recebidosEmpresa }, { titulo: "Perdidos", ids: total.perdidos }, { titulo: "Venda no funil", ids: total.vendas },
+        ].map((item) => <button key={item.titulo} type="button" className="mb-indicador" aria-disabled={!item.ids.length || undefined} onClick={() => item.ids.length && abrir({ titulo: "Equipe · " + item.titulo, ids: item.ids })}>
+          <span className="mb-indicador__cabecalho"><span className="mb-indicador__rotulo">{item.titulo}</span></span><span className="mb-indicador__valor">{item.ids.length}</span>
+          {!!item.ids.length && <span className="mb-indicador__abrir">Ver a lista →</span>}
+        </button>)}</div>
       </section>
       <section aria-labelledby="t-entrada" className="min-w-0">
-        <h2 id="t-entrada" className="titulo-secao-antigo mb-3">
+        <h2 id="t-entrada" className="mb-grafico__titulo mb-3">
           Leads no período, por corretor
         </h2>
-        <div className="card tabela-painel overflow-x-auto p-0">
-          <table className="w-full text-left text-[14px]">
+        <Tabela tipo="numeros" rotulo="Comparação por corretor ou origem">
             <thead>
-              <tr className="border-b border-line text-ink-soft">
-                <th className="px-4 py-2 font-semibold">Corretor</th>
-                <th className={th}>Recebidos da empresa</th>
-                <th className={th}>Perdidos</th>
-                <th className={th}>Cadastrados pelo corretor</th>
-                <th className={th}>Descartados</th>
-                <th className={clsx(th, "pr-4")}>Vendas</th>
+              <tr >
+                <th scope="col">Corretor</th>
+                <th scope="col" className={th}>Recebidos da empresa</th>
+                <th scope="col" className={th}>Perdidos</th>
+                <th scope="col" className={th}>Cadastrados pelo corretor</th>
+                <th scope="col" className={th}>Descartados</th>
+                <th scope="col" className={clsx(th, "pr-4")}>Vendas</th>
               </tr>
             </thead>
             {corpo((x, n) => (
@@ -449,22 +357,20 @@ function TabelaEquipe({
                 {td(x.vendas, `${n} · Vendas`)}
               </>
             ))}
-          </table>
-        </div>
+          </Tabela>
       </section>
 
       <section aria-labelledby="t-funil" className="min-w-0">
-        <h2 id="t-funil" className="titulo-secao-antigo mb-3">
+        <h2 id="t-funil" className="mb-grafico__titulo mb-3">
           Funil até a venda · leads que entraram na carteira no período
         </h2>
-        <div className="card tabela-painel overflow-x-auto p-0">
-          <table className="w-full text-left text-[14px]">
+        <Tabela tipo="numeros" rotulo="Comparação por corretor ou origem">
             <thead>
-              <tr className="border-b border-line text-ink-soft">
-                <th className="px-4 py-2 font-semibold">Corretor</th>
-                <th className={th}>Entraram</th>
+              <tr >
+                <th scope="col">Corretor</th>
+                <th scope="col" className={th}>Entraram</th>
                 {FUNIL.map((e, i) => (
-                  <th key={e} className={clsx(th, i === FUNIL.length - 1 && "pr-4")}>
+                  <th scope="col" key={e} className={clsx(th, i === FUNIL.length - 1 && "pr-4")}>
                     {nomeEtapa(e)}
                   </th>
                 ))}
@@ -473,14 +379,13 @@ function TabelaEquipe({
             {corpo((x, n) => (
               <>
                 {td(x.entraram, `${n} · Entraram na carteira`)}
-                {FUNIL.map((e) => td(x.funil[e], `${n} · Chegaram a ${nomeEtapa(e)}`))}
+                {FUNIL.map((e) => <ReactFragment key={e}>{td(x.funil[e], `${n} · Chegaram a ${nomeEtapa(e)}`)}</ReactFragment>)}
               </>
             ))}
-          </table>
-        </div>
+          </Tabela>
       </section>
 
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className="pmr-pilha md:grid-cols-2">
         <Distribuicao
           titulo="Cadastrados pelo corretor, por origem"
           grupos={Object.entries(total.cadastradosPorOrigem).map(([slug, ids]) => ({
@@ -504,35 +409,15 @@ function TabelaEquipe({
 }
 
 /** Lista "nome: número", da maior para a menor. */
-function Distribuicao({
-  titulo,
-  grupos,
-  vazio,
-  abrir,
-}: {
-  titulo: string;
-  grupos: { nome: string; ids: string[] }[];
-  vazio: string;
-  abrir: (s: Selecao) => void;
-}) {
+function Distribuicao({ titulo, grupos, vazio, abrir }: { titulo: string; grupos: { nome: string; ids: string[] }[]; vazio: string; abrir: (s: Selecao) => void }) {
   const ordenados = [...grupos].sort((a, b) => b.ids.length - a.ids.length);
-  return (
-    <section className="card">
-      <span className="eyebrow text-[12px] text-ink-soft">{titulo}</span>
-      {ordenados.length ? (
-        <ul className="mt-2 grid">
-          {ordenados.map((g) => (
-            <li key={g.nome} className="flex justify-between gap-3 border-b border-line py-2 text-[15px] last:border-0">
-              <span>{g.nome}</span>
-              <Numero ids={g.ids} titulo={`${titulo} · ${g.nome}`} abrir={abrir} />
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-2 text-ink-soft">{vazio}</p>
-      )}
-    </section>
-  );
+  const max = Math.max(1, ...ordenados.map((g) => g.ids.length));
+  return <section className="mb-cartao"><div className="mb-cartao__cabecalho"><h2 className="mb-cartao__titulo">{titulo}</h2></div><div className="mb-cartao__corpo">
+    <p className="mb-grafico__nota">Leads do período selecionado</p>
+    {ordenados.length ? <div className="mb-barras" role="img" aria-label={titulo + ": " + ordenados.map((g) => g.nome + ": " + g.ids.length).join("; ")}>
+      {ordenados.map((g) => <div key={g.nome} className="mb-barras__linha"><span className="mb-barras__rotulo" title={g.nome}>{g.nome}</span><span className="mb-barras__trilho"><span className="mb-barras__seg mb-serie-1" style={{ "--v": g.ids.length / max * 100 + "%" } as React.CSSProperties} /></span><span className="mb-barras__valor"><Numero ids={g.ids} titulo={titulo + " · " + g.nome} abrir={abrir} /></span></div>)}
+    </div> : <p className="mb-grafico__nota">{vazio}</p>}
+  </div></section>;
 }
 
 // ---------- Visitas ----------
@@ -547,33 +432,27 @@ const COLUNAS_VISITAS: { chave: keyof NumerosVisita; rotulo: string }[] = [
 /** Visitas com data no período, por corretor (as canceladas ficam fora). Detalhes na Agenda. */
 function TabelaVisitas({ linhas, numeros, nomes }: { linhas: string[]; numeros: Map<string, NumerosVisita>; nomes: Map<string, string> }) {
   const total = somarVisitas(linhas.map((id) => numeros.get(id) ?? visitasZeradas()));
-  const th = "px-2 py-2 text-right font-semibold align-bottom";
+  const th = "mb-tabela__num";
   const celulas = (x: NumerosVisita) =>
     COLUNAS_VISITAS.map((c, i) => (
       <td
         key={c.chave}
-        className={clsx(
-          "num px-2 py-2 text-right",
-          i === COLUNAS_VISITAS.length - 1 && "pr-4",
-          !x[c.chave] && "text-ink-soft",
-          c.chave === "aguardandoBaixa" && x[c.chave] > 0 && "font-bold text-ink",
-        )}
+        className="mb-tabela__num"
       >
         {c.chave === "aguardandoBaixa" && x[c.chave] > 0 ? `! ${x[c.chave]}` : x[c.chave]}
       </td>
     ));
   return (
     <section aria-labelledby="t-visitas" className="min-w-0">
-      <h2 id="t-visitas" className="titulo-secao-antigo mb-3">
+      <h2 id="t-visitas" className="mb-grafico__titulo mb-3">
         Visitas no período, por corretor · pela data da visita
       </h2>
-      <div className="card tabela-painel overflow-x-auto p-0">
-        <table className="w-full text-left text-[14px]">
+      <Tabela tipo="numeros" rotulo="Comparação por corretor ou origem">
           <thead>
-            <tr className="border-b border-line text-ink-soft">
-              <th className="px-4 py-2 font-semibold">Corretor</th>
+            <tr >
+              <th scope="col">Corretor</th>
               {COLUNAS_VISITAS.map((c, i) => (
-                <th key={c.chave} className={clsx(th, i === COLUNAS_VISITAS.length - 1 && "pr-4")}>
+                <th scope="col" key={c.chave} className={clsx(th, i === COLUNAS_VISITAS.length - 1 && "pr-4")}>
                   {c.rotulo}
                 </th>
               ))}
@@ -581,46 +460,22 @@ function TabelaVisitas({ linhas, numeros, nomes }: { linhas: string[]; numeros: 
           </thead>
           <tbody>
             {linhas.map((id) => (
-              <tr key={id} className="border-b border-line">
-                <td className="px-4 py-2">{nomes.get(id) ?? "Corretor"}</td>
+              <tr key={id} >
+                <td>{nomes.get(id) ?? "Corretor"}</td>
                 {celulas(numeros.get(id) ?? visitasZeradas())}
               </tr>
             ))}
-            <tr className="font-semibold">
-              <td className="px-4 py-2">Equipe</td>
+          </tbody><tfoot><tr >
+              <td>Equipe</td>
               {celulas(total)}
-            </tr>
-          </tbody>
-        </table>
-      </div>
+            </tr></tfoot>
+        </Tabela>
     </section>
   );
 }
 
 function VisitasDoCorretor({ numeros }: { numeros: NumerosVisita }) {
-  return (
-    <section aria-labelledby="r-visitas" className="grid gap-2">
-      <h2 id="r-visitas" className="eyebrow text-[12px] text-ink-soft">
-        Visitas no período · pela data da visita
-      </h2>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {COLUNAS_VISITAS.map((c) => (
-          <div key={c.chave} className="card">
-            <span className="eyebrow text-[12px] text-ink-soft">{c.rotulo}</span>
-            <span
-              className={clsx(
-                "num mt-1 block font-display text-[30px] font-extrabold leading-none",
-                !numeros[c.chave] && "text-ink-soft",
-                c.chave === "aguardandoBaixa" && numeros[c.chave] > 0 && "text-ink",
-              )}
-            >
-              {c.chave === "aguardandoBaixa" && numeros[c.chave] > 0 ? `! ${numeros[c.chave]}` : numeros[c.chave]}
-            </span>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
+  return <section className="pmr-pilha" aria-labelledby="r-visitas"><h2 id="r-visitas" className="mb-grafico__titulo">Visitas no período · pela data da visita</h2><Indicadores itens={COLUNAS_VISITAS.map((c) => ({ rotulo: c.rotulo, valor: numeros[c.chave] }))} /></section>;
 }
 
 // ---------- Vendas ----------
@@ -629,45 +484,42 @@ function VisitasDoCorretor({ numeros }: { numeros: NumerosVisita }) {
 function TabelaVendas({ linhas, vendas, nomes }: { linhas: string[]; vendas: VendaComLead[]; nomes: Map<string, string> }) {
   const por = totaisPorCorretor(vendas);
   const total = somarVendas(vendas.filter((v) => linhas.includes(v.corretor_id)));
-  const th = "px-2 py-2 text-right font-semibold align-bottom";
+  const th = "mb-tabela__num";
   const celulas = (t: Totais) => (
     <>
-      <td className={clsx("num px-2 py-2 text-right", !t.pagas && "text-ink-soft")}>{t.pagas}</td>
-      <td className={clsx("num px-2 py-2 text-right", !t.vgvValido && "text-ink-soft")}>{formatarReais(t.vgvValido)}</td>
-      <td className={clsx("num px-2 py-2 text-right", !t.assinadas && "text-ink-soft")}>{t.assinadas}</td>
-      <td className={clsx("num px-2 py-2 pr-4 text-right", !t.vgvAssinado && "text-ink-soft")}>{formatarReais(t.vgvAssinado)}</td>
+      <td className="mb-tabela__num">{t.pagas}</td>
+      <td className="mb-tabela__num">{formatarReais(t.vgvValido)}</td>
+      <td className="mb-tabela__num">{t.assinadas}</td>
+      <td className="mb-tabela__num">{formatarReais(t.vgvAssinado)}</td>
     </>
   );
   return (
     <section aria-labelledby="t-vendas" className="min-w-0">
-      <h2 id="t-vendas" className="titulo-secao-antigo mb-3">
+      <h2 id="t-vendas" className="mb-grafico__titulo mb-3">
         Vendas no período, por corretor · pela data da assinatura
       </h2>
-      <div className="card tabela-painel overflow-x-auto p-0">
-        <table className="w-full text-left text-[14px]">
+      <Tabela tipo="numeros" rotulo="Comparação por corretor ou origem">
           <thead>
-            <tr className="border-b border-line text-ink-soft">
-              <th className="px-4 py-2 font-semibold">Corretor</th>
-              <th className={th}>Assinadas e pagas</th>
-              <th className={th}>VGV assinado e pago</th>
-              <th className={th}>Assinadas</th>
-              <th className={clsx(th, "pr-4")}>VGV assinado</th>
+            <tr >
+              <th scope="col">Corretor</th>
+              <th scope="col" className={th}>Assinadas e pagas</th>
+              <th scope="col" className={th}>VGV assinado e pago</th>
+              <th scope="col" className={th}>Assinadas</th>
+              <th scope="col" className={clsx(th, "pr-4")}>VGV assinado</th>
             </tr>
           </thead>
           <tbody>
             {linhas.map((id) => (
-              <tr key={id} className="border-b border-line">
-                <td className="px-4 py-2">{nomes.get(id) ?? "Corretor"}</td>
+              <tr key={id} >
+                <td>{nomes.get(id) ?? "Corretor"}</td>
                 {celulas(por.get(id) ?? totaisZerados())}
               </tr>
             ))}
-            <tr className="font-semibold">
-              <td className="px-4 py-2">Equipe</td>
+            </tbody><tfoot><tr >
+              <td>Equipe</td>
               {celulas(total)}
-            </tr>
-          </tbody>
-        </table>
-      </div>
+            </tr></tfoot>
+        </Tabela>
     </section>
   );
 }
@@ -692,15 +544,15 @@ function Conversao({
 }) {
   const { catalogos } = useCatalogos();
   const nomeOrigem = (s: string) => catalogos?.origens.find((o) => o.slug === s)?.nome ?? s;
-  const th = "px-2 py-2 text-right font-semibold align-bottom";
+  const th = "mb-tabela__num";
   const titulo = campanha ? "Conversão por origem e campanha" : "Conversão por origem";
   const linha = (l: LinhaConversao, sub: boolean) => {
     const rotulo = sub ? `${nomeOrigem(l.origem)} · ${l.campanha ?? "Sem campanha"}` : nomeOrigem(l.origem);
     const cel = (ids: string[], nome: string, ultima = false) => (
-      <td className={clsx("px-2 py-2 text-right", ultima && "pr-4")}>
-        <span className="inline-flex items-baseline gap-2">
+      <td className="mb-tabela__num">
+        <span className="items-baseline gap-2">
           <Numero ids={ids} titulo={`${rotulo} · ${nome}`} abrir={abrir} />
-          {nome !== "Leads" && <span className="num w-[38px] text-[12px] text-ink-soft">{taxa(ids.length, l.leads.length)}</span>}
+          {nome !== "Leads" && <span className="pmr-tabular w-[38px] pmr-nota">{taxa(ids.length, l.leads.length)}</span>}
         </span>
       </td>
     );
@@ -708,7 +560,7 @@ function Conversao({
     return (
       <tbody key={`${l.origem}-${sub ? (l.campanha ?? "-") : ""}`} className={clsx(sub && "text-[13px]")}>
         <tr className={clsx(!motivos.length && "border-b border-line")}>
-          <td className={clsx("py-2 pr-2", sub ? "pl-8 text-ink-soft" : "pl-4 font-semibold")}>{sub ? (l.campanha ?? "Sem campanha") : rotulo}</td>
+          <td className={clsx("py-2 pr-2", sub ? "pl-8 pmr-nota" : "pl-4 font-semibold")}>{sub ? (l.campanha ?? "Sem campanha") : rotulo}</td>
           {cel(l.leads, "Leads")}
           {cel(l.contato, "Primeiro contato")}
           {cel(l.visita, "Visita realizada")}
@@ -717,13 +569,13 @@ function Conversao({
           {cel(l.descartados, "Descartados", true)}
         </tr>
         {motivos.length > 0 && (
-          <tr className="border-b border-line">
-            <td colSpan={7} className={clsx("pb-2 pr-4 text-[12px] text-ink-soft", sub ? "pl-8" : "pl-4")}>
+          <tr >
+            <td colSpan={7} className={clsx("pb-2 pr-4 text-[12px] pmr-nota", sub ? "pl-8" : "pl-4")}>
               ✕ Descartados:{" "}
               {motivos.map((m, i) => (
                 <span key={m.slug}>
                   {i > 0 && " · "}
-                  {m.nome} <span className="num">{l.descartadosPorMotivo[m.slug]!.length}</span>
+                  {m.nome} <span className="pmr-tabular">{l.descartadosPorMotivo[m.slug]!.length}</span>
                 </span>
               ))}
             </td>
@@ -734,31 +586,27 @@ function Conversao({
   };
   return (
     <section aria-labelledby="t-conversao" className="min-w-0">
-      <h2 id="t-conversao" className="titulo-secao-antigo mb-3">
+      <h2 id="t-conversao" className="mb-grafico__titulo mb-3">
         {titulo} · leads que entraram na carteira no período, até hoje
       </h2>
       <ResumoConversao linhas={linhas} vendas={vendas} />
       {linhas.length ? (
-        <div className="card tabela-painel overflow-x-auto p-0">
-          <table className="w-full text-left text-[14px]">
+        <Tabela tipo="numeros" rotulo="Comparação por corretor ou origem">
             <thead>
-              <tr className="border-b border-line text-ink-soft">
-                <th className="px-4 py-2 font-semibold">{campanha ? "Origem e campanha" : "Origem"}</th>
-                <th className={th}>Leads</th>
-                <th className={th}>Primeiro contato</th>
-                <th className={th}>Visita realizada</th>
-                <th className={th}>Proposta</th>
-                <th className={th}>Venda</th>
-                <th className={clsx(th, "pr-4")}>Descartados</th>
+              <tr >
+                <th scope="col" className="pmr-tabular">{campanha ? "Origem e campanha" : "Origem"}</th>
+                <th scope="col" className={th}>Leads</th>
+                <th scope="col" className={th}>Primeiro contato</th>
+                <th scope="col" className={th}>Visita realizada</th>
+                <th scope="col" className={th}>Proposta</th>
+                <th scope="col" className={th}>Venda</th>
+                <th scope="col" className={clsx(th, "pr-4")}>Descartados</th>
               </tr>
             </thead>
             {linhas.flatMap((l) => [linha(l, false), ...(l.campanhas ?? []).map((c) => linha(c, true))])}
-          </table>
-        </div>
+          </Tabela>
       ) : (
-        <div className="card">
-          <p className="text-ink-soft">Nenhum lead entrou na carteira no período.</p>
-        </div>
+        <EstadoVazio titulo="Nenhum lead entrou na carteira no período" texto="Escolha outro dia, semana ou mês." />
       )}
     </section>
   );
@@ -787,17 +635,7 @@ function ResumoConversao({ linhas, vendas }: { linhas: LinhaConversao[]; vendas:
     },
     { rotulo: "Ciclo médio", valor: dias !== null ? `${dias} ${dias === 1 ? "dia" : "dias"}` : "–", nota: "Do cadastro do lead à assinatura" },
   ];
-  return (
-    <div className="mb-3 grid grid-cols-2 gap-3 md:grid-cols-4">
-      {tiles.map((t) => (
-        <div key={t.rotulo} className="card">
-          <span className="eyebrow text-[12px] text-ink-soft">{t.rotulo}</span>
-          <span className="num mt-1 block whitespace-nowrap font-display text-[22px] font-extrabold leading-tight">{t.valor}</span>
-          <span className="num mt-1 block text-[12px] text-ink-soft">{t.nota}</span>
-        </div>
-      ))}
-    </div>
-  );
+  return <Indicadores itens={tiles.map((t) => ({ rotulo: t.rotulo, valor: t.valor, nota: t.nota }))} />;
 }
 
 // ---------- Relatório de um corretor ----------
@@ -850,38 +688,24 @@ function RelatorioCorretor({
 
   return (
     <>
-      <section className="card bar-brand sem-impressao">
+      <section className="mb-cartao sem-impressao"><div className="mb-cartao__cabecalho"><div>
         {voltar && (
-          <button type="button" className="sem-impressao link-acao focus-ring mb-2 text-[13px]" onClick={voltar}>
+          <button type="button" className="sem-impressao mb-link mb-2" onClick={voltar}>
             Ver a equipe
           </button>
         )}
-        <span className="eyebrow text-[12px] text-ink-soft">{proprio ? "Seus números" : "Relatório do corretor"}</span>
-        <h2 className="titulo-card mt-1 text-[22px]">{nome}</h2>
-        <p className="num mt-1 text-ink-soft">{rotuloPeriodo(per)}</p>
-      </section>
+        <span className="mb-grafico__nota pmr-nota">{proprio ? "Seus números" : "Relatório do corretor"}</span>
+        <h2 className="mb-cartao__titulo">{nome}</h2>
+        <p className="pmr-tabular pmr-nota">{rotuloPeriodo(per)}</p>
+      </div></div></section>
 
       {meta && <CartaoMetaAnual corretor={x.corretor} ano={meta.ano} linhas={meta.linhas} vendas={meta.vendas} proprio={proprio} destaque={false} />}
       <div className="sem-impressao">
         <MetasDoCorretor corretor={x.corretor} soPainel titulo={proprio ? "Suas metas" : "Metas do corretor"} />
       </div>
 
-      <section aria-label="Números do período" className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        {blocos.map((b) => (
-          <div key={b.rotulo} className="card">
-            <span className="eyebrow text-[12px] text-ink-soft">{b.rotulo}</span>
-            <Numero
-              ids={b.ids}
-              titulo={b.rotulo}
-              abrir={setSel}
-              destaque={b.destaque}
-              className="mt-1 block font-display text-[30px] font-extrabold leading-none"
-            />
-          </div>
-        ))}
-      </section>
-
-      <div className="grid gap-5 md:grid-cols-3">
+      <section className="pmr-pilha" aria-label="Números do período"><Indicadores itens={blocos.slice(0, 4).map((b) => ({ rotulo: b.rotulo, valor: <Numero ids={b.ids} titulo={b.rotulo} abrir={setSel} /> }))} /><dl className="mb-pares"><dt>Vendas no funil</dt><dd className="mb-pares__num"><Numero ids={x.vendas} titulo="Vendas" abrir={setSel} /></dd></dl></section>
+      <div className="pmr-pilha md:grid-cols-3">
         <Distribuicao
           titulo={`${cadastradosRotulo}, por origem`}
           grupos={Object.entries(x.cadastradosPorOrigem).map(([slug, ids]) => ({
@@ -899,25 +723,18 @@ function RelatorioCorretor({
           vazio="Nenhum lead descartado no período."
           abrir={setSel}
         />
-        <section className="card">
-          <span className="eyebrow text-[12px] text-ink-soft">Funil até a venda</span>
-          <p className="mt-1 text-[13px] text-ink-soft">
-            Dos <span className="num">{x.entraram.length}</span> leads que entraram na carteira no período, até onde
+        <section className="mb-cartao">
+          <div className="mb-cartao__cabecalho"><div><h2 className="mb-cartao__titulo">Funil até a venda</h2>
+          <p className="mb-cartao__descricao">
+            Dos <span className="pmr-tabular">{x.entraram.length}</span> leads que entraram na carteira no período, até onde
             chegaram, até hoje.
-          </p>
-          <ul className="mt-2 grid">
-            {FUNIL.map((e) => (
-              <li key={e} className="flex justify-between gap-3 border-b border-line py-2 text-[15px] last:border-0">
-                <span>{nomeEtapa(e)}</span>
-                <span className="flex items-baseline gap-2">
-                  <Numero ids={x.funil[e]} titulo={`Chegaram a ${nomeEtapa(e)}`} abrir={setSel} />
-                  <span className="num w-[42px] text-right text-[13px] text-ink-soft">
-                    {taxa(x.funil[e].length, x.entraram.length)}
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ul>
+          </p></div></div><div className="mb-cartao__corpo">
+          <ol className="mb-funil mb-funil--vendas" aria-label="Funil até a venda">
+            {FUNIL.map((e, i) => <ReactFragment key={e}>
+              <li className="mb-funil__etapa"><span>{nomeEtapa(e)}</span><span className="mb-funil__barra" style={{ "--v": (x.entraram.length ? x.funil[e].length / x.entraram.length * 100 : 0) + "%" } as React.CSSProperties} /><Numero ids={x.funil[e]} titulo={"Chegaram a " + nomeEtapa(e)} abrir={setSel} /></li>
+              {i < FUNIL.length - 1 && <li className="mb-funil__passagem">{taxa(x.funil[FUNIL[i + 1]].length, x.funil[e].length)} passaram para a próxima etapa</li>}
+            </ReactFragment>)}
+          </ol></div>
         </section>
       </div>
 
@@ -928,127 +745,88 @@ function RelatorioCorretor({
 
       {vendas && (
         <section aria-labelledby="r-vendas" className="grid gap-2">
-          <h2 id="r-vendas" className="eyebrow text-[12px] text-ink-soft">
+          <h2 id="r-vendas" className="mb-grafico__nota pmr-nota">
             Vendas no período · pela data da assinatura
           </h2>
-          <ResumoVendas t={vendas} />
+          <ResumoVendasAlicerce t={vendas} />
         </section>
       )}
 
       <ListaLeads
-        sel={sel ?? { titulo: "Todos os leads do período", ids: todos }}
+        sel={{ titulo: "Todos os leads do período", ids: todos }}
         dados={dados}
         nomes={nomes}
         motivos={x.descartadosPorMotivo}
         perdidos={x.perdidos}
-        onFechar={sel ? () => setSel(null) : undefined}
+        recorte={rotuloPeriodo(per)}
         rotuloFechar="Ver todos os leads"
         corretor={x.corretor}
-        rolar={!!sel}
       />
+      {sel && <ListaLeads sel={sel} dados={dados} nomes={nomes} motivos={x.descartadosPorMotivo} perdidos={x.perdidos} corretor={x.corretor} onFechar={() => setSel(null)} />}
     </>
   );
 }
 
 // ---------- Lista de leads ----------
 
-function ListaLeads({
-  sel,
-  dados,
-  nomes,
-  motivos,
-  perdidos,
-  onFechar,
-  rotuloFechar = "Fechar a lista",
-  corretor,
-  rolar,
-}: {
-  sel: Selecao;
-  dados: DadosPainel;
-  nomes: Map<string, string>;
-  motivos?: Partial<Record<MotivoDescarte, string[]>>;
-  perdidos?: string[];
-  onFechar?: () => void;
-  rotuloFechar?: string;
-  /** No relatório de um corretor, os leads que ainda são dele não repetem o nome. */
-  corretor?: string;
-  /** Leva a lista para a tela depois do toque no número (no celular ela fica abaixo das tabelas). */
-  rolar?: boolean;
-}) {
-  const ref = useRef<HTMLElement>(null);
-  useEffect(() => {
-    if (rolar) ref.current?.scrollIntoView({ block: "start" });
-  }, [rolar, sel]);
-  const { catalogos } = useCatalogos();
-  const nomeOrigem = (s: string) => catalogos?.origens.find((o) => o.slug === s)?.nome ?? s;
-  const nomeEtapa = (s: string) => catalogos?.etapas.find((e) => e.slug === s)?.nome ?? s;
-  const motivoDe = (id: string) => {
-    for (const m of MOTIVOS_DESCARTE) if (motivos?.[m.slug]?.includes(id)) return m.nome;
-    const l = dados.leads.get(id);
-    return l?.status === "descartado" ? MOTIVOS_DESCARTE.find((m) => m.slug === l.motivo_descarte)?.nome : undefined;
-  };
-  const itens = sel.ids
-    .map((id) => {
-      const l = dados.leads.get(id);
-      const p = dados.perdidos.find((x) => x.lead_id === id);
-      return { id, l, p, nome: l?.nome ?? p?.nome ?? "Lead" };
-    })
-    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+type PropsListaLeads = {
+  sel: Selecao; dados: DadosPainel; nomes: Map<string, string>;
+  motivos?: Partial<Record<MotivoDescarte, string[]>>; perdidos?: string[];
+  onFechar?: () => void; rotuloFechar?: string; corretor?: string; rolar?: boolean; recorte?: string;
+};
 
-  return (
-    <section ref={ref} className="card lista-painel scroll-mt-[72px]" aria-labelledby="lista-leads">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="lista-leads" className="titulo-card">
-          {sel.titulo} · <span className="num">{itens.length}</span>
-        </h2>
-        {onFechar && (
-          <button type="button" className="sem-impressao link-acao focus-ring text-[13px]" onClick={onFechar}>
-            {rotuloFechar}
-          </button>
-        )}
-      </div>
-      {itens.length ? (
-        <ul className="mt-3 grid">
-          {itens.map(({ id, l, p, nome }) => {
-            const motivo = motivoDe(id);
-            const perdeu = p && (perdidos ? perdidos.includes(id) : true);
-            return (
-              <li key={id} className="border-b border-line py-2 last:border-0">
-                {l ? (
-                  <Link href={`/leads/ficha/?id=${id}`} className="focus-ring text-[15px] font-semibold hover:underline">
-                    {nome}
-                  </Link>
-                ) : (
-                  <span className="text-[15px] font-semibold">{nome}</span>
-                )}
-                <p className="text-[13px] text-ink-soft">
-                  {[
-                    l && nomeOrigem(l.origem),
-                    l && l.status === "ativo" && `Hoje: ${nomeEtapa(l.etapa)}`,
-                    l && (l.dono_id ? l.dono_id !== corretor && nomes.get(l.dono_id) && `Com ${nomes.get(l.dono_id)}` : "A distribuir"),
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
-                {(perdeu || motivo || l?.etapa === "venda") && (
-                  <p className="text-[13px] font-semibold">
-                    {perdeu && (
-                      <span className="text-brand">
-                        ! Perdido por {nomes.get(p.corretor_id) ?? "corretor"}, passado para{" "}
-                        {nomes.get(p.recebeu_id) ?? "outro corretor"}{" "}
-                      </span>
-                    )}
-                    {motivo && <span className="text-ink-soft">✕ Descartado: {motivo} </span>}
-                    {l?.etapa === "venda" && <span className="text-ok">✓ Venda</span>}
-                  </p>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      ) : (
-        <p className="mt-2 text-ink-soft">Nenhum lead neste período. Escolha outro dia, semana ou mês.</p>
-      )}
-    </section>
-  );
+/** O mesmo texto vai à tabela, ao papel e ao arquivo; lead fora do acesso não ganha link. */
+function registrosDoNumero(props: PropsListaLeads, catalogos: ReturnType<typeof useCatalogos>["catalogos"]) {
+  const nomeOrigem = (slug: string) => catalogos?.origens.find((o) => o.slug === slug)?.nome ?? slug;
+  const nomeEtapa = (slug: string) => catalogos?.etapas.find((e) => e.slug === slug)?.nome ?? slug;
+  return props.sel.ids.map((id) => {
+    const l = props.dados.leads.get(id);
+    const p = props.dados.perdidos.find((x) => x.lead_id === id);
+    const motivo = MOTIVOS_DESCARTE.find((m) => props.motivos?.[m.slug]?.includes(id))?.nome ?? (l?.status === "descartado" ? MOTIVOS_DESCARTE.find((m) => m.slug === l.motivo_descarte)?.nome : undefined);
+    const perdeu = p && (props.perdidos ? props.perdidos.includes(id) : true);
+    const informacoes = [l && nomeOrigem(l.origem), l?.status === "ativo" && "Hoje: " + nomeEtapa(l.etapa),
+      l && (l.dono_id ? l.dono_id !== props.corretor && props.nomes.get(l.dono_id) && "Com " + props.nomes.get(l.dono_id) : "A distribuir"),
+      perdeu && "! Perdido por " + (props.nomes.get(p.corretor_id) ?? "corretor") + ", passado para " + (props.nomes.get(p.recebeu_id) ?? "outro corretor"),
+      motivo && "✕ Descartado: " + motivo, l?.etapa === "venda" && "✓ Venda",
+    ].filter(Boolean).join(" · ");
+    return { id, nome: l?.nome ?? p?.nome ?? "Lead", informacoes, acessivel: !!l };
+  }).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+}
+
+function ConteudoLeads(props: PropsListaLeads) {
+  const id = useId();
+  const { catalogos } = useCatalogos();
+  const itens = registrosDoNumero(props, catalogos);
+  return <section className="pmr-pilha" aria-labelledby={id}>
+    <h2 id={id} className="mb-grafico__titulo">{props.sel.titulo} · {itens.length}</h2>
+    {itens.length ? <Tabela tipo="registros" rotulo={props.sel.titulo}><thead><tr><th scope="col">Lead</th><th scope="col">Informações</th></tr></thead><tbody>
+      {itens.map((l) => <tr key={l.id}><td data-rotulo="Lead">{l.acessivel ? <Link href={"/leads/ficha/?id=" + l.id} className="mb-tabela__alvo">{l.nome}</Link> : <strong>{l.nome}</strong>}</td><td data-rotulo="Informações">{l.informacoes || "Sem informação adicional"}</td></tr>)}
+    </tbody></Tabela> : <EstadoVazio titulo="Nenhum lead neste recorte" texto="Escolha outro período ou ajuste a busca." />}
+  </section>;
+}
+
+function ListaLeads(props: PropsListaLeads) {
+  const origem = useRef<HTMLElement | null>(null);
+  const [busca, setBusca] = useState("");
+  const { catalogos } = useCatalogos();
+  const chave = props.sel.titulo + props.sel.ids.join(",");
+  const lateral = !!props.onFechar;
+  useEffect(() => {
+    if (!lateral) return;
+    origem.current = document.activeElement as HTMLElement; setBusca("");
+    return () => origem.current?.focus();
+  }, [chave, lateral]);
+  const itens = registrosDoNumero(props, catalogos).filter((l) => l.nome.toLocaleLowerCase("pt-BR").includes(busca.toLocaleLowerCase("pt-BR")));
+  const ids = itens.map((l) => l.id);
+  const impressao = () => { document.documentElement.dataset.relatorioNumero = "sim"; window.print(); delete document.documentElement.dataset.relatorioNumero; };
+  if (!props.onFechar) return <ConteudoLeads {...props} />;
+  return <PainelDoNumero aberto onFechar={props.onFechar} titulo={props.sel.titulo} descricao={(props.recorte ?? "Período selecionado") + " · Base360 Vendas"} foco={() => origem.current}
+    acao={<Exportar titulo={ids.length + " leads · com os filtros aplicados"} colunas={["Lead", "Informações"]} linhas={itens.map((l) => [l.nome, l.informacoes || "Sem informação adicional"])} nome="leads-painel" imprimir={impressao} />}>
+    <div className="mb-lateral__corpo pmr-pilha">
+      <p className="mb-relatorio__origem">Origem: Base360 Vendas · {props.recorte ?? "período selecionado"} · mesmos IDs do número · {props.sel.ids.length} registros antes da busca</p>
+      <div className="sem-impressao"><Campo rotulo="Buscar lead"><input className="mb-campo__entrada" type="search" value={busca} onChange={(e) => setBusca(e.target.value)} /></Campo></div>
+      <div className="mb-relatorio__resumo">{ids.length} registros{busca && " · busca: " + busca}</div>
+      <ConteudoLeads {...props} sel={{ titulo: props.sel.titulo, ids }} onFechar={undefined} />
+    </div>
+  </PainelDoNumero>;
 }

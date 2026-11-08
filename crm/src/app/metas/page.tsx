@@ -2,6 +2,14 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { NavegadorDePeriodo } from "@/components/alicerce/navegador-de-periodo";
+import { Campo } from "@/components/alicerce/campo";
+import { Aviso } from "@/components/alicerce/aviso";
+import { useToast } from "@/components/alicerce/toast";
+import { CarregandoTabela } from "@/components/alicerce/carregando";
+import { EstadoDePagina } from "@/components/alicerce/estado-de-pagina";
+import { EstadoVazio } from "@/components/alicerce/estado-vazio";
+import { ErroPainel } from "@/components/painel/partes";
 import { Casca } from "@/components/casca";
 import { CartaoMetaAnual, MetasDoCorretor, TabelaMetaAnual } from "@/components/metas/metas";
 import { usePerfil, useSessao } from "@/lib/sessao";
@@ -14,8 +22,9 @@ export default function MetasPage() {
   const { pode } = useSessao();
   const veOutros = pode("dados.ver_equipe") || pode("dados.ver_todos");
   return (
-    <Casca titulo={veOutros ? "Metas da equipe" : "Minhas metas"}>
-      <Suspense fallback={<p className="text-concrete">Carregando…</p>}>
+    <Casca migrada titulo={veOutros ? "Metas da equipe" : "Minhas metas"}>
+      <header className="mb-cabecalho"><div className="mb-cabecalho__texto"><h1 className="titulo-tela">{veOutros ? "Metas da equipe" : "Minhas metas"}</h1></div></header>
+      <Suspense fallback={<CarregandoTabela texto="Carregando metas…" />}>
         <Metas />
       </Suspense>
     </Casca>
@@ -36,24 +45,16 @@ function Metas() {
   const { vendas, erro } = useVendasDoAno(ano, veOutros ? null : eu.id);
   const corretores = useCorretores(veOutros || define);
 
-  if (!veOutros && !cadastra && !define) return <div className="card max-w-[520px]">! Seu perfil não tem acesso a esta página.</div>;
+  if (!veOutros && !cadastra && !define) return <EstadoDePagina tipo="sem-permissao" titulo="Esta página não está liberada para o seu perfil" texto="Peça o acesso ao gerente geral." />;
 
-  const irAno = (a: number) => router.replace(a === hoje ? "/metas/" : `/metas/?a=${a}`, { scroll: false });
+  const irAno = (a: number) => { const q = new URLSearchParams(sp.toString()); if (a === hoje) q.delete("a"); else q.set("a", String(a)); router.replace("/metas/?" + q.toString(), { scroll: false }); };
 
   return (
-    <div className="grid gap-5">
-      <div className="flex items-center gap-2">
-        <button type="button" className="btn btn-ghost focus-ring px-3 text-[15px]" aria-label="Ano anterior" onClick={() => irAno(ano - 1)}>
-          ← <span className="num">{ano - 1}</span>
-        </button>
-        <p className="num min-w-0 flex-1 text-center font-display text-[17px] font-bold md:flex-none md:px-3">{ano}</p>
-        <button type="button" className="btn btn-ghost focus-ring px-3 text-[15px]" aria-label="Ano seguinte" onClick={() => irAno(ano + 1)}>
-          <span className="num">{ano + 1}</span> →
-        </button>
-      </div>
+    <div className="pmr-pilha">
+      <NavegadorDePeriodo nome="Ano das metas" rotulo={String(ano)} aoAnterior={() => irAno(ano - 1)} aoSeguinte={() => irAno(ano + 1)} aoVoltar={ano === hoje ? undefined : () => irAno(hoje)} />
 
-      {erro && <p className="aviso-erro">! {erro}</p>}
-      {(!linhas || (!vendas && !erro)) && <p className="text-concrete">Carregando…</p>}
+      {erro && <ErroPainel erro={erro} />}
+      {(!linhas || (!vendas && !erro)) && <CarregandoTabela texto="Carregando metas…" />}
       {linhas && vendas && !veOutros && cadastra && (
         <CartaoMetaAnual corretor={eu.id} ano={ano} linhas={linhas} vendas={vendas} proprio />
       )}
@@ -67,7 +68,7 @@ function Metas() {
           abrir={(id) => router.push(`/painel/?c=${id}`)}
         />
       )}
-      {linhas && veOutros && !corretores.length && <p className="text-ink-soft">Nenhum corretor na equipe ainda.</p>}
+      {linhas && veOutros && !corretores.length && <EstadoVazio titulo="Nenhum corretor na equipe" texto="As metas aparecem quando houver corretores na equipe." />}
 
       {linhas && define && <DefinirMetas ano={ano} linhas={linhas} corretores={corretores} onSalvo={recarregar} />}
 
@@ -90,17 +91,18 @@ function DefinirMetas({
 }) {
   const geral = linhas.find((l) => l.corretor_id === null);
   return (
-    <section className="card grid gap-4" aria-labelledby="definir-metas">
-      <div>
-        <h2 id="definir-metas" className="titulo-card">
+    <section className="mb-cartao" aria-labelledby="definir-metas">
+      <div className="mb-cartao__cabecalho">
+        <div><h2 id="definir-metas" className="mb-cartao__titulo">
           Definir a meta anual de VGV · <span className="num">{ano}</span>
         </h2>
-        <p className="mt-1 text-[13px] text-ink-soft">
+        <p className="mt-1 mb-cartao__descricao">
           O valor geral vale para todos os corretores. Sem valor geral, vale o padrão de {formatarReais(META_VGV_PADRAO)}. O
           valor de um corretor substitui o geral só para ele.
         </p>
+        </div>
       </div>
-      <LinhaMeta
+      <div className="mb-cartao__corpo pmr-pilha"><LinhaMeta
         id="meta-geral"
         rotulo="Valor geral do ano"
         atual={geral ? Number(geral.valor) : META_VGV_PADRAO}
@@ -111,11 +113,11 @@ function DefinirMetas({
         onSalvo={onSalvo}
       />
       {corretores.length > 0 && (
-        <details className="border-t border-line pt-3">
-          <summary className="focus-ring cursor-pointer list-none font-semibold">
-            <span aria-hidden>+ </span>Valor por corretor
+        <details className="mb-recolhivel">
+          <summary >
+            Valor por corretor
           </summary>
-          <ul className="mt-3 grid gap-4">
+          <ul className="mb-recolhivel__corpo pmr-pilha">
             {corretores.map((c) => {
               const propria = linhas.find((l) => l.corretor_id === c.id);
               const m = metaAnualDe(c.id, ano, linhas);
@@ -137,6 +139,7 @@ function DefinirMetas({
           </ul>
         </details>
       )}
+      </div>
     </section>
   );
 }
@@ -162,59 +165,22 @@ function LinhaMeta({
 }) {
   const [texto, setTexto] = useState("");
   const [erro, setErro] = useState<string | null>(null);
-  const [ok, setOk] = useState(false);
-  const fim = (e: string | null) => {
-    setErro(e);
-    setOk(!e);
-    if (!e) {
-      setTexto("");
-      onSalvo();
-    }
-  };
-  return (
-    <div className="grid gap-2">
-      <label className="field-label" htmlFor={id}>
-        {rotulo}
-      </label>
-      <p className="text-[13px] text-ink-soft">
-        <span className="num font-semibold text-ink">{formatarReais(atual)}</span> · {nota}
-      </p>
-      <div className="flex flex-wrap gap-2">
-        <div className="relative min-w-[180px] flex-1">
-          <span aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft">
-            R$
-          </span>
-          <input
-            id={id}
-            className="input num pl-10"
-            inputMode="decimal"
-            placeholder={atual.toLocaleString("pt-BR")}
-            value={texto}
-            onChange={(e) => {
-              setTexto(e.target.value);
-              setOk(false);
-            }}
-          />
-        </div>
-        <button
-          type="button"
-          className="btn btn-ghost focus-ring"
-          onClick={async () => {
-            const v = lerReais(texto);
-            if (!v) return setErro("Confira o valor: só números, como 10.000.000.");
-            fim(await onSalvar(v));
-          }}
-        >
-          Salvar
-        </button>
-      </div>
-      {onVoltar && (
-        <button type="button" className="link-acao focus-ring justify-self-start text-[13px]" onClick={async () => fim(await onVoltar())}>
-          {rotuloVoltar}
-        </button>
-      )}
-      {ok && <p className="aviso-ok">✓ Salvo</p>}
-      {erro && <p className="aviso-erro">! {erro}</p>}
-    </div>
-  );
+  const [ocupado, setOcupado] = useState(false);
+  const toast = useToast();
+  async function executar(acao: () => Promise<string | null>) {
+    setOcupado(true); setErro(null);
+    const e = await acao(); setOcupado(false);
+    if (e) { setErro("Não foi possível salvar. Confira a conexão e tente novamente."); return; }
+    setTexto(""); onSalvo(); toast.mostrar("Meta anual salva.", { tipo: "sucesso" });
+  }
+  return <form className="pmr-pilha" noValidate onSubmit={(e) => {
+    e.preventDefault(); const v = lerReais(texto);
+    if (!v) { setErro("Confira o valor: só números, como 10.000.000."); (e.currentTarget.querySelector("input") as HTMLInputElement)?.focus(); return; }
+    void executar(() => onSalvar(v));
+  }}>
+    <Campo rotulo={rotulo} ajuda={formatarReais(atual) + " · " + nota} erro={erro} idErro={id + "-erro"}>
+      <span className="mb-campo__grupo"><span className="mb-campo__afixo">R$</span><input id={id} className="mb-campo__entrada mb-campo__entrada--num" inputMode="decimal" placeholder={atual.toLocaleString("pt-BR")} value={texto} onChange={(e) => setTexto(e.target.value)} aria-invalid={!!erro} aria-describedby={erro ? id + "-erro" : undefined} /></span>
+    </Campo>
+    <div className="mb-grupo-botoes">{onVoltar && <button type="button" className="mb-botao mb-botao--discreto mb-botao--p" disabled={ocupado} onClick={() => void executar(onVoltar)}>{rotuloVoltar}</button>}{texto !== "" && <button type="submit" className="mb-botao mb-botao--primario" disabled={ocupado} aria-busy={ocupado}>{ocupado ? "Salvando…" : "Salvar meta anual"}</button>}</div>
+  </form>;
 }

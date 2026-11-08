@@ -358,3 +358,37 @@ svg.mb-icone {
 .vendas-detalhe .mb-pares dd { min-width: 0; overflow-wrap: anywhere; }
 /* O botão de ordenar herda 16px de linha do cabeçalho no bundle; amplia-se só o alvo ao mínimo do guia. */
 .vendas-pilha .mb-tabela__ordenar { min-height: var(--alvo-minimo); }
+
+/* 7. Painel, Metas e Ranking (fase 2, bloco 3). Apenas composição e leitura: os números conservam
+   a tabela do Alicerce no celular; registros usam os cards gerados por ela. Espaços e cores dos tokens. */
+.pmr-pilha { display: grid; gap: var(--esp-4); min-width: 0; align-content: start; }
+.pmr-filtros, .pmr-linha { display: flex; flex-wrap: wrap; align-items: center; gap: var(--esp-3); }
+.pmr-filtros { align-items: end; }
+.pmr-linha { justify-content: space-between; }
+.pmr-form { display: contents; }
+.pmr-nota { color: var(--texto-suave); font-size: 13px; line-height: 20px; }
+.pmr-bloco { display: block; }
+.pmr-tabular, .pmr-zero { font-variant-numeric: tabular-nums; }
+.pmr-zero { color: var(--texto-suave); }
+.pmr-direita { text-align: right; }
+.pmr-cartao { padding: var(--esp-4); }
+.pmr-acao { justify-self: start; }
+/* Links numéricos nas tabelas precisam de alvo de toque; padding vem do controle, sem alterar a coluna. */
+.pmr-numero, .pmr-corretor { display: inline-flex; align-items: center; min-height: var(--alvo-minimo); }
+.pmr-numero { justify-content: center; min-width: var(--alvo-minimo); font: inherit; font-weight: 600; }
+/* O popup de exportar alinha o fim ao botão para não sair da folha estreita. */
+.pmr-relatorio .mb-popup { left: auto; right: 0; }
+/* O relatório é a mesma tabela no papel. A exportação escolhe a folha aberta, sem copiar dados no DOM. */
+@media print {
+  html[data-relatorio-numero="sim"] .mb-app,
+  html[data-relatorio-numero="sim"] .mb-lateral__veu { display: none !important; }
+  html[data-relatorio-numero="sim"] .pmr-relatorio.mb-lateral--aberto { display: block !important; position: static; width: auto; max-width: none; height: auto; max-height: none; transform: none; visibility: visible; overflow: visible; box-shadow: none; }
+  html[data-relatorio-numero="sim"] .pmr-relatorio .mb-lateral__corpo { overflow: visible; padding: 0; }
+  .pmr-pilha .mb-tabela-envoltorio { overflow: visible; }
+  .pmr-pilha .mb-tabela { font-size: 16px; }
+}
+
+/* No celular o alvo mínimo de controle é controle-toque (44px), não alvo-minimo (28px, desktop). */
+@media (max-width: 767px) {
+  .pmr-numero, .pmr-corretor { min-height: var(--controle-toque); min-width: var(--controle-toque); }
+}

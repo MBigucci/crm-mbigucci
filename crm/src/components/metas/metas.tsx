@@ -1,7 +1,18 @@
 "use client";
 
 import clsx from "clsx";
-import { useCallback, useMemo, useState } from "react";
+import { MetaDetalhada } from "./meta-detalhada";
+import { Tabela } from "@/components/alicerce/tabela";
+import { Campo, CampoSelecao, CampoEmGrupo } from "@/components/alicerce/campo";
+import { Seletor } from "@/components/alicerce/seletor";
+import { Interruptor } from "@/components/alicerce/interruptor";
+import { PainelLateral } from "@/components/alicerce/painel-lateral";
+import { Aviso } from "@/components/alicerce/aviso";
+import { useToast } from "@/components/alicerce/toast";
+import { EstadoVazio } from "@/components/alicerce/estado-vazio";
+import { CarregandoTabela } from "@/components/alicerce/carregando";
+import { ErroPainel } from "@/components/painel/partes";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { AvisoDesfazer } from "@/components/leads/partes";
 import { Meta as MetaAlicerce, Unidade } from "@/components/alicerce/meta";
 import {
@@ -58,14 +69,14 @@ export function CartaoMetaAnual({
   linhas,
   vendas,
   proprio,
-  destaque = true,
+
 }: {
   corretor: string;
   ano: number;
   linhas: MetaVgv[];
   vendas: Pick<Venda, "corretor_id" | "assinada_em" | "status" | "pagamento" | "vgv">[];
   proprio: boolean;
-  /** A barra vermelha: uma por área de tela (no painel, o cabeçalho já tem). */
+  /** Compatibilidade com os consumidores; a Meta do Alicerce não usa fio de marca. */
   destaque?: boolean;
 }) {
   const meta = metaAnualDe(corretor, ano, linhas);
@@ -75,64 +86,23 @@ export function CartaoMetaAnual({
     ano,
     new Date(),
   );
-  return (
-    <section className={clsx("card", destaque && "bar-brand")} aria-labelledby={`meta-anual-${corretor}`}>
-      <div className="rounded-sm bg-band p-4 text-on-dark">
-        <h2 id={`meta-anual-${corretor}`} className="text-[14px] font-semibold text-on-dark-soft">
-          Meta anual de VGV · <span className="num">{ano}</span>
-        </h2>
-        <dl className="mt-3 grid gap-4 sm:grid-cols-2">
-          <div>
-            <dt className="text-[13px] text-on-dark-soft">Assinado e pago</dt>
-            <dd className="num mt-1 text-[32px] font-extrabold leading-tight">{formatarReais(Math.floor(p.acumulado))}</dd>
-          </div>
-          <div>
-            <dt className="text-[13px] text-on-dark-soft">Meta do ano</dt>
-            <dd className="num mt-1 text-[24px] font-bold leading-tight">{formatarReais(p.meta)}</dd>
-          </div>
-        </dl>
-      </div>
-      <div className="mt-3">
-        <Barra razao={p.razao} batida={p.batida} rotulo={`Meta anual de VGV: ${formatarPct(p.razao)}`} />
-      </div>
-      <p className={clsx("num mt-2 text-[15px] font-semibold", p.batida && "text-ok")}>
-        {p.batida ? "✓ Meta batida · " : ""}
-        {formatarPct(p.razao)} atingido
-      </p>
-      <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-[13px] md:grid-cols-4">
-        <Dado rotulo="Assinado e pago" valor={formatarReais(Math.floor(p.acumulado))} />
-        <Dado rotulo="Assinado, com pendentes" valor={formatarReais(Math.floor(p.assinado))} />
-        <Dado rotulo="Falta" valor={p.batida ? "–" : formatarReais(Math.ceil(p.falta))} />
-        <Dado
-          rotulo="Ritmo necessário"
-          valor={p.ritmoMensal !== null ? formatarReais(Math.ceil(p.ritmoMensal)) : "–"}
-          nota={p.ritmoMensal !== null ? textoMeses(p) : undefined}
-        />
-        <Dado
-          rotulo="Projeção no ritmo atual"
-          valor={p.projecao !== null ? formatarReais(Math.round(p.projecao)) : "–"}
-          nota={p.projecao === null ? (p.acumulado > 0 ? "Aparece a partir de abril" : "Depois da primeira venda paga") : p.encerrado ? "Ano encerrado" : `Fecha ${ano} com isso`}
-        />
-      </dl>
-      <p className="mt-3 text-[12px] text-ink-soft">
-        {proprio ? ORIGEM_META[meta.origem] : ORIGEM_META[meta.origem].replace(" para você", "")}. Conta o VGV das vendas
-        assinadas e pagas, no mês da assinatura.
-      </p>
-    </section>
-  );
+  return <MetaDetalhada rotulo={"Meta anual de VGV · " + ano} valor={<><ComUnidade texto={formatarReais(Math.floor(p.acumulado))} /> de <ComUnidade texto={formatarReais(p.meta)} /></>} feitoPct={p.razao * 100} projecaoPct={p.projecao !== null && p.meta > 0 ? p.projecao / p.meta * 100 : undefined} descricaoAria={formatarPct(p.razao) + " da meta anual de VGV" + (p.projecao !== null ? "; projeção: " + formatarReais(Math.round(p.projecao)) : "")} legenda={[p.batida ? "✓ Meta batida · " + formatarPct(p.razao) : formatarPct(p.razao) + " atingido", p.projecao !== null ? "Projeção: " + formatarReais(Math.round(p.projecao)) : "Projeção indisponível"]}>
+    <dl className="mb-pares">
+      <Dado rotulo="Assinado e pago" valor={formatarReais(Math.floor(p.acumulado))} />
+      <Dado rotulo="Assinado, com pendentes" valor={formatarReais(Math.floor(p.assinado))} />
+      <Dado rotulo="Falta" valor={p.batida ? "–" : formatarReais(Math.ceil(p.falta))} />
+      <Dado rotulo="Ritmo necessário" valor={p.ritmoMensal !== null ? formatarReais(Math.ceil(p.ritmoMensal)) : "–"} nota={p.ritmoMensal !== null ? textoMeses(p) : undefined} />
+      <Dado rotulo="Projeção no ritmo atual" valor={p.projecao !== null ? formatarReais(Math.round(p.projecao)) : "–"} nota={p.projecao === null ? (p.acumulado > 0 ? "Aparece a partir de abril" : "Depois da primeira venda paga") : p.encerrado ? "Ano encerrado" : "Fecha " + ano + " com isso"} />
+    </dl>
+    <p className="mb-grafico__nota">{proprio ? ORIGEM_META[meta.origem] : ORIGEM_META[meta.origem].replace(" para você", "")}. Conta o VGV das vendas assinadas e pagas, no mês da assinatura.</p>
+  </MetaDetalhada>;
 }
 
 const textoMeses = (p: ProgressoAnual) =>
   p.mesesRestantes === 1 ? "Por mês: só dezembro pela frente" : `Por mês, nos ${p.mesesRestantes} meses até dezembro, com este`;
 
 function Dado({ rotulo, valor, nota }: { rotulo: string; valor: string; nota?: string }) {
-  return (
-    <div className="min-w-0">
-      <dt className="text-ink-soft">{rotulo}</dt>
-      <dd className="num mt-1 font-display text-[16px] font-bold">{valor}</dd>
-      {nota && <dd className="text-[12px] text-ink-soft">{nota}</dd>}
-    </div>
-  );
+  return <><dt>{rotulo}</dt><dd className="mb-pares__num">{valor}{nota && <small className="pmr-nota pmr-bloco">{nota}</small>}</dd></>;
 }
 
 /** Meta anual de cada corretor da equipe, com a linha Equipe. */
@@ -158,46 +128,40 @@ export function TabelaMetaAnual({
   }));
   const somaMeta = ps.reduce((s, x) => s + x.p.meta, 0);
   const total = progressoAnual(somaMeta, vendas.filter((v) => corretores.includes(v.corretor_id)), ano, agora);
-  const th = "px-2 py-2 text-right font-semibold align-bottom";
+  const th = "mb-tabela__num";
   const linha = (p: ProgressoAnual) => (
     <>
-      <td className="num px-2 py-2 text-right">{formatarReais(p.meta)}</td>
-      <td className="num px-2 py-2 text-right">{formatarReais(Math.floor(p.acumulado))}</td>
-      <td className={clsx("num px-2 py-2 text-right", p.batida && "font-semibold text-ok")}>
-        {p.batida ? "✓ " : ""}
-        {formatarPct(p.razao)}
-      </td>
-      <td className="num px-2 py-2 text-right">{p.batida ? "–" : formatarReais(Math.ceil(p.falta))}</td>
-      <td className="num px-2 py-2 text-right">{p.ritmoMensal !== null ? formatarReais(Math.ceil(p.ritmoMensal)) : "–"}</td>
-      <td className="num px-2 py-2 text-right">{p.projecao !== null ? formatarReais(Math.round(p.projecao)) : "–"}</td>
-      <td className="num px-2 py-2 pr-4 text-right text-ink-soft">{formatarReais(Math.floor(p.assinado))}</td>
+      <td className="mb-tabela__num">{formatarReais(p.meta)}</td>
+      <td className="mb-tabela__num">{formatarReais(Math.floor(p.acumulado))}<small className="pmr-nota pmr-bloco">{p.batida ? "✓ " : ""}{formatarPct(p.razao)} atingido</small></td>
+      <td className="mb-tabela__num">{p.batida ? "–" : formatarReais(Math.ceil(p.falta))}</td>
+      <td className="mb-tabela__num">{p.ritmoMensal !== null ? formatarReais(Math.ceil(p.ritmoMensal)) : "–"}</td>
+      <td className="mb-tabela__num">{p.projecao !== null ? formatarReais(Math.round(p.projecao)) : "–"}</td>
+      <td className="mb-tabela__num">{formatarReais(Math.floor(p.assinado))}</td>
     </>
   );
   return (
     <section aria-labelledby="t-meta-anual" className="min-w-0">
-      <h2 id="t-meta-anual" className="titulo-secao-antigo mb-3">
-        Meta anual de VGV · <span className="num">{ano}</span> · assinado e pago, no mês da assinatura
+      <h2 id="t-meta-anual" className="mb-grafico__titulo mb-3">
+        Meta anual de VGV · <span className="">{ano}</span> · assinado e pago, no mês da assinatura
       </h2>
-      <div className="card tabela-painel overflow-x-auto p-0">
-        <table className="w-full text-left text-[14px]">
+      <Tabela tipo="numeros" rotulo="Metas anuais por corretor">
           <thead>
-            <tr className="border-b border-line text-ink-soft">
-              <th className="px-4 py-2 align-bottom font-semibold">Corretor</th>
-              <th className={th}>Meta</th>
-              <th className={th}>Assinado e pago</th>
-              <th className={th}>Atingido</th>
-              <th className={th}>Falta</th>
-              <th className={th}>Por mês até dezembro</th>
-              <th className={th}>Projeção</th>
-              <th className={clsx(th, "pr-4")}>Assinado, com pendentes</th>
+            <tr className="pmr-nota">
+              <th scope="col" >Corretor</th>
+              <th scope="col" className={th}>Meta</th>
+              <th scope="col" className={th}>Assinado e pago · atingido</th>
+              <th scope="col" className={th}>Falta</th>
+              <th scope="col" className={th}>Por mês até dezembro</th>
+              <th scope="col" className={th}>Projeção</th>
+              <th scope="col" className={clsx(th, "pr-4")}>Assinado, com pendentes</th>
             </tr>
           </thead>
           <tbody>
             {ps.map(({ c, p }) => (
-              <tr key={c} className="border-b border-line">
-                <td className="px-4 py-2">
+              <tr key={c} >
+                <td >
                   {abrir ? (
-                    <button type="button" className="focus-ring text-left font-semibold text-ink underline decoration-line underline-offset-4 hover:decoration-ink" onClick={() => abrir(c)}>
+                    <button type="button" className="mb-link pmr-corretor" onClick={() => abrir(c)}>
                       {nomes.get(c) ?? "Corretor"}
                     </button>
                   ) : (
@@ -207,13 +171,11 @@ export function TabelaMetaAnual({
                 {linha(p)}
               </tr>
             ))}
-            <tr className="font-semibold">
-              <td className="px-4 py-2">Equipe</td>
+          </tbody><tfoot><tr>
+              <td>Equipe</td>
               {linha(total)}
-            </tr>
-          </tbody>
-        </table>
-      </div>
+            </tr></tfoot>
+        </Tabela>
     </section>
   );
 }
@@ -241,30 +203,36 @@ export function MetasDoCorretor({
 }) {
   const { metas, erro, recarregar } = useMetas(corretor);
   const dados = useDadosMetas(corretor, metas);
+  const origemForm = useRef<HTMLElement | null>(null);
+  const fecharForm = () => { setForm(null); requestAnimationFrame(() => { const alvo = origemForm.current?.isConnected ? origemForm.current : document.getElementById(`metas-${corretor}`)?.closest("section")?.querySelector<HTMLElement>("button"); alvo?.focus(); }); };
   const [form, setForm] = useState<{ meta: Meta | null; metrica?: Metrica } | null>(null);
   const [desfazer, setDesfazer] = useState<{ meta: Meta; texto: string } | null>(null);
   const fecharDesfazer = useCallback(() => setDesfazer(null), []);
-  const [erroAcao, setErroAcao] = useState<string | null>(null);
+  const toast = useToast();
+  const avisarErro = (erro: string | null) => {
+    if (erro) toast.mostrar("Não foi possível alterar a meta. Confira a conexão e tente novamente.", { tipo: "erro" });
+  };
   const agora = useMemo(() => new Date(), [dados]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  function abrirForm(valor: { meta: Meta | null; metrica?: Metrica }) { origemForm.current = document.activeElement as HTMLElement; setForm(valor); }
   const visiveis = (metas ?? []).filter((m) => !soPainel || m.no_painel);
-  if (soPainel && !visiveis.length) return null;
+  if (soPainel && !visiveis.length && !erro) return null;
 
   async function excluir(m: Meta) {
-    setErroAcao(null);
+    avisarErro(null);
     const e = await excluirMeta(m.id);
-    if (e) return setErroAcao(e);
+    if (e) return avisarErro(e);
     recarregar();
     setDesfazer({ meta: m, texto: `Meta excluída: ${nomeDaMeta(m, new Date())}` });
   }
 
   async function noPainel(m: Meta, ligado: boolean) {
-    setErroAcao(null);
+    avisarErro(null);
     const { id, dono_id, created_at, ...campos } = m;
     void dono_id;
     void created_at;
     const e = await salvarMeta({ ...campos, no_painel: ligado }, id);
-    if (e) setErroAcao(e);
+    if (e) avisarErro(e);
     recarregar();
   }
 
@@ -272,56 +240,37 @@ export function MetasDoCorretor({
     <section className="grid gap-3" aria-labelledby={`metas-${corretor}`}>
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h2 id={`metas-${corretor}`} className="titulo-secao-antigo">
+          <h2 id={`metas-${corretor}`} className="mb-grafico__titulo">
             {titulo ?? (editavel ? "Metas próprias" : "Metas do corretor")}
           </h2>
-          {editavel && <p className="mt-1 text-[13px] text-ink-soft">Você define os alvos; o progresso vem do que já está registrado.</p>}
+          {editavel && <p className="pmr-nota">Você define os alvos; o progresso vem do que já está registrado.</p>}
         </div>
-        {editavel && !form && !!metas?.length && (
-          <button type="button" className="btn btn-ghost focus-ring" onClick={() => setForm({ meta: null })}>
+        {editavel && !!metas?.length && (
+          <button type="button" className="mb-botao mb-botao--secundario" onClick={() => abrirForm({ meta: null })}>
             + Nova meta
           </button>
         )}
       </div>
-      {erro && <p className="aviso-erro">! {erro}</p>}
-      {erroAcao && <p className="aviso-erro">! {erroAcao}</p>}
+      {erro && <ErroPainel erro={erro} />}
       {form && (
+        <PainelLateral aberto onFechar={fecharForm} titulo={form.meta ? "Editar meta" : "Criar meta"} descricao="Escolha o alvo; o progresso vem dos registros do Base360 Vendas." foco={() => origemForm.current}>
         <FormMeta
           key={form.meta?.id ?? `nova-${form.metrica ?? ""}`}
           meta={form.meta}
           metricaInicial={form.metrica}
           metas={metas ?? []}
-          onCancelar={() => setForm(null)}
+          onCancelar={fecharForm}
           onSalva={() => {
-            setForm(null);
+            toast.mostrar(form.meta ? "Meta salva." : "Meta criada.", { tipo: "sucesso" });
+            fecharForm();
             recarregar();
           }}
         />
+        </PainelLateral>
       )}
-      {!metas && !erro && <p className="text-ink-soft">Carregando metas…</p>}
-      {metas && !visiveis.length && !form && (
-        <div className="card">
-          {editavel ? (
-            <>
-              <p className="titulo-card">Nenhuma meta por enquanto.</p>
-              <p className="mt-2 text-ink-soft">
-                Que tal começar pelo VGV, com o período que você costuma usar? Você pode mudar os números quando quiser.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button type="button" className="btn btn-red focus-ring" onClick={() => setForm({ meta: null, metrica: "vgv" })}>
-                  + Meta de VGV
-                </button>
-                <button type="button" className="btn btn-ghost focus-ring" onClick={() => setForm({ meta: null })}>
-                  + Outra meta
-                </button>
-              </div>
-            </>
-          ) : (
-            <p className="text-ink-soft">O corretor ainda não criou metas próprias.</p>
-          )}
-        </div>
-      )}
-      {metas && !dados && visiveis.length > 0 && <p className="text-ink-soft">Carregando…</p>}
+      {!metas && !erro && <CarregandoTabela texto="Carregando metas…" />}
+      {metas && !erro && !visiveis.length && !form && <EstadoVazio titulo="Nenhuma meta própria" texto={editavel ? "Defina o alvo e o período. O progresso vem dos registros do Base360 Vendas." : "O corretor ainda não criou metas próprias."} acao={editavel ? <button type="button" className="mb-botao mb-botao--secundario mb-botao--p" onClick={() => abrirForm({ meta: null, metrica: "vgv" })}>Criar meta</button> : undefined} />}
+      {metas && !dados && !erro && visiveis.length > 0 && <CarregandoTabela texto="Carregando metas…" />}
       {dados && visiveis.length > 0 && (
         <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {visiveis.map((m) => (
@@ -329,7 +278,7 @@ export function MetasDoCorretor({
               key={m.id}
               p={progressoMeta(m, corretor, dados, agora)}
               editavel={editavel}
-              onEditar={() => setForm({ meta: m })}
+              onEditar={() => abrirForm({ meta: m })}
               onExcluir={() => excluir(m)}
               onNoPainel={(ligado) => noPainel(m, ligado)}
             />
@@ -351,7 +300,7 @@ export function MetasDoCorretor({
               valor: m.valor,
               no_painel: m.no_painel,
             });
-            if (e) setErroAcao(e);
+            if (e) avisarErro(e);
             recarregar();
           }}
         />
@@ -378,55 +327,15 @@ function CardMeta({
   const def = metrica(m.metrica);
   const t = textoRitmo(p);
   const nome = `${def.nome} · ${p.intervalo.rotulo}`;
-  return (
-    <li className="card flex flex-col">
-      <div className="flex items-start justify-between gap-3">
-        <p className="min-w-0 text-[14px] font-semibold text-ink-soft">{nome}</p>
-        {p.batida && (
-          <span className="selo-antigo shrink-0 border-current text-ok">
-            <span aria-hidden>✓</span> Meta batida
-          </span>
-        )}
-      </div>
-      {/* O atual nunca arredonda para cima (não "bate" a meta antes da hora); o alvo, exato. */}
-      <p className="mt-2 flex flex-wrap items-baseline gap-x-2">
-        <span className="num font-display text-[30px] font-extrabold leading-none">{numeroDaMetrica(m.metrica, p.valor)}</span>
-        <span className="num text-[17px] text-ink-soft">
-          <span aria-hidden>/ </span>
-          <span className="sr-only">de </span>
-          {numeroDaMetrica(m.metrica, Number(m.valor))}
-        </span>
-      </p>
-      <div className="mt-3">
-        <Barra razao={p.razao} batida={p.batida} rotulo={`${def.nome}: ${Math.round(Math.min(1, p.razao) * 100)}% da meta`} />
-      </div>
-      <p className="mt-3 text-[14px]">
-        {t.principal}
-        {t.detalhe && <span className="text-ink-soft"> {t.detalhe}</span>}
-      </p>
-      {p.assinado !== undefined && p.assinado > p.valor && (
-        <p className="num mt-1 text-[12px] text-ink-soft">Assinado, com pendentes: {numeroDaMetrica(m.metrica, p.assinado)}</p>
-      )}
-      {editavel && (
-        <div className="mt-auto pt-3">
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-line pt-2 text-[13px]">
-          <label className="flex min-h-[36px] cursor-pointer items-center gap-2 font-semibold">
-            <input type="checkbox" className="checkbox" checked={m.no_painel} onChange={(e) => onNoPainel(e.target.checked)} />
-            Mostrar no painel<span className="sr-only">: {nome}</span>
-          </label>
-          <span className="flex gap-4">
-            <button type="button" className="link-acao focus-ring" aria-label={`Editar meta: ${nome}`} onClick={onEditar}>
-              Editar
-            </button>
-            <button type="button" className="link-acao focus-ring" aria-label={`Excluir meta: ${nome}`} onClick={onExcluir}>
-              Excluir
-            </button>
-          </span>
-        </div>
-        </div>
-      )}
-    </li>
-  );
+  return <li>
+    <MetaDetalhada rotulo={nome} valor={<><ComUnidade texto={numeroDaMetrica(m.metrica, p.valor)} /> de <ComUnidade texto={numeroDaMetrica(m.metrica, Number(m.valor))} /></>} feitoPct={p.razao * 100} projecaoPct={p.projecao !== null ? p.projecao / Number(m.valor) * 100 : undefined} descricaoAria={def.nome + ": " + Math.round(Math.min(1, p.razao) * 100) + "% da meta" + (p.projecao !== null ? "; projeção: " + numeroDaMetrica(m.metrica, p.projecao) : "")} legenda={[p.batida ? "✓ Meta batida" : t.principal, t.detalhe]}>
+      {p.assinado !== undefined && p.assinado > p.valor && <p className="mb-grafico__nota">Assinado, com pendentes: {numeroDaMetrica(m.metrica, p.assinado)}</p>}
+      {editavel && <div className="pmr-pilha">
+        <div className="pmr-linha"><span>Mostrar no painel</span><Interruptor ligado={m.no_painel} rotulo={"Mostrar no painel: " + nome} onAlternar={onNoPainel} /></div>
+        <div className="mb-grupo-botoes"><button type="button" className="mb-botao mb-botao--secundario mb-botao--p" aria-label={"Editar meta: " + nome} onClick={onEditar}>Editar</button><button type="button" className="mb-botao mb-botao--discreto mb-botao--p" aria-label={"Excluir meta: " + nome} onClick={onExcluir}>Excluir</button></div>
+      </div>}
+    </MetaDetalhada>
+  </li>;
 }
 
 const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -498,7 +407,7 @@ function FormMeta({
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
     setTentou(true);
-    if (erroRepetida || erroAlvo || !alvo) return;
+    if (erroRepetida || erroAlvo || !alvo) { const form = e.currentTarget as HTMLFormElement; requestAnimationFrame(() => (form.querySelector<HTMLElement>("[aria-invalid=true]") ?? form.querySelector<HTMLElement>("[aria-pressed=true]"))?.focus()); return; }
     setErro(null);
     setSalvando(true);
     const r = await salvarMeta(
@@ -510,131 +419,26 @@ function FormMeta({
     onSalva();
   }
 
-  return (
-    <form onSubmit={salvar} className="card grid gap-4" noValidate>
-      <div>
-        <span className="titulo-secao-antigo">{meta ? "Editar meta" : "Nova meta"}</span>
-        <p className="mt-1 text-[13px] text-ink-soft">Você escolhe o alvo; o progresso é calculado com o que já está registrado no Base360 Vendas.</p>
-      </div>
-      <div>
-        <label className="field-label" htmlFor="meta-metrica">
-          Métrica
-        </label>
-        <select id="meta-metrica" className="input" value={metricaSel} onChange={(e) => trocarMetrica(e.target.value as Metrica)}>
-          {METRICAS.map((m) => (
-            <option key={m.slug} value={m.slug}>
-              {m.nome}
-            </option>
-          ))}
-        </select>
-        <p className="mt-1 text-[13px] text-ink-soft">{def.dica}.</p>
-      </div>
-      <fieldset>
-        <legend className="field-label">Período</legend>
-        <div className="grid grid-cols-3 gap-2">
-          {PERIODOS_META.map((p) => {
-            const marcado = p.slug === periodo;
-            return (
-              <button
-                key={p.slug}
-                type="button"
-                aria-pressed={marcado}
-                onClick={() => setPeriodo(p.slug)}
-                className={clsx(
-                  "opcao focus-ring rounded-sm border px-1 py-[11px] text-[13px] font-semibold",
-                  marcado ? "border-ink bg-ink text-surface" : "border-line bg-surface text-ink hover:border-ink",
-                )}
-              >
-                {p.nome}
-              </button>
-            );
-          })}
-        </div>
-        {tentou && erroRepetida && <p className="aviso-erro mt-2">! {erroRepetida}</p>}
-      </fieldset>
-      {personalizado && (
-        <div className="grid gap-3">
-          {/* no celular um embaixo do outro: "Setembro de 2026" não cabe pela metade da tela */}
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <label className="field-label" htmlFor="meta-inicio">
-                Começa em
-              </label>
-              <select id="meta-inicio" className="input" value={inicio} onChange={(e) => setInicio(e.target.value)}>
-                {opcoesDeInicio(meta?.inicio ?? null).map((o) => (
-                  <option key={o.valor} value={o.valor}>
-                    {o.nome}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="field-label" htmlFor="meta-meses">
-                Duração
-              </label>
-              <select id="meta-meses" className="input" value={meses} onChange={(e) => setMeses(Number(e.target.value))}>
-                {Array.from({ length: MESES_MAX }, (_, i) => i + 1).map((n) => (
-                  <option key={n} value={n}>
-                    {n} {n === 1 ? "mês" : "meses"}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          {rotuloPeriodo && (
-            <p className="num text-[13px] text-ink-soft" aria-live="polite">
-              Conta de {rotuloPeriodo}.
-            </p>
-          )}
-        </div>
-      )}
-      <div>
-        <label className="field-label" htmlFor="meta-valor">
-          {def.dinheiro ? "Alvo (R$)" : "Alvo"}
-        </label>
-        <div className="relative">
-          {def.dinheiro && (
-            <span aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft">
-              R$
-            </span>
-          )}
-          <input
-            id="meta-valor"
-            className={clsx("input num", def.dinheiro ? "pl-10" : "pr-[140px]")}
-            inputMode={def.dinheiro ? "decimal" : "numeric"}
-            placeholder={def.dinheiro ? EXEMPLO[metricaSel].replace("Ex.: ", "") : EXEMPLO[metricaSel]}
-            value={valor}
-            onChange={(e) => setValor(def.dinheiro ? e.target.value : e.target.value.replace(/\D/g, "").slice(0, 5))}
-            aria-describedby="meta-valor-nota"
-          />
-          {!def.dinheiro && (
-            <span aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft">
-              {Number(valor) === 1 ? def.um : def.varios}
-            </span>
-          )}
-        </div>
-        <p id="meta-valor-nota" className={clsx("mt-1 text-[13px]", tentou && erroAlvo ? "aviso-erro" : "text-ink-soft")}>
-          {tentou && erroAlvo ? `! ${erroAlvo}` : `Quanto você quer alcançar ${por}.`}
-        </p>
-      </div>
-      <label className="flex cursor-pointer items-start gap-3 rounded-sm border border-line px-3 py-3">
-        <input type="checkbox" className="checkbox mt-[2px]" checked={noPainel} onChange={(e) => setNoPainel(e.target.checked)} />
-        <span>
-          <span className="block font-semibold">Mostrar no painel</span>
-          <span className="block text-[13px] text-ink-soft">A meta aparece na lista do dia e no seu painel, com o progresso do período.</span>
+  return <form onSubmit={salvar} className="pmr-form" noValidate>
+    <div className="mb-lateral__corpo pmr-pilha">
+      <CampoSelecao rotulo="Métrica" ajuda={def.dica + "."}><select id="meta-metrica" className="mb-campo__entrada" value={metricaSel} onChange={(e) => trocarMetrica(e.target.value as Metrica)}>{METRICAS.map((m) => <option key={m.slug} value={m.slug}>{m.nome}</option>)}</select></CampoSelecao>
+      <CampoEmGrupo id="meta-periodo" rotulo="Período" erro={tentou ? erroRepetida : null} idErro="meta-repetida"><Seletor idRotulo="meta-periodo" grade={3} valor={periodo} onChange={(v) => setPeriodo(v as PeriodoMeta)} opcoes={PERIODOS_META.map((p) => ({ valor: p.slug, rotulo: p.nome }))} /></CampoEmGrupo>
+      {personalizado && <>
+        <CampoSelecao rotulo="Começa em"><select id="meta-inicio" className="mb-campo__entrada" value={inicio} onChange={(e) => setInicio(e.target.value)}>{opcoesDeInicio(meta?.inicio ?? null).map((o) => <option key={o.valor} value={o.valor}>{o.nome}</option>)}</select></CampoSelecao>
+        <CampoSelecao rotulo="Duração"><select id="meta-meses" className="mb-campo__entrada" value={meses} onChange={(e) => setMeses(Number(e.target.value))}>{Array.from({ length: MESES_MAX }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n} {n === 1 ? "mês" : "meses"}</option>)}</select></CampoSelecao>
+        {rotuloPeriodo && <p className="mb-grafico__nota" aria-live="polite">Conta de {rotuloPeriodo}.</p>}
+      </>}
+      <Campo rotulo={def.dinheiro ? "Alvo (R$)" : "Alvo"} obrigatorio erro={tentou ? erroAlvo : null} idErro="meta-valor-erro" ajuda={"Quanto você quer alcançar " + por + "."}>
+        <span className="mb-campo__grupo">{def.dinheiro && <span className="mb-campo__afixo">R$</span>}
+          <input id="meta-valor" className="mb-campo__entrada mb-campo__entrada--num" inputMode={def.dinheiro ? "decimal" : "numeric"} required placeholder={def.dinheiro ? EXEMPLO[metricaSel].replace("Ex.: ", "") : EXEMPLO[metricaSel]} value={valor} onChange={(e) => setValor(def.dinheiro ? e.target.value : e.target.value.replace(/\D/g, "").slice(0, 5))} aria-invalid={tentou && !!erroAlvo} aria-describedby={tentou && erroAlvo ? "meta-valor-erro" : undefined} />
+          {!def.dinheiro && <span className="mb-campo__afixo">{Number(valor) === 1 ? def.um : def.varios}</span>}
         </span>
-      </label>
-      {erro && <p className="aviso-erro">! {erro}</p>}
-      <div className="flex flex-wrap gap-2">
-        <button type="submit" className="btn btn-red btn-lg focus-ring flex-1 md:flex-none" disabled={salvando}>
-          {salvando ? "Salvando…" : meta ? "Salvar meta" : "Criar meta"}
-        </button>
-        <button type="button" className="btn btn-ghost btn-lg focus-ring flex-1 md:flex-none" onClick={onCancelar}>
-          Cancelar
-        </button>
-      </div>
-    </form>
-  );
+      </Campo>
+      <label className="mb-marcador"><input type="checkbox" checked={noPainel} onChange={(e) => setNoPainel(e.target.checked)} /><span>Mostrar no painel<span className="pmr-nota pmr-bloco">A meta aparece na lista do dia e no seu painel.</span></span></label>
+      {erro && <Aviso tom="erro" titulo="Não foi possível salvar a meta" texto="Confira a conexão e tente novamente. O que você preencheu foi mantido." />}
+    </div>
+    <div className="mb-lateral__rodape"><button type="button" className="mb-botao mb-botao--discreto" onClick={onCancelar}>Cancelar</button><button type="submit" className="mb-botao mb-botao--primario" disabled={salvando} aria-busy={salvando}>{salvando ? "Salvando…" : meta ? "Salvar meta" : "Criar meta"}</button></div>
+  </form>;
 }
 
 /** O "R$" menor e mais leve que o número (.mb-unidade); texto sem R$ fica como está. */

@@ -34,16 +34,20 @@ export function SeloPrazo({ faixa, dias }: { faixa: Faixa; dias: number; estagio
   </Prazo>;
 }
 
-/** Etapas: somente os estágios que existem, conforme Etapas.md:31. */
-export function TrilhaEstagio({ estagio }: { estagio: Estagio }) {
+/** Etapas.md:31-52: etapas reais e resumo compacto calculado pelo consumidor. */
+export function TrilhaEstagio({ estagio, motivoBloqueio }: { estagio: Estagio; motivoBloqueio?: string | null }) {
   const etapas = ESTAGIOS.filter((e) => e.ativo);
   const atual = etapas.findIndex((e) => e.slug === estagio);
-  return <ol className="mb-etapas mb-etapas--faixa" aria-label="Estágio do parceiro">
-    {etapas.map((e, i) => <li key={e.slug} className={`mb-etapa${i === atual ? " mb-etapa--atual" : i < atual ? " mb-etapa--concluida" : ""}`} aria-current={i === atual ? "step" : undefined}>
-      <span className="mb-etapa__marcador" aria-hidden="true" />
-      <span className="mb-etapa__texto"><span className="mb-etapa__nome">{e.nome}</span></span>
+  return <div className="mb-etapas-bloco">
+    <p className="mb-etapas-bloco__passo" aria-hidden="true">Etapa {atual + 1} de {etapas.length} · <strong>{etapas[atual]?.nome}</strong></p>
+    <div className="mb-etapas-bloco__trilho" aria-hidden="true"><span style={{ width: `${((atual + 1) / etapas.length) * 100}%` }} /></div>
+    <ol className="mb-etapas mb-etapas--faixa" aria-label="Estágio do parceiro">
+    {etapas.map((e, i) => <li key={e.slug} className={`mb-etapa${i === atual ? ` mb-etapa--atual${motivoBloqueio ? " mb-etapa--bloqueada" : ""}` : i < atual ? " mb-etapa--concluida" : ""}`} aria-current={i === atual ? "step" : undefined}>
+      <span className="mb-etapa__marcador" aria-hidden="true">{i === atual && motivoBloqueio ? "!" : null}</span>
+      <span className="mb-etapa__texto"><span className="mb-etapa__nome">{e.nome}</span>{i === atual && motivoBloqueio && <span className="mb-etapa__detalhe">Bloqueada: {motivoBloqueio}</span>}</span>
     </li>)}
-  </ol>;
+    </ol>
+  </div>;
 }
 
 export function ProximoContatoParceiro({ dia, agora }: { dia: string | null; agora: Date }) {

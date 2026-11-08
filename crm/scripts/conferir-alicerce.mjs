@@ -34,7 +34,7 @@
 //   de validação, o aviso de duplicado (WhatsApp de um lead visível e o de outra carteira, dos fixtures) e o Cadastro Mágico.
 // Os prints vão para crm/local/ (fora do Git).
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 const argumentos = process.argv.slice(2);
 const soMoldura = argumentos.includes("--moldura");
@@ -46,6 +46,8 @@ const soNovo = argumentos.includes("--novo");
 const soConta = argumentos.includes("--conta");
 const soParcerias = argumentos.includes("--parcerias");
 const soInicioVendas = argumentos.includes("--inicio-vendas");
+const soEtapas = argumentos.includes("--etapas-parceiro");
+const soPainelMetasRanking = argumentos.includes("--painel-metas-ranking");
 
 // Só altera a cópia gerada, nunca a sessão, os dados ou as credenciais do app.
 // Execute depois de visual-preview.mjs e antes do build: node scripts/conferir-alicerce.mjs --preparar-parcerias
@@ -84,6 +86,24 @@ if (argumentos.includes("--preparar-inicio-vendas")) {
   fixture = fixture.replace("error:this.blocked?", "error:this.erroLeitura?{message:'Falha fictícia de leitura de vendas'}:this.blocked?");
   writeFileSync(caminhoFixture, fixture);
   console.log("Prévia de Início e Vendas preparada; leituras fictícias e gravações bloqueadas.");
+  process.exit(0);
+}
+
+// Bloco 3: execute após --preparar-parcerias e --preparar-inicio-vendas, antes do build isolado.
+if (argumentos.includes("--preparar-painel-metas-ranking")) {
+  const caminhoSessao = ".visual-preview/src/lib/sessao.tsx";
+  let sessao = readFileSync(caminhoSessao, "utf8");
+  sessao = sessao.replace("path==='/vendas/painel/'", "(path==='/vendas/painel/' && qa!=='corretor')");
+  writeFileSync(caminhoSessao, sessao);
+  const caminhoFixture = ".visual-preview/src/lib/visual-fixtures.ts";
+  let fixture = readFileSync(caminhoFixture, "utf8");
+  fixture = fixture.replace("metas:[],", "metas:[{id:'meta-mensal',dono_id:'corretor-1',metrica:'vgv',periodo:'mes',inicio:null,meses:null,valor:1000000,no_painel:true,created_at:at(-30)},{id:'meta-visitas',dono_id:'corretor-1',metrica:'visitas',periodo:'mes',inicio:null,meses:null,valor:8,no_painel:true,created_at:at(-30)}],");
+  fixture = fixture.replace("teams:[{", "teams:[{id:'equipe-2',nome:'Equipe Sul Exemplo',gerente_id:'gerente-2'},{");
+  fixture = fixture.replace("this.erroLeitura=name==='vendas'&&qa==='vendas-erro'; this.espera=name==='vendas'&&qa==='vendas-espera';", "this.erroLeitura=(name==='vendas'&&qa==='vendas-erro')||(name==='lead_eventos'&&qa==='painel-erro')||(name==='vendas'&&qa==='metas-erro'); this.espera=(name==='vendas'&&qa==='vendas-espera')||(name==='lead_eventos'&&qa==='painel-espera')||(name==='vendas'&&qa==='metas-espera');");
+  fixture = fixture.replace("this.rows=[...(tables[name]??[])];", "this.rows=[...(tables[name]??[])]; if(qa==='painel-vazio' && ['lead_eventos','leads','vendas','visitas'].includes(name)) this.rows=[];");
+  fixture = fixture.replace("? {data:profiles.map((p,i)=>({corretor_id:p.id,nome:p.nome,pontos:150-i*70})),error:null}", "? (typeof location!=='undefined'&&location.search.includes('qa=ranking-espera') ? new Promise<never>(()=>{}) : typeof location!=='undefined'&&location.search.includes('qa=ranking-erro') ? {data:null,error:{message:'Falha fictícia de leitura do ranking'}} : {data:typeof location!=='undefined'&&location.search.includes('qa=ranking-vazio')?[]:[...Array.from({length:11},(_,i)=>({corretor_id:'rank-'+i,nome:'Corretor Exemplo '+String(i+1).padStart(2,'0'),pontos:200-Math.floor(i/2)*10})),{corretor_id:'corretor-1',nome:'Marina Exemplo',pontos:100}],error:null})");
+  writeFileSync(caminhoFixture, fixture);
+  console.log("Prévia do bloco 3 preparada; dados fictícios, empates e estados; gravações bloqueadas.");
   process.exit(0);
 }
 
@@ -134,7 +154,7 @@ async function print(nome) {
 const resultado = {};
 const confere = (nome, ok, detalhe) => { resultado[nome] = { ok: !!ok, detalhe }; console.log(`${ok ? "OK   " : "FALHA"} ${nome}${detalhe ? "  " + JSON.stringify(detalhe) : ""}`); };
 
-if (!soMoldura && !soLista && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta && !soParcerias && !soInicioVendas) {
+if (!soMoldura && !soLista && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta && !soParcerias && !soInicioVendas && !soEtapas && !soPainelMetasRanking) {
 // 1. Migração da escolha antiga (três casos de tema e a barra).
 await tela(1280, 800);
 await esquemaAparelho("light");
@@ -404,6 +424,139 @@ async function printDe(nome, seletor) {
 }
 
 // Fase 2, bloco 2: Início e Vendas. Um Chrome e uma conferência por vez.
+// Etapas compactas, item separado do bloco 3. Não cria etapa nem regra de bloqueio na fixture.
+if (soEtapas) {
+  await tela(375, 812);
+  for (const tema of ['papel','grafite']) {
+    await comArmazenamento({mb_tema:tema,mb_movimento:'reduzido'},'/parceiros/ficha/?qa=gerente&id=par-1');
+    for (const [id,etapa,nome] of [['par-1',2,'Contatado'],['par-2',3,'Apresentado'],['par-3',1,'Novo']]) {
+      await abrir('/parceiros/ficha/?qa=gerente&id='+id);
+      const r=await avaliar(`(() => {const b=document.querySelector('.mb-etapas-bloco'), p=b?.querySelector('.mb-etapas-bloco__passo'), t=b?.querySelector('.mb-etapas-bloco__trilho'), etapas=b?.querySelectorAll('.mb-etapa');return {texto:p?.textContent,oculto:p?.getAttribute('aria-hidden'),visivel:p&&getComputedStyle(p).display!=='none',largura:t?.firstElementChild.style.width,atual:b?.querySelectorAll('[aria-current=step]').length,etapas:etapas?.length,lateral:document.documentElement.scrollWidth>innerWidth};})()`);
+      confere(`Etapas ${id} ${tema}`,r.texto===`Etapa ${etapa} de 3 · ${nome}`&&r.oculto==='true'&&r.visivel&&r.atual===1&&r.etapas===3&&!r.lateral,r);
+      confere(`Barra ${id} ${tema}`,Math.abs(parseFloat(r.largura)-etapa/3*100)<0.01,r.largura);
+      await print(`ficha-${id}-375-${tema}`);await printInteiro(`ficha-${id}-375-${tema}-inteiro`);
+      if(id==='par-1') {
+        await print(`ficha-375-${tema}`);await printInteiro(`ficha-375-${tema}-inteiro`);
+        for(const [botao,sufixo] of [['Editar cadastro','editar'],['Registrar interação','registrar']]) {
+          await avaliar(`(() => {const b=[...document.querySelectorAll('main button')].find(b=>b.textContent.trim()===${JSON.stringify(botao)});b?.focus();b?.click()})()`);await espera(400);
+          confere(`Ficha ${sufixo} ${tema}`,await avaliar(`!!document.querySelector('.mb-lateral--aberto')`));
+          await print(`ficha-375-${tema}-${sufixo}`);await teclar('Escape','Escape',27);await espera(250);
+        }
+      }
+    }
+    await abrir('/parceiros/ficha/?qa=geral&id=par-1');
+    confere(`Etapas em leitura GG ${tema}`,await avaliar(`document.querySelector('.mb-etapas-bloco__passo')?.textContent==='Etapa 2 de 3 · Contatado'&&!document.querySelector('#registrar')`));
+    await print(`ficha-geral-375-${tema}`);await printInteiro(`ficha-geral-375-${tema}-inteiro`);
+  }
+  confere('Nenhum erro no console',erros.length===0,erros);
+  writeFileSync(join(saida,'resultado-etapas.json'),JSON.stringify(resultado,null,2));
+  await cdp('Page.close');ws.close();process.exit(Object.values(resultado).some(r=>!r.ok)?1:0);
+}
+
+// Revisão da master no bloco 3: só Ranking, usando a mesma prévia isolada.
+if (soPainelMetasRanking && argumentos.includes('--ranking-revisao')) {
+  for (const [w,h] of [[375,812],[1280,800]]) for(const tema of ['papel','grafite']) {
+    await tela(w,h);await comArmazenamento({mb_tema:tema,mb_movimento:'reduzido'},'/ranking/?qa=corretor');
+    const id=`ranking-${w}-${tema}`;
+    const r=await avaliar(`(() => {const rotulo=document.querySelector('.mb-periodo__rotulo')?.textContent;return {rotulo,titulo:document.querySelector('#t-ranking')?.textContent,detalhes:document.querySelectorAll('.mb-ranking__detalhe').length,lateral:document.documentElement.scrollWidth>innerWidth,voce:!!document.querySelector('.mb-ranking [aria-current=true]')};})()`);
+    confere(id+' · mês com maiúscula no período e título',r.rotulo?.[0]===r.rotulo?.[0].toLocaleUpperCase('pt-BR')&&r.titulo==='Pontos aprovados · '+r.rotulo,r);
+    confere(id+' · detalhe redundante removido, posição própria preservada',r.detalhes===0&&r.voce,r);
+    confere(id+' · sem rolagem lateral',!r.lateral);
+    const foco=await focoVisivel(w<768?9:16);confere(id+' · foco visível',!foco.length,foco);
+    await avaliar('document.activeElement?.blur();window.scrollTo(0,0)');await print(id);await printInteiro(id+'-inteiro');
+    await avaliar(`[...document.querySelectorAll('button')].find(b=>b.textContent==='Ver ranking completo')?.click()`);await espera(150);await printInteiro(id+'-completo');
+    await avaliar(`document.querySelector('.mb-periodo button')?.click()`);await espera(300);
+    confere(id+' · outro mês também com maiúscula',await avaliar(`(() => {const t=document.querySelector('.mb-periodo__rotulo')?.textContent;return /^[A-ZÁÉÍÓÚ]/.test(t)&&document.querySelector('#t-ranking')?.textContent==='Pontos aprovados · '+t})()`));
+    await print(id+'-anterior');
+  }
+  confere('Nenhum erro no console',erros.length===0,erros);
+  writeFileSync(join(saida,'resultado-ranking-revisao.json'),JSON.stringify(resultado,null,2));
+  await cdp('Page.close');ws.close();process.exit(Object.values(resultado).some(r=>!r.ok)?1:0);
+}
+
+if (soPainelMetasRanking) {
+  const tocar=(seletor,texto)=>avaliar(`(() => {const e=[...document.querySelectorAll(${JSON.stringify(seletor)})].find(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden'&&(${texto===undefined?'true':`e.textContent.trim()===${JSON.stringify(texto)}`}));if(!e)return false;e.focus();e.click();return true;})()`);
+  const preencher=(seletor,valor)=>avaliar(`(() => {const e=document.querySelector(${JSON.stringify(seletor)});if(!e)return false;const p=e.tagName==='SELECT'?HTMLSelectElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(p,'value').set.call(e,${JSON.stringify(valor)});e.dispatchEvent(new Event(e.tagName==='SELECT'?'change':'input',{bubbles:true}));return true;})()`);
+  const checar=async(id,w)=>{
+    const r=await avaliar(`(() => {const vis=e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden';const controles=[...document.querySelectorAll('main button,main select,main input:not([type=checkbox]),.mb-lateral--aberto button,.mb-lateral--aberto input:not([type=checkbox]),.mb-lateral--aberto select')].filter(vis).filter(e=>!e.disabled);return {lateral:document.documentElement.scrollWidth>innerWidth,legado:!!document.querySelector('main .ds-antigo,main .btn,main .card,main .input,main [class*="-antigo"]'),h1:document.querySelectorAll('main h1').length,pequenos:controles.filter(e=>e.getBoundingClientRect().height<43.5).map(e=>({nome:(e.textContent||e.id).trim().slice(0,40),h:e.getBoundingClientRect().height})),tabelas:document.querySelectorAll('.mb-tabela').length};})()`);
+    confere(id+' · sem rolagem lateral',!r.lateral,r);
+    confere(id+' · Casca e peças Alicerce',!r.legado&&r.h1===1,r);
+    confere(id+' · Pares sem caixas intermediárias',await avaliar(`![...document.querySelectorAll('main dl.mb-pares')].some(dl=>[...dl.children].some(e=>!['DT','DD'].includes(e.tagName)))`));
+    if(w<768)confere(id+' · alvos 44px',!r.pequenos.length,r.pequenos);
+  };
+  const rotas=[['painel-equipe','/painel/?qa=gerente'],['painel-proprio','/painel/?qa=corretor'],['painel-corretor','/painel/?qa=gerente&c=corretor-1'],['painel-geral','/painel/?qa=geral'],['metas-proprias','/metas/?qa=corretor'],['metas-equipe','/metas/?qa=gerente'],['metas-definir','/metas/?qa=geral'],['ranking','/ranking/?qa=corretor']];
+  for(const [w,h] of [[375,812],[1280,800]])for(const tema of ['papel','grafite']){
+    await tela(w,h);await comArmazenamento({mb_tema:tema,mb_movimento:'reduzido'},rotas[0][1]);
+    for(const [nome,rota] of rotas){
+      await abrir(rota);const id=`${nome}-${w}-${tema}`;
+      await checar(id,w);const foco=await focoVisivel(w<768?10:16);confere(id+' · foco visível',!foco.length,foco);
+      await avaliar('document.activeElement?.blur();window.scrollTo(0,0)');await print(id);await printInteiro(id+'-inteiro');
+      if(nome==='painel-equipe'){
+        confere(id+' · números alinhados à direita',await avaliar(`!!document.querySelector('td.mb-tabela__num')&&[...document.querySelectorAll('td.mb-tabela__num')].every(e=>getComputedStyle(e).textAlign==='right')`));
+        confere(id+' · tabelas numéricas únicas e totais',await avaliar(`document.querySelectorAll('.mb-tabela--numeros').length>=5&&[...document.querySelectorAll('.mb-tabela--numeros')].filter(t=>!t.closest('[aria-labelledby=t-conversao]')).every(t=>t.tFoot&&t.classList.contains('mb-tabela--primeira-fixa'))`));
+        const contagem=await avaliar(`(() => {const b=[...document.querySelectorAll('button.mb-indicador')].find(e=>e.getAttribute('aria-disabled')!=='true');window.__numero=b;return Number(b?.querySelector('.mb-indicador__valor')?.textContent)})()`);
+        await avaliar('window.__numero?.focus();window.__numero?.click()');await espera(450);
+        confere(id+' · número abre o mesmo conjunto na folha larga',await avaliar(`(() => {const p=document.querySelector('.mb-lateral--larga.mb-lateral--aberto');return p?.parentElement===document.body&&p.contains(document.activeElement)&&p.querySelectorAll('tbody tr').length===${contagem}&&p.querySelector('.mb-relatorio__resumo')?.textContent.includes('${contagem} registros')})()`));
+        await checar(id+'-relatorio',w);await print(id+'-relatorio');
+        await preencher('.mb-lateral--aberto input[type=search]','zzzzz');await espera(150);confere(id+' · busca do relatório',await avaliar(`document.querySelector('.mb-lateral--aberto .mb-relatorio__resumo')?.textContent.includes('0 registros')&&!!document.querySelector('.mb-lateral--aberto .mb-vazio')`));
+        await preencher('.mb-lateral--aberto input[type=search]','');await espera(150);await tocar('.mb-lateral--aberto button','Exportar');await espera(150);await print(id+'-exportar');
+        confere(id+' · formatos disponíveis',await avaliar(`document.querySelectorAll('.mb-lateral--aberto [role=menuitem]').length===4`));
+        if(w===1280 && tema==='papel') {
+          const pasta=resolve(saida,'exportacoes');mkdirSync(pasta,{recursive:true});await cdp('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:pasta});
+          const dataArquivo=await avaliar('new Date().toISOString().slice(0,10)');
+          await tocar('.mb-lateral--aberto [role=menuitem]','Planilha (Excel)');await espera(500);
+          const excel=readFileSync(join(pasta,'leads-painel-'+dataArquivo+'.xml'),'utf8');
+          confere('Excel: arquivo real, mesmas linhas e colunas',excel.includes('Excel.Sheet')&&excel.includes('<Worksheet')&&(excel.match(/<Row>/g)||[]).length===contagem+1&&excel.includes('Informações'));
+          await tocar('.mb-lateral--aberto button','Exportar');await espera(100);await tocar('.mb-lateral--aberto [role=menuitem]','CSV');await espera(500);
+          const csv=readFileSync(join(pasta,'leads-painel-'+dataArquivo+'.csv'),'utf8');
+          confere('CSV: arquivo real, mesmas linhas e colunas',csv.startsWith('\ufeff"Lead";"Informações"')&&csv.split('\r\n').length===contagem+1);
+          await avaliar('document.documentElement.dataset.relatorioNumero="sim"');await cdp('Emulation.setEmulatedMedia',{media:'print'});
+          confere('Impressão do relatório: só o recorte aberto',await avaliar(`(() => {const p=document.querySelector('.pmr-relatorio.mb-lateral--aberto');return getComputedStyle(p).display!=='none'&&getComputedStyle(document.querySelector('.mb-app')).display==='none'&&p.querySelectorAll('tbody tr').length===${contagem}&&getComputedStyle(p.querySelector('.mb-tabela')).fontSize==='16px';})()`));
+          await printInteiro('relatorio-impressao-1280-papel');await cdp('Emulation.setEmulatedMedia',{media:'screen'});await avaliar('delete document.documentElement.dataset.relatorioNumero');
+        }
+        await teclar('Escape','Escape',27);await espera(250);
+        if(await avaliar(`!!document.querySelector('.mb-lateral--aberto')`)){await teclar('Escape','Escape',27);await espera(200);}
+        confere(id+' · fecha e devolve foco',await avaliar('!document.querySelector(".mb-lateral--aberto")&&document.activeElement===window.__numero'));
+        await tocar('.mb-segmentado button','Mês');await espera(300);confere(id+' · período na URL',await avaliar(`new URLSearchParams(location.search).get('p')==='mes'`));
+      }
+      if(nome==='painel-geral'){
+        await preencher('select#equipe','equipe-2');await espera(300);confere(id+' · equipe na URL',await avaliar(`new URLSearchParams(location.search).get('e')==='equipe-2'`));
+      }
+      if(nome==='painel-proprio')confere(id+' · Meta e Funil oficiais',await avaliar(`!!document.querySelector('.mb-meta__trilho[role=img]')&&!!document.querySelector('.mb-funil--vendas')&&!document.querySelector('#t-entrada')`));
+      if(nome==='metas-proprias'){
+        confere(id+' · valores e barras oficiais',await avaliar(`document.querySelectorAll('.mb-meta').length===3&&document.querySelectorAll('.mb-meta__trilho[role=img]').length===3&&document.querySelectorAll('[role=switch]').length===2`));
+        await tocar('button','+ Nova meta');await espera(400);await checar(id+'-nova',w);await print(id+'-nova');
+        await tocar('button[type=submit]','Criar meta');await espera(150);confere(id+' · validação e foco',await avaliar(`document.activeElement?.id==='meta-valor'&&!!document.querySelector('[aria-invalid=true]')`));await print(id+'-validacao');
+        await tocar('.mb-opcao','Personalizado');await espera(200);await print(id+'-personalizada');
+        confere(id+' · período personalizado',await avaliar(`!!document.querySelector('#meta-inicio')&&!!document.querySelector('#meta-meses')`));
+        await teclar('Escape','Escape',27);await espera(250);confere(id+' · fecha formulário e devolve foco',await avaliar(`document.activeElement?.textContent.trim()==='+ Nova meta'`));
+        await tocar('button','Editar');await espera(400);await print(id+'-editar');await teclar('Escape','Escape',27);await espera(250);
+      }
+      if(nome==='metas-definir'){
+        confere(id+' · só GG define',await avaliar(`!!document.querySelector('#definir-metas')`));await tocar('summary');await espera(150);await printInteiro(id+'-por-corretor');
+        await preencher('#meta-geral','12000000');await espera(150);await print(id+'-alterada');
+        confere(id+' · salvar aparece com alteração',await avaliar(`!!document.querySelector('button[type=submit]')`));
+      }
+      if(nome==='metas-equipe')confere(id+' · gerente consulta sem definir',await avaliar(`!!document.querySelector('.mb-tabela--numeros')&&!document.querySelector('#definir-metas')`));
+      if(nome==='ranking'){
+        confere(id+' · empates e posição própria fora do top 10',await avaliar(`document.querySelectorAll('.mb-ranking__item').length===12&&document.querySelector('.mb-ranking [aria-current=true]')?.textContent.includes('Marina Exemplo')&&document.querySelectorAll('.mb-ranking__posicao')[0].textContent===document.querySelectorAll('.mb-ranking__posicao')[1].textContent`));
+        await tocar('button','Ver ranking completo');await espera(150);await printInteiro(id+'-completo');confere(id+' · completo preserva todos',await avaliar(`document.querySelectorAll('.mb-ranking__posicao').length===12`));
+        await tocar('.mb-periodo button','← Anterior');await espera(300);confere(id+' · mês na URL',await avaliar(`!!new URLSearchParams(location.search).get('mes')`));
+      }
+    }
+    for(const [nome,rota,qa,tipo] of [['painel','painel','painel-erro','erro'],['metas','metas','metas-erro','erro'],['ranking','ranking','ranking-erro','erro'],['painel','painel','painel-espera','espera'],['metas','metas','metas-espera','espera'],['ranking','ranking','ranking-espera','espera'],['painel','painel','painel-vazio','vazio'],['ranking','ranking','ranking-vazio','vazio']]){
+      await abrir(`/${rota}/?qa=${qa}`);const id=`${nome}-${tipo}-${w}-${tema}`;await print(id);await checar(id,w);
+      confere(id+' · estado apropriado',await avaliar(tipo==='erro'?`!!document.querySelector('.mb-estado__sobrelinha')&&!document.querySelector('main')?.textContent.includes('Falha fictícia')`:tipo==='espera'?`!!document.querySelector('[aria-busy=true] .mb-esqueleto')`:`!!document.querySelector('.mb-vazio')||document.querySelectorAll('.mb-indicador[aria-disabled=true]').length===3`));
+    }
+    await abrir('/metas/?qa=apoio');confere(`Sem acesso metas ${w} ${tema}`,await avaliar(`document.querySelector('.mb-estado__sobrelinha')?.textContent==='Sem permissão'`));
+    await abrir('/painel/?qa=apoio');confere(`Sem acesso painel ${w} ${tema}`,await avaliar(`document.querySelector('.mb-estado__sobrelinha')?.textContent==='Sem permissão'`));
+  }
+  confere('Nenhum erro no console',erros.length===0,erros);
+  writeFileSync(join(saida,'resultado.json'),JSON.stringify(resultado,null,2));
+  const falhas=Object.values(resultado).filter(r=>!r.ok).length;console.log(`${Object.keys(resultado).length} conferências, ${falhas} falhas. Capturas em ${saida}`);
+  await cdp('Page.close');ws.close();process.exit(falhas?1:0);
+}
+
 if (soInicioVendas) {
   const tocar = (seletor, texto) => avaliar(`(() => { const b=[...document.querySelectorAll(${JSON.stringify(seletor)})].find(e=>e.getClientRects().length && getComputedStyle(e).visibility!=='hidden' && (${texto === undefined ? 'true' : `e.textContent.trim()===${JSON.stringify(texto)}`}));if(!b)return false;b.focus();b.click();return true; })()`);
   const selecionar = (seletor, valor) => avaliar(`(() => {const e=document.querySelector(${JSON.stringify(seletor)});if(!e)return false;Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(e,${JSON.stringify(valor)});e.dispatchEvent(new Event('change',{bubbles:true}));return true;})()`);
@@ -567,7 +720,7 @@ if (soParcerias) {
   await cdp('Page.close'); ws.close(); process.exit(falhas ? 1 : 0);
 }
 
-if (!soMoldura && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta && !soParcerias && !soInicioVendas) {
+if (!soMoldura && !soMensagens && !soLeads && !soFicha && !soNovo && !soConta && !soParcerias && !soInicioVendas && !soEtapas && !soPainelMetasRanking) {
   for (const [w, h] of [[375, 812], [1280, 800]]) {
     for (const tema of ["papel", "grafite"]) {
       await abrirListaDoDia(w, h, tema);
